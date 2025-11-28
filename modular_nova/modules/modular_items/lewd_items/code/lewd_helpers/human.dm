@@ -12,6 +12,33 @@
 	var/obj/item/nipples = null
 	var/obj/item/penis = null
 
+/// Gets the item held in one of our `ORGAN_SLOT_*` lewd slots.
+/mob/living/carbon/human/proc/get_lewd_slot_item(slot)
+	switch(slot)
+		if(ORGAN_SLOT_VAGINA)
+			return vagina
+		if(ORGAN_SLOT_ANUS)
+			return anus
+		if(ORGAN_SLOT_NIPPLES)
+			return nipples
+		if(ORGAN_SLOT_PENIS)
+			return penis
+
+/// Sets an item in one of our `ORGAN_SLOT_*` lewd slots. Returns FALSE when the slot isn't supported.
+/mob/living/carbon/human/proc/set_lewd_slot_item(slot, obj/item/new_item)
+	switch(slot)
+		if(ORGAN_SLOT_VAGINA)
+			vagina = new_item
+		if(ORGAN_SLOT_ANUS)
+			anus = new_item
+		if(ORGAN_SLOT_NIPPLES)
+			nipples = new_item
+		if(ORGAN_SLOT_PENIS)
+			penis = new_item
+		else
+			return FALSE
+	return TRUE
+
 
 /*
 *	This code needed to determine if the human is naked in that part of body or not
@@ -35,6 +62,18 @@
 
 /mob/living/carbon/human/proc/is_head_uncovered()
 	return (head?.body_parts_covered & HEAD)
+
+/**
+ * Both preferences a portal needs before it will act on, relay, or reveal this mob.
+ *
+ * Portals put someone's body somewhere they can't see, so the sex-toy pref is required on top of the master ERP one.
+ * Silent by design: portal code revalidates this constantly, and `check_erp_prefs()` is the one to reach for when a
+ * single deliberate attempt is worth logging.
+ */
+/mob/proc/allows_portal_use()
+	var/datum/client_interface/portal_client = GET_CLIENT(src)
+	return portal_client?.prefs?.read_preference(/datum/preference/toggle/erp) \
+		&& portal_client.prefs.read_preference(/datum/preference/toggle/erp/sex_toy)
 
 /// Returns true if the human has an accessible penis for the parameter. Accepts any of the `REQUIRE_GENITAL_` defines.
 /mob/living/carbon/human/proc/has_penis(required_state = REQUIRE_GENITAL_ANY)

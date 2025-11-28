@@ -10,7 +10,7 @@ A modular folder for various single-item additions that don't deserve their own 
 
 ### TG Proc Changes:
 
-- N/A
+- `code/game/objects/items/wall_mounted.dm`: opt-in floorless placement and conditional post-attach frame consumption.
 
 ### Defines:
 

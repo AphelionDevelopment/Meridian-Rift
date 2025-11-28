@@ -6,7 +6,7 @@ Contains various items of primitive style for icecats and sometimes even ashwalk
 
 ### TG Proc/File Changes:
 
-- N/A
+- `code/game/objects/items/wall_mounted.dm`: opt-in floorless placement for wallframes such as torch mounts.
 
 ### Defines:
 

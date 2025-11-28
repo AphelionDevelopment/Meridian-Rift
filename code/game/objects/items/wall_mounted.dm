@@ -10,8 +10,10 @@
 	var/result_path
 	/// For frames that are external to the wall they are placed on, like light fixtures and cameras.
 	var/wall_external = FALSE
-	//The amount of pixels to shift when mounted
+	/// The amount of pixels to shift when mounted.
 	var/pixel_shift
+	/// Whether the user must stand on a floor turf to mount this frame.
+	var/requires_floor = TRUE // NOVA EDIT ADDITION
 
 /obj/item/wallframe/Initialize(mapload)
 	. = ..()
@@ -72,6 +74,10 @@
 				hanging_object.pixel_x = -pixel_shift
 	hanging_object.find_and_mount_on_atom()
 	after_attach(hanging_object)
+	// NOVA EDIT ADDITION START - Allow frames to persist across related placements.
+	if(!should_consume_after_attach(hanging_object))
+		return ITEM_INTERACT_SUCCESS
+	// NOVA EDIT ADDITION END
 	qdel(src)
 
 	return ITEM_INTERACT_SUCCESS
@@ -92,7 +98,7 @@
 		balloon_alert(user, "stand in line with wall!")
 		return FALSE
 	var/turf/T = get_turf(user)
-	if(!isfloorturf(T))
+	if(requires_floor && !isfloorturf(T)) // NOVA EDIT CHANGE - ORIGINAL: if(!isfloorturf(T))
 		balloon_alert(user, "cannot place here!")
 		return FALSE
 	if(check_wall_item(T, floor_to_support, wall_external))
@@ -109,6 +115,17 @@
 */
 /obj/item/wallframe/proc/after_attach(obj/attached_to)
 	transfer_fingerprints_to(attached_to)
+
+// NOVA EDIT ADDITION START - Allow frames to persist across related placements.
+/**
+ * Returns whether this frame should be consumed after mounting [attached_to].
+ *
+ * Override for frames that persist across related placements. Called after [after_attach], so an override is free
+ * to decide based on whatever state that just set up.
+ */
+/obj/item/wallframe/proc/should_consume_after_attach(obj/attached_to)
+	return TRUE
+// NOVA EDIT ADDITION END
 
 /obj/item/wallframe/screwdriver_act(mob/living/user, obj/item/tool)
 	return interact_with_atom(get_step(get_turf(user), user.dir), user)
