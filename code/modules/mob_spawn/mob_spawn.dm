@@ -91,6 +91,7 @@
 	SHOULD_CALL_PARENT(TRUE)
 	if(faction)
 		spawned_mob.set_faction(faction)
+<<<<<<< HEAD
 	if(!ishuman(spawned_mob))
 		return
 	var/mob/living/carbon/human/spawned_human = spawned_mob
@@ -101,6 +102,14 @@
 	//randomize_human_normie(spawned_human) // NOVA EDIT REMOVAL - Puts this behind if(random_appearance) - see below
 	//NOVA EDIT ADDITION START
 	if(!apply_prefs)
+=======
+	if(ishuman(spawned_mob))
+		var/mob/living/carbon/human/spawned_human = spawned_mob
+		spawned_human.dna.species.give_important_for_life(spawned_human) // for preventing plasmamen from combusting immediately upon spawning
+		spawned_human.underwear = "Nude"
+		spawned_human.undershirt = "Nude"
+		spawned_human.socks = "Nude"
+>>>>>>> 18377ab1a64 (Makes corpse spawners set species on init rather than after (#97161))
 		randomize_human_normie(spawned_human)
 	// NOVA EDIT ADDITION END
 	if(hairstyle)
