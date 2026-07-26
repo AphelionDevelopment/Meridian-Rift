@@ -175,11 +175,14 @@
 		var/hair_gradient_color = get_hair_gradient_color(GRADIENT_HAIR_KEY)
 		var/image/hair_gradient_overlay = get_gradient_overlay(base_icon, hair_overlay.layer, SSaccessories.hair_gradients_list[hair_gradient_style], hair_gradient_color, dropped)
 		hair_gradient_overlay.pixel_z = hair_sprite_accessory.y_offset
+<<<<<<< HEAD
 		// NOVA EDIT ADDITION START - Species hair offset
 		if(LAZYFIND(owner?.dna?.species?.offset_features, OFFSET_HAIR))
 			hair_gradient_overlay.pixel_w += owner.dna.species.offset_features[OFFSET_HAIR][INDEX_W]
 			hair_gradient_overlay.pixel_z += owner.dna.species.offset_features[OFFSET_HAIR][INDEX_Z]
 		// NOVA EDIT ADDITION END
+=======
+>>>>>>> 6cbfa8898c0 ([NO GBP] Actually fixes hair gradients this time (#97172))
 		if (hair_alpha == 255)
 			. += hair_gradient_overlay
 			continue
