@@ -28,6 +28,8 @@
 
 	new /obj/item/storage/photo_album/ce(src)
 
+	new /obj/item/storage/photo_album/ce(src)
+
 /obj/structure/closet/secure_closet/engineering_electrical
 	name = "electrical supplies locker"
 	req_access = list(ACCESS_ENGINE_EQUIP)

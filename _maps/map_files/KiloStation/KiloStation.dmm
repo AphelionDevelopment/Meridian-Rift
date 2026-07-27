@@ -490,8 +490,20 @@
 /obj/machinery/computer/security/telescreen/minisat/directional/west,
 /turf/open/floor/engine,
 /area/station/ai/satellite/foyer)
+<<<<<<< HEAD
 "afY" = (
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
+=======
+"agc" = (
+/obj/structure/table/wood,
+/obj/structure/cable,
+/obj/item/pen/fountain{
+	pixel_x = 4
+	},
+/obj/item/storage/photo_album/chapel{
+	pixel_x = -16
+	},
+>>>>>>> a0b5e8a526e (Photo Album Mapping Consistency (#97176))
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /obj/effect/turf_decal/siding/purple{
 	dir = 1
@@ -12185,6 +12197,21 @@
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /turf/open/floor/iron,
 /area/station/security/courtroom)
+<<<<<<< HEAD
+=======
+"dZe" = (
+/obj/structure/closet/secure_closet/bar,
+/obj/item/flashlight/lantern,
+/obj/effect/turf_decal/bot,
+/obj/machinery/light/directional/west,
+/obj/machinery/airalarm/directional/west,
+/obj/effect/turf_decal/tile/neutral/half/contrasted{
+	dir = 4
+	},
+/obj/item/storage/photo_album/bar,
+/turf/open/floor/iron/dark,
+/area/station/service/bar/backroom)
+>>>>>>> a0b5e8a526e (Photo Album Mapping Consistency (#97176))
 "dZk" = (
 /obj/machinery/door/airlock/grunge{
 	id_tag = "Cabin_2";
@@ -73661,6 +73688,66 @@
 	},
 /turf/open/floor/plating,
 /area/station/security/prison)
+<<<<<<< HEAD
+=======
+"xkP" = (
+/obj/structure/table/wood,
+/obj/item/storage/photo_album/library{
+	pixel_x = -4;
+	pixel_y = 4
+	},
+/obj/effect/decal/cleanable/dirt,
+/obj/item/taperecorder{
+	pixel_x = 5;
+	pixel_y = 4
+	},
+/obj/item/camera,
+/obj/item/pen{
+	pixel_x = -7;
+	pixel_y = -5
+	},
+/obj/machinery/light/small/directional/west,
+/obj/machinery/camera/directional/west{
+	c_tag = "Library Backroom";
+	name = "library camera"
+	},
+/obj/structure/sign/painting/large/library_private{
+	dir = 8;
+	pixel_x = -29
+	},
+/obj/effect/turf_decal/tile/neutral/opposingcorners,
+/turf/open/floor/iron/dark,
+/area/station/service/library)
+"xkQ" = (
+/obj/item/storage/medkit/regular{
+	pixel_x = 3;
+	pixel_y = -3
+	},
+/obj/item/storage/medkit/brute{
+	pixel_x = 3;
+	pixel_y = 3
+	},
+/obj/item/storage/medkit/brute,
+/obj/item/storage/medkit/brute{
+	pixel_x = -3;
+	pixel_y = -3
+	},
+/obj/structure/table/glass,
+/obj/effect/turf_decal/stripes/corner{
+	dir = 8
+	},
+/obj/structure/window/reinforced/spawner/directional/south,
+/obj/machinery/door/window/left/directional/east{
+	name = "First-Aid Supplies";
+	req_access = list("medical")
+	},
+/obj/machinery/light/directional/west,
+/obj/effect/turf_decal/tile/neutral/half/contrasted{
+	dir = 4
+	},
+/turf/open/floor/iron/dark,
+/area/station/medical/storage)
+>>>>>>> a0b5e8a526e (Photo Album Mapping Consistency (#97176))
 "xle" = (
 /obj/structure/cable,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
