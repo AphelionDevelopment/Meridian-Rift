@@ -98,11 +98,15 @@
 	spawned_human.underwear = "Nude"
 	spawned_human.undershirt = "Nude"
 	spawned_human.socks = "Nude"
+<<<<<<< HEAD
 	//randomize_human_normie(spawned_human) // NOVA EDIT REMOVAL - Puts this behind if(random_appearance) - see below
 	//NOVA EDIT ADDITION START
 	if(!apply_prefs)
 		randomize_human_normie(spawned_human)
 	// NOVA EDIT ADDITION END
+=======
+	randomize_human_normie(spawned_human)
+>>>>>>> 1b78b3c9de7 (Fixes cardboard cutouts and some other hair modifications not applying (#97171))
 	if(hairstyle)
 		spawned_human.set_hairstyle(hairstyle, update = FALSE)
 	if(facial_hairstyle)
