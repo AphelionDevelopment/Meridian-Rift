@@ -284,7 +284,10 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	be_special = sanitize_be_special(SANITIZE_LIST(be_special))
 	key_bindings = sanitize_keybindings(key_bindings)
 	favorite_outfits = SANITIZE_LIST(favorite_outfits)
+<<<<<<< HEAD
 	favorite_verbs = SANITIZE_LIST(favorite_verbs)
+=======
+>>>>>>> e2498ca38d8 (I forgot to actually save slot assigned jobs to your savefile, and honestly I'm surprised no one has said anything (#97213))
 	job_assigned_profiles = SANITIZE_LIST(job_assigned_profiles)
 
 	key_bindings_by_key = get_key_bindings_by_key(key_bindings)
@@ -340,7 +343,10 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	savefile.set_entry("key_bindings", key_bindings)
 	savefile.set_entry("hearted_until", (hearted_until > world.realtime ? hearted_until : null))
 	savefile.set_entry("favorite_outfits", favorite_outfits)
+<<<<<<< HEAD
 	savefile.set_entry("favorite_verbs", favorite_verbs)
+=======
+>>>>>>> e2498ca38d8 (I forgot to actually save slot assigned jobs to your savefile, and honestly I'm surprised no one has said anything (#97213))
 	savefile.set_entry("job_assigned_profiles", job_assigned_profiles)
 	savefile.save()
 	return TRUE
