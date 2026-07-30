@@ -265,6 +265,11 @@ DEFINE_BITFIELD(smoothing_junction, list(
 
 #define SMOOTH_GROUP_BOULDER_PLATFORM S_OBJ(87) ///obj/structure/lattice/catwalk/boulder
 
+// APHELION EDIT ADDITION START - Fleshmind
+#define SMOOTH_GROUP_WIREWEED S_OBJ(88) ///obj/structure/fleshmind/wireweed
+#define SMOOTH_GROUP_WIREWEED_WALLS S_OBJ(89) ///obj/structure/fleshmind/wireweed_wall
+// APHELION EDIT ADDITION END
+
 /// Performs the work to set smoothing_groups and canSmoothWith.
 /// An inlined function used in both turf/Initialize and atom/Initialize.
 #define SETUP_SMOOTHING(...) \
