@@ -26,9 +26,7 @@
 	brain_jack = null
 
 /datum/antagonist/wire_priest/get_preview_icon()
-	var/icon/icon = icon('modular_nova/modules/fleshmind/icons/fleshmind_machines.dmi', "core")
-	icon.Scale(ANTAGONIST_PREVIEW_ICON_SIZE, ANTAGONIST_PREVIEW_ICON_SIZE)
-	return icon
+	return finish_preview_icon(uni_icon('modular_nova/modules/fleshmind/icons/fleshmind_machines.dmi', "core"))
 
 // DYNAMIC (If we ever use it)
 /datum/dynamic_ruleset/midround/from_ghosts/wire_priest

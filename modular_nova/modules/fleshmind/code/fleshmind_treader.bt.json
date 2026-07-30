@@ -52,6 +52,10 @@
 													},
 													{
 														"type": "leaf",
+														"behavior": "/datum/bt_node/ai_behavior/use_mob_ability/dispense_nanites"
+													},
+													{
+														"type": "leaf",
 														"behavior": "/datum/bt_node/ai_behavior/basic_ranged_attack",
 														"vars": {
 															"target_key": "BB_CURRENT_TARGET",

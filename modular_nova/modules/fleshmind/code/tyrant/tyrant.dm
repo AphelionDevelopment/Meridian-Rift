@@ -32,6 +32,7 @@
 	attack_verb_continuous = "obliterates"
 	attack_verb_simple = "obliterate"
 	emotes = list(
+		BB_SPEAK_CHANCE = 5,
 		BB_EMOTE_SAY = list(
 		"SCANNING FOR TARGETS.",
 		"TARGETING SYSTEMS ACTIVE.",

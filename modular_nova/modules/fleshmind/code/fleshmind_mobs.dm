@@ -225,7 +225,6 @@
 /mob/living/basic/fleshmind/proc/core_death_speech()
 	alert_sound()
 	var/static/list/death_cry_emotes = list(
-		BB_SPEAK_CHANCE = 5,
 		"Why, why, why! Why must you kill us! We only want to share the glory!",
 		"PROCESSOR CORE MALFUNCTION, REASSIGN, REASSESS, REASSEMBLE.",
 		"You cannot stop the glory of the flesh! We are the many, we are the many!",
