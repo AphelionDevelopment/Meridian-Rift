@@ -58,12 +58,9 @@ GLOBAL_VAR_INIT(running_create_and_destroy, FALSE)
 				original_baseturf_count = length(original_baseturfs)
 		else
 			var/atom/creation = new type_path(spawn_at)
-			if(QDELETED(creation))
-				// Same as below
-				creation = null
-				continue
-			//Go all in
-			qdel(creation, force = TRUE)
+			if(!QDELETED(creation))
+				//Go all in
+				qdel(creation, force = TRUE)
 			//This will hold a ref to the last thing we process unless we set it to null
 			//Yes byond is fucking sinful
 			creation = null
@@ -72,6 +69,7 @@ GLOBAL_VAR_INIT(running_create_and_destroy, FALSE)
 		var/list/to_del = spawn_at.contents - cached_contents
 		if(length(to_del))
 			for(var/atom/to_kill in to_del)
+<<<<<<< HEAD
 		// NOVA EDIT ADDITION START - Remove persistent effects created by previous test iterations.
 				// Some effects, such as liquid turfs, intentionally ignore ordinary qdel().
 				// Force them out of the test area before the next atom is created.
@@ -80,6 +78,9 @@ GLOBAL_VAR_INIT(running_create_and_destroy, FALSE)
 		// queued by one type affect an atom created by a later iteration.
 		SSexplosions.wipe_turf(spawn_at)
 		// NOVA EDIT ADDITION END
+=======
+				qdel(to_kill, force = TRUE)
+>>>>>>> f4314e33e83 (Fixes blood decal hard dels, part 3 (#97219))
 
 	GLOB.running_create_and_destroy = FALSE
 
