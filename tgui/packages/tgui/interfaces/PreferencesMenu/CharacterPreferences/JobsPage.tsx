@@ -259,7 +259,7 @@ function JobRow(props: JobRowProps) {
     rightSide = (
       <Stack align="center" height="100%" pr={1}>
         <Stack.Item grow textAlign="right">
-          <b>Nova Stars Only</b>
+          <b>Veterans Only</b>
         </Stack.Item>
       </Stack>
     );

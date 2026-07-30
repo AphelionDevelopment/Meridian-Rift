@@ -25,14 +25,14 @@ $include map_vote.txt
 ## Server tagline: This will appear right below the server's title.
 # SERVERTAGLINE A generic TG-based server
 
-## Discord Link: This is the link to Nova Sector's discord server
-# DISCORD_LINK https://discord.gg/novasector
+## Discord Link: This is the link to Aphelion's discord server
+# DISCORD_LINK https://discord.gg/HsX9hYwJtm
 
 ## Server SQL name: This is the name used to identify the server to the SQL DB, distinct from SERVERNAME as it must be at most 32 characters.
 # SERVERSQLNAME tgstation
 
 ## Station name: The name of the station as it is referred to in-game. If commented out, the game will generate a random name instead.
-STATIONNAME Space Station 13
+STATIONNAME Meridian Rift
 
 ## Put on byond hub: Uncomment this to put your server on the byond hub.
 #HUB
@@ -209,7 +209,7 @@ IPINTEL_REJECT_BAD
 # RULESURL https://wiki.novasector13.com/wiki/Policies
 
 ## Github address
-# GITHUBURL https://github.com/NovaSector/NovaSector
+# GITHUBURL https://github.com/AphelionDevelopment/Meridian-Rift
 
 ## Discord bot command prefix, if the discord bot is used
 # DISCORDBOTCOMMANDPREFIX ?

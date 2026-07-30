@@ -174,7 +174,7 @@ export function ExaminePanel(props) {
                               fontWeight: 'bold',
                             }}
                           >
-                            Nova Star! ⭐
+                            Veteran! ⭐
                           </span>
                         </Stack.Item>
                       )}
