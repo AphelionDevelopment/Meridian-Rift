@@ -161,8 +161,51 @@ img {
   white-space: nowrap;
   pointer-events: none;
   width: 100%;
+  min-width: 0;
   padding: 0.33em 0.5em;
   border-radius: 0.25em;
+}
+
+.grid-item-star {
+  flex: 0 0 auto;
+  align-self: center;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  -ms-user-select: none; /* Remove after Byond 516 */
+  padding: 0 0.1em 0 0.4em;
+  color: #b0b0b0;
+  line-height: 1;
+}
+
+.grid-item-star.favourited,
+.grid-item-star:hover {
+  color: #f0b400;
+}
+
+.verb-search {
+  margin: 0 0.25em 0.5em;
+}
+
+.verb-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.35em 0.5em;
+  font-size: 1em;
+  font-family: inherit;
+  color: black;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 0.25em;
+}
+
+.verb-search-input:focus {
+  outline: none;
+  border-color: #0668b8;
+}
+
+.verb-search-input::placeholder {
+  color: #999999;
 }
 
 .grid-item:hover .grid-item-text {
@@ -270,4 +313,27 @@ body.dark {
 
 .dark .grid-item:active .grid-item-text {
   background-color: #313131;
+}
+
+.dark .grid-item-star {
+  color: #5a5a5a;
+}
+
+.dark .grid-item-star.favourited,
+.dark .grid-item-star:hover {
+  color: #f0b400;
+}
+
+.dark .verb-search-input {
+  color: #d4dfec;
+  background-color: #202020;
+  border-color: #3a3a3a;
+}
+
+.dark .verb-search-input:focus {
+  border-color: #20b142;
+}
+
+.dark .verb-search-input::placeholder {
+  color: #6a6a6a;
 }
