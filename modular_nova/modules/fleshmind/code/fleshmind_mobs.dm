@@ -124,6 +124,9 @@
  * Naturally these beasts are sensitive to EMP's. We have custom systems for dealing with this.
  */
 /mob/living/basic/fleshmind/emp_act(severity)
+	. = ..()
+	if(. & EMP_PROTECT_SELF)
+		return
 	switch(severity)
 		if(EMP_LIGHT)
 			say("Electronic disturbance detected.")
@@ -1164,7 +1167,7 @@
 	for(var/mob/living/possible_target in view(DEFAULT_VIEW_RANGE, phaser_owner))
 		if(possible_target == src)
 			continue
-		if(faction_check(phaser_owner.faction, possible_target.faction))
+		if(phaser_owner.faction_check_atom(possible_target))
 			continue
 		possible_targets += possible_target
 

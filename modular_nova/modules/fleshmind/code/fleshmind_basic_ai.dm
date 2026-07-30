@@ -55,7 +55,7 @@
 		return null
 	var/mob/living/pawn = controller.pawn
 	for(var/mob/living/iterating_mob in view(DEFAULT_VIEW_RANGE, pawn))
-		if(faction_check(iterating_mob.faction, pawn.faction) && iterating_mob.health < iterating_mob.maxHealth * 0.5)
+		if(iterating_mob.faction_check_atom(pawn) && iterating_mob.health < iterating_mob.maxHealth * 0.5)
 			return .
 	return null
 
@@ -73,7 +73,7 @@
 	if(!isliving(target) || target == living_mob)
 		return FALSE
 	var/mob/living/candidate = target
-	if(faction_check(living_mob.faction, candidate.faction))
+	if(living_mob.faction_check_atom(candidate))
 		return FALSE
 	return candidate.health < (candidate.maxHealth * MECHIVER_CONSUME_HEALTH_THRESHOLD)
 
@@ -100,7 +100,7 @@
 	if(QDELETED(target))
 		return FALSE
 	var/mob/living/pawn = controller.pawn
-	if(faction_check(pawn.faction, target.faction))
+	if(pawn.faction_check_atom(target))
 		return FALSE
 	if(target.health > (target.maxHealth * MECHIVER_CONSUME_HEALTH_THRESHOLD)) // Don't do this
 		return FALSE

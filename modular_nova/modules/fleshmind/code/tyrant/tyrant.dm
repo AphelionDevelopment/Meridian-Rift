@@ -118,6 +118,7 @@
 
 /mob/living/basic/fleshmind/tyrant/Initialize(mapload)
 	. = ..()
+	AddElement(/datum/element/empprotection, EMP_PROTECT_ALL)
 	AddComponent(/datum/component/ranged_attacks,\
 		cooldown_time = ranged_cooldown,\
 		projectile_type = projectiletype,\
@@ -149,9 +150,6 @@
 		our_controller.point_event -= 150 // Very hefty debuf if the boss dies.
 		our_controller.spread_progress_per_second = FLESHCORE_SPREAD_PROGRESS_PER_SUBSYSTEM_FIRE * 0.75 // Take the L
 	return ..()
-
-/mob/living/basic/fleshmind/tyrant/emp_act(severity)
-	return FALSE
 
 /mob/living/basic/fleshmind/tyrant/updatehealth()
 	. = ..()
