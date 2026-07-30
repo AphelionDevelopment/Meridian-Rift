@@ -79,6 +79,18 @@ ADMIN_VERB(import_preferences, R_ADMIN, "Import Preferences", "Upload a characte
 		to_chat(user, span_warning("Failed to parse json savefile: Version ([savefile_version]) is below minimum"))
 		return
 
+	// APHELION EDIT ADDITION - run the same sanitiser the player-facing import uses.
+	// Everything above only checks the container, and savefile values never pass through is_valid().
+	// pass1 also flags the file so the target's next login rebuilds every preference.
+	var/structural_problem = prefs_import_prevalidate(json_tree, user.prefs)
+	if(structural_problem)
+		to_chat(user, span_warning("Failed to import: [structural_problem]"), confidential = TRUE)
+		return
+	if(prefs_import_tree_too_deep(json_tree))
+		to_chat(user, span_warning("Failed to import: file is nested too deeply."), confidential = TRUE)
+		return
+	json_tree = prefs_import_pass1(json_tree)
+
 	// Backup and delete the existing savefile if it exists
 	if(save_exists)
 		var/backup_limit = CONFIG_GET(number/savefile_backup_limit)

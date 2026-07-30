@@ -11,10 +11,15 @@
 	var/check_mode = TRICOLOR_CHECK_BOOLEAN
 
 /datum/preference/tri_color/deserialize(input, datum/preferences/preferences)
+	// APHELION EDIT ADDITION - savefile values get here without is_valid() ever running, and a runtime out through client/New() locks the ckey out on every reconnect.
+	if(!islist(input) || length(input) < 3)
+		return create_default_value()
 	var/list/input_colors = input
 	return list(sanitize_hexcolor(input_colors[1]), sanitize_hexcolor(input_colors[2]), sanitize_hexcolor(input_colors[3]))
 
 /datum/preference/tri_color/serialize(input)
+	if(!islist(input) || length(input) < 3) // APHELION EDIT ADDITION - see deserialize()
+		return create_default_value()
 	var/list/input_colors = input
 	return list(sanitize_hexcolor(input_colors[1]), sanitize_hexcolor(input_colors[2]), sanitize_hexcolor(input_colors[3]))
 
@@ -47,6 +52,8 @@
 	var/check_mode = TRICOLOR_CHECK_BOOLEAN
 
 /datum/preference/tri_bool/deserialize(input, datum/preferences/preferences)
+	if(!islist(input) || length(input) < 3) // APHELION EDIT ADDITION - see tri_color/deserialize()
+		return create_default_value()
 	var/list/input_bools = input
 	return list(sanitize_integer(input_bools[1]), sanitize_integer(input_bools[2]), sanitize_integer(input_bools[3]))
 

@@ -303,6 +303,10 @@ GLOBAL_LIST_INIT(unrecommended_builds, list(
 		GLOB.preferences_datums[ckey] = prefs
 	prefs.last_ip = address //these are gonna be used for banning
 	prefs.last_id = computer_id //these are gonna be used for banning
+	// APHELION EDIT ADDITION - second pass of an imported savefile. Has to be after migration so every value can go back through the validating write path.
+	prefs.prefs_import_finalise()
+	// APHELION EDIT ADDITION - one-time pointer at the importer for people arriving from another server.
+	aphelion_offer_preferences_import()
 
 	if(fexists(roundend_report_file()))
 		ASSIGN_GAME_VERB(src, /client, show_previous_roundend_report)
@@ -975,6 +979,9 @@ GLOBAL_LIST_INIT(unrecommended_builds, list(
 		ASSIGN_GAME_VERB(src, /client, self_playtime)
 	if(!CONFIG_GET(flag/forbid_preferences_export))
 		ASSIGN_GAME_VERB(src, /client, export_preferences)
+	// APHELION EDIT ADDITION - whitelisted-player preferences import. This only offers the verb, it re-checks the whitelist when run.
+	if(!CONFIG_GET(flag/forbid_preferences_import))
+		ASSIGN_GAME_VERB(src, /client, import_preferences)
 
 
 //checks if a client is afk

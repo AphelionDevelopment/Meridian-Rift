@@ -59,7 +59,8 @@
 	mismatched_customization = save_data["mismatched_customization"]
 	allow_advanced_colors = save_data["allow_advanced_colors"]
 
-	alt_job_titles = save_data["alt_job_titles"]
+	// APHELION EDIT ADDITION - never take this straight from the savefile, an edited one can put any string on the ID card and the manifest.
+	alt_job_titles = sanitize_alt_job_titles(save_data["alt_job_titles"])
 
 	general_record = sanitize_text(general_record)
 	security_record = sanitize_text(security_record)
@@ -251,14 +252,26 @@
 
 	if(current_version < VERSION_TG_LOADOUT)
 		var/list/save_loadout = SANITIZE_LIST(save_data["loadout_list"])
+		// APHELION EDIT CHANGE BEGIN - build a new list instead of mutating save_loadout while iterating it, and drop paths _text2path can't resolve rather than storing a null key.
+		// ORIGINAL:
+		// for(var/loadout in save_loadout)
+		// 	var/entry = save_loadout[loadout]
+		// 	save_loadout -= loadout
+		//
+		// 	if(istext(loadout))
+		// 		loadout = _text2path(loadout)
+		// 	save_loadout[loadout] = entry
+		// var/loadout_list = sanitize_loadout_list(save_loadout)
+		var/list/migrated_loadout = list()
 		for(var/loadout in save_loadout)
 			var/entry = save_loadout[loadout]
-			save_loadout -= loadout
-
 			if(istext(loadout))
 				loadout = _text2path(loadout)
-			save_loadout[loadout] = entry
-		var/loadout_list = sanitize_loadout_list(save_loadout)
+			if(!ispath(loadout))
+				continue
+			migrated_loadout[loadout] = entry
+		var/loadout_list = sanitize_loadout_list(migrated_loadout)
+		// APHELION EDIT CHANGE END
 
 		if (length(loadout_list)) // We only want to write these changes down if we're certain that there was anything in that.
 			write_preference(GLOB.preference_entries[/datum/preference/loadout], loadout_list)
@@ -623,3 +636,17 @@
 #undef VERSION_AUGMENT_ITEMS_PATH_CHANGE
 #undef INDEX_UNDERWEAR
 #undef INDEX_BRA
+
+/// Shape check only, an assoc list of text to text. Never ask SSjob in here, it can be down at client connect and we would wipe everyone's titles - get_alt_job_title() does that check instead.
+/proc/sanitize_alt_job_titles(raw)
+	if(!islist(raw))
+		return list()
+	var/list/out = list()
+	for(var/job_title in raw)
+		if(!istext(job_title))
+			continue
+		var/new_title = raw[job_title]
+		if(!istext(new_title))
+			continue
+		out[job_title] = new_title
+	return out
