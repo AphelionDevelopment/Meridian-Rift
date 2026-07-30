@@ -369,7 +369,7 @@ GLOBAL_LIST_INIT(all_loadout_categories, init_loadout_categories())
 	if(species_blacklist)
 		displayed_text[FA_ICON_SHRIMP] = "Species Blacklist: [capitalize(jointext(species_blacklist, ", "))]"
 	if(GLOB.nova_star_restrictions && nova_stars_only)
-		displayed_text[FA_ICON_HOURGLASS_HALF] = "Nova Star-Only"
+		displayed_text[FA_ICON_HOURGLASS_HALF] = "Veteran-Only"
 	if(donator_only || ckeywhitelist)
 		displayed_text[FA_ICON_COINS] = "Donator-Only"
 	// NOVA EDIT ADDITION END

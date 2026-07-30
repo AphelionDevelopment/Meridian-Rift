@@ -61,9 +61,9 @@ GAME_VERB_DESC(/client, reportissue, "report-issue", "Report an issue", null)
 	var/has_testmerge_data = (length(testmerge_data) != 0)
 
 	// NOVA EDIT ADDITION START
-	var/issue_source_message = "Are you reporting a TG issue, or a Nova issue?\
-		<br>If you are unsure whether the problem comes from upstream or not, choose 'Nova Issue'."
-	var/issue_source = tg_alert(src, issue_source_message, "Report Issue", "Nova Issue", "TG Upstream Issue")
+	var/issue_source_message = "Are you reporting a TG issue, or an Aphelion issue?\
+		<br>If you are unsure whether the problem comes from upstream or not, choose 'Aphelion Issue'."
+	var/issue_source = tg_alert(src, issue_source_message, "Report Issue", "Aphelion Issue", "TG Upstream Issue")
 	if(isnull(issue_source))
 		return
 	if(issue_source == "TG Upstream Issue")

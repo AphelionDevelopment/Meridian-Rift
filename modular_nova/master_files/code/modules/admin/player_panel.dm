@@ -101,7 +101,7 @@ GLOBAL_LIST_INIT(pp_limbs, list(
 		if(SSplayer_ranks.is_mentor(targetClient, admin_bypass = FALSE))
 			player_ranks += "Mentor"
 		if(SSplayer_ranks.is_nova_star(targetClient, admin_bypass = FALSE))
-			player_ranks += "Nova Star"
+			player_ranks += "Veteran"
 		.["ranks"] = length(player_ranks) ? player_ranks.Join(", ") : null
 
 		if(CONFIG_GET(flag/use_exp_tracking))
