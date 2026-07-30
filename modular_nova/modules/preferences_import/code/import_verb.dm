@@ -3,7 +3,9 @@
  *
  * Whitelisted players only, and always over the CALLER's own savefile - there is no target parameter.
  */
-GAME_VERB_PROC_DESC(/client, import_preferences, "Import Preferences", "Upload a character preferences JSON file, replacing your current one.", "OOC")
+// Named apart from the admin "Import Preferences" verb: an admin holds both, BYOND keys the verb panel
+// on the display name, and the two collide - staff could not see this one at all.
+GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences", "Upload a character preferences JSON file, replacing your current one.", "OOC")
 
 	if(CONFIG_GET(flag/forbid_preferences_import))
 		to_chat(src, span_warning("Preference importing is disabled on this server."))
@@ -32,7 +34,7 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Preferences", "Upload a
 	var/confirm = tgui_alert(
 		mob,
 		"Replace all of your characters with an uploaded file? A backup of your current preferences is kept. You will be disconnected to finish.",
-		"Import Preferences",
+		"Import Character Preferences",
 		list("Import", "Cancel"),
 	)
 	if(confirm != "Import")
@@ -43,7 +45,7 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Preferences", "Upload a
 		to_chat(src, span_warning("Importing is no longer available."))
 		return
 
-	var/uploaded_file = input(mob, "Choose a preferences JSON file", "Import Preferences") as null|file
+	var/uploaded_file = input(mob, "Choose a preferences JSON file", "Import Character Preferences") as null|file
 	if(!isfile(uploaded_file) || !length(uploaded_file))
 		return
 
