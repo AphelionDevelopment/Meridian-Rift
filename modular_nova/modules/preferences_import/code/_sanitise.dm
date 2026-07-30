@@ -8,8 +8,8 @@
  * validating write path.
  */
 
-/// Bounds on an imported file. A one-slot export is ~31 KB, so even a full 45 slots lands well under this.
-#define PREFS_IMPORT_MAX_BYTES (1024 * 1024)
+/// Size cap comes from SAVEFILE_UPLOAD_LIMIT, the same config the admin import obeys - see import_verb.dm.
+/// The old hardcoded 1 MB rejected files the slot cap allows: a slot is ~31 KB and MAX_SLOTS is 60.
 /// Cap on JSON nesting depth. json_decode has no depth limit of its own.
 #define PREFS_IMPORT_MAX_DEPTH 24
 /// Cap on character slots in an imported file.
@@ -223,7 +223,7 @@
  * Drops character slots whose number is out of range, and NOTHING else.
  *
  * Unrecognised keys stay, and must keep staying. The savefile is only ever read by name, so a key nobody asks for
- * is inert, and file size is already bounded by PREFS_IMPORT_MAX_BYTES at import time.
+ * is inert, and file size is already bounded by SAVEFILE_UPLOAD_LIMIT at import time.
  *
  * Slot numbers are different, because load_preferences derives max_save_slots by SCANNING these key names. That is
  * a real read path, so an injected "character99999999" would take effect rather than sit inert.

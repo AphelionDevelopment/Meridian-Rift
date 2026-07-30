@@ -55,9 +55,12 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 		to_chat(src, span_warning("That is not a .json file."))
 		return
 
+	// SAVEFILE_UPLOAD_LIMIT, the same config the admin import obeys - one knob, and raising it needs no
+	// recompile. The old hardcoded 1 MB was under a full 60-slot savefile, so it rejected valid files.
 	var/filesize = length(uploaded_file)
-	if(filesize > PREFS_IMPORT_MAX_BYTES)
-		to_chat(src, span_warning("That file is too large ([filesize] bytes; the limit is [PREFS_IMPORT_MAX_BYTES])."))
+	var/size_limit = CONFIG_GET(number/savefile_upload_limit) * 1024
+	if(filesize > size_limit)
+		to_chat(src, span_warning("That file is too large ([round(filesize / 1024)] KB; the limit is [round(size_limit / 1024)] KB)."))
 		return
 
 	var/raw = file2text(uploaded_file)
