@@ -757,6 +757,11 @@ function render_verb_results() {
     return;
   }
 
+  if (current_tab == 'Favourites') {
+    render_favourites(results);
+    return;
+  }
+
   render_verb_category(results, current_verb_cat);
 }
 
@@ -817,9 +822,7 @@ function draw_verbs(cat) {
   render_verb_results();
 }
 
-function draw_favourites() {
-  statcontentdiv.textContent = '';
-  var content = document.getElementById('statcontent');
+function render_favourites(container) {
   var table = document.createElement('div');
   table.className = 'grid-container';
   var names = [];
@@ -840,14 +843,23 @@ function draw_favourites() {
   for (var j = 0; j < names.length; ++j) {
     table.appendChild(make_verb_item(names[j]));
   }
-  content.appendChild(table);
+  container.appendChild(table);
   if (!names.length) {
     var empty = document.createElement('div');
     empty.className = 'status-info';
     empty.textContent =
       'No favourite verbs yet. Click the ☆ next to any verb to add it here.';
-    content.appendChild(empty);
+    container.appendChild(empty);
   }
+}
+
+function draw_favourites() {
+  statcontentdiv.textContent = '';
+  statcontentdiv.appendChild(make_verb_search());
+  var results = document.createElement('div');
+  results.id = 'verb-results';
+  statcontentdiv.appendChild(results);
+  render_verb_results();
 }
 
 function set_theme(which) {
