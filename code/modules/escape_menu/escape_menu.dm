@@ -140,10 +140,16 @@ GAME_VERB_HIDDEN(/client, reset_held_keys_verb, "Reset Held Keys")
 		"serverTime" = server_timestamp(format = "hh:mm:ss"),
 		"shiftTime" = (SSticker.round_start_time == 0) ? "Pre-Game" : round_timestamp(),
 		"timeDilation" = "[round(SStime_track.time_dilation_current, 1)]",
+<<<<<<< HEAD
 		"mapName" = SSmapping.current_map?.return_map_name(webmap_included = TRUE) || "Loading...",
 		"canLeaveBody" = FALSE, // NOVA EDIT CHANGE - original: isliving(client?.mob) - Nova replaces the generic Leave Body page with the OPFOR/Ghost/Respawn buttons below
 		"canOpfor" = isliving(client?.mob), // NOVA EDIT ADDITION
 		"canRespawn" = !isliving(client?.mob), // NOVA EDIT ADDITION
+=======
+		"mapName" = SSmapping.current_map?.map_name || "Loading...",
+		"mapFeedbackLink" = SSmapping.current_map?.feedback_link,
+		"canLeaveBody" = isliving(client?.mob),
+>>>>>>> e198f35c2d0 (map feedback links, stop layout reflowing in escape menu [no gbp] (#97201))
 		"canAdminHelp" = (/client/verb/adminhelp in client?.verbs),
 		"canSeeNotes" = CONFIG_GET(flag/see_own_notes),
 		"hasTicketNotification" = !isnull(client?.current_ticket) && !client.current_ticket.player_replied,
