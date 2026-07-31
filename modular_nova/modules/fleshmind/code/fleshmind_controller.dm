@@ -287,12 +287,12 @@
 		if(CONTROLLER_LEVEL_5)
 			if(!sent_code)
 				var/nuke_code = get_the_nuke()
-				priority_announce("The nuclar self d3struct c0d3* i*% [nuke_code]. #$@**$ This is [controller_fullname]: Level [level], Do you genociders feel pain?", "Central Command Nuclear Authorization", ANNOUNCER_AIMALF)
+				priority_announce("The nuclar self d3struct c0d3* i*% [nuke_code]. #$@**$ This is [controller_fullname]: Level [level], Do you genociders feel pain?", "Central Command Nuclear Authorization", ANNOUNCER_ICARUS)
 			else
 				minor_announce("This is [controller_firstname], processor core efficiency has increased. Good work.", "[controller_fullname]: Level [level]", sound_override = 'modular_nova/modules/fleshmind/sound/ai/level_up_1.ogg')
 		if(CONTROLLER_LEVEL_MAX)
 			if(!end_game)
-				priority_announce("This is [controller_firstname], kernel efficency has reached maximum potential. Beginning shuttle override process, stand-by.", "CRITICAL MASS REACHED", ANNOUNCER_AIMALF)
+				priority_announce("This is [controller_firstname], kernel efficency has reached maximum potential. Beginning shuttle override process, stand-by.", "CRITICAL MASS REACHED", ANNOUNCER_KLAXON)
 				end_game()
 				end_game = TRUE
 	COOLDOWN_START(src, level_up_cooldown, FLESHCORE_LEVEL_UP_COOLDOWN)
@@ -334,7 +334,7 @@
 	addtimer(CALLBACK(src, PROC_REF(fleshmind_end_final)), 1 MINUTES, TIMER_CLIENT_TIME)
 
 /datum/fleshmind_controller/proc/fleshmind_end_final()
-	priority_announce("ERROR, SHUTTLE NAVIGATION SUBROUTINES SUBVERTED. %$%$£%$^^&^^ H%AD TO EVA%UA£ION, SPREAD THE FLESH!", "&^$^£&&*$&£", ANNOUNCER_AIMALF)
+	priority_announce("ERROR, SHUTTLE NAVIGATION SUBROUTINES SUBVERTED. %$%$£%$^^&^^ H%AD TO EVA%UA£ION, SPREAD THE FLESH!", "&^$^£&&*$&£", ANNOUNCER_ICARUS)
 	addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(play_cinematic), /datum/cinematic/fleshmind, world, CALLBACK(src, PROC_REF(fleshmind_call_shuttle))), 15 SECONDS, TIMER_CLIENT_TIME)
 
 /datum/fleshmind_controller/proc/fleshmind_call_shuttle()
