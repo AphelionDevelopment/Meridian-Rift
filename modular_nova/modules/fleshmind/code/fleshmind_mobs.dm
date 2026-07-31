@@ -945,6 +945,7 @@
 
 /obj/projectile/treader
 	name = "nasty ball of ooze"
+	faction = list(FACTION_FLESHMIND)
 	icon_state = "neurotoxin"
 	damage = 20
 	damage_type = BURN
@@ -1196,6 +1197,19 @@
 	. = ..()
 	icon_state = "[base_icon_state]-[rand(1, 3)]"
 	filters += filter(type = "blur", size = 0)
+	if(target)
+		target_ref = WEAKREF(target)
+		START_PROCESSING(SSobj, src)
+
+/obj/effect/temp_visual/phaser/Destroy()
+	STOP_PROCESSING(SSobj, src)
+	return ..()
+
+/obj/effect/temp_visual/phaser/process(seconds_per_tick)
+	var/atom/movable/target = target_ref?.resolve()
+	if(QDELETED(target))
+		return
+	phase_move_to(target, TRUE)
 
 /obj/effect/temp_visual/phaser/proc/parent_phase_move(datum/source, turf/target_atom, nearby)
 	SIGNAL_HANDLER

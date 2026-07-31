@@ -84,6 +84,9 @@
 	var/mob/living/candidate = target
 	if(living_mob.faction_check_atom(candidate))
 		return FALSE
+	var/mob/living/basic/fleshmind/flesh_pawn = living_mob
+	if(istype(flesh_pawn) && !flesh_pawn.our_controller) // consume_mob() refuses without a hive controller, don't hunt what we can't eat
+		return FALSE
 	return candidate.health < (candidate.maxHealth * MECHIVER_CONSUME_HEALTH_THRESHOLD)
 
 /// Scans for the closest convertable mob, does nothing while we are digesting one.
@@ -125,6 +128,9 @@
 		return AI_BEHAVIOR_DELAY | AI_BEHAVIOR_FAILED
 
 	SEND_SIGNAL(pawn, COMSIG_MECHIVER_CONVERT, target)
+	if(!controller.blackboard[BB_MECHIVER_CONTAINED_MOB]) // consume refused, drop the target instead of standing over it forever
+		controller.clear_blackboard_key(target_key)
+		return AI_BEHAVIOR_DELAY | AI_BEHAVIOR_FAILED
 	return AI_BEHAVIOR_DELAY | AI_BEHAVIOR_SUCCEEDED
 
 /datum/bt_node/ai_behavior/convert_easy_pickings/finish_action(datum/ai_controller/controller, succeeded)
