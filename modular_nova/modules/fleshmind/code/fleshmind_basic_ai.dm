@@ -46,6 +46,15 @@
 /datum/ai_controller/basic_controller/fleshmind/phaser
 	behavior_tree_json = "modular_nova/modules/fleshmind/code/fleshmind_phaser.bt.json"
 
+/// Clears path blockages without eating our own wireweed.
+/datum/bt_node/ai_behavior/attack_obstructions/fleshmind
+	can_ignore_step = TRUE
+
+/datum/bt_node/ai_behavior/attack_obstructions/fleshmind/can_smash_object(mob/living/basic/basic_mob, obj/object)
+	if(istype(object, /obj/structure/fleshmind))
+		return FALSE
+	return ..()
+
 /datum/bt_node/ai_behavior/use_mob_ability/dispense_nanites
 	ability_key = BB_TREADER_DISPENSE_NANITES
 

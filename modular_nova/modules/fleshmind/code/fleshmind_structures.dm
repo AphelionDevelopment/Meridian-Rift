@@ -777,6 +777,7 @@
 
 /obj/projectile/fleshmind_flechette
 	name = "organic flechette"
+	faction = list(FACTION_FLESHMIND)
 	icon = 'modular_nova/modules/fleshmind/icons/fleshmind_structures.dmi'
 	icon_state = "goo_proj"
 	damage = 30

@@ -200,7 +200,7 @@
 	Shake(10, 0, reset_time)
 	if(prob(50))
 		say(pick("Running diagnostics. Please stand by.", "Organ damaged. Synthesizing replacement.", "Seek new organic components. I-it hurts.", "New muscles needed. I-I'm so glad my body still works.", "O-Oh God, are they using ion weapons on us..?", "Limbs unresponsive. H-hey! Fix it! System initializing.", "Bad t-time, bad time, they're trying to kill us here!",))
-	ai_controller?.set_ai_status(AI_STATUS_OFF)
+	ai_controller?.force_ai_off()
 	suffering_malfunction = TRUE
 	if(!endless_malfunction)
 		addtimer(CALLBACK(src, PROC_REF(malfunction_reset)), reset_time)
@@ -212,7 +212,7 @@
  */
 /mob/living/basic/fleshmind/proc/malfunction_reset()
 	say("System restored.")
-	src.ai_controller?.set_ai_status(AI_STATUS_ON)
+	src.ai_controller?.clear_forced_off()
 	suffering_malfunction = FALSE
 
 /**
@@ -820,7 +820,7 @@
 
 /mob/living/basic/fleshmind/himan/proc/fake_our_death()
 	ai_controller.clear_blackboard_key(BB_CURRENT_TARGET)
-	ai_controller?.set_ai_status(AI_STATUS_OFF)
+	ai_controller?.force_ai_off()
 	manual_emote("stops moving...")
 	faking_death = TRUE
 	look_dead()
@@ -832,7 +832,7 @@
 	faking_death = FALSE
 	look_alive()
 	icon_state = base_icon_state
-	ai_controller?.set_ai_status(AI_STATUS_ON)
+	ai_controller?.clear_forced_off()
 
 /datum/action/cooldown/himan_fake_death
 	name = "Fake Death"
