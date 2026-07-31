@@ -994,6 +994,9 @@
 	/// If we are under manual control, how often can we phase?
 	var/manual_phase_cooldown = 1 SECONDS
 	COOLDOWN_DECLARE(manual_phase)
+	/// How often the AI phases towards its target instead of walking.
+	var/ai_phase_move_cooldown_time = 3 SECONDS
+	COOLDOWN_DECLARE(ai_phase_move_cooldown)
 
 /mob/living/basic/fleshmind/phaser/Initialize(mapload)
 	. = ..()
@@ -1018,6 +1021,10 @@
 
 	if(COOLDOWN_FINISHED(src, phase_ability_cooldown) && target && !key)
 		phase_ability(target)
+
+	if(COOLDOWN_FINISHED(src, ai_phase_move_cooldown) && target && !key && !istype(loc, /obj/structure/closet))
+		phase_move_to(target)
+		COOLDOWN_START(src, ai_phase_move_cooldown, ai_phase_move_cooldown_time)
 
 	if(istype(loc, /obj/structure/closet) && !key)
 		for(var/mob/living/iterating_mob in get_hearers_in_view(DEFAULT_VIEW_RANGE / 2, get_turf(src)))
@@ -1071,7 +1078,7 @@
 	if(distance_to_target <= 3)
 		if(nearby)
 			for(var/dir in GLOB.alldirs)
-				var/turf/nearby_turf = get_step(new_place, dir)
+				var/turf/nearby_turf = get_step(target_turf, dir)
 				if(can_jump_on(nearby_turf, target_turf))
 					new_place = nearby_turf
 		else
@@ -1229,7 +1236,7 @@
 	if(distance_to_target <= 3)
 		if(nearby)
 			for(var/dir in GLOB.alldirs)
-				var/turf/nearby_turf = get_step(new_place, dir)
+				var/turf/nearby_turf = get_step(target_turf, dir)
 				if(can_jump_on(nearby_turf, target_turf))
 					new_place = nearby_turf
 		else
