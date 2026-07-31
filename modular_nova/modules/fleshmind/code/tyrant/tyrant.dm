@@ -173,6 +173,7 @@
 		COOLDOWN_START(src, rotate_sound_cooldown, rotate_sound_cooldown_time)
 
 /obj/projectile/bullet/c50cal/tyrant // BANG BANG BANG
+	faction = list(FACTION_FLESHMIND)
 	damage = 20
 	wound_bonus = 20
 	armour_penetration = 20

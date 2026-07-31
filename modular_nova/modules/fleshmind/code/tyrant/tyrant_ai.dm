@@ -14,7 +14,7 @@
 	button_icon = 'icons/obj/weapons/guns/projectiles.dmi'
 	button_icon_state = "green_laser"
 	cooldown_time = 3 SECONDS
-	projectile_type = /obj/projectile/beam/emitter/hitscan
+	projectile_type = /obj/projectile/beam/emitter/hitscan/tyrant
 	var/list/laser_projectile_sounds = list(
 		'modular_nova/modules/fleshmind/sound/tyrant/laser_1.ogg',
 		'modular_nova/modules/fleshmind/sound/tyrant/laser_2.ogg',
@@ -25,8 +25,11 @@
 	)
 
 /datum/action/cooldown/mob_cooldown/projectile_attack/tyrant_laser/attack_sequence(mob/living/firer, atom/target)
-	projectile_sound = pick(laser_projectile_sounds)
+	playsound(firer, pick(laser_projectile_sounds), 100, TRUE) // shoot_projectile() never plays projectile_sound in this codebase
 	return ..()
+
+/obj/projectile/beam/emitter/hitscan/tyrant
+	faction = list(FACTION_FLESHMIND)
 
 /datum/action/cooldown/mob_cooldown/projectile_attack/tyrant_rocket
 	name = "Shoot Rocket"
@@ -34,13 +37,17 @@
 	button_icon = 'icons/obj/weapons/guns/projectiles.dmi'
 	button_icon_state = "low_yield_rocket"
 	cooldown_time = 3 SECONDS
-	projectile_type = /obj/projectile/bullet/rocket/weak
-	projectile_sound = 'sound/items/weapons/gun/general/rocket_launch.ogg'
+	projectile_type = /obj/projectile/bullet/rocket/weak/tyrant
+	var/launch_sound = 'sound/items/weapons/gun/general/rocket_launch.ogg'
 	can_move = FALSE
 
 /datum/action/cooldown/mob_cooldown/projectile_attack/tyrant_rocket/attack_sequence(mob/living/firer, atom/target)
 	firer.balloon_alert_to_viewers("begins whirring violently!")
-	playsound(src, 'modular_nova/modules/fleshmind/sound/tyrant/charge_up.ogg', 100, TRUE)
+	playsound(firer, 'modular_nova/modules/fleshmind/sound/tyrant/charge_up.ogg', 100, TRUE)
 	if(!do_after(firer, 2 SECONDS))
 		return
+	playsound(firer, launch_sound, 100, TRUE)
 	return ..()
+
+/obj/projectile/bullet/rocket/weak/tyrant
+	faction = list(FACTION_FLESHMIND)
