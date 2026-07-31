@@ -55,12 +55,12 @@ with open(file_reference, 'r') as file:
             break
         elif not reading:
             continue
-        # NOVA EDIT START - Modular unit tests
-        elif line == "// NOVA EDIT START":
+        # APHELION EDIT START - Modular unit tests. NOVA spellings kept so upstream ports don't break.
+        elif line in ("// APHELION EDIT START", "// NOVA EDIT START"):
             continue
-        elif line == "// NOVA EDIT END":
+        elif line in ("// APHELION EDIT END", "// NOVA EDIT END"):
             continue
-        # NOVA EDIT END
+        # APHELION EDIT END
 
         lines.append(line)
 
