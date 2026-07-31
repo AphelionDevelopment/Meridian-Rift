@@ -304,10 +304,10 @@
 		BB_EMOTE_SAY = list("A stitch in time saves nine!", "Dopamine is happiness!", "Seratonin, oxycodone, we can make them finally happy.", "Turn that frown upside down!", "Happiness through chemistry!", "Beauty through surgery!"),
 		BB_EMOTE_HEAR = list("shows an inconspicuous smiley face", "whirrs its drill"),
 		BB_EMOTE_SOUND = list(
-			"modular_nova/modules/fleshmind/sound/slicer/fleshmind_medibot1.ogg",
-			"modular_nova/modules/fleshmind/sound/slicer/fleshmind_medibot2.ogg",
-			"modular_nova/modules/fleshmind/sound/slicer/fleshmind_medibot3.ogg",
-			"modular_nova/modules/fleshmind/sound/slicer/fleshmind_medibot4.ogg",
+			'modular_nova/modules/fleshmind/sound/slicer/fleshmind_medibot1.ogg',
+			'modular_nova/modules/fleshmind/sound/slicer/fleshmind_medibot2.ogg',
+			'modular_nova/modules/fleshmind/sound/slicer/fleshmind_medibot3.ogg',
+			'modular_nova/modules/fleshmind/sound/slicer/fleshmind_medibot4.ogg',
 			)
 	)
 
