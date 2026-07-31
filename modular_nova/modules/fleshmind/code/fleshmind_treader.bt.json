@@ -55,17 +55,26 @@
 														"behavior": "/datum/bt_node/ai_behavior/use_mob_ability/dispense_nanites"
 													},
 													{
-														"type": "leaf",
-														"behavior": "/datum/bt_node/ai_behavior/basic_ranged_attack",
+														"type": "decorator",
+														"decorator": "/datum/bt_node/decorator/is_at_distance",
 														"vars": {
 															"target_key": "BB_CURRENT_TARGET",
-															"targeting_strategy": "BB_TARGETING_STRATEGY",
-															"hiding_location_key": "BB_CURRENT_TARGET_HIDING_LOCATION"
+															"maximum_distance": 1,
+															"require_reach": true
+														},
+														"child": {
+															"type": "leaf",
+															"behavior": "/datum/bt_node/ai_behavior/basic_melee_attack",
+															"vars": {
+																"target_key": "BB_CURRENT_TARGET",
+																"targeting_strategy": "BB_TARGETING_STRATEGY",
+																"hiding_location_key": "BB_CURRENT_TARGET_HIDING_LOCATION"
+															}
 														}
 													},
 													{
 														"type": "leaf",
-														"behavior": "/datum/bt_node/ai_behavior/basic_melee_attack",
+														"behavior": "/datum/bt_node/ai_behavior/basic_ranged_attack",
 														"vars": {
 															"target_key": "BB_CURRENT_TARGET",
 															"targeting_strategy": "BB_TARGETING_STRATEGY",
