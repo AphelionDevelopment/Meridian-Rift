@@ -11,10 +11,17 @@
 		/obj/item/organ/wings/moth = "Plain",
 		/obj/item/organ/antennae = "Plain",
 	)
+<<<<<<< HEAD
 	*/ // NOVA EDIT REMOVAL END
+=======
+	inherent_traits = list(
+		TRAIT_CLOTH_EATER, //So that moths can still eat cloth even if their stomach is augmented
+	)
+>>>>>>> 299d8a6433e (More is_species() conversion to less hardcoded checks. (#96956))
 	meat = /obj/item/food/meat/slab/human/mutant/moth
 	mutanttongue = /obj/item/organ/tongue/moth
 	mutanteyes = /obj/item/organ/eyes/moth
+	mutantstomach = /obj/item/organ/stomach/moth
 	changesource_flags = MIRROR_BADMIN | WABBAJACK | MIRROR_MAGIC | MIRROR_PRIDE | ERT_SPAWN | RACE_SWAP | SLIME_EXTRACT
 	species_cookie = /obj/item/food/muffin/moffin
 	species_language_holder = /datum/language_holder/moth

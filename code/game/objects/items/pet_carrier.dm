@@ -111,8 +111,12 @@
 	var/mob/living/target = interacting_with
 	if(target.mob_size > max_occupant_weight)
 		if(ishuman(target))
+<<<<<<< HEAD
 			var/mob/living/carbon/human/H = target
 			if(isfeline(H)) // NOVA EDIT - FELINE TRAITS. Was: isfelinid(H)
+=======
+			if(HAS_TRAIT(target, TRAIT_CATLIKE_INSTINCT))
+>>>>>>> 299d8a6433e (More is_species() conversion to less hardcoded checks. (#96956))
 				to_chat(user, span_warning("You'd need a lot of catnip and treats, plus maybe a laser pointer, for that to work."))
 			else
 				to_chat(user, span_warning("Humans, generally, do not fit into pet carriers."))

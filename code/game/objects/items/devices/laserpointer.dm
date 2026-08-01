@@ -275,6 +275,7 @@
 		else
 			outmsg = span_warning("You miss the lens of [target_camera] with [src]!")
 
+<<<<<<< HEAD
 	//catpeople: make any felinid near the target to face the target, chance for felinids to pounce at the light, stepping to the target
 	for(var/mob/living/carbon/human/target_felinid in view(1, targloc))
 		if(!isfeline(target_felinid) || target_felinid.stat == DEAD || target_felinid.is_blind() || target_felinid.incapacitated) // NOVA EDIT CHANGE - FELINE TRAITS - ORIGINAL: if(!isfelinID(target_felinid) || target_felinid.stat == DEAD || target_felinid.is_blind() || target_felinid.incapacitated)
@@ -289,8 +290,22 @@
 			else
 			NOVA EDIT REMOVAL END */
 			target_felinid.visible_message(span_notice("[target_felinid] looks briefly distracted by the light."), span_warning("You're briefly tempted by the shiny light...")) //NOVA EDIT CHANGE : indent this block if re-enabling above
+=======
+	//Make any mob with catlike instincts near the target face the target, with a chance of pouncing (moving) toward it.
+	for(var/mob/living/target_cat in view(1, targloc))
+		if(!HAS_TRAIT(target_cat, TRAIT_CATLIKE_INSTINCT) || target_cat.is_blind() || target_cat.incapacitated)
+			continue
+		target_cat.setDir(get_dir(target_cat, targloc)) // kitty always looks at the light
+		if(target_cat.body_position == STANDING_UP)
+			if(prob(effectchance * diode.rating))
+				target_cat.visible_message(span_warning("[target_cat] makes a grab for the light!"), span_userdanger("LIGHT!"))
+				target_cat.Move(targloc, get_dir(target_cat, targloc))
+				log_combat(user, target_cat, "moved with a laser pointer", src)
+			else
+				target_cat.visible_message(span_notice("[target_cat] looks briefly distracted by the light."), span_warning("You're briefly tempted by the shiny light..."))
+>>>>>>> 299d8a6433e (More is_species() conversion to less hardcoded checks. (#96956))
 		else
-			target_felinid.visible_message(span_notice("[target_felinid] stares at the light."), span_warning("You stare at the light..."))
+			target_cat.visible_message(span_notice("[target_cat] stares at the light."), span_warning("You stare at the light..."))
 	//The pointer is shining, change its sprite to show
 	icon_state = "pointer_[pointer_icon_state]"
 
