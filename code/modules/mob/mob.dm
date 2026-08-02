@@ -1216,6 +1216,9 @@ GAME_VERB_HIDDEN(/mob, DisDblClick, ".dblclick", argu = null as anything, sec = 
 	else if(log_new_name)
 		log_message("[src] name set to [newname]", LOG_OWNERSHIP)
 
+	else if(log_new_name)
+		log_message("[src] name set to [newname]", LOG_OWNERSHIP)
+
 	log_mob_tag("TAG: [tag] RENAMED: [key_name(src)]")
 	SEND_SIGNAL(src, COMSIG_MOB_FULLY_RENAMED, oldname, newname)
 	return TRUE
