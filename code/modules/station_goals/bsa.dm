@@ -3,17 +3,7 @@
 ///BSA unlocked by head ID swipes
 GLOBAL_VAR_INIT(bsa_unlock, FALSE)
 
-<<<<<<< HEAD
 /* NOVA EDIT REMOVAL - MOVED TO MODULAR BSA_OVERHAUL
-=======
-// Spatial defines (all in tiles)
-#define BSA_WIDTH 11
-#define BSA_HEIGHT 3
-#define BSA_Y_OFFSET -1
-#define BSA_X_OFFSET_WEST -6
-#define BSA_X_OFFSET_EAST -4
-
->>>>>>> 76fd5bd01b9 (Makes BSAs indicate the space they will occupy when completed (#97251))
 // Crew has to build a bluespace cannon
 // Cargo orders part for high price
 // Requires high amount of power
@@ -479,13 +469,10 @@ GLOBAL_VAR_INIT(bsa_unlock, FALSE)
 	balloon_alert(user, "rigged to explode")
 	to_chat(user, span_warning("You emag [src] and hear the focusing crystal short out. You get the feeling it wouldn't be wise to stand near [src] when the BSA fires..."))
 	return TRUE
-<<<<<<< HEAD
 */
-=======
 
 #undef BSA_WIDTH
 #undef BSA_HEIGHT
 #undef BSA_Y_OFFSET
 #undef BSA_X_OFFSET_WEST
 #undef BSA_X_OFFSET_EAST
->>>>>>> 76fd5bd01b9 (Makes BSAs indicate the space they will occupy when completed (#97251))
