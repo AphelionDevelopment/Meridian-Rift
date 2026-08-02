@@ -470,9 +470,3 @@ GLOBAL_VAR_INIT(bsa_unlock, FALSE)
 	to_chat(user, span_warning("You emag [src] and hear the focusing crystal short out. You get the feeling it wouldn't be wise to stand near [src] when the BSA fires..."))
 	return TRUE
 */
-
-#undef BSA_WIDTH
-#undef BSA_HEIGHT
-#undef BSA_Y_OFFSET
-#undef BSA_X_OFFSET_WEST
-#undef BSA_X_OFFSET_EAST
