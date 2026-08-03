@@ -119,12 +119,8 @@
 
 	to_chat(target, span_userdanger("Your [consumed_limb.name] is drawn back into your body, unable to maintain its shape!"))
 	qdel(consumed_limb)
-<<<<<<< HEAD
-	H.adjust_blood_volume(65 * H.physiology.blood_regen_mod) //NOVA EDIT CHANGE - This is because losing a limb now costs them 60 blood, so this refunds it with a pinch extra so it doesn't. Y'know. Kill you. - ORIGINAL: H.adjust_blood_volume(20 * H.physiology.blood_regen_mod)
-=======
 
-	target.adjust_blood_volume(20 * target.physiology.blood_regen_mod)
->>>>>>> 77e0fc0028c (Jellypeople can only cannibalize jelly limbs (#97252))
+	target.adjust_blood_volume(65 * target.physiology.blood_regen_mod) //NOVA EDIT CHANGE - This is because losing a limb now costs them 60 blood, so this refunds it with a pinch extra so it doesn't. Y'know. Kill you. - ORIGINAL: target.adjust_blood_volume(20 * target.physiology.blood_regen_mod)
 
 /datum/species/jelly/get_species_description()
 	return "Jellypeople are a strange and alien species with three eyes, made entirely out of gel."
