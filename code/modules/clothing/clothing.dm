@@ -396,6 +396,11 @@
 		.["sterile"] = "Increases the speed at which reagents are administered to others by [round((1/NITRILE_GLOVES_MULTIPLIER-1)*100, 1)]%."
 	if(TRAIT_FAST_CUFFING in clothing_traits)
 		.["secure"] = "Increases the speed at which you apply restraints."
+<<<<<<< HEAD
+=======
+	if(emp_protection > EMP_PROTECTION_NONE)
+		.["emp resistant"] = "Reduces the effects of incoming electromagnetic pulses on the wearer."
+>>>>>>> aa6e4623535 (Makes it so that EMP resistance is only tagged on EMP Resistant clothing. (#97326))
 
 /obj/item/clothing/examine_descriptor(mob/user)
 	return "clothing"
