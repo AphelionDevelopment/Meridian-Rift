@@ -20,6 +20,8 @@
 	var/datum/weakref/old_left_leg
 	/// The mob's old left leg. Used if the person switches to this organ and then back, so they don't just, have no legs anymore. Can be null.
 	var/datum/weakref/old_right_leg
+	/// The species type the owner was when old_left_leg/old_right_leg were set. If the owner's species has since changed, those saved legs shouldn't be restored on removal.
+	var/old_legs_species_type
 
 	/// If true, our sprite accessory will not render.
 	var/hide_self
@@ -264,12 +266,14 @@
 		// Never treat taur legs as "old legs"
 		if(current_left && !istype(current_left, /obj/item/bodypart/leg/left/taur) && !istype(current_left, /obj/item/bodypart/leg/left/synth/taur))
 			old_left_leg = WEAKREF(current_left)
+			old_legs_species_type = receiver.dna.species.type
 
 	if(!old_right_leg)
 		var/obj/item/bodypart/leg/right/current_right = receiver.get_bodypart(BODY_ZONE_R_LEG)
 		// Never treat taur legs as "old legs"
 		if(current_right && !istype(current_right, /obj/item/bodypart/leg/right/taur) && !istype(current_right, /obj/item/bodypart/leg/right/synth/taur))
 			old_right_leg = WEAKREF(current_right)
+			old_legs_species_type = receiver.dna.species.type
 
 	var/obj/item/bodypart/leg/left/taur/new_left_leg
 	var/obj/item/bodypart/leg/right/taur/new_right_leg
@@ -317,7 +321,7 @@
 
 	var/datum/bodypart_overlay/mutant/taur_body/overlay = bodypart_overlay
 	if(overlay.can_lay_down)
-		ASSIGN_GAME_VERB(receiver, /obj/item/organ/taur_body, toggle_laying)
+		ASSIGN_GAME_VERB(receiver, /mob/living/carbon/human, toggle_laying)
 
 	if(hardened_soles)
 		owner_blocked_feet_before_insert = (receiver.dna.species.no_equip_flags & ITEM_SLOT_FEET)
@@ -340,27 +344,33 @@
 
 	var/obj/item/bodypart/leg/left/left_leg = organ_owner.get_bodypart(BODY_ZONE_L_LEG)
 	var/obj/item/bodypart/leg/right/right_leg = organ_owner.get_bodypart(BODY_ZONE_R_LEG)
+	var/legs_species_still_matches = (old_legs_species_type == organ_owner.dna.species.type)
 
-	if(left_leg)
+	if(istype(left_leg, /obj/item/bodypart/leg/left/taur) || istype(left_leg, /obj/item/bodypart/leg/left/synth/taur))
 		left_leg.drop_limb(special = TRUE, move_to_floor = FALSE)
 		qdel(left_leg)
 
-	if(right_leg)
-		right_leg.drop_limb(special = TRUE, move_to_floor = FALSE)
-		qdel(right_leg)
-
-	var/obj/item/bodypart/leg/left/restore_left = old_left_leg?.resolve()
-	if(restore_left)
+		var/obj/item/bodypart/leg/left/restore_left = legs_species_still_matches ? old_left_leg?.resolve() : null
+		if(!restore_left)
+			var/left_leg_type = organ_owner.dna.species.bodypart_overrides[BODY_ZONE_L_LEG] || /obj/item/bodypart/leg/left
+			restore_left = new left_leg_type()
 		restore_left.replace_limb(organ_owner)
 	old_left_leg = null
 
-	var/obj/item/bodypart/leg/right/restore_right = old_right_leg?.resolve()
-	if(restore_right)
+	if(istype(right_leg, /obj/item/bodypart/leg/right/taur) || istype(right_leg, /obj/item/bodypart/leg/right/synth/taur))
+		right_leg.drop_limb(special = TRUE, move_to_floor = FALSE)
+		qdel(right_leg)
+
+		var/obj/item/bodypart/leg/right/restore_right = legs_species_still_matches ? old_right_leg?.resolve() : null
+		if(!restore_right)
+			var/right_leg_type = organ_owner.dna.species.bodypart_overrides[BODY_ZONE_R_LEG] || /obj/item/bodypart/leg/right
+			restore_right = new right_leg_type()
 		restore_right.replace_limb(organ_owner)
 	old_right_leg = null
+	old_legs_species_type = null
 
 	// We don't call `synchronize_bodytypes()` here, because it's already going to get called in the parent because `external_bodyshapes` has a value.
-	UNASSIGN_GAME_VERB(organ_owner, /obj/item/organ/taur_body, toggle_laying)
+	UNASSIGN_GAME_VERB(organ_owner, /mob/living/carbon/human, toggle_laying)
 
 	if(hardened_soles)
 		if(!owner_blocked_feet_before_insert)
@@ -406,7 +416,7 @@
 // Only works if the owner is a human with a valid taur body organ. This also can only be triggered if the taur body overlay supports laying down.
 // This prevents laying down if the owner is already resting, IE: Prone. Manages the mob's density and adds in a specific sound if laying within gravity.
 
-GAME_VERB_PROC(/obj/item/organ/taur_body, toggle_laying, "(Taur) Toggle Laying Down", "IC")
+GAME_VERB_PROC(/mob/living/carbon/human, toggle_laying, "(Taur) Toggle Laying Down", "IC")
 	var/mob/living/carbon/human/owner = src
 	if(!istype(owner))
 		return
@@ -421,6 +431,7 @@ GAME_VERB_PROC(/obj/item/organ/taur_body, toggle_laying, "(Taur) Toggle Laying D
 		return
 	if(owner.resting)
 		to_chat(owner, span_notice("You have to be standing up in order to lay down properly!"))
+		return
 	if(overlay.laying_down)
 		// Rising up
 		to_chat(owner, span_notice("You start lifting your body up."))
