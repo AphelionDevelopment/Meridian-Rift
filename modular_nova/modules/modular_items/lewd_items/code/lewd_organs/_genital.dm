@@ -123,6 +123,7 @@ GLOBAL_LIST_INIT(genital_arousal_options, list(
 
 	var/datum/sprite_accessory/genital/accessory = SSaccessories.sprite_accessories[associated_key][bodypart.name]
 	genital_type = accessory.icon_state
+	aroused = initial(aroused)
 	build_from_accessory(accessory, DNA)
 	update_sprite_suffix()
 
@@ -141,13 +142,10 @@ GLOBAL_LIST_INIT(genital_arousal_options, list(
 
 /// for specific build_from_dna behavior that also checks the genital accessory.
 /obj/item/organ/genital/proc/build_from_accessory(datum/sprite_accessory/genital/accessory, datum/dna/DNA)
-	if(isnull(max_sprite_size_affix))
-		// snowflake for skintone alt human penis, which only has sprites up to size 4 as opposed to the non-skintone which goes to 5. and similar...
-		// This SUCKS. genitals code is simply HORRIBLE and rotted to its core. TODO: destroy and rewrite it ALL. from fucking scratch.
-		if(uses_skintones)
-			max_sprite_size_affix = accessory.skintone_max_sprite_size_affix || accessory.max_sprite_size_affix
-		else
-			max_sprite_size_affix = accessory.max_sprite_size_affix
+	if(uses_skintones)
+		max_sprite_size_affix = accessory.skintone_max_sprite_size_affix || accessory.max_sprite_size_affix
+	else
+		max_sprite_size_affix = accessory.max_sprite_size_affix
 	return
 
 /// Whether the mob's worn clothing physically covers this genital's location.

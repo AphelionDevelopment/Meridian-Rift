@@ -13,6 +13,35 @@
 	var/max_sprite_size_affix
 	/// The biggest size that this sprite accessory goes up to for the skintone version (used for icon_state)
 	var/skintone_max_sprite_size_affix
+	/// Icon to render from instead, for a taur with taur mode enabled. Null if this accessory has no taur art.
+	var/icon/taur_icon
+	/// Size cap to use instead of max_sprite_size_affix while rendering from taur_icon (the taur sheet may not cover the same size range).
+	var/taur_max_sprite_size_affix
+	/// icon_state to use instead of icon_state while rendering from taur_icon, for cases where the taur sheet names it differently. Null means use icon_state as-is.
+	var/taur_icon_state
+
+/// Whether this accessory should currently render from taur_icon for the given mob.
+/datum/sprite_accessory/genital/proc/uses_taur_sprite(mob/living/carbon/human/target_mob)
+	if(!taur_icon)
+		return FALSE
+
+	var/taur_mode = target_mob?.get_taur_mode()
+	if(!taur_mode || !target_mob.dna.features["penis_taur_mode"] || taur_mode & BODYSHAPE_TAUR_SNAKE)
+		return FALSE
+
+	return TRUE
+
+/datum/sprite_accessory/genital/get_special_icon(mob/living/carbon/human/target_mob)
+	if(!uses_taur_sprite(target_mob))
+		return icon
+
+	return taur_icon
+
+/datum/sprite_accessory/genital/get_special_x_dimension(mob/living/carbon/human/target_mob)
+	if(!uses_taur_sprite(target_mob))
+		return dimension_x
+
+	return TAUR_DIMENSION_X
 
 /datum/sprite_accessory/genital/is_hidden(mob/living/carbon/human/target_mob, datum/bodypart_overlay/mutant/bodypart_overlay)
 	var/obj/item/organ/genital/badonkers = target_mob?.get_organ_slot(associated_organ_slot)
@@ -43,22 +72,6 @@
 	special_x_dimension = TRUE
 	max_sprite_size_affix = 7
 	var/can_have_sheath = TRUE
-
-/datum/sprite_accessory/genital/penis/get_special_icon(mob/living/carbon/human/target_mob)
-	var/taur_mode = target_mob?.get_taur_mode()
-
-	if(!taur_mode || !target_mob.dna.features["penis_taur_mode"] || taur_mode & BODYSHAPE_TAUR_SNAKE)
-		return icon
-
-	return 'modular_nova/master_files/icons/mob/sprite_accessory/genitals/taur_penis_onmob.dmi'
-
-/datum/sprite_accessory/genital/penis/get_special_x_dimension(mob/living/carbon/human/target_mob)
-	var/taur_mode = target_mob?.get_taur_mode()
-
-	if(!taur_mode || !target_mob.dna.features["penis_taur_mode"] || taur_mode & BODYSHAPE_TAUR_SNAKE)
-		return dimension_x
-
-	return TAUR_DIMENSION_X
 
 /datum/sprite_accessory/genital/penis/get_sprite_suffix()
 	return "[icon_state]_[max_sprite_size_affix]_0" // flaccid variant of the largest size
@@ -103,6 +116,8 @@
 	icon_state = "knotted"
 	name = "Knotted"
 	has_skintone_shading = TRUE
+	taur_icon = PENIS_ICON_TAUR
+	taur_max_sprite_size_affix = 4
 
 /datum/sprite_accessory/genital/penis/knotted/alt
 	name = parent_type::name + " (Alt)"
@@ -111,11 +126,14 @@
 	icon_state = parent_type::icon_state + "_alt"
 	has_skintone_shading = FALSE
 	max_sprite_size_affix = 5
+	taur_icon_state = parent_type::icon_state
 
 /datum/sprite_accessory/genital/penis/flared
 	icon_state = "flared"
 	name = "Flared"
 	has_skintone_shading = TRUE
+	taur_icon = PENIS_ICON_TAUR
+	taur_max_sprite_size_affix = 4
 
 /datum/sprite_accessory/genital/penis/flared/alt
 	name = parent_type::name + " (Alt)"
@@ -124,11 +142,14 @@
 	icon_state = parent_type::icon_state + "_alt"
 	has_skintone_shading = FALSE
 	max_sprite_size_affix = 5
+	taur_icon_state = parent_type::icon_state
 
 /datum/sprite_accessory/genital/penis/barbknot
 	icon_state = "barbknot"
 	name = "Barbed, Knotted"
 	has_skintone_shading = TRUE
+	taur_icon = PENIS_ICON_TAUR
+	taur_max_sprite_size_affix = 4
 
 /datum/sprite_accessory/genital/penis/barbknot/alt
 	name = parent_type::name + " (Alt)"
@@ -137,11 +158,14 @@
 	icon_state = parent_type::icon_state + "_alt"
 	has_skintone_shading = FALSE
 	max_sprite_size_affix = 5
+	taur_icon_state = parent_type::icon_state
 
 /datum/sprite_accessory/genital/penis/tapered
 	icon_state = "tapered"
 	name = "Tapered"
 	has_skintone_shading = TRUE
+	taur_icon = PENIS_ICON_TAUR
+	taur_max_sprite_size_affix = 4
 
 /datum/sprite_accessory/genital/penis/tapered/alt
 	name = parent_type::name + " (Alt)"
@@ -150,11 +174,14 @@
 	icon_state = parent_type::icon_state + "_alt"
 	has_skintone_shading = FALSE
 	max_sprite_size_affix = 5
+	taur_icon_state = parent_type::icon_state
 
 /datum/sprite_accessory/genital/penis/tentacle
 	icon_state = "tentacle"
 	name = "Tentacled"
 	has_skintone_shading = TRUE
+	taur_icon = PENIS_ICON_TAUR
+	taur_max_sprite_size_affix = 4
 
 /datum/sprite_accessory/genital/penis/tentacle/alt
 	name = parent_type::name + " (Alt)"
@@ -163,6 +190,7 @@
 	icon_state = parent_type::icon_state + "_alt"
 	has_skintone_shading = FALSE
 	max_sprite_size_affix = 4
+	taur_icon_state = parent_type::icon_state
 
 /datum/sprite_accessory/genital/penis/hemi
 	icon_state = "hemi"
@@ -198,6 +226,8 @@
 	color_src = USE_MATRIXED_COLORS
 	always_color_customizable = TRUE
 	center = TRUE
+	// Needed for taur version
+	special_x_dimension = TRUE
 
 /datum/sprite_accessory/genital/sheath/get_sprite_suffix()
 	return "[icon_state]_0"
@@ -212,10 +242,13 @@
 /datum/sprite_accessory/genital/sheath/normal
 	name = "Sheath"
 	icon_state = "normal"
+	taur_icon = 'modular_nova/master_files/icons/mob/sprite_accessory/genitals/taur_penis_onmob.dmi'
+	taur_icon_state = "sheath"
 
 /datum/sprite_accessory/genital/sheath/slit
 	name = "Slit"
 	icon_state = "slit"
+	taur_icon = PENIS_ICON_TAUR
 
 /datum/sprite_accessory/genital/testicles
 	icon = 'modular_nova/master_files/icons/mob/sprite_accessory/genitals/testicles_onmob.dmi'
@@ -224,25 +257,10 @@
 	key = FEATURE_TESTICLES
 	always_color_customizable = TRUE
 	special_x_dimension = TRUE
+	center = TRUE
 	default_color = DEFAULT_SKIN_OR_PRIMARY
 	max_sprite_size_affix = 8
 	var/has_size = TRUE
-
-/datum/sprite_accessory/genital/testicles/get_special_icon(mob/living/carbon/human/target_mob)
-	var/taur_mode = target_mob?.get_taur_mode()
-
-	if(!taur_mode || !target_mob.dna.features["penis_taur_mode"] || taur_mode & BODYSHAPE_TAUR_SNAKE)
-		return icon
-
-	return 'modular_nova/master_files/icons/mob/sprite_accessory/genitals/taur_penis_onmob.dmi'
-
-/datum/sprite_accessory/genital/testicles/get_special_x_dimension(mob/living/carbon/human/target_mob)
-	var/taur_mode = target_mob?.get_taur_mode()
-
-	if(!taur_mode || !target_mob.dna.features["penis_taur_mode"] || taur_mode & BODYSHAPE_TAUR_SNAKE)
-		return dimension_x
-
-	return TAUR_DIMENSION_X
 
 /datum/sprite_accessory/genital/testicles/none
 	icon_state = "none"
@@ -255,6 +273,9 @@
 	name = "Pair"
 	icon_state = "pair"
 	has_skintone_shading = TRUE
+	// taur_testicles_onmob.dmi tops out at pair_6, unlike the normal sheet's pair_8.
+	taur_icon = 'modular_nova/master_files/icons/mob/sprite_accessory/genitals/taur_testicles_onmob.dmi'
+	taur_max_sprite_size_affix = 6
 
 /datum/sprite_accessory/genital/testicles/pair/alt
 	name = parent_type::name + " (Alt)"
