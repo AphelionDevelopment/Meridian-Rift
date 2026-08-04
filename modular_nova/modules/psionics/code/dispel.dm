@@ -59,6 +59,7 @@
 /// Status effect base that ends itself when its owner is dispelled. Set as a `parent_type`
 /// so dispellable psionic status effects keep their own type path.
 /datum/status_effect/psionic_dispellable
+	id = STATUS_EFFECT_ID_ABSTRACT
 
 /datum/status_effect/psionic_dispellable/on_apply()
 	. = ..()
