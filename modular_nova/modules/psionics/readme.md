@@ -17,7 +17,9 @@ Psionics are not spells. They do not use spell actions or antimagic checks; bloc
 - Individual power cooldowns, profile strain, burnout, and rank-specific power forms where needed.
 - Strain decay pauses while a maintained power is active, so upkeep costs are never free.
 - Heavy casting has visible tells (stutter and jitter near the strain ceiling); burnout carries a mood penalty, and repeated burnouts inflict mild brain traumas on top of the brain damage.
-- Psionic dampener cuffs, a charge-limited psionic nullification headband, a handheld psionic resonance scanner for non-psion detection, and reusable protection/restriction components.
+- A three-tier strain backlash ladder: mild backlashes from half strain, severe from three quarters, and a catastrophic one rolled alongside every burnout. Each tier is a weighted pick with its own spacing cooldown, and every backlash is exposed to the admin smite menu.
+- Psionic dispel, which forcibly ends maintained powers, dispellable manifestations, and dispellable psionic status effects. Sourced only from psionics — nullrods and tg antimagic have no bearing on it.
+- Psionic dampener cuffs, a charge-limited psionic nullification headband, a handheld psionic resonance scanner for non-psion detection, a researchable miniature reality anchor that pulses dispels and silences psions in an area, and reusable protection/restriction components.
 - School commitment and anomaly-core attunement, both of which reduce strain in that school.
 - The Psionic Dampener quirk only shields the mind (intrusive/sensory psionics); non-quirk `TRAIT_PSIONIC_DAMPENER` sources still suppress everything.
 - ERP-gated lewd disciplines, hidden from imprinting and uncastable unless both parties have the ERP preference enabled.
@@ -40,7 +42,7 @@ Psionics are not spells. They do not use spell actions or antimagic checks; bloc
 - `modular_nova/modules/extra_vv/code/extra_vv.dm`
   - Adds the Give Psionics action to living mobs' VV dropdown.
 - `modular_nova/master_files/code/modules/research/techweb/all_nodes.dm`
-  - Adds `psionic_dampener_cuffs`, `psionic_nullification_headband`, and `psionic_resonance_scanner` to riot suppression research.
+  - Adds `psionic_dampener_cuffs`, `psionic_nullification_headband`, `psionic_resonance_scanner`, and `psionic_reality_anchor` to riot suppression research.
 - `modular_nova/modules/implants/code/medical_nodes.dm`
   - Adds `ci-psionic-limiter` to cybernetic implant research.
 - `tgui/packages/tgui/interfaces/PsionicImprinting.tsx`
@@ -60,3 +62,11 @@ Power files live in `code/power`. Keep each concrete power in its own file with 
 Most metadata lives on the action. The `/datum/psionic_power` entry exposes the action to the imprinting tree and declares tree-only requirements such as prerequisites or spent school points.
 
 Use `mob/living/proc/awaken_psionics()` and `revoke_psionics()` for point-only sources. Sources that grant a rank must restore the previous rank when removed. Use psionic flags and `can_block_psionics()` / `can_cast_psionics()` for counters instead of spell or antimagic hooks.
+
+A power whose effect ends with `stop_maintaining()` is already dispellable. A power that leaves an object or status effect behind is not, and needs `/datum/element/psionic_dispellable` on the object, or `parent_type = /datum/status_effect/psionic_dispellable` on the status effect.
+
+New backlashes subtype `/datum/psionic_backlash/mild`, `/severe`, or `/catastrophic` in `code/backlash_events.dm` and are picked up automatically. Give each one a `/datum/smite/psionic_backlash` subtype so it stays testable, and never make the last always-succeeding backlash in a tier conditional.
+
+### Credits:
+
+`icons/reality_anchor.dmi` is by TheOneAndOnlyCreeperJoe, ported from DopplerShift (`modular_doppler/modular_powers/icons/items/reality_anchor.dmi`, DopplerShift13/DopplerShift#958). CC-BY-SA-3.0, as with all /tg/station downstream assets.

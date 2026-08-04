@@ -32,6 +32,7 @@
 	return TRUE
 
 /datum/status_effect/psionic_bubble
+	parent_type = /datum/status_effect/psionic_dispellable
 	id = "psionic_bubble"
 	duration = 30 SECONDS
 	status_type = STATUS_EFFECT_REFRESH

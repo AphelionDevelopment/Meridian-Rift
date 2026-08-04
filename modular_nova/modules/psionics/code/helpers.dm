@@ -13,8 +13,6 @@
 	if(psionic_flags == NONE)
 		return FALSE
 
-	if(HAS_TRAIT_NOT_FROM(src, TRAIT_PSIONIC_DAMPENER, QUIRK_TRAIT))
-		return TRUE
 	if(HAS_TRAIT(src, TRAIT_RESIST_PSYCHIC))
 		return TRUE
 

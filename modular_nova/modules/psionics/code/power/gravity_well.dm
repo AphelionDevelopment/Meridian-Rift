@@ -120,6 +120,7 @@
 	gravity_field = new(src, pull_range, TRUE, form.field_gravity)
 	pull_timer = addtimer(CALLBACK(src, PROC_REF(pull_tick)), PSIONIC_GRAVITY_WELL_PULL_INTERVAL, TIMER_STOPPABLE|TIMER_LOOP|TIMER_DELETE_ME)
 	QDEL_IN(src, PSIONIC_GRAVITY_WELL_DURATION)
+	AddElement(/datum/element/psionic_dispellable)
 
 /obj/effect/psionic_gravity_well/Destroy()
 	if(pull_timer)

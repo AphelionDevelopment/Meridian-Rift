@@ -51,5 +51,22 @@
 
 #define COMSIG_MOB_RECEIVE_PSIONICS "mob_receive_psionics"
 #define COMSIG_MOB_RESTRICT_PSIONICS "mob_restrict_psionics"
+/// Sent to an atom being forcibly stripped of psionic effects: (atom/dispeller)
+#define COMSIG_ATOM_PSIONIC_DISPEL "atom_psionic_dispel"
 
 #define COMPONENT_PSIONIC_BLOCKED (1<<0)
+#define COMPONENT_PSIONIC_DISPELLED (1<<0)
+
+#define PSIONIC_BACKLASH_MILD "mild"
+#define PSIONIC_BACKLASH_SEVERE "severe"
+#define PSIONIC_BACKLASH_CATASTROPHIC "catastrophic"
+/// Fraction of max strain at which mild backlash begins rolling.
+#define PSIONIC_BACKLASH_MILD_RATIO 0.5
+/// Fraction of max strain at which severe backlash begins rolling.
+#define PSIONIC_BACKLASH_SEVERE_RATIO 0.75
+/// Minimum spacing between two backlashes of the same tier.
+#define PSIONIC_BACKLASH_COOLDOWN (90 SECONDS)
+
+#define PSIONIC_BACKLASH_WEIGHT_COMMON 10
+#define PSIONIC_BACKLASH_WEIGHT_UNCOMMON 5
+#define PSIONIC_BACKLASH_WEIGHT_RARE 2

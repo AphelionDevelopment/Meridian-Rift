@@ -61,3 +61,21 @@
 		RND_CATEGORY_EQUIPMENT + RND_SUBCATEGORY_EQUIPMENT_SECURITY,
 	)
 	departmental_flags = DEPARTMENT_BITFLAG_SECURITY
+
+/datum/design/psionic_reality_anchor
+	name = "Miniature Reality Anchor"
+	id = "psionic_reality_anchor"
+	build_type = PROTOLATHE
+	construction_time = 10 SECONDS
+	materials = list(
+		/datum/material/iron = SHEET_MATERIAL_AMOUNT * 10,
+		/datum/material/glass = SHEET_MATERIAL_AMOUNT * 4,
+		/datum/material/silver = SHEET_MATERIAL_AMOUNT * 3,
+		/datum/material/uranium = SHEET_MATERIAL_AMOUNT * 2,
+		/datum/material/bluespace = HALF_SHEET_MATERIAL_AMOUNT,
+	)
+	build_path = /obj/structure/psionic_anchor
+	category = list(
+		RND_CATEGORY_EQUIPMENT + RND_SUBCATEGORY_EQUIPMENT_SECURITY,
+	)
+	departmental_flags = DEPARTMENT_BITFLAG_SECURITY

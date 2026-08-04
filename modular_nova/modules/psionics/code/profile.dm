@@ -123,6 +123,11 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 	/// Burnouts suffered over this profile's lifetime.
 	var/burnout_count = 0
 
+	/// Spacing between mild backlashes.
+	COOLDOWN_DECLARE(mild_backlash_cooldown)
+	/// Spacing between severe backlashes.
+	COOLDOWN_DECLARE(severe_backlash_cooldown)
+
 /datum/component/psionic_profile/Initialize(points = PSIONIC_DEFAULT_POINTS, list/starting_powers, source = PSIONIC_TRAIT_SOURCE)
 	if(!isliving(parent))
 		return COMPONENT_INCOMPATIBLE
@@ -716,13 +721,31 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 
 	strain += amount
 	update_strain_hud()
-	if(strain >= max_strain * 0.75)
+	if(strain >= max_strain * PSIONIC_BACKLASH_SEVERE_RATIO)
 		to_chat(psion, span_warning("Pressure claws at the edge of your thoughts."))
 		psion.adjust_stutter(PSIONIC_HIGH_STRAIN_TELL_TIME)
 		psion.adjust_jitter(PSIONIC_HIGH_STRAIN_TELL_TIME)
-	else if(strain >= max_strain * 0.5)
+		try_backlash(PSIONIC_BACKLASH_SEVERE)
+	else if(strain >= max_strain * PSIONIC_BACKLASH_MILD_RATIO)
 		to_chat(psion, span_notice("A dull pressure builds behind your eyes."))
+		try_backlash(PSIONIC_BACKLASH_MILD)
 	return TRUE
+
+/// Rolls a backlash of [tier] onto the psion, respecting that tier's spacing cooldown.
+/// The catastrophic tier is ungated: it only ever fires from trigger_burnout(), which
+/// has its own lockout.
+/datum/component/psionic_profile/proc/try_backlash(tier)
+	switch(tier)
+		if(PSIONIC_BACKLASH_MILD)
+			if(!COOLDOWN_FINISHED(src, mild_backlash_cooldown))
+				return FALSE
+			COOLDOWN_START(src, mild_backlash_cooldown, PSIONIC_BACKLASH_COOLDOWN)
+		if(PSIONIC_BACKLASH_SEVERE)
+			if(!COOLDOWN_FINISHED(src, severe_backlash_cooldown))
+				return FALSE
+			COOLDOWN_START(src, severe_backlash_cooldown, PSIONIC_BACKLASH_COOLDOWN)
+
+	return roll_psionic_backlash(tier, psion, src)
 
 /// Returns strain charged through try_gain_strain() for a cast that never resolved.
 /// Applies the same school discount so the refund matches what was actually gained.
@@ -750,6 +773,13 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 	psion.Knockdown(2 SECONDS)
 	psion.add_mood_event("psionic_burnout", /datum/mood_event/psionic_burnout)
 	burnout_count++
+
+	// The collapse takes everything the psion was holding up with it.
+	psion.psionic_dispel(psion)
+	try_backlash(PSIONIC_BACKLASH_CATASTROPHIC)
+	// The lesser tiers have already been paid for by the burnout itself.
+	COOLDOWN_RESET(src, mild_backlash_cooldown)
+	COOLDOWN_RESET(src, severe_backlash_cooldown)
 
 	if(iscarbon(psion))
 		var/mob/living/carbon/carbon_psion = psion
