@@ -1,3 +1,8 @@
+/// Temperature the spark exposes its target to, in kelvin.
+#define KINDLE_TEMPERATURE 700
+/// Volume of the spark's heat exposure.
+#define KINDLE_VOLUME 10
+
 /datum/psionic_power/kindle
 	action_type = /datum/action/cooldown/psionic/pointed/kindle
 
@@ -28,7 +33,7 @@
 	if(ismob(target))
 		owner.balloon_alert(owner, "target an object or floor!")
 		return FALSE
-	if(!isturf(target) && !isturf(target.loc))
+	if(!isturf(target) && !isturf(target.loc) && !ismob(target.loc) && !isitem(target.loc))
 		owner.balloon_alert(owner, "can't reach it!")
 		return FALSE
 
@@ -40,8 +45,12 @@
 		return FALSE
 
 	new /obj/effect/particle_effect/sparks(target_turf)
-	target.fire_act(700, 10)
-	target_turf.hotspot_expose(700, 10, 1)
+	target.fire_act(KINDLE_TEMPERATURE, KINDLE_VOLUME)
+	if(isturf(target) || isturf(target.loc))
+		target_turf.hotspot_expose(KINDLE_TEMPERATURE, KINDLE_VOLUME, soh = TRUE)
 	playsound(target_turf, 'sound/effects/sparks/sparks4.ogg', 35, TRUE)
 	to_chat(owner, span_purple("You kindle a spark at [target]."))
 	return TRUE
+
+#undef KINDLE_TEMPERATURE
+#undef KINDLE_VOLUME
