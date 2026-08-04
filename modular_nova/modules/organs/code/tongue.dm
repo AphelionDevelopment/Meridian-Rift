@@ -1,3 +1,7 @@
+/obj/item/organ/tongue/Initialize(mapload)
+	LAZYOR(organ_traits, TRAIT_MOTH_EMOTES_ALLOWED) // Everyone can use moth emotes
+	return ..()
+
 /obj/item/organ/tongue/copy_traits_from(obj/item/organ/tongue/old_tongue, mob/living/carbon/organ_receiver, copy_actions = TRUE)
 	. = ..()
 	// make sure we get food preferences too, because those are now tied to tongues for some reason
@@ -153,6 +157,19 @@
 	liked_foodtypes = GROSS | RAW | TOXIC | GORE
 	disliked_foodtypes = CLOTH | GRAIN | FRIED
 	toxic_foodtypes = DAIRY
+	emote_sounds = list(
+		/datum/emote/living/scream::key = 'sound/mobs/humanoids/moth/scream_moth.ogg',
+	)
+
+/obj/item/organ/tongue/fly
+	emote_sounds = list(
+		/datum/emote/living/scream::key = 'sound/mobs/humanoids/moth/scream_moth.ogg',
+	)
+
+/obj/item/organ/tongue/vox
+	emote_sounds = list(
+		/datum/emote/living/scream::key = 'modular_nova/modules/emotes/sound/emotes/voxscream.ogg',
+	)
 
 /obj/item/organ/tongue/xeno_hybrid
 	name = "alien tongue"
@@ -161,6 +178,10 @@
 	say_mod = "hisses"
 	taste_sensitivity = 10
 	liked_foodtypes = MEAT
+	emote_sounds = list(
+		/datum/emote/living/scream::key = 'sound/mobs/non-humanoids/hiss/hiss6.ogg',
+		/datum/emote/living/deathgasp::key = 'sound/mobs/non-humanoids/hiss/hiss6.ogg',
+	)
 
 /obj/item/organ/tongue/xeno_hybrid/Initialize(mapload)
 	. = ..()
@@ -180,3 +201,8 @@
 	. = ..()
 
 	desc += " This one is noticeably smooth, and would lack any non-hissing lisps if used."
+
+/obj/item/organ/tongue/bone
+	emote_sounds = list(
+		/datum/emote/living/scream::key = 'modular_nova/modules/emotes/sound/voice/scream_skeleton.ogg',
+	)
