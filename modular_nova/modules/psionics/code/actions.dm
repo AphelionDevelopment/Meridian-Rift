@@ -585,6 +585,11 @@
 	var/cast_range = 7
 	/// If TRUE, the action can target its owner.
 	var/allow_self_target = FALSE
+	/// If TRUE, the target must be in the caster's line of sight. Set FALSE for powers that are
+	/// meant to reach through solid matter.
+	var/requires_line_of_sight = TRUE
+	/// Balloon alert shown when the target is out of the caster's line of sight.
+	var/no_line_of_sight_alert = "no line of sight!"
 
 /datum/action/cooldown/psionic/pointed/New(Target, original = TRUE)
 	. = ..()
@@ -669,8 +674,12 @@
 		to_chat(living_owner, span_warning("You cannot focus [src] on yourself."))
 		return FALSE
 	var/datum/component/psionic_profile/profile = living_owner.get_psionic_profile()
-	if(!get_turf(target) || get_dist(get_turf(living_owner), get_turf(target)) > get_variant_value(profile, "cast_range"))
+	var/variant_cast_range = get_variant_value(profile, "cast_range")
+	if(!get_turf(target) || get_dist(get_turf(living_owner), get_turf(target)) > variant_cast_range)
 		living_owner.balloon_alert(living_owner, "too far away!")
+		return FALSE
+	if(requires_line_of_sight && !can_see(living_owner, target, variant_cast_range))
+		living_owner.balloon_alert(living_owner, no_line_of_sight_alert)
 		return FALSE
 	if(lewd && isliving(target) && target != living_owner)
 		var/mob/living/living_target = target

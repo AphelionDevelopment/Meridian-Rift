@@ -28,12 +28,13 @@
 	if(!.)
 		return FALSE
 
+	var/mob/living/living_owner = owner
 	var/turf/target_turf = get_turf(target)
-	if(!target_turf || target_turf == get_turf(owner))
-		owner.balloon_alert(owner, "pick another location!")
+	if(!target_turf || target_turf == get_turf(living_owner))
+		living_owner.balloon_alert(living_owner, "pick another location!")
 		return FALSE
 	if(target_turf.is_blocked_turf(exclude_mobs = TRUE))
-		owner.balloon_alert(owner, "destination blocked!")
+		living_owner.balloon_alert(living_owner, "destination blocked!")
 		return FALSE
 
 	return TRUE

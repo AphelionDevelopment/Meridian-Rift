@@ -21,6 +21,7 @@
 	rank_variant_types = list(
 		/datum/psionic_rank_variant/telepathy,
 	)
+	requires_line_of_sight = FALSE
 	/// Last living target contacted by this action.
 	var/datum/weakref/last_target_ref
 	/// Message being projected for this activation.
