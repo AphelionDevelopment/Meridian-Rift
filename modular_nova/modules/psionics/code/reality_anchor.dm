@@ -24,7 +24,14 @@
 	icon = 'modular_nova/modules/psionics/icons/reality_anchor.dmi'
 	icon_state = "reality_anchor"
 	density = TRUE
-	max_integrity = 600
+	max_integrity = 300
+	custom_materials = list(
+		/datum/material/iron = SHEET_MATERIAL_AMOUNT * 10,
+		/datum/material/glass = SHEET_MATERIAL_AMOUNT * 4,
+		/datum/material/silver = SHEET_MATERIAL_AMOUNT * 3,
+		/datum/material/uranium = SHEET_MATERIAL_AMOUNT * 2,
+		/datum/material/bluespace = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 	light_system = OVERLAY_LIGHT
 	light_range = 3
 	light_power = 1
