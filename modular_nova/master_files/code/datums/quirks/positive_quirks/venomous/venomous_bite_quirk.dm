@@ -115,5 +115,5 @@
 
 	return /datum/quirk/venomous_bite::name in preferences.all_quirks
 
-/datum/preference/choiced/venomous_bite_venom/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/venomous_bite_venom/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return

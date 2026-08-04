@@ -110,5 +110,5 @@ GLOBAL_LIST_INIT(genetic_mutation_choice, list(
 
 	return TRUE
 
-/datum/preference/choiced/genetic_mutation/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/genetic_mutation/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return

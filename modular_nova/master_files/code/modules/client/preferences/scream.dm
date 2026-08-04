@@ -7,7 +7,7 @@
 /datum/preference/choiced/scream/init_possible_values()
 	return assoc_to_keys(GLOB.scream_types_by_name)
 
-/datum/preference/choiced/scream/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/scream/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	var/datum/scream_type/chosen_scream = GLOB.scream_types_by_name[value]
 	if(chosen_scream)
 		target.selected_scream = chosen_scream

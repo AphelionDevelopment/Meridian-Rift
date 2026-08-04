@@ -156,7 +156,7 @@ GLOBAL_LIST_INIT(possible_player_lunchbox_design_choice, list(
 
 	return /datum/quirk/item_quirk/lunchbox_owner::name in preferences.all_quirks
 
-/datum/preference/choiced/lunchbox_design/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/lunchbox_design/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /// Meal choice
@@ -271,7 +271,7 @@ GLOBAL_LIST_INIT(possible_player_lunchbox_meal_choice, list(
 
 	return /datum/quirk/item_quirk/lunchbox_owner::name in preferences.all_quirks
 
-/datum/preference/choiced/lunchbox_meal_choice/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/lunchbox_meal_choice/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /// Snack choice
@@ -389,7 +389,7 @@ GLOBAL_LIST_INIT(possible_player_lunchbox_snack_choice, list(
 
 	return /datum/quirk/item_quirk/lunchbox_owner::name in preferences.all_quirks
 
-/datum/preference/choiced/lunchbox_first_snack_choice/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/lunchbox_first_snack_choice/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /// Snack choice 2 Electric Boogaloo
@@ -420,7 +420,7 @@ GLOBAL_LIST_INIT(possible_player_lunchbox_snack_choice, list(
 
 	return /datum/quirk/item_quirk/lunchbox_owner::name in preferences.all_quirks
 
-/datum/preference/choiced/lunchbox_second_snack_choice/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/lunchbox_second_snack_choice/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /// Drink Choice
@@ -510,7 +510,7 @@ GLOBAL_LIST_INIT(possible_player_lunchbox_drink_choice, list(
 
 	return /datum/quirk/item_quirk/lunchbox_owner::name in preferences.all_quirks
 
-/datum/preference/choiced/lunchbox_drink_choice/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/lunchbox_drink_choice/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /// Dessert Choice
@@ -580,6 +580,6 @@ GLOBAL_LIST_INIT(possible_player_lunchbox_desert_choice, list(
 
 	return /datum/quirk/item_quirk/lunchbox_owner::name in preferences.all_quirks
 
-/datum/preference/choiced/lunchbox_desert_choice/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/lunchbox_desert_choice/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 

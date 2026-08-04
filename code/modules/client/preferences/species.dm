@@ -31,7 +31,7 @@
 
 	return values
 
-/datum/preference/choiced/species/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/prefs) // NOVA EDIT CHANGE - ORIGINAL: /datum/preference/choiced/species/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/species/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	// NOVA EDIT ADDITION START - TODO: This really shouldn't be here?
 	for(var/organ_key in list(ORGAN_SLOT_VAGINA, ORGAN_SLOT_PENIS, ORGAN_SLOT_BREASTS, ORGAN_SLOT_ANUS, ORGAN_SLOT_BUTT))
 		var/obj/item/organ/genital/gent = target.get_organ_slot(organ_key)
