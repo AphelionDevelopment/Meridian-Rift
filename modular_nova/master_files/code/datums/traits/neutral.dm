@@ -224,7 +224,7 @@
 	var/obj/item/organ/tongue/cat/new_tongue = new(get_turf(human_holder))
 
 	ADD_TRAIT(human_holder, TRAIT_WATER_HATER, QUIRK_TRAIT)
-	ADD_TRAIT(human_holder, TRAIT_CATLIKE_INSTINCT, QUIRK_TRAIT) // APHELION EDIT ADDITION - feeds tg's catlike behaviour system instead of relying on isfeline() checks
+	ADD_TRAIT(human_holder, TRAIT_CATLIKE_INSTINCT, QUIRK_TRAIT)
 
 	new_tongue.copy_traits_from(human_holder.get_organ_slot(ORGAN_SLOT_TONGUE), human_holder)
 	new_tongue.Insert(human_holder, special = TRUE, movement_flags = DELETE_IF_REPLACED)
@@ -234,7 +234,7 @@
 	var/obj/item/organ/tongue/new_tongue = new human_holder.dna.species.mutanttongue
 
 	REMOVE_TRAIT(human_holder, TRAIT_WATER_HATER, QUIRK_TRAIT)
-	REMOVE_TRAIT(human_holder, TRAIT_CATLIKE_INSTINCT, QUIRK_TRAIT) // APHELION EDIT ADDITION - see add_unique()
+	REMOVE_TRAIT(human_holder, TRAIT_CATLIKE_INSTINCT, QUIRK_TRAIT)
 
 	new_tongue.copy_traits_from(human_holder.get_organ_slot(ORGAN_SLOT_TONGUE), human_holder)
 	new_tongue.Insert(human_holder, special = TRUE, movement_flags = DELETE_IF_REPLACED)
