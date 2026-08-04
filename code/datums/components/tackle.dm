@@ -107,11 +107,7 @@
 	RegisterSignal(user, COMSIG_MOVABLE_MOVED, PROC_REF(checkObstacle))
 	playsound(user, 'sound/items/weapons/thudswoosh.ogg', 40, TRUE, -1)
 
-<<<<<<< HEAD
-	var/leap_word = isfeline(user) || HAS_TRAIT(user, TRAIT_TACKLING_TAILED_POUNCE) ? "pounce" : "leap" //If cat, "pounce" instead of "leap". // NOVA EDIT CHANGE- FELINE TRAITS. Was: isfelinid(user)
-=======
-	var/leap_word = HAS_TRAIT(user, TRAIT_CATLIKE_INSTINCT) || HAS_TRAIT(user, TRAIT_TACKLING_TAILED_POUNCE) ? "pounce" : "leap" //If cat, "pounce" instead of "leap".
->>>>>>> 299d8a6433e (More is_species() conversion to less hardcoded checks. (#96956))
+	var/leap_word = HAS_TRAIT(user, TRAIT_CATLIKE_INSTINCT) || isfeline(user) || HAS_TRAIT(user, TRAIT_TACKLING_TAILED_POUNCE) ? "pounce" : "leap" //If cat, "pounce" instead of "leap". // APHELION EDIT CHANGE - isfeline kept for Nova's feline species/quirk
 	if(can_see(user, clicked_atom, 7))
 		user.visible_message(span_warning("[user] [leap_word]s at [clicked_atom]!"), span_danger("You [leap_word] at [clicked_atom]!"))
 	else
@@ -157,11 +153,7 @@
 		return
 
 	var/mob/living/carbon/target = hit
-<<<<<<< HEAD
-	var/tackle_word = isfeline(user) ? "pounce" : "tackle" //If cat, "pounce" instead of "tackle". // NOVA EDIT - FELINE TRAITS - ORIGINAL : var/tackle_word = isfelinid(user) ? "pounce" : "tackle"
-=======
-	var/tackle_word = HAS_TRAIT(user, TRAIT_CATLIKE_INSTINCT) ? "pounce" : "tackle" //If cat, "pounce" instead of "tackle".
->>>>>>> 299d8a6433e (More is_species() conversion to less hardcoded checks. (#96956))
+	var/tackle_word = HAS_TRAIT(user, TRAIT_CATLIKE_INSTINCT) || isfeline(user) ? "pounce" : "tackle" //If cat, "pounce" instead of "tackle". // APHELION EDIT CHANGE - isfeline kept for Nova's feline species/quirk
 
 	var/roll = rollTackle(target)
 	tackling = FALSE
