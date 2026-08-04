@@ -277,7 +277,7 @@
 
 	//Make any mob with catlike instincts near the target face the target.
 	for(var/mob/living/target_cat in view(1, targloc))
-		if((!HAS_TRAIT(target_cat, TRAIT_CATLIKE_INSTINCT) && !isfeline(target_cat)) || target_cat.stat == DEAD || target_cat.is_blind() || target_cat.incapacitated) // APHELION EDIT CHANGE - isfeline kept so the Feline Traits quirk still reacts - ORIGINAL: if(!HAS_TRAIT(target_cat, TRAIT_CATLIKE_INSTINCT) || target_cat.is_blind() || target_cat.incapacitated)
+		if(!HAS_TRAIT(target_cat, TRAIT_CATLIKE_INSTINCT) || target_cat.stat == DEAD || target_cat.is_blind() || target_cat.incapacitated) // NOVA EDIT CHANGE - dead mobs stay uninterested - ORIGINAL: if(!HAS_TRAIT(target_cat, TRAIT_CATLIKE_INSTINCT) || target_cat.is_blind() || target_cat.incapacitated)
 			continue
 		if(target_cat.body_position == STANDING_UP)
 			target_cat.setDir(get_dir(target_cat, targloc)) // kitty always looks at the light
