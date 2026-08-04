@@ -107,7 +107,14 @@ jobs:
           fi
 
           tools/bootstrap/python -m mapmerge2.dmm_test $MAPS
-          tools/bootstrap/python -m tools.maplint.source $MAPS
+
+          # APHELION EDIT ADDITION - maplint only ever covered _maps/ (see its glob in tools/maplint/source/__main__.py);
+          # our modular maps have never been linted, so don't hand them to it. dmm_test still parses everything above.
+          LINT_MAPS=$(printf '%s\n' $MAPS | grep -E '^(\./)?_maps/' || true)
+          if [ -n "$LINT_MAPS" ]; then
+            tools/bootstrap/python -m tools.maplint.source $LINT_MAPS
+          fi
+          # APHELION EDIT ADDITION END
       - name: Check Cutter
         if: steps.linter-setup.conclusion == 'success' && !cancelled()
         run: tools/bootstrap/python -m tools.icon_cutter.check
