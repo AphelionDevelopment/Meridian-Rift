@@ -17,6 +17,7 @@ type Data = {
   connected: BooleanLike;
   notice: string;
   unlocked: BooleanLike;
+  visualizing: BooleanLike;
   target: string;
   powernet_power: number;
   capacitor_charge: number;
@@ -31,6 +32,7 @@ export const BluespaceArtilleryNova = (props) => {
     notice,
     connected,
     unlocked,
+    visualizing,
     target,
     powernet_power,
     capacitor_charge,
@@ -133,11 +135,20 @@ export const BluespaceArtilleryNova = (props) => {
           <Section>
             <LabeledList>
               <LabeledList.Item label="Maintenance">
-                <Button
-                  icon="wrench"
-                  content="Complete Deployment"
-                  onClick={() => act('build')}
-                />
+                {visualizing ? (
+                  <>
+                    <Button color="good" onClick={() => act('build')}>
+                      Confirm Position
+                    </Button>
+                    <Button color="bad" onClick={() => act('unvisualize')}>
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <Button icon="wrench" onClick={() => act('visualize')}>
+                    Begin Deployment
+                  </Button>
+                )}
               </LabeledList.Item>
             </LabeledList>
           </Section>

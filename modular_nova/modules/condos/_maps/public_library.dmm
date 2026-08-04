@@ -149,7 +149,7 @@
 /area/misc/condo)
 "zq" = (
 /obj/machinery/door/airlock/wood,
-/turf/closed/wall/mineral/stone,
+/turf/open/floor/wood,
 /area/misc/condo)
 "Aj" = (
 /obj/structure/table/wood,
@@ -260,7 +260,7 @@
 "Mw" = (
 /obj/structure/window/green_glass_pane,
 /obj/structure/curtain/cloth/fancy,
-/turf/closed/wall/mineral/stone,
+/turf/open/floor/wood/tile,
 /area/misc/condo)
 "QG" = (
 /obj/effect/turf_decal/siding/wood{

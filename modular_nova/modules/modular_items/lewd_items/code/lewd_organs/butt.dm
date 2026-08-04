@@ -48,8 +48,7 @@
 	return ..()
 
 /obj/item/organ/genital/butt/build_from_accessory(datum/sprite_accessory/genital/accessory, datum/dna/DNA)
-	if(DNA.features["butt_uses_skintones"]) // Corrected DNA feature key
-		uses_skintones = accessory.has_skintone_shading
+	uses_skintones = DNA.features["butt_uses_skintones"] ? accessory.has_skintone_shading : FALSE // Corrected DNA feature key
 	return ..()
 
 /datum/bodypart_overlay/mutant/genital/butt

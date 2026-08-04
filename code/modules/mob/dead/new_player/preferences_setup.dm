@@ -144,6 +144,7 @@
 				if(gent)
 					gent.aroused = AROUSAL_NONE
 					gent.update_sprite_suffix()
+					needs_update = TRUE
 
 		if(PREVIEW_PREF_NAKED_AROUSED)
 			mannequin.underwear_visibility = UNDERWEAR_HIDE_UNDIES | UNDERWEAR_HIDE_SHIRT | UNDERWEAR_HIDE_SOCKS | UNDERWEAR_HIDE_BRA
