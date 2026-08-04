@@ -42,6 +42,7 @@ GLOBAL_LIST_INIT(psionic_backlash_tiers, list(
 GLOBAL_LIST_EMPTY(psionic_backlash_candidates)
 
 /proc/get_psionic_backlash_candidates(tier)
+	RETURN_TYPE(/list)
 	if(GLOB.psionic_backlash_candidates[tier])
 		return GLOB.psionic_backlash_candidates[tier]
 
