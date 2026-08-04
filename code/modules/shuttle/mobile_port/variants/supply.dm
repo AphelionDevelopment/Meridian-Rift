@@ -254,18 +254,8 @@ GLOBAL_LIST_INIT(blacklisted_cargo_types, typecacheof(list(
 		var/buyer = buying_account.account_holder
 
 		if(buying_account_orders.len > GOODY_FREE_SHIPPING_MAX) // no free shipping, send a crate
-<<<<<<< HEAD
-			var/obj/structure/closet/crate/secure/owned/our_crate = new /obj/structure/closet/crate/secure/owned(pick_n_take(empty_turfs))
-			our_crate.buyer_account = buying_account
-			/// NOVA EDIT ADDITION START - FIXES COMMAND BUDGET CASES BEING UNOPENABLE
-			if(istype(our_crate.buyer_account, /datum/bank_account/department))
-				our_crate.department_purchase = TRUE
-				our_crate.department_account = our_crate.buyer_account
-			/// NOVA EDIT ADDITION END
-=======
 			var/obj/structure/closet/crate/secure/our_crate = new /obj/structure/closet/crate/secure(pick_n_take(empty_turfs))
 			our_crate.AddComponent(/datum/component/locked_to_account, buying_account)
->>>>>>> e0026bb6e09 (Private orders are now using component and come inside of their own crate, instead of specific one. (#97348))
 			our_crate.name = "goody crate - purchased by [buyer]"
 			miscboxes[buyer] = our_crate
 		else //free shipping in a case
