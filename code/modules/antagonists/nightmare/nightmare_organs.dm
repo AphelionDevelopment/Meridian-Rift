@@ -9,10 +9,7 @@
 	icon = 'icons/obj/medical/organs/organs.dmi'
 	icon_state = "brain-x-d"
 	shade_color = "black, somehow"
-<<<<<<< HEAD
-=======
 	variant_traits_added = list(TRAIT_NIGHTMARISH)
->>>>>>> cba7bc14023 ([NO GBP] Felinids are no longer TOO dumb (#97306))
 
 	///Our associated shadow jaunt spell, for all nightmares
 	var/datum/action/cooldown/spell/jaunt/shadow_walk/our_jaunt
