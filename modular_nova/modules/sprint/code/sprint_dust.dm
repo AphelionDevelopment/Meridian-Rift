@@ -1,6 +1,7 @@
 /// Dust kicked up by a running mob. One per puff, so overlapping puffs do not clobber each other.
 /obj/effect/temp_visual/dir_setting/sprint_dust
 	icon = 'modular_nova/modules/sprint/icons/sprint_dust.dmi'
+	icon_state = null
 	layer = BELOW_MOB_LAYER
 
 /// Thrown out on setting off at a run. Only drawn facing south.
