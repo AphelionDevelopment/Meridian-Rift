@@ -27,8 +27,6 @@
 /datum/component/sprint
 	/// Typed copy of parent.
 	var/mob/living/carbon/runner
-	/// Reusable dust puff, parked in nullspace between appearances.
-	var/obj/effect/sprint_dust/dust
 	/// Tiles run in the current direction.
 	var/sustained_moves = 0
 	/// world.time of the last dust puff. Zero means this run has not kicked up its first cloud yet.
@@ -39,11 +37,9 @@
 	if(!iscarbon(parent))
 		return COMPONENT_INCOMPATIBLE
 	runner = parent
-	dust = new(null)
 
 /datum/component/sprint/Destroy(force)
 	STOP_PROCESSING(SSfastprocess, src)
-	QDEL_NULL(dust)
 	runner = null
 	return ..()
 
@@ -78,7 +74,8 @@
 	var/direction = move_args[MOVE_ARG_DIRECTION]
 	var/step_size = ISDIAGONALDIR(direction) ? RUN_DIAGONAL_STEP : 1
 	if(!last_dust)
-		puff("sprint_cloud", direction, 0.6 SECONDS)
+		// The full cloud is only drawn facing south.
+		puff(/obj/effect/temp_visual/dir_setting/sprint_dust/cloud, SOUTH)
 		sustained_moves += step_size
 	else if(world.time > last_dust + RUN_DUST_GRACE)
 		handle_sustained_dust(direction, step_size)
@@ -116,19 +113,25 @@
 /datum/component/sprint/proc/handle_sustained_dust(direction, step_size)
 	if(direction & runner.last_move)
 		if(sustained_moves < RUN_SUSTAINED_THRESHOLD && (sustained_moves + step_size) >= RUN_SUSTAINED_THRESHOLD)
-			puff("sprint_cloud_small", direction, 0.4 SECONDS)
+			puff(/obj/effect/temp_visual/dir_setting/sprint_dust/small, direction)
 		sustained_moves += step_size
 		return
 
 	if(sustained_moves >= RUN_SUSTAINED_THRESHOLD)
-		puff("sprint_cloud_small", direction, 0.4 SECONDS)
+		puff(/obj/effect/temp_visual/dir_setting/sprint_dust/small, direction)
 	if(direction & turn(runner.last_move, 180))
-		puff("sprint_cloud_tiny", direction, 0.3 SECONDS)
+		puff(/obj/effect/temp_visual/dir_setting/sprint_dust/tiny, direction)
 	sustained_moves = 0
 
-/// Flicks a dust puff and records when, since sustained tracking is gated on it.
-/datum/component/sprint/proc/puff(state, direction, duration)
-	dust.appear(state, direction, get_turf(runner), duration)
+/**
+ * Kicks up one dust puff and records when, since sustained tracking is gated on it.
+ *
+ * Arguments:
+ * * puff_type - which dust effect to throw out. Carries its own duration.
+ * * direction - which way the puff faces.
+ */
+/datum/component/sprint/proc/puff(puff_type, direction)
+	new puff_type(get_turf(runner), direction)
 	last_dust = world.time
 
 /**

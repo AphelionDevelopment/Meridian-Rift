@@ -1,23 +1,19 @@
-/// Reusable dust puff kicked up by a running mob. Parks in nullspace between appearances.
-/obj/effect/sprint_dust
+/// Dust kicked up by a running mob. One per puff, so overlapping puffs do not clobber each other.
+/obj/effect/temp_visual/dir_setting/sprint_dust
 	icon = 'modular_nova/modules/sprint/icons/sprint_dust.dmi'
-	icon_state = null
-	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+	layer = BELOW_MOB_LAYER
 
-/**
- * Plays one puff, then returns to nullspace.
- *
- * Arguments:
- * * state - icon state to flick.
- * * puff_dir - direction the mob was moving.
- * * location - turf to appear on.
- * * duration - how long to stay before leaving.
- */
-/obj/effect/sprint_dust/proc/appear(state, puff_dir, turf/location, duration)
-	if(!location)
-		return
-	// The full cloud is only drawn facing south, the smaller puffs trail the way you went.
-	dir = (state == "sprint_cloud") ? SOUTH : puff_dir
-	abstract_move(location)
-	flick(state, src)
-	addtimer(CALLBACK(src, TYPE_PROC_REF(/atom/movable, moveToNullspace)), duration, TIMER_UNIQUE|TIMER_OVERRIDE)
+/// Thrown out on setting off at a run. Only drawn facing south.
+/obj/effect/temp_visual/dir_setting/sprint_dust/cloud
+	icon_state = "sprint_cloud"
+	duration = 0.6 SECONDS
+
+/// Thrown out on hitting a sustained stride, or on turning out of one.
+/obj/effect/temp_visual/dir_setting/sprint_dust/small
+	icon_state = "sprint_cloud_small"
+	duration = 0.4 SECONDS
+
+/// Thrown out on doubling back.
+/obj/effect/temp_visual/dir_setting/sprint_dust/tiny
+	icon_state = "sprint_cloud_tiny"
+	duration = 0.3 SECONDS
