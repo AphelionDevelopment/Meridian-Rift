@@ -12,6 +12,11 @@
 #define SFX_BULLET_IMPACT_CONCRETE "bullet_impact_concrete"
 #define SFX_BULLET_IMPACT_FLESH "bullet_impact_flesh"
 
+/// Volume multiplier on a walking mob's footsteps. Walking is quieter than running, not silent.
+#define WALK_FOOTSTEP_VOLUME_MULT 0.65
+/// Hearing range adjustment on a walking mob's footsteps.
+#define WALK_FOOTSTEP_RANGE_ADJUSTMENT -2
+
 #define AMBIENCE_MUSHROOM "mushroom"
 #define AMBIENCE_FOREST "forest"
 
