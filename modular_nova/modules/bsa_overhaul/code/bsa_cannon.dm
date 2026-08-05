@@ -75,7 +75,9 @@
 	if(!has_space())
 		return "Not enough free space!"
 
-/obj/machinery/bsa/middle/proc/has_space()
+/// Returns the turfs the deployed cannon will occupy, or null if we aren't aligned yet.
+/// Single source of truth for both the space check and the deployment hologram.
+/obj/machinery/bsa/middle/proc/get_deployment_turfs()
 	var/cannon_dir = get_cannon_direction()
 	var/x_min
 	var/x_max
@@ -86,8 +88,17 @@
 		if(WEST)
 			x_min = x + 4
 			x_max = x - 6
+		else
+			return null
 
-	for(var/turf/our_turf in block(locate(x_min, y - 1, z),locate(x_max, y + 1, z)))
+	return block(locate(x_min, y - 1, z), locate(x_max, y + 1, z))
+
+/obj/machinery/bsa/middle/proc/has_space()
+	var/list/deployment_turfs = get_deployment_turfs()
+	if(isnull(deployment_turfs))
+		return FALSE
+
+	for(var/turf/our_turf as anything in deployment_turfs)
 		if(our_turf.density || isspaceturf(our_turf))
 			return FALSE
 	return TRUE

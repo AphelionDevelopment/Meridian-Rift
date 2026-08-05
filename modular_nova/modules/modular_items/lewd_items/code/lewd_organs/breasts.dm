@@ -83,8 +83,7 @@
 	return ..()
 
 /obj/item/organ/genital/breasts/build_from_accessory(datum/sprite_accessory/genital/accessory, datum/dna/DNA)
-	if(DNA.features["breasts_uses_skintones"])
-		uses_skintones = accessory.has_skintone_shading
+	uses_skintones = DNA.features["breasts_uses_skintones"] ? accessory.has_skintone_shading : FALSE
 	return ..()
 
 /datum/bodypart_overlay/mutant/genital/breasts/get_global_feature_list()

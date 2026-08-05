@@ -467,6 +467,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 
 	character_preview_view.update_body()
 	SSstatpanels.update_job_estimation(ckey = parent.ckey) // update the job estimations with their new char // NOVA EDIT ADDITION
+	previous_preview_pref = null // NOVA EDIT ADDITION
 
 /datum/preferences/proc/remove_current_slot()
 	PRIVATE_PROC(TRUE)

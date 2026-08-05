@@ -211,6 +211,12 @@
 	preview_name = "Lesbian Pride"
 	new_icon_state = "pride_lesbian"
 
+/* // APHELION EDIT REMOVAL START - SEE: modular_nova\modules\customization\modules\clothing\under\accessories.dm (pride_pin/nova/man_loving_man) - our accessories.dmi uses "pride_mlm", it has no "pride_gay" state
+/datum/atom_skin/pride_pin/mlm
+	preview_name = "Gay Pride"
+	new_icon_state = "pride_gay"
+*/ // APHELION EDIT REMOVAL END
+
 /obj/item/clothing/accessory/pride
 	name = "pride pin"
 	desc = "A Nanotrasen Diversity & Inclusion Center-sponsored holographic pin to show off your pride, reminding the crew of their unwavering commitment to equity, diversity, and inclusion!"
