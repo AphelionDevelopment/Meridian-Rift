@@ -9,7 +9,7 @@
 	cooldown_time = 8 SECONDS
 	cast_range = 6
 	strain_gain = 0
-	active_strain_gain_per_second = 10
+	active_strain_gain_per_second = 6
 	block_charge_cost = 1
 	block_message = "mending blocked!"
 
