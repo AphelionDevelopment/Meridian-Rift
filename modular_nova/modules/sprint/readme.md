@@ -33,9 +33,6 @@ There is no sound on running, only the dust.
 ### Known scope limits
 
 - Only humans pay for running. Other carbons walk by default but run for free.
-- Walking by default means players get walking's benefits without opting in, notably silent footsteps
-  and slip immunity, and lose running's, notably climbing `/obj/structure/steps` and
-  `/datum/element/skittish`. That is the intended trade, not an oversight.
 - Both speed bonuses are flat defines rather than config entries, applied per mob rather than through
   `RUN_DELAY`/`WALK_DELAY` so that borgs and simple animals keep stock speeds. Retune `RUN_SPEED_BONUS`
   and `WALK_SPEED_BONUS` at the top of `sprint_movespeed.dm`.
