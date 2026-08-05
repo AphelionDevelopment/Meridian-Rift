@@ -6,6 +6,7 @@
 	. = ..()
 	mob_examine_panel = new(src) //create the datum
 	AddComponent(/datum/component/interactable)
+	AddComponent(/datum/component/sprint)
 	//Removing ERP IC verbs depending on config
 	if(CONFIG_GET(flag/disable_erp_preferences))
 		UNASSIGN_GAME_VERB(src, /mob/living/carbon/human, toggle_genitals)
