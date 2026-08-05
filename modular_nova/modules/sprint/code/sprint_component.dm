@@ -40,8 +40,9 @@
 
 /datum/component/sprint/Destroy(force)
 	STOP_PROCESSING(SSfastprocess, src)
+	// The parent unhooks us from the mob, which UnregisterFromParent() still needs runner for.
+	. = ..()
 	runner = null
-	return ..()
 
 /datum/component/sprint/RegisterWithParent()
 	RegisterSignal(parent, COMSIG_MOB_CLIENT_PRE_MOVE, PROC_REF(on_mob_move))
