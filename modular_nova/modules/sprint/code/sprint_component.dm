@@ -40,7 +40,7 @@
 
 /datum/component/sprint/Destroy(force)
 	STOP_PROCESSING(SSfastprocess, src)
-	// The parent unhooks us from the mob, which UnregisterFromParent() still needs runner for.
+	// The parent unhooks us from the mob, which UnregisterFromParent() still needs runner for
 	. = ..()
 	runner = null
 
