@@ -18,6 +18,6 @@
 
 	return species_type == /datum/species/vox_primalis
 
-/datum/preference/choiced/vox_bodycolor/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/vox_bodycolor/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.dna.features["vox_bodycolor"] = value
 

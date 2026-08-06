@@ -9,7 +9,7 @@
 /datum/preference/choiced/footstep_sound/create_default_value()
 	return "Default"
 
-/datum/preference/choiced/footstep_sound/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/footstep_sound/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	if(value == "Default")
 		return
 

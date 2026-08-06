@@ -100,7 +100,7 @@
 /datum/manipulator_task/cargo/proc/fill_priority_list(manipulator_tier)
 	return list()
 
-/datum/manipulator_task/cargo/proc/find_type_priority(skip_anchored = FALSE)
+/datum/manipulator_task/cargo/proc/find_type_priority(skip_anchored = FALSE, respect_filters = FALSE)
 	var/atom/movable/best_candidate = null
 	var/best_priority_index = INFINITY
 
@@ -111,7 +111,7 @@
 
 			var/datum/manipulator_priority/prio = interaction_priorities[i]
 
-			if(!prio.active || ispath(prio, /turf))
+			if(!prio.active || prio.atom_typepath == /turf)
 				continue
 
 			if(!istype(thing, prio.atom_typepath))
@@ -124,6 +124,9 @@
 				var/mob/living/living_mob = thing
 				if(living_mob.stat == DEAD)
 					continue
+
+			if(respect_filters && should_use_filters && isitem(thing) && !check_filters_for_atom(thing))
+				continue
 
 			best_candidate = thing
 			best_priority_index = i
@@ -310,7 +313,7 @@
 		return FALSE
 	if(!manipulator.monkey_worker?.resolve())
 		return FALSE
-	if(!find_type_priority(skip_anchored))
+	if(!find_type_priority(skip_anchored, TRUE))
 		return FALSE
 	return can_accept(target)
 
@@ -432,9 +435,7 @@
 /datum/manipulator_task/cargo/dropoff_base/use/can_accept(atom/movable/target)
 	if(!is_valid())
 		return FALSE
-	if(should_use_filters && !check_filters_for_atom(target))
-		return FALSE
-	return TRUE
+	return find_type_priority(skip_anchored, TRUE) != null
 
 /datum/manipulator_task/cargo/dropoff_base/use/serialize()
 	var/list/data = ..()
@@ -482,7 +483,7 @@
 /datum/manipulator_task/cargo/interact/can_run(obj/machinery/big_manipulator/manipulator)
 	if(!..())
 		return FALSE
-	return find_type_priority() != null
+	return find_type_priority(skip_anchored, TRUE) != null
 
 /datum/manipulator_task/cargo/interact/run_task(obj/machinery/big_manipulator/manipulator)
 	manipulator.rotate_to_point(src, src, PROC_REF(try_interact))

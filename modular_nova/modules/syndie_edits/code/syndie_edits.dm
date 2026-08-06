@@ -62,8 +62,10 @@
 /obj/item/clothing/mask/neck_gaiter/syndicate
 	name = "tactical neck gaiter"
 	desc = "For the agent wanting to keep a low profile whilst concealing their identity. Has a small respirator to be used with internals."
-	unique_death = 'modular_nova/master_files/sound/effects/hacked.ogg'
 	icon_state = "/obj/item/clothing/mask/neck_gaiter/syndicate"
+	emote_sounds = list(
+		/datum/emote/living/deathgasp::key = 'modular_nova/master_files/sound/effects/hacked.ogg',
+	)
 	greyscale_colors = "#2c2c2e"
 
 /obj/item/clothing/shoes/combat //TO-DO: Move these overrides out of a syndicate file!

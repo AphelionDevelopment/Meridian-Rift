@@ -16,7 +16,6 @@
 		TRAIT_RADIMMUNE,
 		TRAIT_LIMBATTACHMENT,
 		TRAIT_NOBREATH,
-		TRAIT_NO_ZOMBIFY,
 	)
 	inherent_biotypes = MOB_UNDEAD | MOB_HUMANOID
 	mutanttongue = /obj/item/organ/tongue/zombie
@@ -240,11 +239,6 @@
 	if(forced)
 		target.AddComponent(/datum/component/mutant_infection)
 		return TRUE
-
-	if(HAS_TRAIT(target, TRAIT_NO_ZOMBIFY))
-		// cannot infect any NOZOMBIE subspecies (such as high functioning
-		// mutants)
-		return FALSE
 
 	if(target.GetComponent(/datum/component/mutant_infection))
 		return FALSE

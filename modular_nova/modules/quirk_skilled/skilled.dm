@@ -50,7 +50,7 @@ GLOBAL_LIST_INIT(skill_choices, init_skill_choices())
 
 	return /datum/quirk/skilled::name in preferences.all_quirks
 
-/datum/preference/choiced/skilled/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/skilled/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 #undef SKILLED_QUIRK_SKILL_LEVEL

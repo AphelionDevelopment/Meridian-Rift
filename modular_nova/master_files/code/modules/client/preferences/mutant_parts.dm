@@ -71,7 +71,18 @@
 	savefile_key = "mutant_colors_color"
 	check_mode = TRICOLOR_NO_CHECK
 
-/datum/preference/tri_color/mutant_colors/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/tri_color/mutant_colors/is_accessible(datum/preferences/preferences)
+	if (!..(preferences))
+		return FALSE
+	var/species_type = preferences.read_preference(/datum/preference/choiced/species)
+	var/datum/species/species = GLOB.species_prototypes[species_type]
+	return !(TRAIT_FIXED_MUTANT_COLORS in species.inherent_traits)
+
+/datum/preference/tri_color/mutant_colors/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
+	var/species_type = preferences.read_preference(/datum/preference/choiced/species)
+	var/datum/species/species = GLOB.species_prototypes[species_type]
+	if (TRAIT_FIXED_MUTANT_COLORS in species.inherent_traits)
+		return
 	target.dna.features[FEATURE_MUTANT_COLOR] = value[1]
 	target.dna.features[FEATURE_MUTANT_COLOR_TWO] = value[2]
 	target.dna.features[FEATURE_MUTANT_COLOR_THREE] = value[3]
@@ -196,7 +207,7 @@
 	type_to_check = /datum/preference/toggle/mutant_toggle/snout
 	default_accessory_type = /datum/sprite_accessory/snouts/none
 
-/datum/preference/choiced/mutant_choice/snout/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/mutant_choice/snout/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	. = ..()
 
 	var/obj/item/bodypart/head/our_head = target.get_bodypart(BODY_ZONE_HEAD)
@@ -440,7 +451,7 @@
 	. = ..() // Got to do this because of linters.
 	return FALSE
 
-/datum/preference/tri_color/moth_markings/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/tri_color/moth_markings/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return FALSE
 
 /datum/preference/tri_bool/moth_markings
@@ -454,7 +465,7 @@
 	. = ..() // Got to do this because of linters.
 	return FALSE
 
-/datum/preference/tri_bool/moth_markings/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/tri_bool/moth_markings/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return FALSE
 
 /// Fluff
@@ -917,7 +928,7 @@
 /datum/preference/color/mutant/holosynth_color/create_default_value()
 	return COLOR_WHITE
 
-/datum/preference/color/mutant/holosynth_color/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/color/mutant/holosynth_color/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	// default case, nothing to do here either, so skip processing
 	if(value == COLOR_WHITE)
 		target.dna.features["holo_color"] = value

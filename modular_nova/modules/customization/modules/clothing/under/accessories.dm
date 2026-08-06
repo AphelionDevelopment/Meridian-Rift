@@ -249,10 +249,6 @@
 	new_icon = 'modular_nova/master_files/icons/obj/clothing/accessories.dmi'
 	new_worn_icon = 'modular_nova/master_files/icons/mob/clothing/accessories.dmi'
 
-/datum/atom_skin/pride_pin/nova/man_loving_man
-	preview_name = "Man-Loving-Man / Gay Pride"
-	new_icon_state = "pride_mlm"
-
 /datum/atom_skin/pride_pin/nova/genderfluid
 	preview_name = "Genderfluid Pride"
 	new_icon_state = "pride_genderfluid"
