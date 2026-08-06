@@ -21,6 +21,7 @@
 /obj/projectile/bullet/c40sol
 	name = ".40 Sol Long bullet"
 	damage = 27
+	speed = 2
 
 	wound_bonus = 5
 	exposed_wound_bonus = 10
