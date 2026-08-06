@@ -25,6 +25,15 @@
 /// How far a secondary detonation carries as a bang, past which it is a distant rumble.
 #define SELF_DESTRUCT_BLAST_AUDIBLE_RANGE 60
 
+/// Chance a secondary detonation is heard across the whole station rather than only nearby.
+/// Every blast reaching every player is one guaranteed sound each, and by the tail end that is a
+/// constant stream fighting the announcement for the client's voices.
+#define SELF_DESTRUCT_BLAST_ECHO_PROB 35
+
+/// Priority on the secondary detonation sounds, deliberately near the floor. If a client has to drop
+/// something when the blasts get dense, it should be a blast and never the announcement.
+#define SELF_DESTRUCT_BLAST_SOUND_PRIORITY 1
+
 /// Chance a secondary detonation lands near somebody rather than anywhere on the station.
 #define SELF_DESTRUCT_BLAST_NEAR_CREW_PROB 50
 

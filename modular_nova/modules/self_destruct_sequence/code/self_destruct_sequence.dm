@@ -17,6 +17,8 @@ GLOBAL_DATUM(self_destruct_sequence, /datum/self_destruct_sequence)
 	var/past_no_return = FALSE
 	/// Station areas we put into their fire alarm state, so an abort can put them back.
 	var/list/area/reddened_areas
+	/// Clients already hearing the announcement, so we never restart it under one that has it.
+	var/list/client/served
 
 /datum/self_destruct_sequence/New(obj/machinery/nuclearbomb/selfdestruct/starting_terminal)
 	. = ..()
@@ -25,6 +27,7 @@ GLOBAL_DATUM(self_destruct_sequence, /datum/self_destruct_sequence)
 
 	terminal = starting_terminal
 	start_time = world.time
+	served = list()
 	announcement_channel = SSsounds.reserve_sound_channel_for_datum(src)
 
 	RegisterSignal(terminal, COMSIG_QDELETING, PROC_REF(on_terminal_deleted))
@@ -41,6 +44,7 @@ GLOBAL_DATUM(self_destruct_sequence, /datum/self_destruct_sequence)
 	if(isnull(terminal) || !terminal.exploding)
 		restore_lighting()
 	reddened_areas = null
+	served = null
 	terminal = null
 	if(GLOB.self_destruct_sequence == src)
 		GLOB.self_destruct_sequence = null
@@ -68,19 +72,42 @@ GLOBAL_DATUM(self_destruct_sequence, /datum/self_destruct_sequence)
 	announcement.channel = announcement_channel
 	announcement.repeat = FALSE
 	announcement.wait = FALSE
-	announcement.priority = 250
+	announcement.priority = 255 // the one sound in the sequence that must never be dropped
 	announcement.offset = elapsed() / (1 SECONDS) // offset is in seconds, our clock is in deciseconds
 	return announcement
 
-/// Sends the announcement out. Defaults to everyone in the round, which is what the first broadcast wants.
+/**
+ * Sends the announcement out. Defaults to everyone in the round, which is what the first broadcast wants.
+ *
+ * Skips anyone already hearing it. Sound channels belong to the client rather than the mob, so
+ * changing bodies does not interrupt playback - re-sending would only re-seek the track, which is
+ * audible, and dying to a secondary detonation is a very common way to change bodies in here.
+ */
 /datum/self_destruct_sequence/proc/broadcast_announcement(list/players)
+	var/list/targets = list()
+	for(var/mob/player as anything in (players || GLOB.player_list))
+		var/client/player_client = player.client
+		if(isnull(player_client) || isnewplayer(player) || (player_client in served))
+			continue
+		targets += player
+		served += player_client
+		RegisterSignal(player_client, COMSIG_QDELETING, PROC_REF(on_client_gone))
+
+	if(!length(targets))
+		return
+
 	alert_sound_to_playing(
 		volume = 100,
 		channel = announcement_channel,
 		sound_to_use = build_announcement(),
 		override_volume = TRUE,
-		players = players,
+		players = targets,
 	)
+
+/// A client that leaves takes its sound channels with it, so let a reconnect be served fresh.
+/datum/self_destruct_sequence/proc/on_client_gone(client/gone)
+	SIGNAL_HANDLER
+	served -= gone
 
 /// Cuts the announcement off everywhere.
 /datum/self_destruct_sequence/proc/silence_announcement()
@@ -162,10 +189,21 @@ GLOBAL_DATUM(self_destruct_sequence, /datum/self_destruct_sequence)
 			near_distance = blast_range,
 			far_distance = SELF_DESTRUCT_BLAST_AUDIBLE_RANGE,
 			quake_factor = 0,
-			echo_factor = 1,
+			// Not every blast reaches the far side of the station. By the end they land twice a
+			// second, and one guaranteed sound per player per blast crowds out the announcement.
+			echo_factor = prob(SELF_DESTRUCT_BLAST_ECHO_PROB),
+			near_sound = quiet_blast(SFX_EXPLOSION),
+			far_sound = quiet_blast('sound/effects/explosion/explosionfar.ogg'),
+			echo_sound = quiet_blast('sound/effects/explosion/explosion_distant.ogg'),
 		)
 
 	schedule_next_blast()
+
+/// An explosion sound built to lose. Nothing else sets priority, so these sit below every other sound.
+/datum/self_destruct_sequence/proc/quiet_blast(blast_sound)
+	var/sound/blast = sound(get_sfx(blast_sound))
+	blast.priority = SELF_DESTRUCT_BLAST_SOUND_PRIORITY
+	return blast
 
 /// Weighted towards somebody who will actually witness it, since a blast nobody saw may as well not have happened.
 /datum/self_destruct_sequence/proc/pick_blast_site()
