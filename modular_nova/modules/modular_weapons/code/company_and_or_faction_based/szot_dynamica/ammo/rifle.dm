@@ -55,8 +55,8 @@
 /obj/projectile/bullet/p60strela // The funny thing is, these are wild but you only get three of them a magazine
 	name =".60 Strela bullet"
 	icon_state = "gaussphase"
-	speed = 2.5
-	damage = 50
+	speed = 3
+	damage = 70
 	armour_penetration = 50
 	wound_bonus = 15 // Toned back down, as it's getting alot more damage.
 	exposed_wound_bonus = 15

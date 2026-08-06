@@ -128,6 +128,7 @@
 	light_range = 1
 	light_color = LIGHT_COLOR_PURPLE
 	impact_effect_type = /obj/effect/temp_visual/impact_effect/purple_laser
+	speed = 2
 	///Which damage type do we deal as a secondary effect?
 	var/secondary_damage_type = BURN
 	///How much secondary damage do we deal?

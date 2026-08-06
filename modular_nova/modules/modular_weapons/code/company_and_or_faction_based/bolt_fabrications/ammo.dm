@@ -10,6 +10,7 @@
 	impact_effect_type = /obj/effect/temp_visual/impact_effect
 	wound_bonus = -30
 	exposed_wound_bonus = -10
+	speed = 2
 
 /obj/item/ammo_casing/kineticball
 	name = "kinetic ball casing"
