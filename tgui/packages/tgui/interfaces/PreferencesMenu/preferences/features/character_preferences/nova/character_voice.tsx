@@ -1,42 +1,14 @@
-import { useBackend } from 'tgui/backend';
-import { Button, Stack } from 'tgui-core/components';
-
 import {
   CheckboxInput,
   type Feature,
   type FeatureChoiced,
-  type FeatureChoicedServerData,
   FeatureNumberInput,
   type FeatureNumeric,
   FeatureSliderInput,
   type FeatureToggle,
-  type FeatureValueProps,
 } from '../../base';
 import { FeatureDropdownInput } from '../../dropdowns';
-
-const FeatureBlooperDropdownInput = (
-  props: FeatureValueProps<string, string, FeatureChoicedServerData>,
-) => {
-  const { act } = useBackend();
-
-  return (
-    <Stack g={0.5}>
-      <Stack.Item grow>
-        <FeatureDropdownInput {...props} />
-      </Stack.Item>
-      <Stack.Item>
-        <Button
-          onClick={() => {
-            act('play_blooper');
-          }}
-          icon="play"
-          width="100%"
-          height="100%"
-        />
-      </Stack.Item>
-    </Stack>
-  );
-};
+import { FeatureDropdownWithPreviewButton } from './dropdown_with_preview_button';
 
 export const voice_type: FeatureChoiced = {
   name: 'Voice Type',
@@ -60,7 +32,7 @@ export const blooper_pitch_range: FeatureNumeric = {
 
 export const blooper_speech: FeatureChoiced = {
   name: 'Vocal Bark',
-  component: FeatureBlooperDropdownInput,
+  component: FeatureDropdownWithPreviewButton('play_blooper'),
 };
 
 export const blooper_speech_speed: FeatureNumeric = {

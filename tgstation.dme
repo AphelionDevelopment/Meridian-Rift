@@ -8703,6 +8703,7 @@
 #include "modular_nova\modules\emotes\code\scream_datums.dm"
 #include "modular_nova\modules\emotes\code\scream_emote.dm"
 #include "modular_nova\modules\emotes\code\synth_emotes.dm"
+#include "modular_nova\modules\emotes\code\vocal_preview_middleware.dm"
 #include "modular_nova\modules\emotes\code\additionalemotes\overlay_emote.dm"
 #include "modular_nova\modules\emotes\code\additionalemotes\turf_emote.dm"
 #include "modular_nova\modules\emotes\code\additionalemotes\turf_list.dm"
