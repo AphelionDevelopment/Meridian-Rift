@@ -16,6 +16,11 @@
 		SSmapping.remove_nuke_threat(src)
 
 /obj/machinery/nuclearbomb/selfdestruct/toggle_nuke_armed()
+	// APHELION EDIT ADDITION BEGIN - See modular_nova/modules/self_destruct_sequence.
+	if(GLOB.self_destruct_sequence?.past_no_return)
+		to_chat(usr, span_bolddanger("The abort interlock has blown. [src] cannot be stopped."))
+		return
+	// APHELION EDIT ADDITION END
 	. = ..()
 	if(timing)
 		SSmapping.add_nuke_threat(src)
