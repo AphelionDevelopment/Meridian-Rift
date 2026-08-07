@@ -178,9 +178,12 @@
 
 //Called when we bump onto a mob
 /mob/living/proc/MobBump(mob/M)
+	// Walk is the resting pace now, so it bumps, swaps and pushes like run always did.
+	/* // NOVA EDIT REMOVAL START - SPRINT
 	//No bumping/swapping/pushing others if you are on walk intent
 	if(move_intent == MOVE_INTENT_WALK)
 		return TRUE
+	*/ // NOVA EDIT REMOVAL END
 
 	if(SEND_SIGNAL(M, COMSIG_LIVING_PRE_MOB_BUMP, src) & COMPONENT_LIVING_BLOCK_PRE_MOB_BUMP)
 		return TRUE

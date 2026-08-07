@@ -88,7 +88,7 @@
 		qdel(source) //stop moving
 		return MOVELOOP_SKIP_STEP
 
-	source.delay = controller.movement_delay
+	source.set_delay(controller.movement_delay) // NOVA EDIT CHANGE - ORIGINAL: source.delay = controller.movement_delay
 
 	if(allowed_to_move(source))
 		return NONE

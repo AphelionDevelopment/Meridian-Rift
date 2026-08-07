@@ -79,8 +79,10 @@
 			playsound(turf, sound, 15 * volume, falloff_distance = 1, vary = sound_vary)
 		return
 
+	/* // NOVA EDIT REMOVAL START - SPRINT - walking is the default pace, so it is quieted, not silenced
 	if(iscarbon(source) && source.move_intent == MOVE_INTENT_WALK)
 		return // stealth
+	*/ // NOVA EDIT REMOVAL END
 
 	steps_for_living[source] += 1
 	var/steps = steps_for_living[source]
@@ -196,6 +198,12 @@
 	if(HAS_TRAIT(source, TRAIT_LIGHT_STEP))
 		volume_multiplier = 0.6
 		range_adjustment = -2
+
+	// NOVA EDIT ADDITION START - SPRINT - walking still steps, just softer, and stacks with light step
+	if(source.move_intent == MOVE_INTENT_WALK)
+		volume_multiplier *= WALK_FOOTSTEP_VOLUME_MULT
+		range_adjustment += WALK_FOOTSTEP_RANGE_ADJUSTMENT
+	// NOVA EDIT ADDITION END
 
 	// list returned by playsound() filled by client mobs who heard the footstep. given to play_fov_effect()
 	var/list/heard_clients
