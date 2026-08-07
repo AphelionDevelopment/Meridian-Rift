@@ -262,6 +262,9 @@
 		return FALSE
 	if(aug.species_whitelist && !aug.species_whitelist[species.id])
 		return FALSE
+	for(var/datum/quirk/blacklisted_quirk as anything in aug.quirk_blacklist)
+		if(blacklisted_quirk::name in prefs.all_quirks)
+			return FALSE
 	var/digi_legs = prefs.read_preference(/datum/preference/choiced/digitigrade_legs) == DIGITIGRADE_LEGS
 	if(digi_legs)
 		var/datum/augment_item/limb/limb_aug = astype(aug, /datum/augment_item/limb)

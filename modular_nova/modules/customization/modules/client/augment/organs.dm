@@ -70,7 +70,7 @@
 	abstract_type = /datum/augment_item/organ/heart
 	slot = AUGMENT_SLOT_HEART
 	icon = "tg-znova-heart-organ"
-	species_blacklist = list(SPECIES_HEMOPHAGE = 1)
+	quirk_blacklist = list(/datum/quirk/hemophage)
 
 /datum/augment_item/organ/heart/normal
 	name = "Organic heart"
