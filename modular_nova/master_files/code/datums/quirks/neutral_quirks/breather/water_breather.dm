@@ -11,7 +11,7 @@
 	breathing_tank = /obj/item/clothing/accessory/vaporizer
 	breath_type = "water"
 	// bonus trait
-	mob_trait = TRAIT_WATER_BREATHING
+	mob_trait = TRAIT_NODROWN
 
 /datum/quirk/item_quirk/breather/water_breather/add_adaptation()
 	// this proc is guaranteed to be called multiple times
