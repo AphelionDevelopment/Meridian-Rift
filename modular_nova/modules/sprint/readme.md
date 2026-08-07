@@ -23,7 +23,8 @@ stacked on top of combat damage will.
 
 ### TG Proc/File Changes:
 
-- N/A
+- `code/modules/mob/living/living.dm`: `/mob/living/proc/MobBump` no longer returns early on walk
+  intent, so walking bumps, swaps and pushes the way run intent did.
 
 ### Modular Overrides:
 
