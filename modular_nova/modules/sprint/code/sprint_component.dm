@@ -1,5 +1,5 @@
 /// Stamina spent per running tile, as a percent of max stamina.
-#define RUN_STAMINA_COST_PERCENT 0.4
+#define RUN_STAMINA_COST_PERCENT 0.15
 /// Cost multiplier for mobs with [TRAIT_FREERUNNING].
 #define RUN_FREERUNNING_MODIFIER 0.7
 /// Ground a diagonal step covers. Fills the dust counter faster, but costs no extra stamina.
