@@ -91,3 +91,11 @@
 
 /datum/job/engineering_guard
 	akula_outfit = /datum/outfit/akula/security_officer
+
+// Departmental winter coats for the loadout's "Winter Coat (Departmental)" entry.
+// Only jobs where we have our own coat need listing; everything else falls back to the grey default.
+/datum/outfit/job/bartender
+	wintercoat = /obj/item/clothing/suit/hooded/wintercoat/nova/bartender
+
+/datum/outfit/job/blueshield
+	wintercoat = /obj/item/clothing/suit/hooded/wintercoat/nova/blueshield

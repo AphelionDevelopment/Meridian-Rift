@@ -22,6 +22,7 @@
 /obj/projectile/bullet/c35sol
 	name = ".35 Sol Short bullet"
 	damage = 16
+	speed = 1.8
 
 	wound_bonus = 5 // Normal bullets are 20
 	exposed_wound_bonus = 10

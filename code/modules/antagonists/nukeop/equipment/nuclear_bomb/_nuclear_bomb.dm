@@ -55,6 +55,10 @@ GLOBAL_VAR(station_nuke_source)
 	var/obj/effect/countdown/nuclearbomb/countdown
 	/// is this nuke on the MINIMAP_BOMB_BLIP tag minimap?
 	var/is_on_minimap = TRUE
+	// APHELION EDIT ADDITION BEGIN - See modular_nova/modules/self_destruct_sequence.
+	/// Alarm time between the timer elapsing and the nuke going off. Zero detonates on the spot.
+	var/detonation_lead_in = 10 SECONDS
+	// APHELION EDIT ADDITION END
 
 /obj/machinery/nuclearbomb/Initialize(mapload)
 	. = ..()
@@ -638,14 +642,23 @@ GLOBAL_VAR(station_nuke_source)
 	yes_code = FALSE
 	safety = TRUE
 	update_appearance()
-	sound_to_playing_players('sound/announcer/alarm/nuke_alarm.ogg', 70)
-	sound_to_playing_players('modular_nova/modules/alerts/sound/misc/delta_countdown.ogg') // NOVA EDIT ADDITION
+	// APHELION EDIT CHANGE BEGIN - ORIGINAL: the two calls below ran unconditionally.
+	if(detonation_lead_in)
+		sound_to_playing_players('sound/announcer/alarm/nuke_alarm.ogg', 70)
+		sound_to_playing_players('modular_nova/modules/alerts/sound/misc/delta_countdown.ogg') // NOVA EDIT ADDITION
+	// APHELION EDIT CHANGE END
 
 	SEND_GLOBAL_SIGNAL(COMSIG_GLOB_NUKE_DEVICE_DETONATING, src)
 
 	if(SSticker.HasRoundStarted())
 		SSticker.roundend_check_paused = TRUE
-	addtimer(CALLBACK(src, PROC_REF(actually_explode)), 10 SECONDS)
+	// APHELION EDIT CHANGE BEGIN - ORIGINAL: addtimer(CALLBACK(src, PROC_REF(actually_explode)), 10 SECONDS)
+	// Async so we do not sleep inside whatever ticked us here.
+	if(detonation_lead_in)
+		addtimer(CALLBACK(src, PROC_REF(actually_explode)), detonation_lead_in)
+	else
+		INVOKE_ASYNC(src, PROC_REF(actually_explode))
+	// APHELION EDIT CHANGE END
 	return TRUE
 
 /obj/machinery/nuclearbomb/proc/actually_explode()

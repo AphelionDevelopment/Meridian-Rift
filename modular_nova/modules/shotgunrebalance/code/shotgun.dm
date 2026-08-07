@@ -109,7 +109,7 @@
 	damage = 7 // 7 * 8 = 56
 	damage_falloff_tile = -0.1
 	wound_falloff_tile = -0.25
-	speed = 1.5
+	speed = 2.2
 	armour_penetration = 5
 
 /obj/item/ammo_casing/shotgun/rubbershot
@@ -125,7 +125,7 @@
 
 /obj/projectile/bullet/pellet/shotgun_rubbershot
 	stamina = 10
-	speed = 1
+	speed = 2
 
 /obj/item/ammo_casing/shotgun/incapacitate
 	name = "incapacitator shell"
@@ -153,7 +153,7 @@
 	name = "shredder flechette"
 	damage = 5
 	damage_falloff_tile = -0.1
-	speed = 1.35 // you can have above average projectile speed. as a treat
+	speed = 1.8 // you can have above average projectile speed. as a treat
 	wound_bonus = 5
 	exposed_wound_bonus = 10
 

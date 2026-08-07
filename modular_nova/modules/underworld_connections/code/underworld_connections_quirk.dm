@@ -105,7 +105,7 @@ GLOBAL_LIST_INIT(possible_uplink_skins, list(
 
 	return /datum/quirk/item_quirk/underworld_connections::name in preferences.all_quirks
 
-/datum/preference/choiced/uplink_skin/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/uplink_skin/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /datum/preference/text/uplink_name
@@ -124,7 +124,7 @@ GLOBAL_LIST_INIT(possible_uplink_skins, list(
 /datum/preference/text/uplink_name/serialize(input)
 	return htmlrendertext(input)
 
-/datum/preference/text/uplink_name/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/text/uplink_name/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /datum/preference/text/uplink_desc
@@ -142,5 +142,5 @@ GLOBAL_LIST_INIT(possible_uplink_skins, list(
 /datum/preference/text/uplink_desc/serialize(input)
 	return htmlrendertext(input)
 
-/datum/preference/text/uplink_desc/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/text/uplink_desc/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return

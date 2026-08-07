@@ -117,6 +117,9 @@
 /obj/item/organ/tongue/jelly
 	zone = BODY_ZONE_CHEST
 	organ_flags = ORGAN_ORGANIC | ORGAN_UNREMOVABLE
+	emote_sounds = list(
+		/datum/emote/living/scream::key = 'modular_nova/modules/emotes/sound/emotes/jelly_scream.ogg',
+	)
 
 /obj/item/organ/lungs/slime
 	zone = BODY_ZONE_CHEST
