@@ -1,7 +1,7 @@
 /// Move delay removed while running, on top of the configured run delay of 1.5.
 #define RUN_SPEED_BONUS -0.2
 /// Move delay removed while walking, on top of the configured walk delay of 4.
-#define WALK_SPEED_BONUS -1
+#define WALK_SPEED_BONUS -1.6
 
 /// Speedup applied while on run intent.
 /datum/movespeed_modifier/run_pace
