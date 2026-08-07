@@ -47,6 +47,7 @@ GLOBAL_LIST_INIT_TYPED(quirk_blacklist, /list/datum/quirk, list(
 	list(/datum/quirk/hydrophobia, /datum/quirk/item_quirk/breather/water_breather),
 	list(/datum/quirk/unblinking, /datum/quirk/item_quirk/fluoride_stare),
 	list(/datum/quirk/poor_aim, /datum/quirk/nervous_aim),
+	list(/datum/quirk/hemophage, /datum/quirk/prosthetic_organ, /datum/quirk/tin_man),
 	// NOVA EDIT ADDITION END
 ))
 

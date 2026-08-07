@@ -275,20 +275,20 @@
 		else
 			outmsg = span_warning("You miss the lens of [target_camera] with [src]!")
 
-	//Make any mob with catlike instincts near the target face the target.
+	//Make any mob with catlike instincts near the target face the target, with a chance of pouncing (moving) toward it.
 	for(var/mob/living/target_cat in view(1, targloc))
-		if(!HAS_TRAIT(target_cat, TRAIT_CATLIKE_INSTINCT) || target_cat.stat == DEAD || target_cat.is_blind() || target_cat.incapacitated) // NOVA EDIT CHANGE - dead mobs stay uninterested - ORIGINAL: if(!HAS_TRAIT(target_cat, TRAIT_CATLIKE_INSTINCT) || target_cat.is_blind() || target_cat.incapacitated)
+		if(!HAS_TRAIT(target_cat, TRAIT_CATLIKE_INSTINCT) || target_cat.is_blind() || target_cat.incapacitated)
 			continue
+		target_cat.setDir(get_dir(target_cat, targloc)) // kitty always looks at the light
 		if(target_cat.body_position == STANDING_UP)
-			target_cat.setDir(get_dir(target_cat, targloc)) // kitty always looks at the light
-			//NOVA EDIT REMOVAL BEGIN (removes forced felinid movement from laserpointers, also fixes the longstanding windoor negation glitch)
-			/* if(prob(effectchance * diode.rating))
+			if(prob(effectchance * diode.rating))
 				target_cat.visible_message(span_warning("[target_cat] makes a grab for the light!"), span_userdanger("LIGHT!"))
+				/* //NOVA EDIT REMOVAL BEGIN (removes forced felinid movement from laserpointers, also fixes the longstanding windoor negation glitch)
 				target_cat.Move(targloc, get_dir(target_cat, targloc))
 				log_combat(user, target_cat, "moved with a laser pointer", src)
+				*/ // NOVA EDIT REMOVAL END
 			else
-			NOVA EDIT REMOVAL END */
-			target_cat.visible_message(span_notice("[target_cat] looks briefly distracted by the light."), span_warning("You're briefly tempted by the shiny light...")) //NOVA EDIT CHANGE : indent this block if re-enabling above
+				target_cat.visible_message(span_notice("[target_cat] looks briefly distracted by the light."), span_warning("You're briefly tempted by the shiny light..."))
 		else
 			target_cat.visible_message(span_notice("[target_cat] stares at the light."), span_warning("You stare at the light..."))
 	//The pointer is shining, change its sprite to show

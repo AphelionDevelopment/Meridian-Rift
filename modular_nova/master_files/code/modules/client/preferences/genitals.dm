@@ -357,7 +357,7 @@
 	var/part_enabled = is_factual_sprite_accessory(relevant_mutant_bodypart, preferences.read_preference(/datum/preference/choiced/genital/testicles))
 	return erp_allowed && part_enabled && (passed_initial_check || allowed)
 
-/datum/preference/numeric/balls_size/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/numeric/balls_size/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.dna.features["balls_size"] = value
 
 /datum/preference/numeric/balls_size/create_default_value()
@@ -479,7 +479,7 @@
 	var/part_enabled = is_factual_sprite_accessory(relevant_mutant_bodypart, preferences.read_preference(/datum/preference/choiced/genital/breasts))
 	return erp_allowed && part_enabled && (passed_initial_check || allowed)
 
-/datum/preference/choiced/breasts_size/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/breasts_size/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.dna.features["breasts_size"] = GLOB.breast_size_to_number[value]
 
 /datum/preference/choiced/breasts_size/create_default_value()

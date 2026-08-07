@@ -10,5 +10,5 @@
 /datum/preference/numeric/chronological_age/create_informed_default_value(datum/preferences/preferences)
 	return preferences.read_preference(/datum/preference/numeric/age)
 
-/datum/preference/numeric/chronological_age/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/numeric/chronological_age/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.chrono_age = value

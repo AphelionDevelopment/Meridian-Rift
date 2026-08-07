@@ -15,6 +15,7 @@
 /obj/projectile/bullet/c585trappiste
 	name = ".585 Trappiste bullet"
 	damage = 30
+	speed = 2
 	wound_bonus = 5 // Normal bullets are 20
 
 /obj/item/ammo_box/c585trappiste

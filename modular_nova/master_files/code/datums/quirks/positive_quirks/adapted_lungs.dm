@@ -193,7 +193,7 @@ GLOBAL_LIST_INIT(possible_adapted_lungs, list(
 
 	return /datum/quirk/adapted_lungs::name in preferences.all_quirks
 
-/datum/preference/choiced/adapted_lungs/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/adapted_lungs/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 #undef COLD_ADAPTED_LUNGS
