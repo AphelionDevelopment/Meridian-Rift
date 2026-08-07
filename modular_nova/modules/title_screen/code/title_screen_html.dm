@@ -87,6 +87,13 @@ GLOBAL_LIST_EMPTY(startup_messages)
 		</script>
 		"}
 
+	else if(symphony_blocks_play())
+		dat += {"<img src="loading_screen.gif" class="bg" alt="">"}
+		dat += {"<div class="container_nav" style="text-align: center;">"}
+		dat += {"<p class="menu_notice" style="text-align: center;">You must be whitelisted to play.<br>Link your Discord to continue.</p>"}
+		dat += {"<a class="menu_button" style="text-align: center; padding-left: 0;" href='byond://?src=[text_ref(src)];get_whitelisted=1'>GET WHITELISTED</a>"}
+		dat += "</div>"
+
 	else
 		dat += {"<img src="loading_screen.gif" class="bg" alt="">"}
 

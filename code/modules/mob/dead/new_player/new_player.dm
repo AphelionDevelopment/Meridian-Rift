@@ -73,6 +73,9 @@
 
 //When you cop out of the round (NB: this HAS A SLEEP FOR PLAYER INPUT IN IT)
 /mob/dead/new_player/proc/make_me_an_observer()
+	if(symphony_blocks_play()) // APHELION EDIT - discord whitelist gate
+		symphony_gate_notice()
+		return FALSE
 	if(QDELETED(src) || !src.client)
 		ready = PLAYER_NOT_READY
 		return FALSE
@@ -189,6 +192,9 @@
 
 
 /mob/dead/new_player/proc/AttemptLateSpawn(rank)
+	if(symphony_blocks_play()) // APHELION EDIT - discord whitelist gate
+		symphony_gate_notice()
+		return FALSE
 	// Check that they're picking someone new for new character respawning
 	if(CONFIG_GET(flag/allow_respawn) == RESPAWN_FLAG_NEW_CHARACTER)
 		if("[client.prefs.default_slot]" in persistent_client.joined_as_slots)
@@ -259,7 +265,7 @@
 		humanc = character //Let's retypecast the var to be human,
 
 	if(humanc) //These procs all expect humans
-		var/chosen_rank = humanc.client?.prefs.alt_job_titles?[rank] || rank // NOVA EDIT ADDITION - ALTERNATIVE_JOB_TITLES
+		var/chosen_rank = humanc.client?.prefs?.get_alt_job_title(rank) || rank // NOVA EDIT ADDITION - ALTERNATIVE_JOB_TITLES
 		if(SSshuttle.arrivals)
 			SSshuttle.arrivals.QueueAnnounce(humanc, chosen_rank) // NOVA EDIT CHANGE - ALTERNATIVE_JOB_TITLES - ORIGINAL: SSshuttle.arrivals.QueueAnnounce(humanc, rank)
 		else

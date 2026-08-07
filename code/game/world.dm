@@ -287,14 +287,17 @@ GLOBAL_VAR_INIT(last_maptick_time, 0)
 			handler = topic_handlers[I]
 			break
 
+	// APHELION EDIT ADDITION START - scrub the comms key, it must never reach game.log. Staff read that log through the Symphony panel.
 	if((!handler || initial(handler.log)) && config && CONFIG_GET(flag/log_world_topic))
-		log_topic("\"[T]\", from:[addr], master:[master], key:[key]")
+		var/static/regex/comms_key_scrub = regex("key=\[^&]*", "g")
+		log_topic("\"[comms_key_scrub.Replace(T, "key=***")]\", from:[addr], master:[master]")
+	// APHELION EDIT ADDITION END
 
 	if(!handler)
 		return
 
 	handler = new handler()
-	return handler.TryRun(input)
+	return handler.TryRun(input, addr) // APHELION EDIT - addr passed through for the Symphony address gate
 
 /world/proc/AnnouncePR(announcement, list/payload)
 	var/static/list/PRcounts = list() //PR id -> number of times announced this round

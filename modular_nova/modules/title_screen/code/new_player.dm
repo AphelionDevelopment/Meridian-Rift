@@ -12,6 +12,20 @@
 	if(client.interviewee)
 		return FALSE
 
+	if(href_list["get_whitelisted"]) // APHELION EDIT - discord whitelist
+		play_lobby_button_sound()
+		client?.get_whitelisted()
+		return
+
+	// APHELION EDIT ADDITION START - discord whitelist gate.
+	// Allow-list, not deny-list - anything outside symphony_gate_free_hrefs is gated.
+	// Those keys are checked for EXCLUSIVITY, so one extra parameter can't unlock the rest of this Topic.
+	// get_whitelisted is handled above the gate so lobby clicks don't each cost a whitelist query.
+	if(!symphony_href_is_gate_free(href_list) && symphony_blocks_play())
+		symphony_gate_notice()
+		return
+	// APHELION EDIT ADDITION END
+
 	if(href_list["observe"])
 		play_lobby_button_sound()
 		make_me_an_observer()
