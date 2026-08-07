@@ -122,8 +122,8 @@
 
 	carbon_owner.adjust_stamina_loss(carbon_owner.get_stamina_loss() * 0.5, forced = TRUE)
 	carbon_owner.max_stamina *= 0.5 // stamina is halved while this is active.
-	REMOVE_TRAIT(carbon_owner, TRAIT_NOBREATH, SPECIES_TRAIT)
-	REMOVE_TRAIT(carbon_owner, TRAIT_OXYIMMUNE, SPECIES_TRAIT)
+	REMOVE_TRAIT(carbon_owner, TRAIT_NOBREATH, QUIRK_TRAIT)
+	REMOVE_TRAIT(carbon_owner, TRAIT_OXYIMMUNE, QUIRK_TRAIT)
 	carbon_owner.add_movespeed_modifier(/datum/movespeed_modifier/master_of_the_house)
 
 
@@ -138,8 +138,8 @@
 	if(carbon_owner.oxyloss) // if they have oxyloss, don't just heal it instantly
 		carbon_owner.apply_status_effect(/datum/status_effect/slave_to_the_tumor)
 	else
-		ADD_TRAIT(carbon_owner, TRAIT_NOBREATH, SPECIES_TRAIT)
-		ADD_TRAIT(carbon_owner, TRAIT_OXYIMMUNE, SPECIES_TRAIT)
+		ADD_TRAIT(carbon_owner, TRAIT_NOBREATH, QUIRK_TRAIT)
+		ADD_TRAIT(carbon_owner, TRAIT_OXYIMMUNE, QUIRK_TRAIT)
 
 
 /datum/status_effect/master_of_the_house/tick(seconds_between_ticks)
@@ -190,8 +190,8 @@
 		return
 
 	var/mob/living/carbon/carbon_owner = owner
-	ADD_TRAIT(carbon_owner, TRAIT_NOBREATH, SPECIES_TRAIT)
-	ADD_TRAIT(carbon_owner, TRAIT_OXYIMMUNE, SPECIES_TRAIT)
+	ADD_TRAIT(carbon_owner, TRAIT_NOBREATH, QUIRK_TRAIT)
+	ADD_TRAIT(carbon_owner, TRAIT_OXYIMMUNE, QUIRK_TRAIT)
 
 
 // With the tumor back in control, any accrued oxyloss is healed over the course of this status at the cost of blood (0.25u per point of oxyloss healed).
