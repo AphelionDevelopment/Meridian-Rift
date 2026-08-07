@@ -3,12 +3,19 @@
 GLOBAL_LIST_INIT(genetic_mutation_species_restrictions, list(
 	"Restorative metabolism" = list(
 		/datum/species/jelly,
-		/datum/species/hemophage,
 		/datum/species/pod,
 		/datum/species/shadekin,
 	),
 	"Cold adaptation" = list(
 		/datum/species/jelly,
+	),
+))
+
+/// Assoc list of mutation names to list of quirk typepaths that are incompatible with them
+/// Add more entries here to restrict additional mutations from specific quirks
+GLOBAL_LIST_INIT(genetic_mutation_quirk_restrictions, list(
+	"Restorative metabolism" = list(
+		/datum/quirk/hemophage,
 	),
 ))
 
@@ -96,6 +103,19 @@ GLOBAL_LIST_INIT(genetic_mutation_choice, list(
 
 	return FALSE
 
+/// Helper proc to check if a mutation is restricted by any of the given quirk names
+/// Returns TRUE if the mutation is restricted (not allowed), FALSE otherwise
+/proc/is_mutation_restricted_for_quirks(mutation_name, list/quirk_names)
+	var/list/restrictions = GLOB.genetic_mutation_quirk_restrictions[mutation_name]
+	if(!restrictions)
+		return FALSE
+
+	for(var/datum/quirk/restricted_quirk as anything in restrictions)
+		if(restricted_quirk::name in quirk_names)
+			return TRUE
+
+	return FALSE
+
 /datum/preference/choiced/genetic_mutation/is_valid(value, datum/preferences/preferences)
 	// First check if the value is in the allowed choices
 	if(!(value in get_choices()))
@@ -106,6 +126,11 @@ GLOBAL_LIST_INIT(genetic_mutation_choice, list(
 	// Check if this mutation is restricted for the selected species
 	if(is_mutation_restricted_for_species(value, mob_species))
 		to_chat(preferences.parent, span_warning("[value] is not compatible with your current species."))
+		return FALSE
+
+	// Same again, for mutations that a quirk rather than a species rules out
+	if(is_mutation_restricted_for_quirks(value, preferences.all_quirks))
+		to_chat(preferences.parent, span_warning("[value] is not compatible with one of your quirks."))
 		return FALSE
 
 	return TRUE
