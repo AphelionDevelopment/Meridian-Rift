@@ -789,3 +789,5 @@
 /// Recalculates the recoil, based on attachment-provided values.
 /obj/item/gun/microfusion/proc/recalculate_recoil()
 	recoil = max(0, attachment_recoil)
+
+#undef DUALWIELD_PENALTY_EXTRA_MULTIPLIER
