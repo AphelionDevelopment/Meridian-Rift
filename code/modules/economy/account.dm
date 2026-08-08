@@ -160,6 +160,7 @@
 			add_log_to_history(amount, reason)
 		if(debt_collected)
 			pay_debt(debt_collected, FALSE)
+		flush_to_ledger() // APHELION EDIT ADDITION - PERSISTENT_ECONOMY
 		return TRUE
 	return FALSE
 

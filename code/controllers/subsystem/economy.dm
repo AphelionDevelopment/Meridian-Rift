@@ -79,6 +79,7 @@ SUBSYSTEM_DEF(economy)
 			new /datum/bank_account/department(dep_id, 0, player_account = FALSE)
 			continue
 		new /datum/bank_account/department(dep_id, budget_to_hand_out, player_account = FALSE)
+	restore_department_budgets(budget_to_hand_out) // APHELION EDIT ADDITION - PERSISTENT_ECONOMY
 	return SS_INIT_SUCCESS
 
 /datum/controller/subsystem/economy/Recover()
@@ -112,7 +113,7 @@ SUBSYSTEM_DEF(economy)
 			return
 
 		processing_part = ECON_PRICE_UPDATE_STEP
-		station_target = max(round(temporary_total / max(bank_accounts_by_id.len * 2, 1)) + station_target_buffer, 1)
+		station_target = get_station_target() // APHELION EDIT CHANGE - ORIGINAL: station_target = max(round(temporary_total / max(bank_accounts_by_id.len * 2, 1)) + station_target_buffer, 1)
 
 	if(processing_part == ECON_PRICE_UPDATE_STEP)
 		if(!HAS_TRAIT(SSeconomy, TRAIT_MARKET_CRASHING) && !price_update())
@@ -143,6 +144,10 @@ SUBSYSTEM_DEF(economy)
 		var/datum/bank_account/dept_account = get_dep_account(cached_processing[i])
 		if(!dept_account)
 			continue
+		// APHELION EDIT ADDITION START - PERSISTENT_ECONOMY
+		if(!should_receive_department_grant(dept_account))
+			continue
+		// APHELION EDIT ADDITION END
 		dept_account.adjust_money(MAX_GRANT_DPT)
 		if(MC_TICK_CHECK)
 			cached_processing.Cut(1, i + 1)
