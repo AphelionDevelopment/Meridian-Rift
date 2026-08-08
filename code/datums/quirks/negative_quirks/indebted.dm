@@ -16,10 +16,10 @@
 	// The debt is a one-off the character works off over time, not a per-shift charge. With balances
 	// carrying over it would otherwise be rolled again every round, on top of whatever is left, far
 	// faster than debt collection can retire it, so it becomes unpayable and the achievement below
-	// unreachable. A character who has played before keeps the debt it already owes.
-	if(account.restored_from_ledger)
-		if(!account.account_debt)
-			return
+	// unreachable. A character still owing keeps what it owes rather than being handed more.
+	// A character that has cleared its debt rolls a fresh one, since a quirk taken for its points has
+	// to keep costing something. The achievement is per-player and is not awarded twice.
+	if(account.restored_from_ledger && account.account_debt)
 		RegisterSignal(account, COMSIG_BANK_ACCOUNT_DEBT_PAID, PROC_REF(on_debt_paid))
 		to_chat(client_source.mob, span_warning("You remember, you've still [account.account_debt] [MONEY_NAME_SINGULAR] of debt left to pay..."))
 		return

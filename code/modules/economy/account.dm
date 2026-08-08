@@ -153,9 +153,11 @@
  * Arguments:
  * * amount - the quantity of credits that will be written off if the value is negative, or added if it is positive.
  * * reason - the reason for the appearance or loss of money
+ * * levy_fraction - cut of incoming credits destroyed as a transaction levy. Pass [LEVY_EXEMPT] on salary, grants, refunds and administrative action. // APHELION EDIT ADDITION - PERSISTENT_ECONOMY
  */
-/datum/bank_account/proc/adjust_money(amount, reason)
+/datum/bank_account/proc/adjust_money(amount, reason, levy_fraction = TRANSACTION_LEVY_FRACTION) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: /datum/bank_account/proc/adjust_money(amount, reason)
 	if((amount < 0 && has_money(-amount)) || amount > 0)
+		amount -= charge_transaction_levy(src, amount, levy_fraction) // APHELION EDIT ADDITION - PERSISTENT_ECONOMY
 		var/debt_collected = 0
 		if(account_debt > 0 && amount > 0)
 			debt_collected = min(ceil(amount*DEBT_COLLECTION_COEFF), account_debt)
@@ -201,8 +203,8 @@
 			reason_to = IS_DEPARTMENTAL_ACCOUNT(src) ? "" : transfer_reason
 			reason_from = transfer_reason
 
-		var/levy = charge_transaction_levy(from, src, amount) // APHELION EDIT ADDITION - PERSISTENT_ECONOMY
-		adjust_money(amount - levy, reason_to) // APHELION EDIT CHANGE - ORIGINAL: adjust_money(amount, reason_to)
+		// Salary out of a department budget is the crew's income, not trade between them.
+		adjust_money(amount, reason_to, levy_fraction = IS_DEPARTMENTAL_ACCOUNT(from) ? LEVY_EXEMPT : TRANSACTION_LEVY_FRACTION) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: adjust_money(amount, reason_to)
 		from.adjust_money(-amount, reason_from)
 		SSblackbox.record_feedback("amount", "credits_transferred", amount)
 		log_econ("[amount] [MONEY_NAME] were transferred from [from.account_holder]'s account to [src.account_holder]")
@@ -239,7 +241,7 @@
 	if(amount_of_paychecks == 1)
 		money_to_transfer = clamp(money_to_transfer, 0, PAYCHECK_CREW) //We want to limit single, passive paychecks to regular crew income.
 	if(free)
-		adjust_money(money_to_transfer, "Nanotrasen: Shift Payment")
+		adjust_money(money_to_transfer, "Nanotrasen: Shift Payment", levy_fraction = LEVY_EXEMPT) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: adjust_money(money_to_transfer, "Nanotrasen: Shift Payment")
 		SSblackbox.record_feedback("amount", "free_income", money_to_transfer)
 		SSeconomy.station_target += money_to_transfer
 		log_econ("[money_to_transfer] [MONEY_NAME] were given to [src.account_holder]'s account from income.")
@@ -345,7 +347,7 @@
 	account_holder = SSeconomy.department_accounts[dep_id]
 	SSeconomy.departmental_accounts += src
 
-/datum/bank_account/department/adjust_money(amount, reason)
+/datum/bank_account/department/adjust_money(amount, reason, levy_fraction = TRANSACTION_LEVY_FRACTION) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: /datum/bank_account/department/adjust_money(amount, reason)
 	. = ..()
 
 	SSblackbox.record_feedback("amount", "[department_id]_balance", account_balance, world.time) //Provides the cargo balance alongside a timestamp for comparison afterwards.
@@ -373,7 +375,7 @@
  * * reason - The reason of interact with balance, for example, "Bought chips" or "Payday".
  */
 /datum/bank_account/proc/add_log_to_history(adjusted_money, reason)
-	if(LAZYLEN(transaction_history) >= 20)
+	if(LAZYLEN(transaction_history) >= LEDGER_HISTORY_LENGTH) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: if(LAZYLEN(transaction_history) >= 20)
 		transaction_history.Cut(1,2)
 
 	LAZYADD(transaction_history, list(list(

@@ -57,24 +57,41 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
 	return new /datum/economy_ledger(store_path)
 
 /**
- * Writes every account bound to every open ledger back to its file.
+ * Writes every account bound to every open ledger back to its file, then closes everything down.
  *
  * Called at round end from [/datum/controller/subsystem/persistence/proc/collect_data]. Ordinary
- * writes ride on [/datum/bank_account/proc/adjust_money], so this only matters for state that changed
- * without a transaction behind it, and as a backstop against the last transaction of the round having
- * missed its deferred save.
+ * writes ride on [/datum/bank_account/proc/adjust_money], so the flush itself only matters for state
+ * that changed without a transaction behind it, and as a backstop against the last transaction of the
+ * round having missed its deferred save.
  *
- * Takes the round's economy snapshot once everything is written, so the figures logged are the ones
- * the next round starts from.
+ * Closing the ledgers is what actually gets the round onto disk. A [/datum/json_database] defers its
+ * writes to a zero-delay timer, and nothing else destroys a ledger, so without this the whole round's
+ * final flush rides on SStimer firing once more before the world reboots. Destroying the database
+ * forces the save synchronously. A ledger detaches its accounts on the way out, so nothing is left
+ * holding a ref.
+ *
+ * The snapshot and the flush are skipped when persistence was not running this round. There is nothing
+ * bound to write back, and [/proc/log_economy_snapshot] reads every player ledger on disk, which is not
+ * a thing to do once a round on a server that has the module switched off.
  */
 /proc/flush_economy_ledgers()
-	for(var/ledger_path in GLOB.economy_ledgers)
-		var/datum/economy_ledger/ledger = GLOB.economy_ledgers[ledger_path]
-		for(var/record_key in ledger.live_accounts)
-			var/datum/bank_account/bound_account = ledger.live_accounts[record_key]
-			bound_account.flush_to_ledger()
+	if(PERSISTENT_ECONOMY_ENABLED)
+		for(var/ledger_path in GLOB.economy_ledgers)
+			var/datum/economy_ledger/ledger = GLOB.economy_ledgers[ledger_path]
+			for(var/record_key in ledger.live_accounts)
+				var/datum/bank_account/bound_account = ledger.live_accounts[record_key]
+				bound_account.flush_to_ledger()
 
-	log_economy_snapshot()
+		log_economy_snapshot()
+
+		// Snapshot first: it reads the open ledgers from memory, which is the only place the round's
+		// last writes exist until the databases below are torn down.
+		for(var/ledger_path in GLOB.economy_ledgers.Copy())
+			qdel(GLOB.economy_ledgers[ledger_path])
+
+	// Outside the branch on purpose. The switch deciding whether the next round persists is written
+	// here, and the round it matters most on is the one where somebody has just switched it on.
+	QDEL_NULL(GLOB.economy_settings_store)
 
 /**
  * Reads the whole record stored under a key.
@@ -237,3 +254,27 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
 
 	store.remove(key)
 	return TRUE
+
+/**
+ * Erases every record in this ledger and cuts loose any account still bound to it.
+ *
+ * Detaching is what makes the wipe stick. A bound account writes itself back on its next transaction,
+ * so emptying the file alone would undo itself within the round, one account at a time, which looks
+ * exactly like the wipe silently failing.
+ *
+ * Detached accounts keep the balance they are holding and go back to being round-scoped. Nobody's
+ * credits vanish out from under them mid-shift; what stops existing is the record, so the round plays
+ * out and then nothing carries.
+ *
+ * Returns the number of records erased.
+ */
+/datum/economy_ledger/proc/clear_records()
+	var/erased = length(store.get())
+
+	// Detaching removes the account's own entry, so walk a copy rather than the list being emptied.
+	for(var/record_key in live_accounts.Copy())
+		var/datum/bank_account/bound_account = live_accounts[record_key]
+		bound_account.detach_ledger()
+
+	store.replace(list())
+	return erased

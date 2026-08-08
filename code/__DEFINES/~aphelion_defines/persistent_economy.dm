@@ -1,6 +1,11 @@
 /// Whether balances outlive the round. Every entry point into the persistent economy checks this, so
-/// switching it off leaves the stock upstream economy behind. See [/datum/config_entry/flag/persistent_economy].
-#define PERSISTENT_ECONOMY_ENABLED (CONFIG_GET(flag/persistent_economy))
+/// switching it off leaves the stock upstream economy behind.
+///
+/// Two switches, and both have to be on. The config flag is the host's, and locks the feature off for
+/// a server that does not want it at all. The stored setting is the admin's, thrown from the economy
+/// panel and remembered between rounds, and is off until somebody turns it on. See
+/// [/datum/config_entry/flag/persistent_economy] and [/proc/persistent_economy_active].
+#define PERSISTENT_ECONOMY_ENABLED (CONFIG_GET(flag/persistent_economy) && persistent_economy_active())
 
 /// Schema version stamped into every ledger record written. Bump when the shape of a record changes,
 /// and handle the older shape in [/datum/economy_ledger/proc/read_record] at the same time.
@@ -10,8 +15,8 @@
 /// clamped rather than trusted, so a hand-edited or corrupted file cannot mint an unspendable fortune.
 #define LEDGER_BALANCE_LIMIT 1000000000
 
-/// How many transaction history entries a ledger record carries. Matches the round-scoped cap in
-/// [/datum/bank_account/proc/add_log_to_history], so restoring a record fills the same buffer.
+/// How many transaction history entries a ledger record carries. [/datum/bank_account/proc/add_log_to_history]
+/// caps the round-scoped buffer at this same figure, so restoring a record fills it exactly.
 #define LEDGER_HISTORY_LENGTH 20
 
 /// Key of the schema version inside a ledger record. Absent on records written before versioning.
@@ -36,3 +41,8 @@
 /// levy with extra steps. Tuned apart from that levy because it also catches cash that was never
 /// anyone else's, such as coins and vendor change.
 #define DEPOSIT_LEVY_FRACTION 0.05
+
+/// Passed as [/datum/bank_account/proc/adjust_money]'s `levy_fraction` to let credits in untaxed.
+/// Every path that is not crew paying crew has to say so, since the levy is charged by default.
+/// Reserved for salary, grants, refunds and administrative action. See the module readme.
+#define LEVY_EXEMPT 0

@@ -118,6 +118,9 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 	data["inflation_value"] = SSeconomy.inflation_value
 	data["station_total"] = SSeconomy.station_total
 	data["station_target"] = SSeconomy.station_target
+	data["persistence_active"] = PERSISTENT_ECONOMY_ENABLED
+	data["persistence_next_round"] = persistent_economy_setting()
+	data["persistence_allowed"] = CONFIG_GET(flag/persistent_economy)
 
 	return data
 
@@ -169,12 +172,21 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 		if("delete_stored")
 			return delete_stored_record(user, params["key"])
 
+		if("toggle_persistence")
+			return toggle_persistence(user)
+
+		if("clear_ledger")
+			return clear_inspected_ledger(user)
+
 /**
  * Moves credits into or out of a live account through the same path any other transaction takes.
  *
  * Uses [/datum/bank_account/proc/adjust_money], so the account's own rules apply: debt collection
  * takes its cut, the change lands in transaction history, and a withdrawal larger than the balance is
  * refused instead of driving it negative. Use set_balance to override that.
+ *
+ * Exempt from the transaction levy. An admin typing a figure means that figure to arrive, and silently
+ * landing 95% of it reads as the panel being broken.
  * Arguments:
  * * user - the admin acting.
  * * account_ref - reference to the target account, re-resolved after the prompt.
@@ -199,7 +211,7 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 	if(!account)
 		return
 
-	if(!account.adjust_money(amount, "Administrative Adjustment"))
+	if(!account.adjust_money(amount, "Administrative Adjustment", LEVY_EXEMPT))
 		to_chat(user, span_warning("[account.account_holder] lacks the [-amount] credits to remove. Use Set to override."))
 		return
 
@@ -338,6 +350,74 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 
 	log_admin("[key_name(user)] set stored balance of [record_key] in [inspected_ledger.store_path] from [old_balance] to [new_balance].")
 	message_admins("[key_name_admin(user)] set stored balance of [record_key] from [old_balance] to [new_balance].")
+	return TRUE
+
+/**
+ * Switches the persistent economy on or off from the next round onwards.
+ *
+ * Stored on disk rather than in config, so it survives a reboot without anyone editing files on the
+ * host, and read once at the start of each round.
+ *
+ * This deliberately does not touch the round in progress, and says so on the button. Accounts bind to
+ * their ledgers at roundstart and as players spawn, so switching on now would attach nothing and
+ * persist nothing; switching off now would stop the levy while accounts that are already bound carried
+ * on writing themselves to disk. Attaching live accounts mid-round would be worse still, since a
+ * returning character adopts its stored balance and would have this shift's earnings replaced by last
+ * shift's figure while they were spending them.
+ *
+ * Refused outright when the config flag is off, which is the host saying the feature is unavailable.
+ * Arguments:
+ * * user - the admin acting.
+ */
+/datum/economy_admin_panel/proc/toggle_persistence(mob/user)
+	if(!CONFIG_GET(flag/persistent_economy))
+		to_chat(user, span_warning("The persistent economy is disabled in this server's configuration. PERSISTENT_ECONOMY has to be on before it can be switched from here."))
+		return
+
+	var/enabling = !persistent_economy_setting()
+	var/choice = enabling ? "Enable" : "Disable"
+	if(tgui_alert(user, "[choice] the persistent economy from the next round onwards? The round in progress is unaffected.", "Persistent Economy", list(choice, "Cancel")) != choice)
+		return
+
+	set_persistent_economy_setting(enabling)
+	log_admin("[key_name(user)] [enabling ? "enabled" : "disabled"] the persistent economy from the next round.")
+	message_admins("[key_name_admin(user)] [enabling ? "enabled" : "disabled"] the persistent economy from the next round.")
+	return TRUE
+
+/**
+ * Erases every record in the ledger the stored view is pointed at.
+ *
+ * The per-record delete is for one account that has gone wrong. This is for a ledger that has: a
+ * balance nobody can account for, a migration that went badly, or a test server that wants to start
+ * from nothing.
+ *
+ * Accounts bound to the ledger are detached rather than left writing themselves back, so the wipe
+ * holds for the rest of the round. They keep the credits they are holding, since taking those away
+ * mid-shift is a separate decision from erasing what carries over.
+ * Arguments:
+ * * user - the admin acting.
+ */
+/datum/economy_admin_panel/proc/clear_inspected_ledger(mob/user)
+	var/datum/economy_ledger/inspected_ledger = get_inspected_ledger()
+	var/record_count = length(inspected_ledger.read_all())
+	if(!record_count)
+		return
+
+	var/ledger_name = inspected_ckey ? "[inspected_ckey]'s" : "the station"
+	if(tgui_alert(user, "Erase all [record_count] records from [ledger_name] ledger? Balances in play this round are kept, but nothing from this ledger will carry over. This cannot be undone.", "Clear Ledger", list("Erase Everything", "Cancel")) != "Erase Everything")
+		return
+
+	inspected_ledger = get_inspected_ledger()
+	var/erased = inspected_ledger.clear_records()
+	if(!erased)
+		return
+
+	// The cross-ledger scan is now showing records that no longer exist.
+	scanned_records = null
+	scanned_at = null
+
+	log_admin("[key_name(user)] cleared [erased] records from the ledger at [inspected_ledger.store_path].")
+	message_admins("[key_name_admin(user)] cleared [erased] records from [ledger_name] ledger.")
 	return TRUE
 
 /**

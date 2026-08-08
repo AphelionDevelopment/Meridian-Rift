@@ -7302,6 +7302,7 @@
 #include "modular_aphelion\modules\persistent_economy\code\economy_admin_panel.dm"
 #include "modular_aphelion\modules\persistent_economy\code\economy_config.dm"
 #include "modular_aphelion\modules\persistent_economy\code\economy_ledger.dm"
+#include "modular_aphelion\modules\persistent_economy\code\economy_settings.dm"
 #include "modular_aphelion\modules\persistent_economy\code\economy_snapshot.dm"
 #include "modular_aphelion\modules\persistent_economy\code\inflation_baseline.dm"
 #include "modular_aphelion\modules\persistent_economy\code\transaction_levy.dm"

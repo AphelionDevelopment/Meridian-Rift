@@ -11,9 +11,24 @@ Persistence hangs off `/datum/bank_account` itself rather than a savings account
 carried credits are ordinary credits: every vendor, holopay, paystand and transfer spends them with
 no per-surface code.
 
-The whole module is gated on the `PERSISTENT_ECONOMY` config flag, on by default. Off, every account
-is round-scoped and nothing below applies: no carryover, no levy, no rebased inflation baseline. It is
-there so a broken ledger can be taken out of the loop without a recompile.
+The whole module is gated, and **it is off until somebody turns it on**. Off, every account is
+round-scoped and nothing below applies: no carryover, no levy, no rebased inflation baseline, which is
+the stock upstream economy.
+
+There are two switches and both have to be on. The `PERSISTENT_ECONOMY` config flag is the host's,
+defaults on, and locks the feature off for a server that does not want it at all. The switch that
+actually decides is a stored setting thrown from the Economy Panel, which defaults **off** and is
+remembered between rounds in `data/persistent_economy_settings.json`. An economy that quietly starts
+remembering balances is a far worse surprise than one that quietly does not, so the default is the one
+that changes nothing.
+
+The stored setting is read once, at the first thing that asks in a round, and held for the rest of it.
+Throwing the switch therefore applies from the *next* round, never the one in progress, and the panel
+says so. This is not laziness: accounts bind to their ledgers at roundstart and as each player spawns,
+so switching on mid-round attaches nothing and persists nothing, while switching off mid-round would
+stop the levy while accounts that are already bound carried on writing to disk. Worse, attaching a live
+account mid-round makes it adopt its stored balance, which would replace a player's earnings this shift
+with last shift's figure while they were in the middle of spending them.
 
 `/datum/economy_ledger` is a keyed store of account state backed by a `/datum/json_database`, so
 writes get its `.savebac` backup and recovery path. One ledger owns one file. Accounts sharing a file
@@ -42,10 +57,15 @@ from the other, which duplicates money. An account that loses its key is detache
 
 `flush_economy_ledgers()` runs at round end from `SSpersistence.collect_data()`. Ordinary writes ride
 on `adjust_money()`, so this only covers state that changed without a transaction behind it and backs
-up the last transaction of the round against a missed deferred save.
+up the last transaction of the round against a missed deferred save. It then closes every ledger,
+which is what actually gets the round onto disk: a `/datum/json_database` defers its writes to a
+zero-delay timer and nothing else destroys a ledger, so otherwise the entire round's final flush would
+be riding on SStimer firing once more before the world reboots. Destroying the database forces the
+save synchronously. The snapshot is taken before the teardown, since it reads open ledgers from memory.
 
-Ledgers live for the whole round. Accounts hold a hard ref to theirs, so destroying one mid-round
-while an account still points at it would hard delete the ledger.
+Ledgers otherwise live for the whole round. Accounts hold a hard ref to theirs, so destroying one
+mid-round while an account still points at it would hard delete the ledger; `Destroy()` detaches its
+live accounts first for that reason.
 
 Records keep the last `LEDGER_HISTORY_LENGTH` transactions, the same buffer
 `/datum/bank_account/var/transaction_history` holds in-round, restored on attach. It is capped for the
@@ -84,18 +104,37 @@ transferable, since it is still that character's.
 
 ### Sink model
 
-Money is created in only one place: `MAX_GRANT_DPT`, 500 per department per five minutes. Crew payday
-is a transfer out of a department budget, not new money, so the department grant is what ultimately
-bounds crew income. Everything players do to each other, including all player-priced trade, is pure
-transfer and creates nothing. So the supply only grows unless something removes it.
+Everything players do to each other, including all player-priced trade, is pure transfer and creates
+nothing. Money enters the economy from four kinds of faucet, and the supply grows unless something
+removes it:
+
+- `MAX_GRANT_DPT`, 500 per department per five minutes. Ceilinged, see below. Crew payday is a
+  transfer out of a department budget rather than new money, so this bounds ordinary crew income.
+- The roundstart grant, `STARTING_PAYCHECKS` paid `free`, which mints rather than drawing on a budget.
+  Paid once per character rather than once per shift, so it is bounded by how many characters a player
+  brings rather than by how long they play.
+- Departmental earnings, which the grant ceiling does not see: cargo exports, techweb bounties,
+  ordnance paper funding, shuttle loan events and station traits all credit a budget directly.
+- Player earnings that are not trade: black market sales through the LTSRBT, the janitor's compactor
+  bonus, GBP punchcards, the powerator.
 
 Departments and players are bounded differently, because they are not the same kind of account.
 
-**Departments** keep a proportional charge, 5% of the carried balance at roundstart as operating
-costs, applied before the floor top-up so one below its floor still lands on it. They also stop
-drawing `MAX_GRANT_DPT` at three times their budget floor. A proportional charge is a hard ceiling:
-balances settle at earnings ÷ fraction and stop climbing. On an institutional budget that is exactly
-what is wanted. Cargo, which earns rather than draws, is still not capped by the grant ceiling.
+**Departments** keep a proportional charge, `DEPARTMENT_UPKEEP_FRACTION` of the carried balance at
+roundstart as operating costs, applied before the floor top-up. They also stop drawing `MAX_GRANT_DPT`
+at three times their budget floor. A proportional charge is a hard ceiling: balances settle at
+earnings ÷ fraction and stop climbing. On an institutional budget that is exactly what is wanted.
+
+Be clear about where that ceiling actually sits. The grant ceiling bounds only the passive grant, and
+a department that earns — cargo above all — keeps climbing past it on exports and bounties. What
+bounds those is the 5% roundstart charge alone, which settles a budget at roughly twenty times what it
+retains per round, not at three times its floor. That is a high ceiling. If it turns out to be too
+high, `DEPARTMENT_UPKEEP_FRACTION` is the figure to move, and the round-end snapshot is what says so.
+
+The grant ceiling is `floor_amount * DEPARTMENT_GRANT_CEILING_MULT` for every department including
+cargo, whose subsidy floor is zero. Cargo is therefore measured against a floor it does not otherwise
+have. It costs cargo nothing in practice, since exports dwarf the grant, but it is an inconsistency
+rather than a decision.
 
 **Players** pay nothing on what they hold. The same ceiling that suits a department is wrong for a
 player: it caps a character at roughly one shift's earnings ÷ the fraction, which for payday-only
@@ -109,20 +148,38 @@ is taken from the recipient's side, so the sender pays the figure they agreed an
 the fee, as a broker's cut works, and it cannot make a transfer fail because the sender's funds were
 already checked against the full amount.
 
-Transfers where either side is a departmental account are exempt. That covers payday, which would
-otherwise be docked on the way out of a budget, and covers paying a department or a machine for a
-service, which is priced already. What is left is crew paying crew.
+**The levy is charged inside `adjust_money()`**, the one proc every balance change already passes
+through, and not at the surfaces that move money. This is the important structural decision in the
+module and it was arrived at the hard way.
 
-A levy is only a sink if it cannot be walked around, and `transfer_money()` is not the path most
-credits take between two players. `charge_transaction_levy()` exists so every path charges the same
-cut: the ID card transfer verb, the holopay and paystand, and banking physical currency. Add the call
-to any new path that moves credits into an account, or that path becomes the one everybody uses.
+The levy was first applied per surface: `transfer_money()`, the holopay, the ID card deposit procs.
+That makes correctness depend on every future contributor remembering to add the call, and three
+surfaces were already missing it — the custom vendor, the display case and the pricetag component, all
+of which credit an account directly with two `adjust_money()` calls and never touch `transfer_money()`.
+The custom vendor is the most used player-run shop in the game. A levy with holes that size is not a
+sink at all, because crew route their trade down whichever path is free.
+
+Charging it centrally inverts the default. A surface nobody considered is taxed rather than free, so
+the failure mode is a fee somebody queries rather than an economy with no drain. Anything that is
+genuinely not crew paying crew has to say so, by passing `LEVY_EXEMPT`:
+
+- Salary out of a department budget, handled in `transfer_money()` when the sender is departmental.
+- The roundstart grant, and any other `free` payday.
+- Refunds, currently the PDA betting program. Taxing money coming back is a straight bug.
+- Administrative adjustment from the economy panel. An admin typing a figure means that figure.
+
+Departmental accounts are exempt on the receiving side automatically, since money paid to a department
+or a machine is priced already.
 
 Banking cash is charged `DEPOSIT_LEVY_FRACTION` rather than the transfer levy, because it is not quite
 the same thing. Withdrawing to a holochip, handing it over and depositing is a crew-to-crew transfer
 wearing a disguise and has to cost the same, but the same code path also banks coins, vendor change
 and mining payouts that were never anyone else's. It is a separate define so that case can be priced
-on its own without reopening the hole.
+on its own without reopening the hole. The two rates are equal today.
+
+The fee is shown to the player wherever it is taken: the ID card says what it withheld, and the holopay
+tells the owner the fee rather than reporting the gross it no longer receives. A levy nobody can see
+reads as a bug.
 
 The remaining sinks are unchanged: vendors and machines destroy what they take, and cash that is never
 banked dies with the round.
@@ -139,8 +196,24 @@ types such as factions or ships appear there automatically once they share the s
 the panel enumerates the file rather than a fixed list of categories.
 
 Adjust obeys the account's own rules: debt collection takes its cut and an overdraft is refused. Set
-overwrites outright and is the way around that. Every mutation is logged to `log_admin` and
+overwrites outright and is the way around that. Administrative adjustment is exempt from the levy, as
+an admin typing a figure means that figure to arrive. Every mutation is logged to `log_admin` and
 `message_admins`.
+
+The panel is also where persistence is switched on and off. The header states what the round in
+progress is running under, and the button states and sets what the next one will run under, since
+those are different questions and conflating them is how an admin concludes the switch is broken. The
+button is disabled outright when the config flag is off, with the reason shown, rather than silently
+doing nothing.
+
+**Clear Ledger** erases every record in whichever ledger the stored view is pointed at. The per-record
+delete beside each row is for one account that has gone wrong; this is for a ledger that has, or for a
+test server that wants to start from nothing. It detaches any account still bound to the ledger, which
+is what makes the wipe hold: a bound account writes itself back on its next transaction, so emptying
+the file alone would undo itself one account at a time and look exactly like the wipe failing silently.
+Detached accounts keep the credits they are holding, because erasing what carries over and confiscating
+a balance mid-shift are separate decisions and only one of them was asked for. It also drops the
+cross-ledger scan, which would otherwise go on listing records that no longer exist.
 
 Every row in both views expands to the last `LEDGER_HISTORY_LENGTH` transactions on that account,
 newest first. A live account shows what it has done this round, a stored record shows what it carried
@@ -181,29 +254,38 @@ unplanned sink.
 None of these can be modular overrides: there is no subtype seam to hook and DM will not take a second
 definition of a proc on the same type.
 
-- `code/modules/economy/account.dm`: `/datum/bank_account/proc/adjust_money`. One added call to
-  `flush_to_ledger()`.
+- `code/modules/economy/account.dm`: `/datum/bank_account/proc/adjust_money`. Gains a `levy_fraction`
+  argument defaulting to `TRANSACTION_LEVY_FRACTION`, charges the levy on incoming credits, and calls
+  `flush_to_ledger()`. This is where both halves of the module hang off the same chokepoint.
+- `code/modules/economy/account.dm`: `/datum/bank_account/department/adjust_money`. Signature kept in
+  step with its parent. Departments are exempt regardless, so this is only to stop the override
+  silently dropping the argument if that exemption ever moves.
 - `code/modules/economy/account.dm`: `/datum/bank_account/Destroy`. Added `flush_to_ledger()` and
   `detach_ledger()`, so a destroyed account writes its last state and stops the ledger holding a ref
   to it.
 - `code/modules/economy/account.dm`: `/datum/bank_account/proc/payday`. Two added lines returning
-  early on a suspended account.
-- `code/modules/economy/account.dm`: `/datum/bank_account/proc/transfer_money`. The recipient's
-  `adjust_money()` now takes the transaction levy off first.
-- `code/modules/economy/holopay.dm`: `/obj/structure/holopay/proc/alert_buyer`. Takes the levy already
-  charged on the payment and credits the owner net of it. Defaulted to zero so nothing else changes.
-- `code/modules/economy/holopay.dm`: the holochip branch of `item_interact` and
-  `/obj/structure/holopay/proc/pay`. Both charge the levy and hand it to `alert_buyer()`. The paystand
-  paid the owner and charged the payer with two separate `adjust_money()` calls, never touching
-  `transfer_money()`, so it was the untaxed path for the surface most player trade actually uses.
+  early on a suspended account, and `LEVY_EXEMPT` on the `free` grant.
+- `code/modules/economy/account.dm`: `/datum/bank_account/proc/transfer_money`. Passes `LEVY_EXEMPT`
+  when the sender is a departmental account, which is what keeps payday from being docked.
+- `code/modules/economy/account.dm`: `/datum/bank_account/proc/add_log_to_history`. The literal `20`
+  became `LEDGER_HISTORY_LENGTH`. The two were equal by coincidence, and a record restored into a
+  differently sized buffer than the one it was written from would have failed quietly.
+- `code/modules/economy/holopay.dm`: `/obj/structure/holopay/proc/alert_buyer`. Takes a levy fraction
+  rather than a precomputed levy, and tells the owner what the fee was instead of announcing a gross
+  figure it no longer receives. The holochip branch of `item_interact` passes the deposit rate.
 - `code/game/objects/items/cards_ids.dm`: `/obj/item/card/id/proc/insert_money` and
-  `/obj/item/card/id/proc/mass_insert_money`. Both take `DEPOSIT_LEVY_FRACTION` off the sum before it
-  is banked. Withdraw, hand over the holochip, deposit was otherwise a transfer with no levy on it.
-- `code/datums/quirks/negative_quirks/indebted.dm`: `/datum/quirk/indebted/add_unique`. Returns early
-  on a character that has played before, keeping the debt it already owes. `add_unique` runs every
-  time a character spawns, so with balances carrying over the quirk rolled a fresh
-  `PAYCHECK_CREW * rand(275, 325)` every round on top of whatever was left, far faster than debt
-  collection retires it. The debt became unpayable and the achievement for clearing it unreachable.
+  `/obj/item/card/id/proc/mass_insert_money`. Bank at `DEPOSIT_LEVY_FRACTION`, and `insert_money`
+  reports the fee. Withdraw, hand over the holochip, deposit was otherwise a transfer with no levy.
+- `code/modules/modular_computers/file_system/programs/betting.dm`: the five refund paths in
+  `/datum/active_bet`. All `LEVY_EXEMPT`. Winnings are levied, since a pot is other players' money.
+- `code/datums/quirks/negative_quirks/indebted.dm`: `/datum/quirk/indebted/add_unique`. A character
+  that still owes keeps what it owes rather than being handed more; one that has cleared its debt
+  rolls a fresh one. `add_unique` runs every time a character spawns, so with balances carrying over
+  the quirk rolled a fresh `PAYCHECK_CREW * rand(275, 325)` every round on top of whatever was left,
+  far faster than debt collection retires it, and the debt became unpayable. Skipping the roll outright
+  for a returning character fixed that but left a cleared character holding a `-2` quirk with no
+  downside at all, which is a free positive quirk. Re-rolling on a cleared debt keeps it costing
+  something. The achievement is per-player and is not awarded twice.
 - `code/controllers/subsystem/persistence/_persistence.dm`:
   `/datum/controller/subsystem/persistence/proc/collect_data`. One added call to
   `flush_economy_ledgers()`.
@@ -230,14 +312,17 @@ definition of a proc on the same type.
 
 - `code/__DEFINES/~aphelion_defines/persistent_economy.dm`: `PERSISTENT_ECONOMY_ENABLED`,
   `LEDGER_SCHEMA_VERSION`, `LEDGER_BALANCE_LIMIT`, `LEDGER_HISTORY_LENGTH`,
-  `TRANSACTION_LEVY_FRACTION`, `DEPOSIT_LEVY_FRACTION`, and the `LEDGER_FIELD_*` record keys. Used
-  across more than one file, so they live here rather than in the module. The record keys moved here
-  from `economy_ledger.dm` once `economy_snapshot.dm` needed to read records straight off disk.
+  `TRANSACTION_LEVY_FRACTION`, `DEPOSIT_LEVY_FRACTION`, `LEVY_EXEMPT`, and the `LEDGER_FIELD_*` record
+  keys. Used across more than one file, so they live here rather than in the module. The record keys
+  moved here from `economy_ledger.dm` once `economy_snapshot.dm` needed to read records straight off
+  disk, and the levy defines are reachable from any core file that credits an account.
 - `modular_aphelion/modules/persistent_economy/code/department_budgets.dm`: `STATION_LEDGER_PATH`,
   `DEPARTMENT_KEY_PREFIX`, `DEPARTMENT_GRANT_CEILING_MULT`, `DEPARTMENT_UPKEEP_FRACTION`,
   `DEPARTMENT_SUBSIDY_FRACTION`. All `#undef`'d in the same file.
 - `modular_aphelion/modules/persistent_economy/code/economy_snapshot.dm`: `PLAYER_SAVES_PATH`,
   `PLAYER_LEDGER_FILENAME`. Both `#undef`'d in the same file.
+- `modular_aphelion/modules/persistent_economy/code/economy_settings.dm`: `ECONOMY_SETTINGS_PATH`,
+  `SETTING_KEY_ENABLED`. Both `#undef`'d in the same file.
 - `modular_aphelion/modules/persistent_economy/code/character_accounts.dm`: `CHARACTER_KEY_PREFIX`.
   `#undef`'d in the same file.
 - `modular_aphelion/modules/persistent_economy/code/economy_admin_panel.dm`: `ADMIN_BALANCE_LIMIT`.
@@ -247,8 +332,11 @@ definition of a proc on the same type.
 
 ### Config:
 
-- `PERSISTENT_ECONOMY`, a flag, on by default. Off, the module does nothing and the stock upstream
-  economy is left behind.
+- `PERSISTENT_ECONOMY`, a flag, on by default. The host's outer switch. Off, the module does nothing,
+  the stock upstream economy is left behind, and no admin can turn any of it back on from the panel.
+  It is not the switch that decides whether the feature runs: that is the stored setting behind the
+  Economy Panel, which is off until thrown and lives in `data/persistent_economy_settings.json` rather
+  than in config, so it survives a reboot without anyone editing files on the host.
 
 ### Included files that are not contained in this module:
 

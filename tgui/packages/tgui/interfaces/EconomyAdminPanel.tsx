@@ -51,6 +51,9 @@ type Data = {
   inflation_value: number;
   station_total: number;
   station_target: number;
+  persistence_active: boolean;
+  persistence_next_round: boolean;
+  persistence_allowed: boolean;
 };
 
 const ScanTable = (props: { records: ScannedRecord[] }) => {
@@ -246,6 +249,9 @@ export const EconomyAdminPanel = (props) => {
     inflation_value,
     station_total,
     station_target,
+    persistence_active,
+    persistence_next_round,
+    persistence_allowed,
   } = data;
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const scannedTotal = (scanned_records || []).reduce(
@@ -256,6 +262,40 @@ export const EconomyAdminPanel = (props) => {
   return (
     <Window title="Economy Panel" width={900} height={700}>
       <Window.Content scrollable>
+        <Section
+          title="Persistence"
+          buttons={
+            <Button
+              icon={persistence_next_round ? 'toggle-on' : 'toggle-off'}
+              color={persistence_next_round ? 'good' : 'bad'}
+              disabled={!persistence_allowed}
+              tooltip={
+                persistence_allowed
+                  ? 'Applies from the next round. The round in progress is unaffected.'
+                  : "Locked off in this server's configuration."
+              }
+              onClick={() => act('toggle_persistence')}
+            >
+              {persistence_next_round ? 'On Next Round' : 'Off Next Round'}
+            </Button>
+          }
+        >
+          <LabeledList>
+            <LabeledList.Item label="This Round">
+              <Box inline color={persistence_active ? 'good' : 'label'}>
+                {persistence_active
+                  ? 'Balances carry over'
+                  : 'Round-scoped, nothing is being stored'}
+              </Box>
+            </LabeledList.Item>
+          </LabeledList>
+          <Box color="label" mt={1}>
+            {!persistence_allowed
+              ? "PERSISTENT_ECONOMY is off in this server's configuration, so the switch below does nothing until a host turns it on."
+              : 'The switch is remembered between rounds. It only ever applies to the next one: accounts bind to their ledgers at roundstart and as players spawn, so flipping it now would leave the round half persisted.'}
+          </Box>
+        </Section>
+
         <Section title="Sector">
           <LabeledList>
             <LabeledList.Item label="Vendor Prices">
@@ -300,6 +340,15 @@ export const EconomyAdminPanel = (props) => {
                   Station Ledger
                 </Button>
               )}
+              <Button
+                icon="eraser"
+                color="bad"
+                disabled={!stored_records.length}
+                tooltip="Erase every record in this ledger. Balances in play this round are kept."
+                onClick={() => act('clear_ledger')}
+              >
+                Clear Ledger
+              </Button>
             </>
           }
         >

@@ -217,7 +217,7 @@ GLOBAL_LIST_EMPTY_TYPED(active_bets, /datum/active_bet)
 		for(var/list/option in options)
 			for(var/list/existing_bets in options[option])
 				var/datum/bank_account/refunded_account = existing_bets[1]
-				refunded_account.adjust_money(text2num(existing_bets[2]), "Refund: [name] gamble cancelled.")
+				refunded_account.adjust_money(text2num(existing_bets[2]), "Refund: [name] gamble cancelled.", LEVY_EXEMPT) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: refunded_account.adjust_money(text2num(existing_bets[2]), "Refund: [name] gamble cancelled.")
 		return
 
 	reply_to_feed(winning_option)
@@ -245,7 +245,7 @@ GLOBAL_LIST_EMPTY_TYPED(active_bets, /datum/active_bet)
 			if(existing_bets[1] == better)
 				//We're already betting, but now we're betting on another one, clear our previous and we'll bet on the new.
 				if(option != option_betting)
-					better.adjust_money(text2num(existing_bets[2]), "Refunded: changed bet for [name].")
+					better.adjust_money(text2num(existing_bets[2]), "Refunded: changed bet for [name].", LEVY_EXEMPT) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: better.adjust_money(text2num(existing_bets[2]), "Refunded: changed bet for [name].")
 					options[option] -= list(existing_bets)
 				//We're already betting on the same one, we'll add it together instead of making it a separate bet, or the user is taking money out.
 				else
@@ -262,7 +262,7 @@ GLOBAL_LIST_EMPTY_TYPED(active_bets, /datum/active_bet)
 					if(money_betting == 0)
 						var/money_taking_out = text2num(existing_bets[2])
 						total_amount_bet -= money_taking_out
-						better.adjust_money(money_taking_out, "Refunded: changed bet for [name].")
+						better.adjust_money(money_taking_out, "Refunded: changed bet for [name].", LEVY_EXEMPT) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: better.adjust_money(money_taking_out, "Refunded: changed bet for [name].")
 						options[option] -= list(existing_bets)
 						return
 					//taking money out
@@ -272,7 +272,7 @@ GLOBAL_LIST_EMPTY_TYPED(active_bets, /datum/active_bet)
 						var/money_taking_out = text2num(existing_bets[2]) - money_betting
 						total_amount_bet -= money_taking_out
 						better.bank_card_talk("Refunded [money_taking_out][MONEY_SYMBOL] for taking money out of your bet on [name].")
-						better.adjust_money(money_taking_out, "Refund from gambling on [name].")
+						better.adjust_money(money_taking_out, "Refund from gambling on [name].", LEVY_EXEMPT) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: better.adjust_money(money_taking_out, "Refund from gambling on [name].")
 						existing_bets[2] = "[money_betting]"
 						return
 
@@ -290,7 +290,7 @@ GLOBAL_LIST_EMPTY_TYPED(active_bets, /datum/active_bet)
 				var/money_refunding = text2num(existing_bets[2])
 				total_amount_bet -= money_refunding
 				better.bank_card_talk("Refunded [money_refunding][MONEY_SYMBOL] for cancelling your bet on [name].")
-				better.adjust_money(money_refunding, "Refunded: changed bet for [name].")
+				better.adjust_money(money_refunding, "Refunded: changed bet for [name].", LEVY_EXEMPT) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: better.adjust_money(money_refunding, "Refunded: changed bet for [name].")
 				options[option] -= list(existing_bets)
 
 #undef MAX_LENGTH_TITLE

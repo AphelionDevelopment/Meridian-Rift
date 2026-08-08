@@ -123,7 +123,7 @@
 	var/datum/bank_account/first_account = new("First Holder", test_job)
 
 	TEST_ASSERT(!first_account.attach_ledger(ledger, "test:attach"), "Attaching to a key with no record reported a returning account.")
-	first_account.adjust_money(700, "Test: Earnings")
+	first_account.adjust_money(700, "Test: Earnings", LEVY_EXEMPT)
 	qdel(first_account)
 
 	var/datum/bank_account/second_account = new("Second Holder", test_job)
@@ -140,7 +140,7 @@
 	var/datum/bank_account/usurper_account = new("Usurper", test_job)
 
 	original_account.attach_ledger(ledger, "test:contested")
-	original_account.adjust_money(1000, "Test: Earnings")
+	original_account.adjust_money(1000, "Test: Earnings", LEVY_EXEMPT)
 	usurper_account.attach_ledger(ledger, "test:contested")
 
 	TEST_ASSERT_NULL(original_account.ledger, "Two accounts held one key at once. Both write their own balance over the other's, so credits spent from one are restored by the next write from the other.")
@@ -159,7 +159,7 @@
 /datum/unit_test/economy_ledger/suspended_income/Run()
 	var/datum/job/test_job = SSjob.get_job_type(/datum/job/assistant)
 	var/datum/bank_account/abandoned_account = new("Abandoned", test_job)
-	abandoned_account.adjust_money(500, "Test: Opening Balance")
+	abandoned_account.adjust_money(500, "Test: Opening Balance", LEVY_EXEMPT)
 	abandoned_account.suspend_income()
 
 	TEST_ASSERT(!abandoned_account.payday(1, free = TRUE), "A suspended account was paid. A player cycling characters banks one income stream per character.")
@@ -168,10 +168,30 @@
 
 	qdel(abandoned_account)
 
-/// The transaction levy takes its cut of crew-to-crew transfers and leaves department money alone.
-/datum/unit_test/transaction_levy
+/**
+ * Base for the levy tests, which need persistence switched on to measure anything.
+ *
+ * The stored setting is off until an admin throws it, and a test server has never thrown it, so a levy
+ * test that did not force this would pass by asserting that nothing happens.
+ */
+/datum/unit_test/economy_levy
+	abstract_type = /datum/unit_test/economy_levy
+	/// Whatever the round was running under, put back afterwards.
+	var/previous_state
 
-/datum/unit_test/transaction_levy/Run()
+/datum/unit_test/economy_levy/New()
+	. = ..()
+	previous_state = GLOB.persistent_economy_active
+	GLOB.persistent_economy_active = TRUE
+
+/datum/unit_test/economy_levy/Destroy()
+	GLOB.persistent_economy_active = previous_state
+	return ..()
+
+/// The levy takes its cut at the right rate and leaves the exempt paths alone.
+/datum/unit_test/economy_levy/rates
+
+/datum/unit_test/economy_levy/rates/Run()
 	var/datum/job/test_job = SSjob.get_job_type(/datum/job/assistant)
 	var/datum/bank_account/seller_account = new("Seller", test_job)
 	var/datum/bank_account/buyer_account = new("Buyer", test_job)
@@ -180,16 +200,15 @@
 	TEST_ASSERT_NOTNULL(department_account, "No civilian budget exists to test the departmental exemption against.")
 
 	var/expected_levy = round(1000 * TRANSACTION_LEVY_FRACTION)
-	TEST_ASSERT_EQUAL(get_transaction_levy(buyer_account, seller_account, 1000), expected_levy, "No levy was taken on a crew-to-crew transfer. The economy has no continuous sink.")
-	TEST_ASSERT_EQUAL(get_transaction_levy(department_account, seller_account, 1000), 0, "A levy was taken on money leaving a department budget. Payday would be docked.")
-	TEST_ASSERT_EQUAL(get_transaction_levy(buyer_account, department_account, 1000), 0, "A levy was taken on money paid to a department budget.")
-	TEST_ASSERT_EQUAL(get_transaction_levy(buyer_account, seller_account, 0), 0, "A levy was taken on a transfer of nothing.")
+	TEST_ASSERT_EQUAL(get_transaction_levy(seller_account, 1000), expected_levy, "No levy was taken on credits arriving in a crew account. The economy has no continuous sink.")
+	TEST_ASSERT_EQUAL(get_transaction_levy(department_account, 1000), 0, "A levy was taken on money paid to a department budget.")
+	TEST_ASSERT_EQUAL(get_transaction_levy(seller_account, 0), 0, "A levy was taken on a transfer of nothing.")
+	TEST_ASSERT_EQUAL(get_transaction_levy(seller_account, 1000, LEVY_EXEMPT), 0, "An exempt path was levied anyway. Salary, grants and refunds would all be docked.")
 
 	var/expected_deposit_levy = round(1000 * DEPOSIT_LEVY_FRACTION)
-	TEST_ASSERT_EQUAL(get_transaction_levy(null, seller_account, 1000, DEPOSIT_LEVY_FRACTION), expected_deposit_levy, "No levy was taken on banked cash. Withdrawing, handing over a holochip and depositing moves credits between crew untaxed.")
-	TEST_ASSERT_EQUAL(get_transaction_levy(null, department_account, 1000, DEPOSIT_LEVY_FRACTION), 0, "A levy was taken on cash banked into a department budget.")
+	TEST_ASSERT_EQUAL(get_transaction_levy(seller_account, 1000, DEPOSIT_LEVY_FRACTION), expected_deposit_levy, "No levy was taken on banked cash. Withdrawing, handing over a holochip and depositing moves credits between crew untaxed.")
 
-	buyer_account.adjust_money(1000, "Test: Opening Balance")
+	buyer_account.adjust_money(1000, "Test: Opening Balance", LEVY_EXEMPT)
 	seller_account.transfer_money(buyer_account, 1000, "Test: Sale")
 
 	TEST_ASSERT_EQUAL(buyer_account.account_balance, 0, "The buyer paid something other than the agreed sum.")
@@ -197,5 +216,74 @@
 
 	qdel(seller_account)
 	qdel(buyer_account)
+
+/// Any surface that credits an account is levied, without having to name that surface.
+/datum/unit_test/economy_levy/charged_centrally
+
+/datum/unit_test/economy_levy/charged_centrally/Run()
+	var/datum/job/test_job = SSjob.get_job_type(/datum/job/assistant)
+	var/datum/bank_account/shopkeeper_account = new("Shopkeeper", test_job)
+
+	// What a custom vendor, display case or pricetag does: credit an account directly, no transfer_money.
+	shopkeeper_account.adjust_money(1000, "Test: Direct Sale")
+	TEST_ASSERT_EQUAL(shopkeeper_account.account_balance, 1000 - round(1000 * TRANSACTION_LEVY_FRACTION), "Crediting an account directly escaped the levy. Every surface that does not go through transfer_money is then an untaxed path around the sink.")
+
+	shopkeeper_account.adjust_money(-500, "Test: Spending")
+	TEST_ASSERT_EQUAL(shopkeeper_account.account_balance, 450, "A withdrawal was levied. The levy is charged on credits arriving, not leaving.")
+
+	qdel(shopkeeper_account)
+
+/// Salary out of a department budget is income, not trade, and is not docked on the way out.
+/datum/unit_test/economy_levy/exempts_salary
+
+/datum/unit_test/economy_levy/exempts_salary/Run()
+	var/datum/job/test_job = SSjob.get_job_type(/datum/job/assistant)
+	var/datum/bank_account/crew_account = new("Crew", test_job)
+	var/datum/bank_account/department_account = SSeconomy.get_dep_account(ACCOUNT_CIV)
+
+	TEST_ASSERT_NOTNULL(department_account, "No civilian budget exists to pay a salary out of.")
+
+	department_account.adjust_money(1000, "Test: Budget")
+	crew_account.transfer_money(department_account, 1000, "Test: Salary")
+	TEST_ASSERT_EQUAL(crew_account.account_balance, 1000, "Salary out of a department budget was levied. Every paycheck would be docked.")
+
+	qdel(crew_account)
+
+/// A record stamped newer than this build is refused rather than guessed at.
+/datum/unit_test/economy_ledger/schema_version
+
+/datum/unit_test/economy_ledger/schema_version/Run()
+	ledger.store.set_key("test:from_the_future", list(
+		LEDGER_FIELD_VERSION = LEDGER_SCHEMA_VERSION + 1,
+		LEDGER_FIELD_BALANCE = 5000,
+	))
+
+	TEST_ASSERT_NULL(ledger.read_record("test:from_the_future"), "A record written by a newer build was read anyway. Rolling a server back would rewrite newer records into an older shape.")
+	TEST_ASSERT_NULL(ledger.read_balance("test:from_the_future"), "A newer record produced a balance.")
+	TEST_ASSERT_NULL(summarise_ledger_record(ledger.store.get_key("test:from_the_future")), "A newer record was counted in the cross-ledger totals.")
+
+	ledger.store.set_key("test:unversioned", list(LEDGER_FIELD_BALANCE = 200))
+	TEST_ASSERT_EQUAL(ledger.read_balance("test:unversioned"), 200, "A record predating versioning was refused. It is the same shape as version 1 and has to keep loading.")
+
+/// Clearing a ledger erases it and cuts loose the accounts that would otherwise write it back.
+/datum/unit_test/economy_ledger/clear_records
+
+/datum/unit_test/economy_ledger/clear_records/Run()
+	var/datum/job/test_job = SSjob.get_job_type(/datum/job/assistant)
+	var/datum/bank_account/bound_account = new("Bound", test_job)
+
+	bound_account.attach_ledger(ledger, "test:wiped")
+	bound_account.adjust_money(900, "Test: Earnings", LEVY_EXEMPT)
+	ledger.write_record(key = "test:untouched_by_anyone", balance = 100, debt = 0, holder = "Absent")
+
+	TEST_ASSERT_EQUAL(ledger.clear_records(), 2, "Clearing the ledger did not report the records it erased.")
+	TEST_ASSERT_EQUAL(length(ledger.read_all()), 0, "Records survived a clear.")
+	TEST_ASSERT_NULL(bound_account.ledger, "A bound account kept its ledger through a clear. It writes itself back on its next transaction, so the wipe would undo itself one account at a time.")
+	TEST_ASSERT_EQUAL(bound_account.account_balance, 900, "Clearing the ledger took credits off an account in play. Erasing what carries over is a separate thing from confiscating a balance mid-shift.")
+
+	bound_account.adjust_money(50, "Test: Post-Wipe Earnings", LEVY_EXEMPT)
+	TEST_ASSERT_EQUAL(length(ledger.read_all()), 0, "A detached account wrote itself back into a cleared ledger.")
+
+	qdel(bound_account)
 
 #undef TEST_LEDGER_PATH
