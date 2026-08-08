@@ -6,19 +6,19 @@
  *
  * Called from [/mob/living/carbon/human/proc/on_job_equipping] in place of the unconditional
  * [STARTING_PAYCHECKS] grant. With balances carrying over, paying it every shift would be a faucet
- * with nothing on the other side. A character new to the ledger still gets it; a returning one lives
- * on passive payday and on what it earns.
+ * with nothing on the other side, so only a character new to the ledger gets it. A returning one lives
+ * on payday and on what it earns.
  *
  * Nothing is taken from a returning character at spawn. A proportional charge on held credits is a
- * hard wealth ceiling, and the economy this feeds is one players are meant to save into. The sink is
- * on transfers instead, in [/datum/bank_account/proc/get_transaction_levy].
+ * hard wealth ceiling, and this economy is meant to be saved into. The sink is on transfers instead,
+ * in [/proc/get_transaction_levy].
  *
- * Identity is ckey plus character slot, matching the rest of the codebase's per-character
- * persistence. Overwriting a slot inherits that slot's money, which is a property of slot-keyed
- * storage and not handled here.
+ * Identity is ckey plus character slot, matching the rest of the codebase's per-character persistence.
+ * Overwriting a slot inherits that slot's money, which comes with slot-keyed storage and is not
+ * handled here.
  *
  * A character with no ckey or slot index, mostly admin-spawned bodies, gets the stock grant and no
- * ledger, behaving as it did before this module.
+ * ledger.
  * Arguments:
  * * account - the newly built account to bind.
  * * player_client - the spawning player's client, used for their ckey. May be null.
@@ -43,13 +43,12 @@
 /**
  * Cuts off passive income to every account this player already has open in the round.
  *
- * One player's characters all share a ledger, so the accounts still bound to it are the characters
- * they played earlier this shift. Those accounts stay in `SSeconomy.bank_accounts_by_id` and keep
- * collecting payday after the body is gone. Round-scoped that was harmless; persisted it pays a player
- * once per character they cycle through, every one of those paychecks banked.
+ * One player's characters share a ledger, so the accounts still bound to it are the characters they
+ * played earlier this shift. Those stay in `SSeconomy.bank_accounts_by_id` and keep collecting payday
+ * after the body is gone, which persisted means one banked income stream per character a player cycles
+ * through.
  *
- * Only income stops. The money stays theirs, spendable and transferable, and their next character
- * cannot be paid for the one before it.
+ * Only income stops. The money stays theirs, spendable and transferable.
  * Arguments:
  * * character_ledger - the player's ledger, whose live accounts are their characters this round.
  * * incoming_account - the account being bound now, which is the one that should still earn.

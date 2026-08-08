@@ -1,4 +1,4 @@
-/// File the shared station ledger backs onto. Holds the department budgets, and any later account whose number is bounded.
+/// File the shared station ledger backs onto. Holds the department budgets, and any later account whose count is bounded.
 #define STATION_LEDGER_PATH "data/persistent_economy.json"
 /// Namespace prefix for department budget keys within the station ledger.
 #define DEPARTMENT_KEY_PREFIX "dept:"
@@ -14,8 +14,8 @@
 	var/department_grant_ceiling = 0
 
 /**
- * Returns the ledger shared by accounts whose number is bounded: the department budgets today, and
- * any later station-side account that sits alongside them.
+ * Returns the ledger shared by accounts whose count is bounded: the department budgets today, and any
+ * later station-side account that sits alongside them.
  *
  * The path lives here alone so nothing else hardcodes it.
  */
@@ -26,27 +26,26 @@
  * Puts the department budgets onto the station ledger, carrying balances over from last round.
  *
  * Called from [/datum/controller/subsystem/economy/proc/Initialize] once the accounts exist, so each
- * has already been handed its stock roundstart budget by the time we run.
+ * already holds its stock roundstart budget by the time we run.
  *
  * A department with no stored record keeps that stock budget, and attaching writes it out as the
  * opening record. One with a record adopts its carried balance, then is topped up by half of whatever
- * it ended short of the floor, never past it. A department that banked a surplus keeps it and gets
- * nothing, so saving is worth something, while a bankrupted one is still playable next shift.
+ * it ended short of the floor, never past it. Banking a surplus is therefore worth something, and a
+ * bankrupted department is still playable next shift.
  *
- * Half the shortfall rather than all of it, so that ending a shift broke costs something. A full
- * top-up makes every balance below the floor worth the same next round, which leaves a departmental
- * head no reason not to spend the budget down to nothing before the shift ends.
+ * Half the shortfall rather than all of it, so ending a shift broke still costs something. A full
+ * top-up would make every balance below the floor worth the same next round, leaving a head no reason
+ * not to spend down to nothing before the shift ends.
  *
- * Cargo's floor is zero, since it has always started with nothing. Under persistence it keeps what it
- * earned and is never subsidised.
+ * Cargo's floor is zero, since it has always started with nothing, so it keeps what it earns and is
+ * never subsidised.
  *
- * Budgets are not scoped by map. A department's money belongs to the department, not the station it
- * stood on, so it follows the crew across a rotation. Scoping it means changing the key built below,
- * which orphans every existing record.
+ * Budgets are not scoped by map: the money belongs to the department, not the station it stood on, so
+ * it follows the crew across a rotation. Scoping it means changing the key built below, which orphans
+ * every existing record.
  *
- * The proportional operating cost stays here, unlike on player accounts. A ceiling is what you want on
- * an institutional budget: departments are a faucet rather than a place anyone saves, so bounding them
- * where their income meets the charge is the point.
+ * The proportional operating cost applies here but not to player accounts. A ceiling is what you want
+ * on an institutional budget, since departments are a faucet rather than somewhere anyone saves.
  * Arguments:
  * * floor_amount - the per-department budget floor, the same stock figure the accounts were built with.
  */
@@ -84,9 +83,9 @@
 /**
  * Whether a department should still draw its passive grant this tick.
  *
- * [MAX_GRANT_DPT] was self-correcting while budgets died with the round. Carried over it compounds
- * indefinitely, so a department at or above a multiple of its floor stops drawing it. This bounds the
- * free grant only. A department that earns its money, as cargo does, is not capped.
+ * [MAX_GRANT_DPT] was self-correcting while budgets died with the round. Carried over it compounds, so
+ * a department at or above a multiple of its floor stops drawing it. This bounds the free grant only.
+ * A department that earns its money, as cargo does, is not capped.
  * Arguments:
  * * department_account - the budget being considered for a grant.
  */

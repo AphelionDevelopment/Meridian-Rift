@@ -6,9 +6,8 @@
 /**
  * Every player ledger file on disk, as an assoc of file path to the ckey that owns it.
  *
- * Walks the save tree rather than asking who is playing, so it finds the characters of players who
- * are not in the round. That is the whole point: the money that matters to a persistent economy is
- * mostly sitting in accounts nobody is currently holding.
+ * Walks the save tree rather than asking who is playing, so it finds the characters of players who are
+ * not in the round. Most of the money in a persistent economy sits in accounts nobody is holding.
  */
 /proc/list_player_ledger_files()
 	var/list/ledger_files = list()
@@ -25,10 +24,10 @@
 /**
  * Reduces a raw ledger record to the figures a cross-ledger view needs, or null if it is unreadable.
  *
- * Deliberately forgiving in one direction only. A record missing a holder or a debt is summarised
- * without them, since neither changes what the account is worth, but one whose balance is not a number
- * is dropped: a corrupt or half-written record should be absent from a total rather than counted as
- * zero, which would read as a player who spent everything.
+ * Forgiving in one direction only. A record missing a holder or a debt is summarised without them,
+ * since neither changes what the account is worth, but one whose balance is not a number is dropped. A
+ * corrupt record should be missing from a total rather than counted as zero, which would read as a
+ * player who spent everything.
  * Arguments:
  * * record - a decoded ledger record, from an open ledger or straight off disk.
  */
@@ -56,10 +55,9 @@
  * Every record in every ledger, open or not, newest state first.
  *
  * An open ledger is read from memory and a closed one off disk, because those disagree. A
- * [/datum/json_database] defers its writes to the end of the tick, so a file backing a ledger that is
- * open right now is behind by at least one save and, straight after
- * [/proc/flush_economy_ledgers], behind by the entire round's last flush. Reading the open ones from
- * memory is the only way to total the economy at the moment it is asked for.
+ * [/datum/json_database] defers its writes to the end of the tick, so the file behind an open ledger
+ * is at least one save stale, and straight after [/proc/flush_economy_ledgers] it is missing the whole
+ * round's last flush.
  *
  * Each entry carries `source` (the ckey for a player ledger, "station" for the shared one), `key`,
  * `holder`, `balance`, `debt` and `live` (whether an account is bound to that key this round).
@@ -121,15 +119,14 @@
 /**
  * Logs the size of the whole economy, once, at round end.
  *
- * Every figure this module turns on is a guess until this exists. The transaction levy, the deposit
- * levy, the department grant ceiling and the operating charge are all calibrated against how fast the
- * supply is growing, and nothing else measures that: blackbox tracks flows like credits levied, which
- * says how hard the sinks are working but not whether they are keeping up. The prices of whatever
- * persistent money eventually buys have to come from this number too.
+ * Every figure this module turns on is a guess without it. The two levies, the department grant
+ * ceiling and the operating charge are all calibrated against how fast the supply is growing, and
+ * nothing else measures that: blackbox tracks flows like credits levied, which says how hard the sinks
+ * are working but not whether they are keeping up. Prices for whatever persistent money eventually
+ * buys come from this number too.
  *
- * Called from [/proc/flush_economy_ledgers] so it runs after every account has written itself back,
- * and reads open ledgers from memory, so the total covers the round that just ended rather than the
- * one before it.
+ * Called from [/proc/flush_economy_ledgers], after every account has written itself back and while the
+ * ledgers are still open, so the total covers the round that just ended.
  */
 /proc/log_economy_snapshot()
 	var/list/all_records = collect_all_ledger_records()

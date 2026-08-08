@@ -1,5 +1,5 @@
-/// Largest balance the panel will let an admin type in, in either direction. The ledger clamps to the
-/// same figure on load, so a typed value can never exceed what a record is able to hold.
+/// Largest balance the panel will let an admin type, in either direction. The ledger clamps to the
+/// same figure on load, so a typed value can never exceed what a record can hold.
 #define ADMIN_BALANCE_LIMIT LEDGER_BALANCE_LIMIT
 
 ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accounts.", ADMIN_CATEGORY_GAME)
@@ -13,11 +13,11 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
  *
  * Splits the accounts that exist this round, crew and station budgets, from the records sitting in a
  * ledger on disk. The stored view reads the station ledger by default and can be pointed at any
- * player's ledger by ckey. That is the only way to see the balance of a character who is not playing.
+ * player's ledger by ckey, which is the only way to see the balance of a character who is not playing.
  *
  * The two are not the same. Editing a live account changes the account and writes through to its
- * ledger. Editing a stored record changes only the file, so doing it to a character who is in the
- * round gets overwritten the moment they next earn or spend. The panel marks those records live.
+ * ledger. Editing a stored record changes only the file, so doing that to a character who is in the
+ * round gets overwritten the moment they next earn or spend. Those records are marked live.
  */
 /datum/economy_admin_panel
 	/// Ckey whose ledger the stored view shows, or null for the shared station ledger.
@@ -65,9 +65,9 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 /**
  * Serialises a transaction history into the shape the UI expects, newest first.
  *
- * Both views render the same component, so a live account's round-scoped history and a stored
- * record's persisted one arrive in one shape. Reversed because an admin reading an account wants the
- * last thing that happened at the top.
+ * Both views render the same component, so a live account's history and a stored record's arrive in
+ * one shape. Reversed because an admin reading an account wants the last thing that happened at the
+ * top.
  * Arguments:
  * * history - a list of `adjusted_money`/`reason` pairs, oldest first, or null.
  */
@@ -183,10 +183,10 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
  *
  * Uses [/datum/bank_account/proc/adjust_money], so the account's own rules apply: debt collection
  * takes its cut, the change lands in transaction history, and a withdrawal larger than the balance is
- * refused instead of driving it negative. Use set_balance to override that.
+ * refused rather than driving it negative. Use set_balance to override that.
  *
- * Exempt from the transaction levy. An admin typing a figure means that figure to arrive, and silently
- * landing 95% of it reads as the panel being broken.
+ * Exempt from the levy. An admin typing a figure means that figure to arrive, and silently landing 95%
+ * of it reads as the panel being broken.
  * Arguments:
  * * user - the admin acting.
  * * account_ref - reference to the target account, re-resolved after the prompt.
@@ -220,9 +220,9 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 	return TRUE
 
 /**
- * Overwrites a live account's balance outright, bypassing the rules adjust_account_balance respects.
+ * Overwrites a live account's balance outright, ignoring the rules adjust_account_balance respects.
  *
- * Writes to the ledger afterwards so the new figure survives the round even if the account never
+ * Writes to the ledger afterwards, so the new figure survives the round even if the account never
  * transacts again.
  * Arguments:
  * * user - the admin acting.
@@ -291,10 +291,9 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 /**
  * Reads every ledger on the server and keeps the result, richest first.
  *
- * The rest of the panel can only show a ledger an admin already knows to ask for, which is no use for
- * the questions this view exists to answer: who is rich, and did anyone get rich suddenly. Those are
- * the same question, and answering either means reading the accounts of players who are not in the
- * round.
+ * The other views can only show a ledger an admin already knows to ask for, which is no use for the
+ * questions this one exists to answer: who is rich, and did anyone get rich suddenly. Both need the
+ * accounts of players who are not in the round.
  *
  * Held on the panel rather than gathered in ui_data, because the scan walks every player save
  * directory on disk and ui_data runs on every update. An admin asks for it and gets an answer whose
@@ -315,7 +314,7 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
  * Rewrites a stored record's balance directly in the ledger file.
  *
  * Only sticks on a record with no live account behind it. One that is in play overwrites this on its
- * next transaction. The panel marks those records live.
+ * next transaction, and is marked live in the panel.
  * Arguments:
  * * user - the admin acting.
  * * record_key - the ledger key being edited, re-checked after the prompt.
@@ -358,12 +357,11 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
  * Stored on disk rather than in config, so it survives a reboot without anyone editing files on the
  * host, and read once at the start of each round.
  *
- * This deliberately does not touch the round in progress, and says so on the button. Accounts bind to
- * their ledgers at roundstart and as players spawn, so switching on now would attach nothing and
- * persist nothing; switching off now would stop the levy while accounts that are already bound carried
- * on writing themselves to disk. Attaching live accounts mid-round would be worse still, since a
- * returning character adopts its stored balance and would have this shift's earnings replaced by last
- * shift's figure while they were spending them.
+ * It does not touch the round in progress, and the button says so. Accounts bind to their ledgers at
+ * roundstart and as players spawn, so switching on now would attach nothing and persist nothing, while
+ * switching off would stop the levy while already-bound accounts carried on writing to disk. Attaching
+ * live accounts mid-round is worse still: a returning character adopts its stored balance, so this
+ * shift's earnings would be replaced by last shift's figure while the player was spending them.
  *
  * Refused outright when the config flag is off, which is the host saying the feature is unavailable.
  * Arguments:
@@ -388,8 +386,7 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
  * Erases every record in the ledger the stored view is pointed at.
  *
  * The per-record delete is for one account that has gone wrong. This is for a ledger that has: a
- * balance nobody can account for, a migration that went badly, or a test server that wants to start
- * from nothing.
+ * balance nobody can account for, a migration that went badly, or a test server starting from nothing.
  *
  * Accounts bound to the ledger are detached rather than left writing themselves back, so the wipe
  * holds for the rest of the round. They keep the credits they are holding, since taking those away

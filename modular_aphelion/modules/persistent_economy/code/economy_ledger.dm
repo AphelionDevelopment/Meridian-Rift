@@ -7,12 +7,12 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
  * A keyed store of bank account state that outlives the round.
  *
  * Wraps a [/datum/json_database], so writes get its backup and recovery path. One ledger owns one
- * file. Accounts sharing a file are separated by their persistence key, namespaced by whichever
- * system owns the account: `dept:<department_id>`, `char:<slot_index>`, and so on.
+ * file, and accounts sharing it are told apart by their persistence key: `dept:<department_id>`,
+ * `char:<slot_index>`, and so on.
  *
- * Attaching a ledger to a [/datum/bank_account] is what makes that account persistent. Accounts with
- * no ledger stay round-scoped. A database rewrites its whole file on save, so only share a file
- * between accounts whose number is bounded. Per-player state belongs in a per-player file.
+ * Attaching a ledger to a [/datum/bank_account] is what makes that account persistent; accounts
+ * without one stay round-scoped. The database rewrites its whole file on save, so only share a file
+ * between a bounded number of accounts. Per-player state belongs in a per-player file.
  *
  * Ledgers live for the whole round. Accounts hold a hard ref to theirs, so destroying one while an
  * account still points at it would hard delete the ledger.
@@ -44,8 +44,7 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
  * Returns the ledger backing the given file, opening one if it is not already live.
  *
  * Always get ledgers through this proc. [/datum/json_database] refuses to open a second database on
- * a file that already has one, so constructing a ledger directly runtimes as soon as two systems
- * name the same path.
+ * the same file, so constructing a ledger directly runtimes as soon as two systems name one path.
  * Arguments:
  * * store_path - path of the JSON file, under data/, that the ledger reads and writes.
  */
@@ -60,19 +59,16 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
  * Writes every account bound to every open ledger back to its file, then closes everything down.
  *
  * Called at round end from [/datum/controller/subsystem/persistence/proc/collect_data]. Ordinary
- * writes ride on [/datum/bank_account/proc/adjust_money], so the flush itself only matters for state
- * that changed without a transaction behind it, and as a backstop against the last transaction of the
- * round having missed its deferred save.
+ * writes ride on [/datum/bank_account/proc/adjust_money], so this only matters for state that changed
+ * without a transaction behind it, plus as a backstop for the round's last transaction.
  *
- * Closing the ledgers is what actually gets the round onto disk. A [/datum/json_database] defers its
- * writes to a zero-delay timer, and nothing else destroys a ledger, so without this the whole round's
- * final flush rides on SStimer firing once more before the world reboots. Destroying the database
- * forces the save synchronously. A ledger detaches its accounts on the way out, so nothing is left
- * holding a ref.
+ * Closing the ledgers is what gets the round onto disk. A [/datum/json_database] defers its writes to
+ * a zero-delay timer and nothing else destroys a ledger, so otherwise the round's final flush rides on
+ * SStimer firing once more before the world reboots. Destroying the database saves synchronously, and
+ * a ledger detaches its accounts on the way out so nothing is left holding a ref.
  *
- * The snapshot and the flush are skipped when persistence was not running this round. There is nothing
- * bound to write back, and [/proc/log_economy_snapshot] reads every player ledger on disk, which is not
- * a thing to do once a round on a server that has the module switched off.
+ * Skipped when persistence was not running this round: nothing is bound to write back, and
+ * [/proc/log_economy_snapshot] reads every player ledger on disk for no reason.
  */
 /proc/flush_economy_ledgers()
 	if(PERSISTENT_ECONOMY_ENABLED)
@@ -84,25 +80,25 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
 
 		log_economy_snapshot()
 
-		// Snapshot first: it reads the open ledgers from memory, which is the only place the round's
-		// last writes exist until the databases below are torn down.
+		// Snapshot first: it reads the open ledgers from memory, which is where the round's last writes
+		// live until the databases below are torn down.
 		for(var/ledger_path in GLOB.economy_ledgers.Copy())
 			qdel(GLOB.economy_ledgers[ledger_path])
 
-	// Outside the branch on purpose. The switch deciding whether the next round persists is written
-	// here, and the round it matters most on is the one where somebody has just switched it on.
+	// Outside the branch on purpose: this store holds the switch for the next round, and the round it
+	// matters most on is the one where somebody has just switched it on.
 	QDEL_NULL(GLOB.economy_settings_store)
 
 /**
  * Reads the whole record stored under a key.
  *
- * Returns a copy of the record, or null when the key has never been written or holds something this
- * build cannot read. Null means the account has no usable history, which is how a first-time character
- * is told apart from one that spent down to zero.
+ * Returns a copy, or null when the key has never been written or holds something this build cannot
+ * read. Null means no usable history, which is how a first-time character is told apart from one that
+ * spent down to zero.
  *
- * A record stamped with a newer schema than this build understands is refused rather than guessed at,
- * so rolling a server back does not rewrite newer records into an older shape. A record with no
- * version predates versioning and is the same shape as version 1.
+ * A record stamped with a newer schema than this build is refused rather than guessed at, so rolling a
+ * server back does not rewrite newer records into an older shape. A record with no version predates
+ * versioning and matches version 1.
  * Arguments:
  * * key - the namespaced persistence key to read.
  */
@@ -119,11 +115,10 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
 	return record.Copy()
 
 /**
- * Reads the stored balance for a key.
+ * Reads the stored balance for a key, or null when the record is missing or malformed.
  *
- * Returns the balance, or null when the key has no record or holds a malformed one. A hand-edited or
- * partially written file should leave an account alone rather than zero it. A balance beyond
- * [LEDGER_BALANCE_LIMIT] is clamped, so a corrupted or tampered figure cannot enter the economy whole.
+ * A hand-edited or half-written file should leave an account alone rather than zero it. Balances past
+ * [LEDGER_BALANCE_LIMIT] are clamped, so a tampered figure cannot enter the economy whole.
  * Arguments:
  * * key - the namespaced persistence key to read.
  */
@@ -159,9 +154,9 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
 /**
  * Reads the stored transaction history for a key, newest last.
  *
- * Returns a list of `adjusted_money`/`reason` pairs in the shape
- * [/datum/bank_account/var/transaction_history] holds, or an empty list when there is none. Entries
- * that are not that shape are dropped rather than loaded, since the panel renders them directly.
+ * Returns `adjusted_money`/`reason` pairs in the shape [/datum/bank_account/var/transaction_history]
+ * holds, or an empty list. Entries of any other shape are dropped, since the panel renders them
+ * directly.
  * Arguments:
  * * key - the namespaced persistence key to read.
  */
@@ -187,10 +182,9 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
 /**
  * Writes an account's state to the ledger under the given key, replacing whatever was there.
  *
- * The database defers and coalesces writes to the end of the tick, so calling this on every
- * transaction costs one file rewrite per tick in which money moved, not one per transaction. That is
- * also why history is capped: the whole file is rewritten each save, so an unbounded log here would
- * grow the cost of every future transaction.
+ * The database coalesces writes to the end of the tick, so calling this on every transaction costs one
+ * file rewrite per tick money moved in, not one per transaction. It is also why history is capped: the
+ * whole file is rewritten each save, so an unbounded log would grow the cost of every later write.
  * Arguments:
  * * key - the namespaced persistence key to write under.
  * * balance - the account's current credit balance.
@@ -215,7 +209,7 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
 /**
  * Reads the stored holder name for a key, or null when there is none.
  *
- * Display only. Nothing keys off it, and a renamed account keeps the old name until its next write.
+ * Display only. A renamed account keeps the old name until its next write.
  * Arguments:
  * * key - the namespaced persistence key to read.
  */
@@ -230,8 +224,8 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
 /**
  * Returns a copy of every record in this ledger, keyed as stored.
  *
- * For tooling that shows a ledger whole, such as the admin panel. Gameplay code knows the key it
- * wants and should read that key instead of walking the file.
+ * For tooling that shows a ledger whole, such as the admin panel. Gameplay code knows the key it wants
+ * and should read that instead of walking the file.
  */
 /datum/economy_ledger/proc/read_all()
 	var/list/all_records = store.get()
@@ -243,8 +237,8 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
 /**
  * Erases the record stored under a key, if there is one.
  *
- * An account still bound to this key writes itself back on its next transaction, so this only sticks
- * on a key with no live account behind it.
+ * Only sticks on a key with no live account behind it. A bound account writes itself back on its next
+ * transaction.
  * Arguments:
  * * key - the namespaced persistence key to erase.
  */
@@ -259,12 +253,12 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
  * Erases every record in this ledger and cuts loose any account still bound to it.
  *
  * Detaching is what makes the wipe stick. A bound account writes itself back on its next transaction,
- * so emptying the file alone would undo itself within the round, one account at a time, which looks
- * exactly like the wipe silently failing.
+ * so emptying the file alone would undo itself one account at a time, which looks exactly like the
+ * wipe silently failing.
  *
- * Detached accounts keep the balance they are holding and go back to being round-scoped. Nobody's
- * credits vanish out from under them mid-shift; what stops existing is the record, so the round plays
- * out and then nothing carries.
+ * Detached accounts keep the balance they are holding and go back to being round-scoped, so nobody
+ * loses credits mid-shift. Only the record stops existing, and the round plays out with nothing
+ * carrying over.
  *
  * Returns the number of records erased.
  */

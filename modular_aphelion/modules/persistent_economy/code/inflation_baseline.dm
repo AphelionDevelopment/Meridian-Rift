@@ -8,18 +8,16 @@
  *
  * Upstream builds this from what the crew should be holding: every account's paycheck times
  * [STARTING_PAYCHECKS]. That only works while balances start near that figure each round. Once they
- * carry over, held wealth is unbounded but the target is not, so vendor prices would open at whatever
+ * carry over, held wealth is unbounded and the target is not, so vendor prices would open at whatever
  * multiple of a stock paycheck the richest shift banked and never recover.
  *
- * The baseline is therefore the wealth observed at the round's first payday, not the wealth expected.
- * Inflation then measures what the crew earns during the shift rather than what it walked in with. A
- * rich crew and a poor one open at the same multiplier and inflate at the same rate as they earn.
- * With nothing carried over this returns what it always did.
+ * So the baseline is the wealth observed at the round's first payday, not the wealth expected.
+ * Inflation then measures what the crew earns during the shift rather than what it walked in with, and
+ * a rich crew and a poor one open at the same multiplier. Hoarding between rounds no longer drives
+ * prices up; only in-shift earnings do.
  *
- * Consequence: hoarding between rounds no longer drives prices up. Only in-shift earnings move them.
- *
- * With persistence switched off there is nothing to carry over, so this hands back the stock
- * expression untouched.
+ * With persistence off there is nothing to carry over, so this hands back the stock expression
+ * untouched.
  */
 /datum/controller/subsystem/economy/proc/get_station_target()
 	if(!PERSISTENT_ECONOMY_ENABLED)

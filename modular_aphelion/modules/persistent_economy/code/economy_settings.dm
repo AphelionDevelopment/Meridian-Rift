@@ -11,10 +11,9 @@ GLOBAL_VAR(persistent_economy_active)
 /**
  * The store the module's own settings live in, opened on first use.
  *
- * Deliberately not the station ledger, and deliberately not a config entry. Not the ledger, because
- * clearing a ledger has to be able to erase every record in it without also resetting whether the
- * module is switched on. Not config, because the switch is meant to be thrown from the panel by
- * someone who is not editing files on the host and restarting.
+ * Not the station ledger, because clearing a ledger has to erase every record in it without also
+ * resetting whether the module is switched on. Not config either, because the switch is meant to be
+ * thrown from the panel by someone who is not editing files on the host and restarting.
  */
 /proc/get_economy_settings()
 	if(isnull(GLOB.economy_settings_store))
@@ -25,8 +24,8 @@ GLOBAL_VAR(persistent_economy_active)
 /**
  * The stored setting, which is what the next round will run under.
  *
- * Off unless somebody has switched it on. An economy that quietly starts remembering balances is a
- * much worse surprise than one that quietly does not, so the default is the one that changes nothing.
+ * Off unless somebody has switched it on. An economy that quietly starts remembering balances is a far
+ * worse surprise than one that quietly does not, so the default is the one that changes nothing.
  */
 /proc/persistent_economy_setting()
 	return get_economy_settings().get_key(SETTING_KEY_ENABLED) ? TRUE : FALSE
@@ -34,16 +33,15 @@ GLOBAL_VAR(persistent_economy_active)
 /**
  * Whether persistence is running for the round in progress.
  *
- * Read from disk once, the first time anything asks, and then held for the rest of the round. The
- * panel's switch writes the stored setting without touching this, so a round runs start to finish
- * under one answer.
+ * Read from disk once, the first time anything asks, and held for the rest of the round. The panel's
+ * switch writes the stored setting without touching this, so a round runs start to finish under one
+ * answer.
  *
  * Not live for a reason. Accounts bind to ledgers at roundstart and as each player spawns, so
- * switching on mid-round would attach nothing and persist nothing, while switching off mid-round would
- * stop the levy and the carryover reasoning while already-bound accounts carried on writing themselves
- * to disk. Worse, attaching a live account mid-round would overwrite the balance it is holding with
- * whatever it ended the last round on, taking credits off players in the middle of a shift. A round
- * that is half persistent is harder to reason about than one that waits.
+ * switching on mid-round would attach nothing and persist nothing, while switching off would stop the
+ * levy while already-bound accounts carried on writing to disk. Worse, attaching a live account
+ * mid-round makes it adopt its stored balance, replacing what a player has earned this shift with last
+ * shift's figure while they are spending it.
  */
 /proc/persistent_economy_active()
 	if(isnull(GLOB.persistent_economy_active))

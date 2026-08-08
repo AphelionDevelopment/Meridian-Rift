@@ -1,25 +1,24 @@
 /**
  * The cut destroyed when credits land in an account.
  *
- * The economy's main continuous sink, and the counterweight that replaces the roundstart charge on
- * held credits. A charge on a balance is a hard ceiling: balances settle where a shift's earnings meet
- * the charge and stop, which puts a wall in front of exactly the saving this economy is built around.
- * A charge on movement has no such ceiling. It sinks money in proportion to how much trade is
- * happening rather than how much has been saved, so a busy shift drains more than a quiet one and a
- * player who banks their credits is not punished for it.
+ * The economy's main continuous sink, and what replaces a roundstart charge on held credits. A charge
+ * on a balance is a hard ceiling: balances settle where a shift's earnings meet the charge and stop,
+ * which walls off exactly the saving this economy is built around. A charge on movement has no
+ * ceiling. It scales with how much trade is happening rather than how much has been banked, so a busy
+ * shift drains more than a quiet one and saving is not punished.
  *
  * Charged inside [/datum/bank_account/proc/adjust_money], the one proc every balance change passes
- * through, rather than at each surface that moves money. Applying it per surface meant a path that
- * nobody remembered to edit was not a missing fee but a hole the whole sink model drained through,
- * and three of them went unnoticed. Charging it centrally makes an unconsidered path taxed rather
- * than free, so the failure mode is a fee someone queries instead of an economy with no drain.
+ * through, rather than at each surface that moves money. Per surface, any path nobody remembered to
+ * edit was a hole the whole sink drained through, and three went unnoticed. Charging it centrally
+ * makes an unconsidered path taxed rather than free, so the failure mode is a fee someone queries
+ * instead of an economy with no drain.
  *
- * Taken from the recipient's side, so a sender pays the figure they agreed to and the seller carries
- * the fee, as a broker's cut works. On a transfer the sender's funds are checked against the full
- * amount before this is worked out, so the levy cannot make one fail.
+ * Taken from the recipient's side, so the sender pays the figure they agreed and the seller carries
+ * the fee, the way a broker's cut works. A transfer checks the sender's funds against the full amount
+ * before this is worked out, so the levy cannot make one fail.
  *
  * Departmental accounts are exempt: they are the faucet the crew is paid out of, and money paid to one
- * is priced already. Everything else is exempt only by asking, with [LEVY_EXEMPT].
+ * is priced already. Anything else has to ask, with [LEVY_EXEMPT].
  *
  * Returns the number of credits to destroy, which may be zero.
  * Arguments:
@@ -40,9 +39,9 @@
 /**
  * Works out the levy on a sum and records that it was taken.
  *
- * Called from [/datum/bank_account/proc/adjust_money]. Nothing else should need it: a surface that
- * moves credits is levied by virtue of crediting an account at all, and one that should not be pays
- * [LEVY_EXEMPT] instead of skipping this.
+ * Called from [/datum/bank_account/proc/adjust_money]. Nothing else should need it: crediting an
+ * account is what gets you levied, and a surface that should not be passes [LEVY_EXEMPT] rather than
+ * skipping this.
  *
  * Returns the number of credits destroyed, which may be zero.
  * Arguments:
