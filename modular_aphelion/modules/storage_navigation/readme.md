@@ -34,4 +34,4 @@ the rest of the HUD.
 
 ### Credits:
 
-- pepe
+- @Happyowl93
