@@ -1,5 +1,6 @@
-/// Largest balance the panel will let an admin type in, in either direction.
-#define ADMIN_BALANCE_LIMIT 100000000
+/// Largest balance the panel will let an admin type in, in either direction. The ledger clamps to the
+/// same figure on load, so a typed value can never exceed what a record is able to hold.
+#define ADMIN_BALANCE_LIMIT LEDGER_BALANCE_LIMIT
 
 ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accounts.", ADMIN_CATEGORY_GAME)
 	var/static/datum/economy_admin_panel/panel = new
@@ -53,7 +54,29 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 		"job" = account.account_job?.title,
 		"persistent" = !isnull(account.ledger),
 		"key" = account.persistence_key,
+		"income_suspended" = account.income_suspended,
+		"history" = history_to_list(account.transaction_history),
 	)
+
+/**
+ * Serialises a transaction history into the shape the UI expects, newest first.
+ *
+ * Both views render the same component, so a live account's round-scoped history and a stored
+ * record's persisted one arrive in one shape. Reversed because an admin reading an account wants the
+ * last thing that happened at the top.
+ * Arguments:
+ * * history - a list of `adjusted_money`/`reason` pairs, oldest first, or null.
+ */
+/datum/economy_admin_panel/proc/history_to_list(list/history)
+	var/list/serialised = list()
+	for(var/index in length(history) to 1 step -1)
+		var/list/entry = history[index]
+		serialised += list(list(
+			"amount" = entry["adjusted_money"],
+			"reason" = entry["reason"],
+		))
+
+	return serialised
 
 /datum/economy_admin_panel/ui_data(mob/user)
 	var/list/data = list()
@@ -82,6 +105,7 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 			"balance" = inspected_ledger.read_balance(record_key),
 			"debt" = inspected_ledger.read_debt(record_key),
 			"live" = !isnull(live_keys[record_key]),
+			"history" = history_to_list(inspected_ledger.read_history(record_key)),
 		))
 	data["stored_records"] = stored_records
 	data["inspected_ckey"] = inspected_ckey
@@ -269,6 +293,7 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 		balance = new_balance,
 		debt = inspected_ledger.read_debt(record_key),
 		holder = inspected_ledger.read_holder(record_key),
+		history = inspected_ledger.read_history(record_key),
 	)
 
 	log_admin("[key_name(user)] set stored balance of [record_key] in [inspected_ledger.store_path] from [old_balance] to [new_balance].")

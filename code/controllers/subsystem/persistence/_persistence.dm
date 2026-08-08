@@ -90,6 +90,7 @@ SUBSYSTEM_DEF(persistence)
 	save_custom_outfits()
 	save_modular_persistence() // NOVA EDIT ADDITION - MODULAR_PERSISTENCE
 	save_delamination_counter()
+	flush_economy_ledgers() // APHELION EDIT ADDITION - PERSISTENT_ECONOMY
 	save_queued_message_bottles()
 	if(SStransport.can_fire)
 		for(var/datum/transport_controller/linear/tram/transport as anything in SStransport.transports_by_type[TRANSPORT_TYPE_TRAM])

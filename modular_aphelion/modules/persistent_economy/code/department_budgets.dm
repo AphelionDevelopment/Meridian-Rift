@@ -37,10 +37,17 @@
  * Budgets are not scoped by map. A department's money belongs to the department, not the station it
  * stood on, so it follows the crew across a rotation. Scoping it means changing the key built below,
  * which orphans every existing record.
+ *
+ * The proportional operating cost stays here, unlike on player accounts. A ceiling is what you want on
+ * an institutional budget: departments are a faucet rather than a place anyone saves, so bounding them
+ * where their income meets the charge is the point.
  * Arguments:
  * * floor_amount - the per-department budget floor, the same stock figure the accounts were built with.
  */
 /datum/controller/subsystem/economy/proc/restore_department_budgets(floor_amount)
+	if(!PERSISTENT_ECONOMY_ENABLED)
+		return
+
 	var/datum/economy_ledger/station_ledger = get_station_ledger()
 	department_grant_ceiling = floor_amount * DEPARTMENT_GRANT_CEILING_MULT
 

@@ -58,6 +58,10 @@
 		SSeconomy.bank_accounts_by_id -= "[account_id]"
 		SSeconomy.bank_accounts_by_job[account_job.type] -= src
 	QDEL_LIST(redeemed_coupons)
+	// APHELION EDIT ADDITION START - PERSISTENT_ECONOMY
+	flush_to_ledger()
+	detach_ledger()
+	// APHELION EDIT ADDITION END
 	return ..()
 
 /**
@@ -197,7 +201,13 @@
 			reason_to = IS_DEPARTMENTAL_ACCOUNT(src) ? "" : transfer_reason
 			reason_from = transfer_reason
 
-		adjust_money(amount, reason_to)
+		// APHELION EDIT ADDITION START - PERSISTENT_ECONOMY
+		var/levy = get_transaction_levy(from, amount)
+		if(levy)
+			log_econ("[levy] [MONEY_NAME] were taken as a transaction levy on the transfer from [from.account_holder] to [account_holder].")
+			SSblackbox.record_feedback("amount", "credits_levied", levy)
+		// APHELION EDIT ADDITION END
+		adjust_money(amount - levy, reason_to) // APHELION EDIT CHANGE - ORIGINAL: adjust_money(amount, reason_to)
 		from.adjust_money(-amount, reason_from)
 		SSblackbox.record_feedback("amount", "credits_transferred", amount)
 		log_econ("[amount] [MONEY_NAME] were transferred from [from.account_holder]'s account to [src.account_holder]")
@@ -216,6 +226,11 @@
 /datum/bank_account/proc/payday(amount_of_paychecks, free = FALSE, skippable = FALSE, event = "Payday")
 	if(!account_job)
 		return FALSE
+
+	// APHELION EDIT ADDITION START - PERSISTENT_ECONOMY
+	if(income_suspended)
+		return FALSE
+	// APHELION EDIT ADDITION END
 
 	if(skippable && !free)
 		while(paydays_to_skip > 0 && amount_of_paychecks > 0)

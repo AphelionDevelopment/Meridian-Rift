@@ -17,8 +17,14 @@
  * With nothing carried over this returns what it always did.
  *
  * Consequence: hoarding between rounds no longer drives prices up. Only in-shift earnings move them.
+ *
+ * With persistence switched off there is nothing to carry over, so this hands back the stock
+ * expression untouched.
  */
 /datum/controller/subsystem/economy/proc/get_station_target()
+	if(!PERSISTENT_ECONOMY_ENABLED)
+		return max(round(temporary_total / max(length(bank_accounts_by_id) * 2, 1)) + station_target_buffer, 1)
+
 	var/account_count = length(bank_accounts_by_id)
 	if(!account_count)
 		return max(station_target_buffer, 1)
