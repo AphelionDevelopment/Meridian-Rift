@@ -242,8 +242,8 @@
 			if(SPT_PROB(7.5, seconds_per_tick))
 				Unconscious(rand(1 SECONDS, 2 SECONDS))
 				to_chat(src, span_userdanger("You black out for a moment!"))
-				// NOVA EDIT ADDITION START
-				if(ishemophage(src))
+				// NOVA EDIT ADDITION START - HEMOPHAGE
+				if(has_quirk(/datum/quirk/hemophage))
 					src.visible_message(span_warning("[src] convulses before crumpling to the floor, black veins beginning to throb outwardly along their body."), ignored_mobs = src)
 				// NOVA EDIT ADDITION END
 		// Instantly die upon this threshold

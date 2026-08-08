@@ -631,7 +631,7 @@
 #define BLOODSHOT_DISGUST 25
 
 /datum/reagent/consumable/ethanol/bloodshot/expose_mob(mob/living/exposed_mob, methods, reac_volume)
-	if(ishemophage(exposed_mob))
+	if(exposed_mob.has_quirk(/datum/quirk/hemophage))
 		quality = RACE_DRINK
 
 	else if(exposed_mob.get_blood_volume() < exposed_mob.blood_volume_normal)
