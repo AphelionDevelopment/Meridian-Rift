@@ -11,17 +11,14 @@ holding the one you are looking at, so browsing a box inside a backpack and clic
 you back in the backpack. If there is nothing to step back into, it closes as before.
 
 A new X button sits next to the arrow. It always closes the storage UI, however deep you have
-browsed. Its sprite is built from each UI style's own `storage_close` button, so it themes with the
-rest of the HUD.
+browsed. Its sprite is derived from each UI style's own `storage_close` button, so it themes with
+the rest of the HUD.
 
 ### TG Proc/File Changes:
 
 - `code/_onclick/hud/screen_objects/screen_objects.dm`: `/atom/movable/screen/close/Click()`
 - `code/datums/storage/storage_interface.dm`: `var/exit_button`, `New()`, `proc/list_ui_elements()`,
   `Destroy()`, `proc/update_position()`
-- `icons/hud/screen_midnight.dmi`, `screen_retro.dmi`, `screen_plasmafire.dmi`, `screen_slimecore.dmi`,
-  `screen_operative.dmi`, `screen_clockwork.dmi`, `screen_glass.dmi`, `screen_trasenknox.dmi`,
-  `screen_detective.dmi`: added the `storage_exit` state
 
 ### Modular Overrides:
 
