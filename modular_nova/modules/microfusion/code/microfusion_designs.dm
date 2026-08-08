@@ -172,6 +172,43 @@
 	)
 	build_path = /obj/item/microfusion_cell_attachment/selfcharging
 
+/datum/design/microfusion/cell_attachment/rechargeable
+	name = "Rechargeable Microfusion Cell Attachment"
+	desc = "An attachment for microfusion cells that allows conversion of KJ to MF in standard chargers."
+	id = "microfusion_cell_attachment_rechargeable"
+	materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/gold = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/uranium = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/diamond = SHEET_MATERIAL_AMOUNT,
+	)
+	build_path = /obj/item/microfusion_cell_attachment/rechargeable
+
+/datum/design/microfusion/cell_attachment/tactical
+	name = "Tac-Reload Handle Microfusion Cell Attachment"
+	desc = "An aftermarket modification that makes the process of tactical reloading a MF cell far easier."
+	id = "microfusion_cell_attachment_tactical"
+	materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/plasma = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+	)
+	build_path = /obj/item/microfusion_cell_attachment/tactical
+
+/datum/design/microfusion/cell_attachment/reloader
+	name = "Reloading Handle Microfusion Cell Attachment"
+	desc = "An aftermarket modification that makes the process of loading a MF cell far easier."
+	id = "microfusion_cell_attachment_reloader"
+	materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/plasma = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+	)
+	build_path = /obj/item/microfusion_cell_attachment/reloader
+
 /datum/design/microfusion/attachment
 	name = "Placeholder MCR Attachment"
 	desc = "You *really* shouldn't be seeing this. Now in different attachment flavors! The Req line will hate you."
@@ -353,7 +390,7 @@
 	materials = list(
 		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
 		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
-		/datum/material/diamond = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/diamond = SMALL_MATERIAL_AMOUNT * 5,
 		/datum/material/bluespace = HALF_SHEET_MATERIAL_AMOUNT,
 	)
 	build_path = /obj/item/microfusion_gun_attachment/barrel/repeater/penetrator

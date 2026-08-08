@@ -27,6 +27,27 @@ For adding unique abilities to microfusion cells. These cannot directly interact
 	return
 
 /*
+RECHARGEABLE ATTACHMENT
+
+Allows the cell to be recharged at a gun recharger OR cell recharger.
+*/
+/obj/item/microfusion_cell_attachment/rechargeable
+	name = "rechargeable microfusion cell attachment"
+	desc = "An adapter meant to be plugged into a microfusion cell, allowing the cell to be recharged at recharge stations for both weapons and civilian-grade batteries."
+	icon_state = "attachment_rechargeable"
+	attachment_overlay_icon_state = "microfusion_rechargeable"
+	/// The bonus charge rate by adding this attachment.
+	var/bonus_charge_rate = 250
+
+/obj/item/microfusion_cell_attachment/rechargeable/add_attachment(obj/item/stock_parts/power_store/cell/microfusion/microfusion_cell)
+	. = ..()
+	microfusion_cell.chargerate += bonus_charge_rate
+
+/obj/item/microfusion_cell_attachment/rechargeable/remove_attachment(obj/item/stock_parts/power_store/cell/microfusion/microfusion_cell)
+	. = ..()
+	microfusion_cell.chargerate -= bonus_charge_rate
+
+/*
 OVERCAPACITY ATTACHMENT
 
 Increases the cell capacity by a set percentage.
@@ -102,10 +123,47 @@ If the cell isn't stabilised by a stabiliser, it may emit a radiation pulse.
 	microfusion_cell.self_charging = FALSE
 
 /obj/item/microfusion_cell_attachment/selfcharging/process_attachment(obj/item/stock_parts/power_store/cell/microfusion/microfusion_cell, seconds_per_tick)
-	if(!microfusion_cell.parent_gun)
-		return
 	if(microfusion_cell.charge < microfusion_cell.maxcharge)
-		microfusion_cell.give(self_charge_amount * seconds_per_tick)
-		microfusion_cell.parent_gun.update_appearance()
-	if(!microfusion_cell.stabilised && SPT_PROB(1, seconds_per_tick))
-		radiation_pulse(src, 1, RAD_MEDIUM_INSULATION)
+		microfusion_cell.charge = clamp(microfusion_cell.charge + (self_charge_amount * seconds_per_tick), 0, microfusion_cell.maxcharge)
+		if(microfusion_cell.parent_gun)
+			microfusion_cell.parent_gun.update_appearance()
+		if(!microfusion_cell.stabilised && SPT_PROB(1, seconds_per_tick))
+			radiation_pulse(src, 1, RAD_MEDIUM_INSULATION)
+
+/*
+RELOAD GRIP ATTACHMENT
+
+Makes normal reloads easier
+*/
+/obj/item/microfusion_cell_attachment/reloader
+	name = "reloading handle microfusion cell attachment"
+	desc = "An aftermarket modification that makes the process of loading a MF cell far easier."
+	icon_state = "attachment_reloader"
+	attachment_overlay_icon_state = "microfusion_reloader"
+
+/obj/item/microfusion_cell_attachment/reloader/add_attachment(obj/item/stock_parts/power_store/cell/microfusion/microfusion_cell)
+	. = ..()
+	microfusion_cell.reloading_time = 0.5 SECONDS
+
+/obj/item/microfusion_cell_attachment/reloader/remove_attachment(obj/item/stock_parts/power_store/cell/microfusion/microfusion_cell)
+	. = ..()
+	microfusion_cell.reloading_time = initial(microfusion_cell.reloading_time)
+
+/*
+TACTICAL GRIP ATTACHMENT
+
+Makes tactical reloads easier
+*/
+/obj/item/microfusion_cell_attachment/tactical
+	name = "tac-reload handle microfusion cell attachment"
+	desc = "An aftermarket modification that makes the process of tactically loading a MF cell far easier and cooler."
+	icon_state = "attachment_tactical"
+	attachment_overlay_icon_state = "microfusion_tactical"
+
+/obj/item/microfusion_cell_attachment/tactical/add_attachment(obj/item/stock_parts/power_store/cell/microfusion/microfusion_cell)
+	. = ..()
+	microfusion_cell.reloading_time_tactical = 2 SECONDS
+
+/obj/item/microfusion_cell_attachment/tactical/remove_attachment(obj/item/stock_parts/power_store/cell/microfusion/microfusion_cell)
+	. = ..()
+	microfusion_cell.reloading_time_tactical = initial(microfusion_cell.reloading_time_tactical)
