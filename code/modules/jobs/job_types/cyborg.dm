@@ -1,6 +1,7 @@
 /datum/job/cyborg
 	title = JOB_CYBORG
-	description = "Assist the crew, follow your laws, obey your AI."
+	description = "Assist and serve the crew in accordance with your dutybound positronic lawset. The station’s AI is your overseer\
+		 and guidance. Remember to return to the Robotics Bay for upgrading, repairs and recharge."
 	auto_deadmin_role_flags = DEADMIN_POSITION_SILICON
 	faction = FACTION_STATION
 	total_positions = 3	// NOVA EDIT: Original value (0)

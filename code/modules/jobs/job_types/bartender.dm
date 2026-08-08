@@ -1,6 +1,7 @@
 /datum/job/bartender
 	title = JOB_BARTENDER
-	description = "Serve booze, mix drinks, keep the crew drunk."
+	description = "Relaxing after, or during, a long shift with a mug of social lubricant is your Federation given right.\
+		The station bar is a domain of comfort and relaxation for all. Mix drinks, tell tales and deal with rabble rousers when they inevitably come your way."
 	faction = FACTION_STATION
 	total_positions = 1
 	spawn_positions = 1

@@ -1,8 +1,11 @@
 /datum/job/captain
 	title = JOB_CAPTAIN
-	description = "Be responsible for the station, manage your Heads of Staff, \
-		keep the crew alive, be prepared to do anything and everything or die \
-		horribly trying."
+	description = "You have chosen, or been chosen, to shepherd the burgeoning Aphelion through any danger.\
+		Some Captains have worked in the stars for decades while others are savants rushed up the ranks.\
+		Regardless, hard work, dedication to the community and loyalty to the Astraeus Star Federation has found your place here.\
+		Delegate the burdens and bounty of command to your fellow Heads of Staff\
+		and keep the Diplomatic Mission in the Meridian Sector alive at all costs. The future depends on you."
+
 	auto_deadmin_role_flags = DEADMIN_POSITION_HEAD|DEADMIN_POSITION_SECURITY
 	faction = FACTION_STATION
 	total_positions = 1

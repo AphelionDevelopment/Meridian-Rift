@@ -1,6 +1,11 @@
 /datum/job/nanotrasen_consultant
 	title = JOB_NT_REP
-	description = "Represent Nanotrasen on the station, argue with the HoS about why he can't just field execute people for petty theft, get drunk in your office."
+	description = "All the influence in the Federation has landed you this job at the edge of the known galaxy.\
+ 		Manage the often tense diplomatic affairs between the many parties that revolve around the Meridian Sector and stop the bickering department heads from getting into too much trouble.\
+ 		When there is an issue within the chain of command it comes to you to solve it, less the Federation\
+ 		deem it worth sending Central Command to solve your messes. Both a stern voice and gentle advice\
+		are your greatest tools, violence is your last resort."
+
 	faction = FACTION_STATION
 	total_positions = 1
 	spawn_positions = 1
@@ -40,7 +45,7 @@
 	job_flags = STATION_JOB_FLAGS | JOB_BOLD_SELECT_TEXT | JOB_CANNOT_OPEN_SLOTS | JOB_ANTAG_PROTECTED
 
 /datum/outfit/job/nanotrasen_consultant
-	name = "Nanotrasen Consultant"
+	name = "Astraeus Federation Consultant"
 	jobtype = /datum/job/nanotrasen_consultant
 
 	belt = /obj/item/modular_computer/pda/nanotrasen_consultant
