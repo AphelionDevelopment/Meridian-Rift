@@ -373,6 +373,9 @@
 #include "washing.dm"
 #include "weird_food.dm"
 #include "wizard_loadout.dm"
+// APHELION EDIT START
+#include "~aphelion\persistent_economy.dm"
+// APHELION EDIT END
 // NOVA EDIT START
 #include "~nova\accessory_layers.dm"
 #include "~nova\augment_items.dm"
@@ -383,9 +386,6 @@
 #include "~nova\opposing_force.dm"
 #include "~nova\shuttle.dm"
 // NOVA EDIT END
-// APHELION EDIT ADDITION START - PERSISTENT_ECONOMY
-#include "~aphelion\persistent_economy.dm"
-// APHELION EDIT ADDITION END
 // END_INCLUDE
 #ifdef REFERENCE_TRACKING_DEBUG //Don't try and parse this file if ref tracking isn't turned on. IE: don't parse ref tracking please mr linter
 #include "find_reference_sanity.dm"

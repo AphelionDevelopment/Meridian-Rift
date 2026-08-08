@@ -15,7 +15,7 @@ GLOBAL_VAR(persistent_economy_active)
  * resetting whether the module is switched on. Not config either, because the switch is meant to be
  * thrown from the panel by someone who is not editing files on the host and restarting.
  */
-/proc/get_economy_settings()
+/proc/get_economy_settings() as /datum/json_database
 	if(isnull(GLOB.economy_settings_store))
 		GLOB.economy_settings_store = new /datum/json_database(ECONOMY_SETTINGS_PATH)
 

@@ -88,6 +88,10 @@ for code_file in scannable_files:
         if("~nova/" in code_file):
             dm_path = "~nova\\" + dm_path
         # NOVA EDIT END
+        # APHELION EDIT START - Same for our own modular unit tests.
+        if("~aphelion/" in code_file):
+            dm_path = "~aphelion\\" + dm_path
+        # APHELION EDIT END
 
     included = f"#include \"{dm_path}\"" in lines
 
