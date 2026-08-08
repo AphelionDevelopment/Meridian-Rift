@@ -32,14 +32,79 @@ type StoredRecord = {
   history: Transaction[];
 };
 
+type ScannedRecord = {
+  source: string;
+  key: string;
+  holder: string | null;
+  balance: number;
+  debt: number;
+  live: boolean;
+};
+
 type Data = {
   crew_accounts: Account[];
   station_accounts: Account[];
   stored_records: StoredRecord[];
   inspected_ckey: string | null;
+  scanned_records: ScannedRecord[] | null;
+  scanned_age: string | null;
   inflation_value: number;
   station_total: number;
   station_target: number;
+};
+
+const ScanTable = (props: { records: ScannedRecord[] }) => {
+  const { act } = useBackend<Data>();
+  const { records } = props;
+
+  if (!records.length) {
+    return <Box color="label">No records on file.</Box>;
+  }
+
+  return (
+    <Table>
+      <Table.Row header>
+        <Table.Cell>Player</Table.Cell>
+        <Table.Cell>Key</Table.Cell>
+        <Table.Cell>Holder</Table.Cell>
+        <Table.Cell collapsing textAlign="right">
+          Balance
+        </Table.Cell>
+        <Table.Cell collapsing textAlign="right">
+          Debt
+        </Table.Cell>
+        <Table.Cell collapsing>State</Table.Cell>
+        <Table.Cell collapsing />
+      </Table.Row>
+      {records.map((record) => (
+        <Table.Row className="candystripe" key={`${record.source}-${record.key}`}>
+          <Table.Cell>{record.source}</Table.Cell>
+          <Table.Cell color="label">{record.key}</Table.Cell>
+          <Table.Cell>{record.holder || '-'}</Table.Cell>
+          <Table.Cell collapsing textAlign="right">
+            {record.balance}
+          </Table.Cell>
+          <Table.Cell
+            collapsing
+            textAlign="right"
+            color={record.debt ? 'bad' : 'label'}
+          >
+            {record.debt}
+          </Table.Cell>
+          <Table.Cell collapsing color={record.live ? 'average' : 'good'}>
+            {record.live ? 'live' : 'stored'}
+          </Table.Cell>
+          <Table.Cell collapsing>
+            <Button
+              icon="arrow-right"
+              tooltip="Open this ledger below"
+              onClick={() => act('inspect_scanned', { source: record.source })}
+            />
+          </Table.Cell>
+        </Table.Row>
+      ))}
+    </Table>
+  );
 };
 
 const HistoryRow = (props: { history: Transaction[]; colSpan: number }) => {
@@ -176,11 +241,17 @@ export const EconomyAdminPanel = (props) => {
     station_accounts,
     stored_records,
     inspected_ckey,
+    scanned_records,
+    scanned_age,
     inflation_value,
     station_total,
     station_target,
   } = data;
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const scannedTotal = (scanned_records || []).reduce(
+    (running, record) => running + record.balance,
+    0,
+  );
 
   return (
     <Window title="Economy Panel" width={900} height={700}>
@@ -315,6 +386,40 @@ export const EconomyAdminPanel = (props) => {
                 </Fragment>
               ))}
             </Table>
+          )}
+        </Section>
+
+        <Section
+          title={
+            scanned_records
+              ? `All Ledgers (${scanned_records.length} records, ${scannedTotal} cr)`
+              : 'All Ledgers'
+          }
+          buttons={
+            <>
+              {!!scanned_age && (
+                <Box inline color="label" mr={1}>
+                  scanned {scanned_age} ago
+                </Box>
+              )}
+              <Button
+                icon="magnifying-glass"
+                onClick={() => act('scan_all_records')}
+              >
+                {scanned_records ? 'Rescan' : 'Scan All Players'}
+              </Button>
+            </>
+          }
+        >
+          <Box color="label" mb={1}>
+            Every ledger on the server, richest first, including players who are
+            not in the round. Reads from disk, so it is a snapshot rather than a
+            live view.
+          </Box>
+          {!scanned_records ? (
+            <Box color="label">Not scanned yet.</Box>
+          ) : (
+            <ScanTable records={scanned_records} />
           )}
         </Section>
       </Window.Content>

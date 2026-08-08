@@ -12,6 +12,18 @@
 	if(!human_holder.account_id)
 		return
 	var/datum/bank_account/account = SSeconomy.bank_accounts_by_id["[human_holder.account_id]"]
+	// APHELION EDIT ADDITION START - PERSISTENT_ECONOMY
+	// The debt is a one-off the character works off over time, not a per-shift charge. With balances
+	// carrying over it would otherwise be rolled again every round, on top of whatever is left, far
+	// faster than debt collection can retire it, so it becomes unpayable and the achievement below
+	// unreachable. A character who has played before keeps the debt it already owes.
+	if(account.restored_from_ledger)
+		if(!account.account_debt)
+			return
+		RegisterSignal(account, COMSIG_BANK_ACCOUNT_DEBT_PAID, PROC_REF(on_debt_paid))
+		to_chat(client_source.mob, span_warning("You remember, you've still [account.account_debt] [MONEY_NAME_SINGULAR] of debt left to pay..."))
+		return
+	// APHELION EDIT ADDITION END
 	var/debt = PAYCHECK_CREW * rand(275, 325)
 	account.account_debt += debt
 	RegisterSignal(account, COMSIG_BANK_ACCOUNT_DEBT_PAID, PROC_REF(on_debt_paid))

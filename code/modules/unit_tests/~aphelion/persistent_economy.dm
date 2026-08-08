@@ -180,10 +180,14 @@
 	TEST_ASSERT_NOTNULL(department_account, "No civilian budget exists to test the departmental exemption against.")
 
 	var/expected_levy = round(1000 * TRANSACTION_LEVY_FRACTION)
-	TEST_ASSERT_EQUAL(seller_account.get_transaction_levy(buyer_account, 1000), expected_levy, "No levy was taken on a crew-to-crew transfer. The economy has no continuous sink.")
-	TEST_ASSERT_EQUAL(seller_account.get_transaction_levy(department_account, 1000), 0, "A levy was taken on money leaving a department budget. Payday would be docked.")
-	TEST_ASSERT_EQUAL(department_account.get_transaction_levy(buyer_account, 1000), 0, "A levy was taken on money paid to a department budget.")
-	TEST_ASSERT_EQUAL(seller_account.get_transaction_levy(buyer_account, 0), 0, "A levy was taken on a transfer of nothing.")
+	TEST_ASSERT_EQUAL(get_transaction_levy(buyer_account, seller_account, 1000), expected_levy, "No levy was taken on a crew-to-crew transfer. The economy has no continuous sink.")
+	TEST_ASSERT_EQUAL(get_transaction_levy(department_account, seller_account, 1000), 0, "A levy was taken on money leaving a department budget. Payday would be docked.")
+	TEST_ASSERT_EQUAL(get_transaction_levy(buyer_account, department_account, 1000), 0, "A levy was taken on money paid to a department budget.")
+	TEST_ASSERT_EQUAL(get_transaction_levy(buyer_account, seller_account, 0), 0, "A levy was taken on a transfer of nothing.")
+
+	var/expected_deposit_levy = round(1000 * DEPOSIT_LEVY_FRACTION)
+	TEST_ASSERT_EQUAL(get_transaction_levy(null, seller_account, 1000, DEPOSIT_LEVY_FRACTION), expected_deposit_levy, "No levy was taken on banked cash. Withdrawing, handing over a holochip and depositing moves credits between crew untaxed.")
+	TEST_ASSERT_EQUAL(get_transaction_levy(null, department_account, 1000, DEPOSIT_LEVY_FRACTION), 0, "A levy was taken on cash banked into a department budget.")
 
 	buyer_account.adjust_money(1000, "Test: Opening Balance")
 	seller_account.transfer_money(buyer_account, 1000, "Test: Sale")

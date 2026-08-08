@@ -1,16 +1,3 @@
-/// Key of the schema version inside a ledger record. Absent on records written before versioning.
-#define LEDGER_FIELD_VERSION "version"
-/// Key of the credit balance inside a ledger record.
-#define LEDGER_FIELD_BALANCE "balance"
-/// Key of the outstanding debt inside a ledger record.
-#define LEDGER_FIELD_DEBT "debt"
-/// Key of the account holder's name inside a ledger record. For admin readability, never read back.
-#define LEDGER_FIELD_HOLDER "holder"
-/// Key of the `world.realtime` stamp of the last write inside a ledger record.
-#define LEDGER_FIELD_UPDATED "updated"
-/// Key of the transaction history inside a ledger record. An array of `adjusted_money`/`reason` pairs.
-#define LEDGER_FIELD_HISTORY "history"
-
 /// Every ledger currently open, keyed by the path of the file it backs onto. See [/proc/get_economy_ledger].
 GLOBAL_LIST_EMPTY(economy_ledgers)
 
@@ -76,6 +63,9 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
  * writes ride on [/datum/bank_account/proc/adjust_money], so this only matters for state that changed
  * without a transaction behind it, and as a backstop against the last transaction of the round having
  * missed its deferred save.
+ *
+ * Takes the round's economy snapshot once everything is written, so the figures logged are the ones
+ * the next round starts from.
  */
 /proc/flush_economy_ledgers()
 	for(var/ledger_path in GLOB.economy_ledgers)
@@ -83,6 +73,8 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
 		for(var/record_key in ledger.live_accounts)
 			var/datum/bank_account/bound_account = ledger.live_accounts[record_key]
 			bound_account.flush_to_ledger()
+
+	log_economy_snapshot()
 
 /**
  * Reads the whole record stored under a key.
@@ -245,10 +237,3 @@ GLOBAL_LIST_EMPTY(economy_ledgers)
 
 	store.remove(key)
 	return TRUE
-
-#undef LEDGER_FIELD_VERSION
-#undef LEDGER_FIELD_BALANCE
-#undef LEDGER_FIELD_DEBT
-#undef LEDGER_FIELD_HOLDER
-#undef LEDGER_FIELD_UPDATED
-#undef LEDGER_FIELD_HISTORY

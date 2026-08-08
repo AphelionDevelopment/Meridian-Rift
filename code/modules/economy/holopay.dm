@@ -105,7 +105,7 @@
 			to_chat(user, span_warning("You don't have enough [MONEY_NAME] to pay with this chip."))
 			return ITEM_INTERACT_BLOCKING
 		/// Success: Alert buyer
-		alert_buyer(user, cash_deposit)
+		alert_buyer(user, cash_deposit, charge_transaction_levy(null, linked_card?.registered_account, cash_deposit, DEPOSIT_LEVY_FRACTION)) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: alert_buyer(user, cash_deposit)
 		return ITEM_INTERACT_SUCCESS
 	/// Throws errors if they try to use space cash
 	if(istype(tool, /obj/item/stack/spacecash))
@@ -279,7 +279,7 @@
 		to_chat(user, span_warning("You don't have the money to pay for this."))
 		return FALSE
 	/// Success: Alert the buyer
-	alert_buyer(user, amount)
+	alert_buyer(user, amount, charge_transaction_levy(payee, linked_card?.registered_account, amount)) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: alert_buyer(user, amount)
 	return TRUE
 
 /**
@@ -288,12 +288,13 @@
  * Parameters:
  * * payee - The user who initiated the transaction.
  * * amount - The amount of money that was paid.
+ * * levy - Credits already destroyed as a levy on this payment, which the owner does not receive. // APHELION EDIT ADDITION - PERSISTENT_ECONOMY
  * Returns:
  * * TRUE - alert was successful.
  */
-/obj/structure/holopay/proc/alert_buyer(payee, amount)
+/obj/structure/holopay/proc/alert_buyer(payee, amount, levy = 0) // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: /obj/structure/holopay/proc/alert_buyer(payee, amount)
 	/// Pay the owner
-	linked_card.registered_account.adjust_money(amount, "Holopay: [name]")
+	linked_card.registered_account.adjust_money(amount - levy, "Holopay: [name]") // APHELION EDIT CHANGE - PERSISTENT_ECONOMY - ORIGINAL: linked_card.registered_account.adjust_money(amount, "Holopay: [name]")
 	/// Make alerts
 	linked_card.registered_account.bank_card_talk("[payee] has deposited [amount] [MONEY_SYMBOL] at your holographic pay stand.")
 	say("Thank you for your patronage, [payee]!")

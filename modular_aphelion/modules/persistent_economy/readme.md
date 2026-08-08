@@ -54,10 +54,13 @@ unbounded log here would grow the cost of every future transaction. A full cross
 needs a store that appends rather than rewrites, and is not built here.
 
 Department budgets share `data/persistent_economy.json`. At roundstart a department carries over last
-round's balance and is topped up to its budget floor only if it ended below it, never past. Banking a
-surplus is worth something, and a bankrupted department is still playable next shift. Cargo's floor is
-zero, so it keeps what it earns and is never subsidised. Budgets are not scoped by map: a department's
-money follows the crew across a rotation rather than belonging to the station they stood on.
+round's balance and, if it ended below its budget floor, is topped up by half the shortfall, never past
+the floor. Banking a surplus is worth something, a bankrupted department is still playable next shift,
+and ending the shift broke still costs something: a full top-up would make every balance under the
+floor worth the same next round, leaving a departmental head no reason not to spend down to nothing
+before the shift ends. Cargo's floor is zero, so it keeps what it earns and is never subsidised.
+Budgets are not scoped by map: a department's money follows the crew across a rotation rather than
+belonging to the station they stood on.
 
 `SSeconomy`'s inflation baseline is rebased to match. Upstream builds `station_target` from what the
 crew should be holding, every account's paycheck times `STARTING_PAYCHECKS`, which only works while
@@ -110,8 +113,19 @@ Transfers where either side is a departmental account are exempt. That covers pa
 otherwise be docked on the way out of a budget, and covers paying a department or a machine for a
 service, which is priced already. What is left is crew paying crew.
 
-The remaining sinks are unchanged: vendors and machines destroy what they take, and cash withdrawn
-from an ATM leaves the ledger and dies with the round.
+A levy is only a sink if it cannot be walked around, and `transfer_money()` is not the path most
+credits take between two players. `charge_transaction_levy()` exists so every path charges the same
+cut: the ID card transfer verb, the holopay and paystand, and banking physical currency. Add the call
+to any new path that moves credits into an account, or that path becomes the one everybody uses.
+
+Banking cash is charged `DEPOSIT_LEVY_FRACTION` rather than the transfer levy, because it is not quite
+the same thing. Withdrawing to a holochip, handing it over and depositing is a crew-to-crew transfer
+wearing a disguise and has to cost the same, but the same code path also banks coins, vendor change
+and mining payouts that were never anyone else's. It is a separate define so that case can be priced
+on its own without reopening the hole.
+
+The remaining sinks are unchanged: vendors and machines destroy what they take, and cash that is never
+banked dies with the round.
 
 **Economy Panel** (`Admin.Game`, `R_ADMIN`) is the admin-side view. It separates the accounts that
 exist this round, station budgets and crew accounts, from the records sitting in a ledger on disk,
@@ -131,6 +145,30 @@ overwrites outright and is the way around that. Every mutation is logged to `log
 Every row in both views expands to the last `LEDGER_HISTORY_LENGTH` transactions on that account,
 newest first. A live account shows what it has done this round, a stored record shows what it carried
 in. An account whose income has been suspended is marked in its row.
+
+**All Ledgers** is the third view, and the only one that does not need to be told where to look. It
+reads every ledger on the server, players who are not in the round included, and lists them richest
+first with a running total. That answers the two questions the other views cannot: who is rich, and
+did anyone get rich suddenly. They are the same question, and both need the accounts of people who are
+not playing. Each row jumps the stored view to that ledger for editing.
+
+It is run on request rather than gathered in `ui_data()`, because it walks every player save directory
+on disk and `ui_data()` runs on every update. The result is held on the panel with the age of the scan
+shown beside it. Open ledgers are read from memory and closed ones off disk, since a
+`/datum/json_database` defers its writes and a file behind a ledger that is open right now is at least
+one save stale.
+
+### Measurement
+
+`log_economy_snapshot()` runs once at round end, from `flush_economy_ledgers()` after every account has
+written itself back. It logs total credits held, split between departments and players, the number of
+records behind those figures, and outstanding debt, and records the totals to blackbox.
+
+Every figure this module turns on is a guess without it. The transaction levy, the deposit levy, the
+department grant ceiling and the operating charge are all calibrated against how fast the supply is
+growing, and nothing else measures that: blackbox tracks flows such as credits levied, which says how
+hard the sinks are working but not whether they are keeping up. Prices for whatever persistent money
+eventually buys have to come from this number too.
 
 Two policy calls, both deliberate and both no-ops in code. A balance survives its character's death,
 since the record is keyed to the character and not the body. Theft is uncapped: draining a stolen ID
@@ -152,6 +190,20 @@ definition of a proc on the same type.
   early on a suspended account.
 - `code/modules/economy/account.dm`: `/datum/bank_account/proc/transfer_money`. The recipient's
   `adjust_money()` now takes the transaction levy off first.
+- `code/modules/economy/holopay.dm`: `/obj/structure/holopay/proc/alert_buyer`. Takes the levy already
+  charged on the payment and credits the owner net of it. Defaulted to zero so nothing else changes.
+- `code/modules/economy/holopay.dm`: the holochip branch of `item_interact` and
+  `/obj/structure/holopay/proc/pay`. Both charge the levy and hand it to `alert_buyer()`. The paystand
+  paid the owner and charged the payer with two separate `adjust_money()` calls, never touching
+  `transfer_money()`, so it was the untaxed path for the surface most player trade actually uses.
+- `code/game/objects/items/cards_ids.dm`: `/obj/item/card/id/proc/insert_money` and
+  `/obj/item/card/id/proc/mass_insert_money`. Both take `DEPOSIT_LEVY_FRACTION` off the sum before it
+  is banked. Withdraw, hand over the holochip, deposit was otherwise a transfer with no levy on it.
+- `code/datums/quirks/negative_quirks/indebted.dm`: `/datum/quirk/indebted/add_unique`. Returns early
+  on a character that has played before, keeping the debt it already owes. `add_unique` runs every
+  time a character spawns, so with balances carrying over the quirk rolled a fresh
+  `PAYCHECK_CREW * rand(275, 325)` every round on top of whatever was left, far faster than debt
+  collection retires it. The debt became unpayable and the achievement for clearing it unreachable.
 - `code/controllers/subsystem/persistence/_persistence.dm`:
   `/datum/controller/subsystem/persistence/proc/collect_data`. One added call to
   `flush_economy_ledgers()`.
@@ -178,14 +230,14 @@ definition of a proc on the same type.
 
 - `code/__DEFINES/~aphelion_defines/persistent_economy.dm`: `PERSISTENT_ECONOMY_ENABLED`,
   `LEDGER_SCHEMA_VERSION`, `LEDGER_BALANCE_LIMIT`, `LEDGER_HISTORY_LENGTH`,
-  `TRANSACTION_LEVY_FRACTION`. Used across more than one file, so they live here rather than in the
-  module.
-- `modular_aphelion/modules/persistent_economy/code/economy_ledger.dm`: `LEDGER_FIELD_VERSION`,
-  `LEDGER_FIELD_BALANCE`, `LEDGER_FIELD_DEBT`, `LEDGER_FIELD_HOLDER`, `LEDGER_FIELD_UPDATED`,
-  `LEDGER_FIELD_HISTORY`. All `#undef`'d in the same file.
+  `TRANSACTION_LEVY_FRACTION`, `DEPOSIT_LEVY_FRACTION`, and the `LEDGER_FIELD_*` record keys. Used
+  across more than one file, so they live here rather than in the module. The record keys moved here
+  from `economy_ledger.dm` once `economy_snapshot.dm` needed to read records straight off disk.
 - `modular_aphelion/modules/persistent_economy/code/department_budgets.dm`: `STATION_LEDGER_PATH`,
-  `DEPARTMENT_KEY_PREFIX`, `DEPARTMENT_GRANT_CEILING_MULT`, `DEPARTMENT_UPKEEP_FRACTION`. All
-  `#undef`'d in the same file.
+  `DEPARTMENT_KEY_PREFIX`, `DEPARTMENT_GRANT_CEILING_MULT`, `DEPARTMENT_UPKEEP_FRACTION`,
+  `DEPARTMENT_SUBSIDY_FRACTION`. All `#undef`'d in the same file.
+- `modular_aphelion/modules/persistent_economy/code/economy_snapshot.dm`: `PLAYER_SAVES_PATH`,
+  `PLAYER_LEDGER_FILENAME`. Both `#undef`'d in the same file.
 - `modular_aphelion/modules/persistent_economy/code/character_accounts.dm`: `CHARACTER_KEY_PREFIX`.
   `#undef`'d in the same file.
 - `modular_aphelion/modules/persistent_economy/code/economy_admin_panel.dm`: `ADMIN_BALANCE_LIMIT`.

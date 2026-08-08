@@ -6,6 +6,8 @@
 #define DEPARTMENT_GRANT_CEILING_MULT 3
 /// Fraction of a department's carried balance taken at roundstart as operating costs.
 #define DEPARTMENT_UPKEEP_FRACTION 0.05
+/// Fraction of the shortfall a department below its budget floor is topped up by at roundstart.
+#define DEPARTMENT_SUBSIDY_FRACTION 0.5
 
 /datum/controller/subsystem/economy
 	/// Balance at or above which a department stops drawing [MAX_GRANT_DPT]. Zero disables the ceiling.
@@ -27,9 +29,13 @@
  * has already been handed its stock roundstart budget by the time we run.
  *
  * A department with no stored record keeps that stock budget, and attaching writes it out as the
- * opening record. One with a record adopts its carried balance, then is topped up to the floor only
- * if it ended below it, never past. A department that banked a surplus keeps it and gets nothing, so
- * saving is worth something, while a bankrupted one is still playable next shift.
+ * opening record. One with a record adopts its carried balance, then is topped up by half of whatever
+ * it ended short of the floor, never past it. A department that banked a surplus keeps it and gets
+ * nothing, so saving is worth something, while a bankrupted one is still playable next shift.
+ *
+ * Half the shortfall rather than all of it, so that ending a shift broke costs something. A full
+ * top-up makes every balance below the floor worth the same next round, which leaves a departmental
+ * head no reason not to spend the budget down to nothing before the shift ends.
  *
  * Cargo's floor is zero, since it has always started with nothing. Under persistence it keeps what it
  * earned and is never subsidised.
@@ -68,9 +74,12 @@
 		if(department_account.account_balance >= floor_for_department)
 			continue
 
-		var/subsidy = floor_for_department - department_account.account_balance
+		var/subsidy = round((floor_for_department - department_account.account_balance) * DEPARTMENT_SUBSIDY_FRACTION)
+		if(subsidy <= 0)
+			continue
+
 		department_account.adjust_money(subsidy, "Nanotrasen: Budget Subsidy")
-		log_econ("[subsidy] [MONEY_NAME] were granted to [department_account.account_holder] to restore it to its budget floor of [floor_for_department].")
+		log_econ("[subsidy] [MONEY_NAME] were granted to [department_account.account_holder], half its shortfall against a budget floor of [floor_for_department].")
 
 /**
  * Whether a department should still draw its passive grant this tick.
@@ -91,3 +100,4 @@
 #undef DEPARTMENT_KEY_PREFIX
 #undef DEPARTMENT_GRANT_CEILING_MULT
 #undef DEPARTMENT_UPKEEP_FRACTION
+#undef DEPARTMENT_SUBSIDY_FRACTION

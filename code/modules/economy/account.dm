@@ -201,12 +201,7 @@
 			reason_to = IS_DEPARTMENTAL_ACCOUNT(src) ? "" : transfer_reason
 			reason_from = transfer_reason
 
-		// APHELION EDIT ADDITION START - PERSISTENT_ECONOMY
-		var/levy = get_transaction_levy(from, amount)
-		if(levy)
-			log_econ("[levy] [MONEY_NAME] were taken as a transaction levy on the transfer from [from.account_holder] to [account_holder].")
-			SSblackbox.record_feedback("amount", "credits_levied", levy)
-		// APHELION EDIT ADDITION END
+		var/levy = charge_transaction_levy(from, src, amount) // APHELION EDIT ADDITION - PERSISTENT_ECONOMY
 		adjust_money(amount - levy, reason_to) // APHELION EDIT CHANGE - ORIGINAL: adjust_money(amount, reason_to)
 		from.adjust_money(-amount, reason_from)
 		SSblackbox.record_feedback("amount", "credits_transferred", amount)

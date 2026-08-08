@@ -5,6 +5,9 @@
 	var/datum/economy_ledger/ledger
 	/// Whether this account has stopped drawing passive income. See [/datum/bank_account/proc/suspend_income].
 	var/income_suspended = FALSE
+	/// Whether this account adopted a stored record when it was bound, meaning the character behind it
+	/// has played before. Anything paid out once per character, rather than once per shift, checks this.
+	var/restored_from_ledger = FALSE
 
 /**
  * Binds this account to a ledger and adopts whatever state was stored under the key.
@@ -45,6 +48,7 @@
 	account_balance = stored_balance
 	account_debt = ledger.read_debt(key)
 	transaction_history = ledger.read_history(key)
+	restored_from_ledger = TRUE
 	return TRUE
 
 /**

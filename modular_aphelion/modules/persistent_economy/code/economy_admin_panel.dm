@@ -22,6 +22,10 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 /datum/economy_admin_panel
 	/// Ckey whose ledger the stored view shows, or null for the shared station ledger.
 	var/inspected_ckey
+	/// Last cross-ledger scan, richest first, or null if none has been run. See [/datum/economy_admin_panel/proc/scan_all_records].
+	var/list/scanned_records
+	/// `world.time` the scan was taken, so a stale one can be told apart from a fresh one.
+	var/scanned_at
 
 /datum/economy_admin_panel/ui_state(mob/user)
 	return ADMIN_STATE(R_ADMIN)
@@ -109,6 +113,8 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 		))
 	data["stored_records"] = stored_records
 	data["inspected_ckey"] = inspected_ckey
+	data["scanned_records"] = scanned_records
+	data["scanned_age"] = isnull(scanned_at) ? null : DisplayTimeText(world.time - scanned_at)
 	data["inflation_value"] = SSeconomy.inflation_value
 	data["station_total"] = SSeconomy.station_total
 	data["station_target"] = SSeconomy.station_target
@@ -144,6 +150,17 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 
 		if("inspect_station")
 			inspected_ckey = null
+			return TRUE
+
+		if("scan_all_records")
+			return scan_all_records(user)
+
+		if("inspect_scanned")
+			var/target_ckey = ckey(params["source"])
+			if(!target_ckey || target_ckey == "station")
+				inspected_ckey = null
+				return TRUE
+			inspected_ckey = target_ckey
 			return TRUE
 
 		if("set_stored_balance")
@@ -257,6 +274,29 @@ ADMIN_VERB(economy_panel, R_ADMIN, "Economy Panel", "View and manage bank accoun
 
 	log_admin("[key_name(user)] set [account.account_holder]'s debt from [old_debt] to [new_debt].")
 	message_admins("[key_name_admin(user)] set [account.account_holder]'s debt from [old_debt] to [new_debt].")
+	return TRUE
+
+/**
+ * Reads every ledger on the server and keeps the result, richest first.
+ *
+ * The rest of the panel can only show a ledger an admin already knows to ask for, which is no use for
+ * the questions this view exists to answer: who is rich, and did anyone get rich suddenly. Those are
+ * the same question, and answering either means reading the accounts of players who are not in the
+ * round.
+ *
+ * Held on the panel rather than gathered in ui_data, because the scan walks every player save
+ * directory on disk and ui_data runs on every update. An admin asks for it and gets an answer whose
+ * age is shown next to it.
+ * Arguments:
+ * * user - the admin acting.
+ */
+/datum/economy_admin_panel/proc/scan_all_records(mob/user)
+	var/list/all_records = collect_all_ledger_records()
+	sortTim(all_records, GLOBAL_PROC_REF(cmp_ledger_record_balance_dsc))
+
+	scanned_records = all_records
+	scanned_at = world.time
+	log_admin("[key_name(user)] scanned every economy ledger, reading [length(all_records)] records.")
 	return TRUE
 
 /**

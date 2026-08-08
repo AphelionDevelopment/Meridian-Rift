@@ -754,6 +754,7 @@
 	if(!cash_money)
 		to_chat(user, span_warning("[money] doesn't seem to be worth anything!"))
 		return FALSE
+	cash_money -= charge_transaction_levy(null, registered_account, cash_money, DEPOSIT_LEVY_FRACTION) // APHELION EDIT ADDITION - PERSISTENT_ECONOMY
 	registered_account.adjust_money(cash_money, "System: Deposit")
 	SSblackbox.record_feedback("amount", "credits_inserted", cash_money)
 	log_econ("[cash_money] [MONEY_NAME] were inserted into [src] owned by [src.registered_name]")
@@ -787,6 +788,7 @@
 		total += physical_money.get_item_credit_value()
 		CHECK_TICK
 
+	total -= charge_transaction_levy(null, registered_account, total, DEPOSIT_LEVY_FRACTION) // APHELION EDIT ADDITION - PERSISTENT_ECONOMY
 	registered_account.adjust_money(total, "System: Deposit")
 	SSblackbox.record_feedback("amount", "credits_inserted", total)
 	log_econ("[total] [MONEY_NAME] were inserted into [src] owned by [src.registered_name]")
