@@ -43,4 +43,8 @@
 		ANNOUNCER_HC_POLICE = 'modular_nova/modules/random_ship_event/random_ships/heliostatic_inspectors/sounds/morse.ogg',
 		ANNOUNCER_DEPARTMENTAL = 'modular_nova/modules/alerts/sound/alerts/alert3.ogg',
 		ANNOUNCER_SHUTTLE = 'modular_nova/modules/alerts/sound/alerts/alert3.ogg',
+		// APHELION EDIT ADDITION START - Fleshmind
+		ANNOUNCER_ICARUS = 'modular_nova/modules/alerts/sound/alerts/icarus_alarm.ogg',
+		ANNOUNCER_KLAXON = 'modular_nova/modules/black_mesa/sound/siren1_long.ogg',
+		// APHELION EDIT ADDITION END
 		)

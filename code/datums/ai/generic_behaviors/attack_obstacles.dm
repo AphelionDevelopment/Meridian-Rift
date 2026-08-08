@@ -45,7 +45,7 @@
 		if(get_step_to(controller.pawn, next_step)) //pathing could still fail because byond sucks.
 			return FALSE
 
-	for(var/obj/object as anything in next_step.contents)
+	for(var/obj/object in next_step.contents) // APHELION EDIT CHANGE - Fleshmind - ORIGINAL: for(var/obj/object as anything in next_step.contents) - `as anything` skips the /obj filter, letting this melee dense MOBS on the tile
 		if(!can_smash_object(basic_mob, object))
 			continue
 		basic_mob.melee_attack(object)
