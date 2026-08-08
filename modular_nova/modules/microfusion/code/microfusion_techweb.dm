@@ -14,9 +14,9 @@
 	description = "Enhanced microfusion technology allowing for upgraded basic microfusion!"
 	prereq_ids = list(
 		"basic_microfusion",
-		"engineering",
-		"weaponry",
-		"high_efficiency",
+		TECHWEB_NODE_CONSTRUCTION,
+		TECHWEB_NODE_BASIC_ARMS,
+		TECHWEB_NODE_PARTS_UPG,
 	)
 	design_ids = list(
 		"enhanced_microfusion_cell",
@@ -34,10 +34,10 @@
 	description = "Advanced microfusion technology allowing for advanced microfusion!"
 	prereq_ids = list(
 		"enhanced_microfusion",
-		"adv_engi",
-		"adv_weaponry",
-		"adv_power",
-		"adv_plasma",
+		TECHWEB_NODE_SPEC_ENG,
+		TECHWEB_NODE_ELECTRIC_WEAPONS,
+		TECHWEB_NODE_ENERGY_MANIPULATION,
+		TECHWEB_NODE_PLASMA_CONTROL,
 	)
 	design_ids = list(
 		"advanced_microfusion_cell",
@@ -61,9 +61,9 @@
 	description = "Bluespace tinkering plus microfusion technology!"
 	prereq_ids = list(
 		"advanced_microfusion",
-		"bluespace_power",
-		"beam_weapons",
-		"explosive_weapons",
+		TECHWEB_NODE_APPLIED_BLUESPACE,
+		TECHWEB_NODE_BEAM_WEAPONS,
+		TECHWEB_NODE_EXPLOSIVES,
 	)
 	design_ids = list(
 		"bluespace_microfusion_cell",
@@ -79,7 +79,7 @@
 	description = "Bleeding edge microfusion tech, making use of the latest in materials and components, bluespace or otherwise."
 	prereq_ids = list(
 		"bluespace_microfusion",
-		"alientech",
+		TECHWEB_NODE_ALIENTECH,
 	)
 	design_ids = list(
 		"microfusion_gun_attachment_xray",
@@ -93,7 +93,7 @@
 	description = "Microfusion tech that has previously been banned by SolFed. I love the smell of plasma in the mornings."
 	prereq_ids = list(
 		"advanced_microfusion",
-		"syndicate_basic",
+		TECHWEB_NODE_SYNDICATE_BASIC,
 	)
 	design_ids = list(
 		"microfusion_gun_attachment_superheat",
@@ -111,7 +111,7 @@
 	description = "Microfusion tech that is proprietary tech of Honkicron Clownery Systems. HONK!!"
 	prereq_ids = list(
 		"basic_microfusion",
-		"clown",
+		TECHWEB_NODE_MECH_CLOWN, //No plain clown research node exists any more, this is the closest gate
 	)
 	design_ids = list(
 		"microfusion_gun_attachment_honk",
