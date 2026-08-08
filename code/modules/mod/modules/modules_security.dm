@@ -27,6 +27,7 @@
 			/obj/item/gun/chem,
 			/obj/item/gun/syringe,
 			/obj/item/kinetic_crusher,
+			/obj/item/gun/microfusion, //NOVA EDIT ADDITION
 		))
 
 /obj/item/mod/module/magnetic_harness/on_install()

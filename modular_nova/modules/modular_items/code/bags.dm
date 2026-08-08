@@ -53,6 +53,7 @@
 		/obj/item/ammo_box/magazine,
 		/obj/item/ammo_casing,
 		/obj/item/ammo_box/speedloader,
+		/obj/item/stock_parts/power_store/cell/microfusion,
 	))
 
 /datum/storage/casing_pouch
