@@ -19,13 +19,25 @@ const T = {
   label: '#5f9d88',
   amber: '#ffc042',
   danger: '#ff6a5f',
+  cool: '#57c4f5',
+  coolHot: '#c2e9ff',
 };
 
 const TONE = {
   primary: { line: T.edgeLit, text: T.phosphorHot, glow: 'rgba(79,227,171,0.55)' },
   amber: { line: T.amber, text: '#ffe4a8', glow: 'rgba(255,192,66,0.55)' },
   danger: { line: T.danger, text: '#ffc9c4', glow: 'rgba(255,106,95,0.55)' },
+  cool: { line: T.cool, text: T.coolHot, glow: 'rgba(87,196,245,0.55)' },
 };
+
+// Inline styles can't express keyframes, so the panel ships its own sheet.
+const KEYFRAMES = `
+@keyframes mfd-flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+@keyframes mfd-throb {
+  0%, 100% { box-shadow: 0 0 6px rgba(255,106,95,0.35), inset 0 0 6px rgba(255,106,95,0.2); }
+  50% { box-shadow: 0 0 20px rgba(255,106,95,0.95), inset 0 0 16px rgba(255,106,95,0.5); }
+}
+`;
 
 // Chamfered corners, cut top-left and bottom-right.
 const CHAMFER = (n) =>
@@ -88,6 +100,62 @@ const Legend = (props) => (
   </Box>
 );
 
+/**
+ * Fault marker for a panel heading, drawn in the same thin-stroke idiom as the
+ * bay rings on the schematic so the two read as one instrument.
+ */
+const FaultGlyph = (props) => {
+  const { tone, flash } = props;
+  const stroke = tone === 'danger' ? T.danger : T.amber;
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width="15"
+      height="15"
+      style={{
+        display: 'block',
+        animation: flash ? 'mfd-flash 0.8s steps(1, end) infinite' : undefined,
+      }}
+    >
+      <circle
+        cx="8"
+        cy="8"
+        r="6.6"
+        fill="none"
+        stroke={stroke}
+        strokeWidth="1"
+        strokeDasharray="2.6 1.6"
+      />
+      <line x1="8" y1="4.4" x2="8" y2="9" stroke={stroke} strokeWidth="1.4" />
+      <circle cx="8" cy="11.3" r="0.85" fill={stroke} />
+    </svg>
+  );
+};
+
+/** A one-line condition banner inside a gauge. Flashes when it's urgent. */
+const Flare = (props) => {
+  const { tone, flash, children } = props;
+  const skin = TONE[tone || 'amber'];
+  return (
+    <Box
+      style={{
+        marginTop: '6px',
+        padding: '3px 8px',
+        border: `1px solid ${skin.line}`,
+        background: 'rgba(0,0,0,0.35)',
+        clipPath: CHAMFER(6),
+        animation: flash
+          ? 'mfd-flash 0.7s steps(1, end) infinite, mfd-throb 1.4s ease-in-out infinite'
+          : undefined,
+      }}
+    >
+      <Legend size="0.66rem" color={skin.line}>
+        {children}
+      </Legend>
+    </Box>
+  );
+};
+
 /** A chamfered, glowing control. Bigger and louder than a stock tgui button. */
 const MfdButton = (props) => {
   const { children, icon, onClick, disabled, tone, block, tooltip, active } =
@@ -137,7 +205,8 @@ const MfdButton = (props) => {
 
 /** Framed panel with a cut corner and a rule under its heading. */
 const Panel = (props) => {
-  const { title, actions, children, footer, scroll } = props;
+  const { title, actions, children, footer, scroll, glyph, accent } = props;
+  const rule = accent || T.edge;
   return (
     <Box
       style={{
@@ -145,9 +214,10 @@ const Panel = (props) => {
         display: 'flex',
         flexDirection: 'column',
         background: T.glass,
-        border: `1px solid ${T.edge}`,
+        border: `1px solid ${accent || T.edge}`,
         clipPath: CHAMFER(12),
         padding: '10px 12px',
+        boxShadow: accent ? `inset 0 0 22px ${accent}22` : undefined,
       }}
     >
       {(!!title || !!actions) && (
@@ -157,15 +227,25 @@ const Panel = (props) => {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '8px',
-            borderBottom: `1px solid ${T.edge}`,
+            borderBottom: `1px solid ${rule}`,
             paddingBottom: '6px',
             marginBottom: '8px',
             flex: '0 0 auto',
           }}
         >
-          <Legend size="0.8rem" color={T.phosphor}>
-            {title}
-          </Legend>
+          <Box
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              minWidth: 0,
+            }}
+          >
+            {glyph}
+            <Legend size="0.8rem" color={accent || T.phosphor}>
+              {title}
+            </Legend>
+          </Box>
           <Box style={{ flex: '0 0 auto' }}>{actions}</Box>
         </Box>
       )}
@@ -223,10 +303,10 @@ const Segments = (props) => {
 
 /** One instrument in the top strip. */
 const Gauge = (props) => {
-  const { label, value, unit, sub, fraction, color, onClick, active, actions } =
-    props;
+  const { label, value, unit, sub, fraction, color, onClick, active } = props;
+  const { actions, alerts, glyph, accent } = props;
   return (
-    <Panel title={label} actions={actions}>
+    <Panel title={label} actions={actions} glyph={glyph} accent={accent}>
       <Box
         onClick={onClick}
         style={onClick ? { cursor: 'pointer' } : undefined}
@@ -252,6 +332,11 @@ const Gauge = (props) => {
         <Box mt={0.5}>
           <Legend size="0.68rem">{sub}</Legend>
         </Box>
+        {(alerts || []).map((alert) => (
+          <Flare key={alert.text} tone={alert.tone} flash={alert.flash}>
+            {alert.text}
+          </Flare>
+        ))}
       </Box>
     </Panel>
   );
@@ -267,30 +352,91 @@ const StatusStrip = (props) => {
     gun_heat_dissipation,
   } = data;
 
-  const chargeFraction = has_cell
+  // Everything the strip needs to shout about, resolved to plain booleans --
+  // has_* arrive from DM as 0/1 and React will happily render a bare 0.
+  const cellIn = !!has_cell;
+  const emitterIn = !!has_emitter;
+  const damaged = emitterIn && !!phase_emitter_data.damaged;
+  const hacked = emitterIn && !!phase_emitter_data.hacked;
+  const cooling = emitterIn && !!phase_emitter_data.cooling_system;
+  const meltdown = cellIn && !!cell_data.status;
+
+  const heatPercent = emitterIn ? phase_emitter_data.heat_percent : 0;
+  const throttlePercent = emitterIn
+    ? phase_emitter_data.throttle_percentage
+    : 0;
+  const overload = emitterIn && heatPercent >= 100;
+  const throttled = emitterIn && !overload && heatPercent >= throttlePercent;
+
+  const chargeFraction = cellIn
     ? clamp01(cell_data.charge / cell_data.max_charge)
     : 0;
-  const chargeTone = has_cell ? bandColor(chargeFraction) : T.danger;
-  const heatFraction = has_emitter
-    ? clamp01(phase_emitter_data.heat_percent / 100)
-    : 0;
-  const heatTone = has_emitter ? bandColor(heatFraction, true) : T.danger;
-  const integrityFraction = has_emitter
+  const chargeTone = cellIn ? bandColor(chargeFraction) : T.danger;
+  const dry = cellIn && cell_data.shots_left <= 0;
+
+  const heatFraction = clamp01(heatPercent / 100);
+  let heatTone = emitterIn ? bandColor(heatFraction, true) : T.danger;
+  if (cooling && !overload) {
+    heatTone = T.cool;
+  }
+  const integrityFraction = emitterIn
     ? clamp01(phase_emitter_data.integrity / 100)
     : 0;
-  const integrityTone = has_emitter ? bandColor(integrityFraction) : T.danger;
+  const integrityTone = emitterIn ? bandColor(integrityFraction) : T.danger;
+
+  const thermalAlerts = [];
+  if (overload) {
+    thermalAlerts.push({
+      text: 'Thermal overload',
+      tone: 'danger',
+      flash: true,
+    });
+  } else if (throttled) {
+    thermalAlerts.push({
+      text: `Throttled at ${throttlePercent}%`,
+      tone: 'amber',
+    });
+  }
+  if (cooling) {
+    thermalAlerts.push({
+      text: `Cooling engaged · ${phase_emitter_data.cooling_system_rate}/tick`,
+      tone: 'cool',
+    });
+  }
+  if (hacked) {
+    thermalAlerts.push({ text: 'Governor bypassed', tone: 'danger' });
+  }
+
+  const integrityAlerts = [];
+  if (!emitterIn) {
+    integrityAlerts.push({ text: 'No emitter seated', tone: 'danger' });
+  } else if (damaged) {
+    integrityAlerts.push({
+      text: 'Emitter damaged — will not fire',
+      tone: 'danger',
+      flash: true,
+    });
+  }
+  if (hacked) {
+    integrityAlerts.push({ text: 'Governor bypassed', tone: 'danger' });
+  }
 
   return (
     <Stack>
       <Stack.Item grow basis={0}>
         <Gauge
           label="Shots"
-          value={has_cell ? cell_data.shots_left : '--'}
+          value={cellIn ? cell_data.shots_left : '--'}
           unit="rds"
-          sub={has_cell ? `${cell_data.shot_cost} mf per shot` : 'no cell'}
+          sub={cellIn ? `${cell_data.shot_cost} mf per shot` : 'no cell'}
           color={chargeTone}
           active={selected === 'cell'}
           onClick={() => onSelect('cell')}
+          accent={dry || !cellIn ? T.danger : undefined}
+          glyph={dry ? <FaultGlyph tone="danger" flash /> : undefined}
+          alerts={
+            dry ? [{ text: 'Cell dry', tone: 'danger', flash: true }] : undefined
+          }
         />
       </Stack.Item>
       <Stack.Item grow basis={0}>
@@ -300,17 +446,26 @@ const StatusStrip = (props) => {
           unit="%"
           fraction={chargeFraction}
           sub={
-            has_cell
+            cellIn
               ? `${cell_data.charge} / ${cell_data.max_charge} mf`
               : 'no cell seated'
           }
           color={chargeTone}
           active={selected === 'cell'}
           onClick={() => onSelect('cell')}
+          accent={meltdown || !cellIn ? T.danger : undefined}
+          glyph={meltdown ? <FaultGlyph tone="danger" flash /> : undefined}
+          alerts={
+            meltdown
+              ? [{ text: 'Meltdown imminent', tone: 'danger', flash: true }]
+              : !cellIn
+                ? [{ text: 'No cell seated', tone: 'danger' }]
+                : undefined
+          }
           actions={
             <MfdButton
               icon="eject"
-              disabled={!has_cell}
+              disabled={!cellIn}
               tooltip="Drop the cell into your hands"
               onClick={() => act('eject_cell')}
             />
@@ -320,22 +475,40 @@ const StatusStrip = (props) => {
       <Stack.Item grow basis={0}>
         <Gauge
           label="Thermal"
-          value={has_emitter ? `${toFixed(heatFraction * 100, 0)}` : '--'}
+          value={emitterIn ? `${toFixed(heatPercent, 0)}` : '--'}
           unit="%"
           fraction={heatFraction}
           sub={
-            has_emitter
-              ? `throttle ${phase_emitter_data.throttle_percentage}% · -${phase_emitter_data.heat_dissipation_per_tick}/t`
+            emitterIn
+              ? `throttle ${throttlePercent}% · -${phase_emitter_data.heat_dissipation_per_tick}/t`
               : 'no emitter'
           }
           color={heatTone}
           active={selected === 'emitter'}
           onClick={() => onSelect('emitter')}
+          accent={
+            overload
+              ? T.danger
+              : throttled
+                ? T.amber
+                : cooling
+                  ? T.cool
+                  : undefined
+          }
+          glyph={
+            overload ? (
+              <FaultGlyph tone="danger" flash />
+            ) : throttled ? (
+              <FaultGlyph tone="amber" />
+            ) : undefined
+          }
+          alerts={thermalAlerts}
           actions={
             <MfdButton
               icon="snowflake"
-              disabled={!has_emitter}
-              active={has_emitter && !!phase_emitter_data.cooling_system}
+              tone={cooling ? 'cool' : 'primary'}
+              disabled={!emitterIn}
+              active={cooling}
               tooltip="Toggle active cooling"
               onClick={() => act('toggle_cooling_system')}
             />
@@ -346,7 +519,7 @@ const StatusStrip = (props) => {
         <Gauge
           label="Integrity"
           value={
-            has_emitter ? `${toFixed(phase_emitter_data.integrity, 0)}` : '--'
+            emitterIn ? `${toFixed(phase_emitter_data.integrity, 0)}` : '--'
           }
           unit="%"
           fraction={integrityFraction}
@@ -354,19 +527,30 @@ const StatusStrip = (props) => {
           color={integrityTone}
           active={selected === 'emitter'}
           onClick={() => onSelect('emitter')}
+          accent={
+            damaged || !emitterIn ? T.danger : hacked ? T.amber : undefined
+          }
+          glyph={
+            damaged || !emitterIn ? (
+              <FaultGlyph tone="danger" flash={damaged} />
+            ) : hacked ? (
+              <FaultGlyph tone="amber" />
+            ) : undefined
+          }
+          alerts={integrityAlerts}
           actions={
             <>
-              {has_emitter && !!phase_emitter_data.hacked && (
+              {hacked ? (
                 <MfdButton
                   icon="bolt"
                   tone="danger"
                   tooltip="Remove the emitter's safety governor"
                   onClick={() => act('overclock_emitter')}
                 />
-              )}
+              ) : null}
               <MfdButton
                 icon="eject"
-                disabled={!has_emitter}
+                disabled={!emitterIn}
                 tooltip="Pull the phase emitter out of the frame"
                 onClick={() => act('eject_emitter')}
               />
@@ -707,6 +891,7 @@ export const MicrofusionGunControl = (props) => {
         scrollable
         style={{ background: T.void, backgroundImage: SCANLINES }}
       >
+        <style>{KEYFRAMES}</style>
         <Stack fill vertical>
           <Stack.Item>
             <StatusStrip
