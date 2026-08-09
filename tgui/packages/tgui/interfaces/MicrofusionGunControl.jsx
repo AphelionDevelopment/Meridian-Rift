@@ -223,13 +223,18 @@ const QuickActions = (props) => {
 
 /**
  * The weapon as it actually looks: base sprite, the frame's own overlays, then
- * one layer per attachment. Attachment layers hit-test on their painted pixels,
- * so clicking the scope picks the scope. Empty bays get a ring instead.
+ * one layer per attachment.
+ *
+ * The sprite itself is display only. SVG image elements hit-test on their whole
+ * rectangle rather than their painted pixels, so full-frame layers stacked over
+ * each other means whichever is on top eats every click on the panel. Each bay
+ * gets a ring off to the side of the weapon instead, with a leader line to the
+ * part of the frame it serves -- selecting one still outlines its overlay in
+ * place, so the feedback stays on the gun.
  */
 const Schematic = (props) => {
-  const { gunIcon, gunIconState, frameOverlays, attachments, emptySlots } =
-    props;
-  const { selected, hovered, onSelect, onHover } = props;
+  const { gunIcon, gunIconState, frameOverlays, attachments } = props;
+  const { slots, filledSlots, selected, hovered, onSelect, onHover } = props;
 
   const base = iconUrl(gunIcon, gunIconState);
   if (!base) {
@@ -311,23 +316,20 @@ const Schematic = (props) => {
               y={0}
               width={ICON_W}
               height={ICON_H}
-              pointerEvents="visiblePainted"
               filter={lit ? 'url(#mfd-outline)' : undefined}
-              style={{ cursor: 'pointer' }}
-              onClick={() => onSelect(attachment.slot_id)}
-              onMouseEnter={() => onHover(attachment.slot_id)}
-              onMouseLeave={() => onHover(null)}
+              style={{ pointerEvents: 'none' }}
             />
           );
         })}
 
-      {emptySlots.map((slot) => {
+      {slots.map((slot) => {
         const anchor = SLOT_ANCHORS[slot];
         if (!anchor) {
           return null;
         }
+        const filled = !!filledSlots[slot];
         const lit = selected === slot || hovered === slot;
-        const stroke = lit ? MFD.selected : MFD.wire;
+        const stroke = lit ? MFD.selected : filled ? MFD.text : MFD.wire;
         return (
           <g
             key={slot}
@@ -353,11 +355,14 @@ const Schematic = (props) => {
               cx={anchor.x}
               cy={anchor.y}
               r={2.6}
-              fill="transparent"
+              fill={filled ? MFD.glass : 'transparent'}
               stroke={stroke}
-              strokeWidth={0.6}
-              strokeDasharray="1.4 1"
+              strokeWidth={filled ? 0.8 : 0.6}
+              strokeDasharray={filled ? undefined : '1.4 1'}
             />
+            {filled && (
+              <circle cx={anchor.x} cy={anchor.y} r={1.1} fill={stroke} />
+            )}
           </g>
         );
       })}
@@ -531,7 +536,6 @@ export const MicrofusionGunControl = (props) => {
   for (const attachment of attachments) {
     bySlot[attachment.slot_id] = attachment;
   }
-  const emptySlots = slots.filter((slot) => !bySlot[slot]);
 
   let panelTitle = 'Readout';
   if (selected === 'cell') {
@@ -576,7 +580,8 @@ export const MicrofusionGunControl = (props) => {
                       gunIconState={gun_icon_state}
                       frameOverlays={frame_overlays}
                       attachments={attachments}
-                      emptySlots={emptySlots}
+                      slots={slots}
+                      filledSlots={bySlot}
                       selected={selected}
                       hovered={hovered}
                       onSelect={setSelected}
@@ -587,8 +592,8 @@ export const MicrofusionGunControl = (props) => {
                     {gun_desc}
                   </Box>
                   <Box mt={1} color="label" fontSize="0.85rem">
-                    Click a fitted part to inspect it, or a dashed ring for an
-                    empty bay.
+                    Select a bay by its ring. Solid rings are fitted and light
+                    the part up on the frame, dashed rings are empty.
                   </Box>
                 </Section>
               </Stack.Item>

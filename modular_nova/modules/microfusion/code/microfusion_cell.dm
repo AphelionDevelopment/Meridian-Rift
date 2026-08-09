@@ -151,10 +151,10 @@ These are basically advanced cells.
 	return TRUE
 
 /obj/item/stock_parts/power_store/cell/microfusion/proc/remove_attachments()
-	for(var/obj/item/microfusion_cell_attachment/microfusion_cell_attachment in attachments)
-		microfusion_cell_attachment.remove_attachment(src)
-		microfusion_cell_attachment.forceMove(get_turf(src))
-		attachments -= microfusion_cell_attachment
+	for(var/obj/item/microfusion_cell_attachment/cell_attachment as anything in attachments.Copy()) //Copied, we empty the real list as we go
+		cell_attachment.remove_attachment(src)
+		cell_attachment.forceMove(get_turf(src))
+		attachments -= cell_attachment
 	update_appearance()
 
 /datum/crafting_recipe/makeshift/microfusion_cell

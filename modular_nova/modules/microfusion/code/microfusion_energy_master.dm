@@ -309,12 +309,13 @@
 	return can_interact(user)
 
 /obj/item/gun/microfusion/proc/remove_all_attachments()
-	if(attachments.len)
-		for(var/obj/item/microfusion_gun_attachment/attachment in attachments)
-			attachment.remove_attachment(src)
-			attachment.forceMove(get_turf(src))
-			attachments -= attachment
-		update_appearance()
+	if(!length(attachments))
+		return
+	for(var/obj/item/microfusion_gun_attachment/attachment as anything in attachments.Copy()) //Copied, we empty the real list as we go
+		attachment.remove_attachment(src)
+		attachment.forceMove(get_turf(src))
+		attachments -= attachment
+	update_appearance()
 
 /obj/item/gun/microfusion/examine(mob/user)
 	. = ..()

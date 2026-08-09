@@ -524,7 +524,6 @@ Allows for flashlights bayonets and adds 1 slot to equipment.
 	if(bayonet_mount)
 		qdel(bayonet_mount)
 	microfusion_gun.update_appearance()
-	microfusion_gun.remove_all_attachments()
 
 /*
 SCOPE ATTACHMENT
