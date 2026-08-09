@@ -1,6 +1,6 @@
 /// Admin encryption key with basically every channel
 /obj/item/encryptionkey/admin
-	name = "\proper the subspace encryption key"
+	name = "subspace encryption key"
 	desc = "Holding and looking at this little chip fills you with a sense of existential dread. The taste of metaknowledge fills your mouth. \
 		It tastes salty. Like tears. Why do you know what tears taste like? \
 		You're a badmin, of course you know what tears taste like. Those of your coworkers taste better."
