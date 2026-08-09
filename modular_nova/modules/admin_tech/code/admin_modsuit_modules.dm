@@ -45,6 +45,8 @@
 // Users of this module cannot be inspected, also acts as a weldshield
 /obj/item/mod/module/infiltrator/admin
 	name = "technician's visual cloak"
+	desc = "A permanently fitted cloak that draws no power. While the suit is sealed it silences your footsteps, hides \
+		your voice, keeps your face out of anyone's examine, and stops a blow to the head from registering at all."
 	removable = FALSE
 	idle_power_cost = DEFAULT_CHARGE_DRAIN * 0
 	incompatible_modules = null

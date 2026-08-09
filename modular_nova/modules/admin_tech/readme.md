@@ -42,6 +42,15 @@ ADMIN_OBJ_FLAGS - code\_\_DEFINES\~nova_defines/obj_flags.dm - code\_\_DEFINES\~
 These are three separate defines because they target three separate bitfields whose bits overlap - do not merge them back into one:
 ADMIN_OBJ_FLAGS goes on obj_flags, ADMIN_OBJ_FLAGS_NOVA goes on obj_flags_nova, ADMIN_CLOTHING_FLAGS goes on clothing_flags (set with |= in Initialize so the parent type's own flags survive).
 
+### Administrative Fabricator:
+
+`/obj/machinery/rnd/production/colony_lathe/admin` prints the module's gear. It runs on `/datum/techweb/autounlocking/admin`, whose `allowed_buildtypes` is `ADMIN_TECHWEB | COLONY_FABRICATOR`, so it is a superset of the rapid construction fabricator rather than a replacement for it.
+
+Adding a printable means adding a `/datum/design/admin` subtype in admin_techweb.dm. Only `name`, `id` and `build_path` are usually needed - the parent supplies `build_type`, the token material cost and the category list. Two rules the CI unit tests enforce:
+
+- keep `RND_CATEGORY_INITIAL` in the category list, or an autounlocking techweb will not pick the design up
+- never set `materials = list()`, since a design with a `build_path` and no material cost at all fails the design test. The fabricator overrides `build_efficiency()` to zero, so the token cost is never actually charged.
+
 ### Traits:
 
 TRAIT_NOSTRIP - Prevents item removal by Strip Menu

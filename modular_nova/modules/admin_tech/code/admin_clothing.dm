@@ -158,6 +158,7 @@
 
 /obj/item/radio/headset/admin/subspace
 	name = "subspace headset"
+	desc = parent_type::desc + " This one has stopped bothering to pretend it is only a radio."
 	icon_state = "sub-headset"
 	worn_icon_state = "sub-headset"
 
@@ -296,7 +297,7 @@
 
 /obj/item/clothing/head/helmet/perceptomatrix/admin/subspace
 	name = "subspace visor"
-	desc = "This exceptional piece of headgear seems to be one of the main reality-warping sources of the administrative kit. It feels nearly weightless on your head."
+	desc = parent_type::desc + " This one stopped pretending to be armour and simply refuses to let anything reach you."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "sub-visor"
 	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
@@ -389,8 +390,7 @@
 
 /obj/item/clothing/mask/gas/atmos/admin/subspace
 	name = "subspace mask"
-	desc = "A proprietary filtration mask which route gasses that CentCom deems toxic directly into the space between dimensions.\
-	Wasteful? Totally. Convenient? Extremely."
+	desc = parent_type::desc + " This one displaces rather more of you, and rather more permanently."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "sub-mask"
 	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
@@ -426,23 +426,20 @@
 /obj/item/storage/neck/admin/cytotheca/PopulateContents()
 	new /obj/item/storage/subspace_pouch/cytotheca(src)
 
+// The trait source has to stay REF(src) everywhere - item_ctrl_click below grants it that way, and a REMOVE_TRAIT
+// with a different source silently does nothing, which would have left godmode stuck on.
 /obj/item/storage/neck/admin/cytotheca/dropped(mob/user)
 	. = ..()
-	if(!user)
-		admin_godmode = FALSE
+	if(isnull(user))
+		return
 	REMOVE_TRAIT(user, TRAIT_GODMODE, REF(src))
 
 /obj/item/storage/neck/admin/cytotheca/equipped(mob/user, slot, initial = TRUE)
 	. = ..()
-	if(admin_godmode)
-		ADD_TRAIT(user, TRAIT_GODMODE, REF(user))
-		add_filter("admin_active_item", 1, outline_filter(1, "#cc00ff", OUTLINE_SQUARE))
-
-/obj/item/storage/neck/admin/cytotheca/equipped(mob/user, slot, initial = TRUE)
-	. = ..()
-	if(admin_godmode)
-		REMOVE_TRAIT(user, TRAIT_GODMODE, REF(user))
-		remove_filter("admin_active_item", 1, outline_filter(1, "#cc00ff", OUTLINE_SQUARE))
+	// There used to be a second copy of this proc directly below which REMOVED godmode on equip, and being the later
+	// definition it was the one that won. Removal belongs in dropped(), above.
+	if(admin_godmode && slot == ITEM_SLOT_NECK)
+		ADD_TRAIT(user, TRAIT_GODMODE, REF(src))
 
 /// Whether godmode is currently active
 /obj/item/storage/neck/admin/cytotheca/item_ctrl_click(mob/user)
@@ -594,6 +591,7 @@
 
 /obj/item/clothing/under/admin/subspace
 	name = "subspace techsuit"
+	desc = parent_type::desc + " The tailoring on this one accounts for damage it has not taken yet."
 	icon_state = "sub-techsuit"
 	worn_icon_state = "sub-techsuit"
 	armor_type = /datum/armor/admin/badmin
@@ -626,6 +624,7 @@
 
 /obj/item/clothing/suit/admin/subspace
 	name = "subspace letterman"
+	desc = parent_type::desc + " This one returns every shot fired at it to sender, without exception."
 	icon_state = "sub-jacket"
 	worn_icon_state = "sub-jacket"
 	armor_type = /datum/armor/admin/badmin
@@ -656,6 +655,7 @@
 
 /obj/item/clothing/gloves/tackler/admin/subspace
 	name = "subspace gauntlets"
+	desc = parent_type::desc + " You feel perfectly capable of defending yourself from things that have not happened."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "sub-gauntlets"
 	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
@@ -722,7 +722,7 @@
 
 /obj/item/clothing/shoes/magboots/advance/admin/subspace
 	name = "subspace magboots"
-	desc = "Exotic hand manufactured booties made of the finest alloys the Frontier has to offer. The bluespace crystals powering each boot gleam threateningly."
+	desc = parent_type::desc + " These ones gleam a good deal more threateningly."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
 	base_icon_state = "sub-magboots"
 	icon_state = "sub-magboots0"// My first icon, I am very sorry. This should probably be replaced, but watch it just stick around for a long time.

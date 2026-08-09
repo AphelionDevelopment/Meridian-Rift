@@ -228,9 +228,12 @@ Admin Variants of Common Tools
 	. = ..()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
-/obj/item/storage/bag/admin/examine(mob/user)
+// This was declared on /obj/item/storage/bag/admin, which is a different bag entirely - so the pocket got the
+// construction bag's text and the construction bag got none. The keys below are the ones the procs actually bind.
+/obj/item/storage/bag/construction/admin/examine(mob/user)
 	. = ..()
-	. += span_notice("Alt-Right-Click to repopulate the bag contents. Ctrl-Click to qDel all contents.")
+	. += span_notice("Ctrl-Click while held to empty the bag and restock it from scratch.")
+	. += span_notice("Ctrl-Shift-Click to delete everything inside without restocking.")
 
 /// Clears the bag
 /obj/item/storage/bag/construction/admin/click_ctrl_shift(mob/user)
@@ -312,8 +315,7 @@ Admin Variants of Common Tools
 
 /obj/item/storage/bag/construction/admin/subspace
 	name = "subspace construction bag"
-	desc = "An artisinally crafted pocket liner utilizing advanced technologies, techniques, and materials. \
-	Peeking inside the pocket, cherenkov-esque radiation illuminates a mass of materials and supplies."
+	desc = parent_type::desc + " The mass inside this one does not appear to end."
 	icon_state = "sub-bag"
 
 // Badmin pinpointer. The bool lets you find people, even if they aren't wearing clothes, as long as you share a z-layer
@@ -349,6 +351,8 @@ Admin Variants of Common Tools
 //code\modules\projectiles\guns\energy\recharge.dm
 /obj/item/gun/energy/recharge/fisher/admin
 	name = "subspace disruptor"
+	desc = "A near-silent disabler whose bolts ignore tables, mobs, machinery, structures, glass, grilles, doors and \
+		walls alike. It only stops for whatever you actually clicked on, so be sure that is what you meant to hit."
 	icon_state = "protolaser"
 	suppressed = SUPPRESSED_QUIET
 	recharge_time = 0.25 SECONDS
@@ -462,7 +466,9 @@ Admin Variants of Common Tools
 // code\game\objects\items\emags.dm
 /obj/item/card/emag/admin
 	name = "subspace emag-doorjack"
-	desc = "It's a card with a magnetic strip attached to some circuitry that hurts to look at. Don't wave this at anything you care about."
+	desc = "It's a card with a magnetic strip attached to some circuitry that hurts to look at. It needs no proximity \
+		and honours no blacklist, which means it will emag things the ordinary card politely refuses to, from across \
+		the room. Don't wave this at anything you care about."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-emag"
 	worn_icon_state = "emag"
@@ -535,7 +541,9 @@ Admin Variants of Common Tools
 // Debug Forcefield Projector & It's Structure
 /obj/item/forcefield_projector/admin
 	name = "subspace forcefield projector"
-	desc = "An experimental device that can create several forcefields at a distance."
+	desc = "An experimental device that can create several forcefields at a distance. This one has no cap on how many, \
+		and the fields it makes cannot be broken - useful for walling something off in a hurry and regrettable if you \
+		forget where you left them."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-projector-forcefield"
 	max_shield_integrity = INFINITY
@@ -768,7 +776,9 @@ Admin Variants of Common Tools
 // code\modules\modular_computers\computers\item\pda.dm
 /obj/item/modular_computer/pda/admin
 	name = "subspace PDA"
-	desc = "An unassuming and oddly heavy PDA."
+	desc = "An unassuming and oddly heavy PDA, carrying every program Nanotrasen has ever written and several it has not. \
+		It arrives pre-jailbroken, its cell does not discharge, its storage does not fill, and it does not appear on \
+		anyone else's contact list."
 	device_theme = PDA_THEME_SPOOKY
 	max_capacity = INFINITY
 	hardware_flag = PROGRAM_ALL//This might cause issues? Set to PROGRAM_PDA if it do
@@ -804,6 +814,11 @@ Admin Variants of Common Tools
 
 /obj/item/modular_computer/pda/admin/get_messenger_ending()
 	return "Sent from the space between timelines, narratively null."
+
+/obj/item/modular_computer/pda/admin/examine(mob/user)
+	. = ..()
+	. += span_notice("Its messenger reaches any station on any z-level, and it is hidden from everyone else's contact list.")
+	. += span_notice("The pen slot holds the subspace mass projector pen. Hit it with any item to swap whatever is in that slot.")
 
 // Handles item swapping from its internal storage
 /obj/item/modular_computer/pda/admin/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
@@ -1295,6 +1310,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 // The beacon is a debug variant which has access to all lockers in the game, for reasons.
 /obj/item/choice_beacon/job_locker/debug
 	name = "debug job locker beacon"
+	desc = "Calls down any secure locker in the game, fully stocked, as many times as you care to ask. The requisition \
+		paperwork it generates goes somewhere, presumably."
 	company_source = /obj/item/choice_beacon::company_source
 	uses = INFINITY
 	w_class = WEIGHT_CLASS_TINY
@@ -1319,7 +1336,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 // This one takes the full subtype list and picks from it with a tgui list instead.
 /obj/item/summon_beacon/vendors/debug
 	name = "debug vendor beacon"
-	desc = "Delivers a Vendor via orbital drop with patented Donk Co. SafeTec Technology!"
+	desc = "Delivers a Vendor via orbital drop with patented Donk Co. SafeTec Technology! This one is not limited to \
+		the standard catalogue, nor to a standard number of drops."
 	uses = INFINITY
 	w_class = WEIGHT_CLASS_TINY
 	slot_flags = ITEM_SLOT_ADMIN
@@ -1327,6 +1345,10 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/summon_beacon/vendors/debug)
+
+/obj/item/summon_beacon/vendors/debug/examine(mob/user)
+	. = ..()
+	. += span_notice("Use in hand to pick from a list of every vending machine in existence, then click a spot to drop it.")
 
 /obj/item/summon_beacon/vendors/debug/Initialize(mapload)
 	. = ..()
@@ -1385,7 +1407,9 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 // TODO: sprites
 /obj/item/gun/magic/subspace/dagenblicky
 	name = "subspace mass projector pen"
-	desc = "The pen is still mightier than a 20x138mm."
+	desc = "The pen is still mightier than a 20x138mm, largely because it fires one. It writes, it clicks open into an \
+		energy dagger, and it puts anti-materiel rounds through anything unlucky enough to be downrange, on an \
+		unlimited magazine and no firing pin."
 	icon = 'icons/obj/service/bureaucracy.dmi'
 	icon_state = "digging_pen"
 	inhand_icon_state = "pen"
@@ -1721,6 +1745,9 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 // /datum/laser_weapon_mode/admin overrides that proc to do nothing, so the burst_size below is what actually sticks. Don't remove either half.
 /obj/item/gun/energy/modular_laser_rifle/carbine/admin
 	name = "\improper subspace carbine"
+	desc = "A Hoshi carbine that came back from Central Command carrying thirteen firing modes instead of five, and a \
+		cell that does not deplete. It will disturb, disable, dismember, mine, ionise, drop a black hole, or turn into \
+		a sword, depending on what you ask of it."
 	icon = 'modular_nova/modules/modular_weapons/icons/obj/company_and_or_faction_based/saibasan/guns32x.dmi'
 	icon_state = "hoshi_kill"
 	inhand_icon_state = "hoshi_kill"
@@ -2140,10 +2167,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 		ui = new(user, src, "ChemDebugSynthesizer", name) // reuse the existing tgui interface, narsie bless the work of other people
 		ui.open()
 
-/obj/item/handheld_debug_chem_synth/ui_data(mob/user)
-	. = ..()
-	.["purity"] = purity
-	.["temp"] = temperature
+// The fuller ui_data further down this file is the one that counts - it was overriding a shorter copy that used to sit here.
 
 // same logic as chem_synthesizer's handle_ui_act, stolen wholesale to fit our needs here
 /obj/item/handheld_debug_chem_synth/ui_act(action, params, datum/tgui/ui, datum/ui_state/state)
@@ -2283,7 +2307,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	qdel(chambered)
 	chambered = new /obj/item/ammo_casing/chemgun/admin(src)
 
-obj/item/gun/chem/admin/examine(mob/user)
+/obj/item/gun/chem/admin/examine(mob/user)
 	. = ..()
 	. += span_notice("Use in hand to synthesize any reagent. Ctrl-Click to set the volume fired per shot. Currently [reagent_per_shot] units.")
 
@@ -2461,10 +2485,6 @@ obj/item/gun/chem/admin/examine(mob/user)
 	. = ..()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 	buffer_slots = list("Slot 1" = null, "Slot 2" = null, "Slot 3" = null, "Slot 4" = null, "Slot 5" = null, "Slot 6" = null, "Slot 7" = null)// seven fits a radial
-
-/obj/item/multitool/admin/examine(mob/user)
-	. = ..()
-	. += span_notice("Use in hand to select a buffer slot. Currently on [active_slot].")
 
 /obj/item/multitool/admin/Destroy()
 	for(var/slot_name in buffer_slots)
