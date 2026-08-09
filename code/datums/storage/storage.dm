@@ -136,7 +136,9 @@
 	/// Maximum columns for viewers with the widescreen preference on. Left equal to screen_max_columns so ordinary
 	/// storage keeps the layout everyone is used to - raise it per-storage when something is genuinely too wide to fit.
 	var/screen_max_columns_widescreen = 7
+
 	// NOVA EDIT ADDITION END - ADMIN_TECH
+
 /datum/storage/New(
 	atom/parent,
 	max_slots = src.max_slots,
