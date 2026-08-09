@@ -169,7 +169,7 @@ An overclocked shotgun.
 	recoil_adjust = 1
 	spread_adjust = 15
 	projectile_override = /obj/projectile/beam/laser/microfusion/scatter/max
-	power_usage = 20
+	power_usage = STANDARD_CELL_CHARGE * 0.02
 	custom_materials = list(
 		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
 		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
@@ -210,7 +210,7 @@ Makes the gun shoot hellfire lasers.
 	icon_state = "attachment_hellfire"
 	attachment_overlay_icon_state = "attachment_hellfire"
 	heat_addition = 50
-	power_usage = 20
+	power_usage = STANDARD_CELL_CHARGE * 0.02
 	slot = GUN_SLOT_BARREL
 	projectile_override = /obj/projectile/beam/laser/microfusion/hellfire
 	new_fire_sound = 'modular_nova/modules/modular_weapons/sounds/laser_firing/melt.ogg'
@@ -256,10 +256,10 @@ The gun can fire volleys of shots that penetrate armor.
 	desc = "A focused variant of the repeating phase controller. It allows the lasers to penetrate armor however this results in higher power usage."
 	icon_state = "attachment_penetrator"
 	attachment_overlay_icon_state = "attachment_penetrator"
-	power_usage = 20
+	power_usage = STANDARD_CELL_CHARGE * 0.02
 	slot = GUN_SLOT_BARREL
 	projectile_override = /obj/projectile/beam/laser/microfusion/penetrator
-	power_usage = 80 // A price to pay to penetrate through armor
+	power_usage = STANDARD_CELL_CHARGE * 0.08 // A price to pay to penetrate through armor
 	custom_materials = list(
 		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
 		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
@@ -282,7 +282,7 @@ The gun can fire X-RAY shots.
 	slot = GUN_SLOT_BARREL
 	attachment_overlay_icon_state = "attachment_xray"
 	heat_addition = 90
-	power_usage = 50
+	power_usage = STANDARD_CELL_CHARGE * 0.05
 	new_fire_sound = 'modular_nova/modules/modular_weapons/sounds/laser_firing/incinerate.ogg'
 	projectile_override = /obj/projectile/beam/laser/microfusion/xray
 	custom_materials = list(
@@ -362,7 +362,7 @@ The gun fires fast heavy lasers but takes a long time to fire.
 	incompatible_attachments = list(/obj/item/microfusion_gun_attachment/camo, /obj/item/microfusion_gun_attachment/camo/nanotrasen, /obj/item/microfusion_gun_attachment/camo/honk)
 	attachment_overlay_icon_state = "attachment_lance"
 	heat_addition = 150
-	power_usage = 100
+	power_usage = STANDARD_CELL_CHARGE * 0.1
 	delay_to_add = 2.5 SECONDS
 	new_fire_sound = 'sound/items/weapons/lasercannonfire.ogg'
 	projectile_override = /obj/projectile/beam/laser/microfusion/lance
@@ -389,7 +389,7 @@ The gun can fire PULSE shots.
 	icon_state = "attachment_pulse"
 	attachment_overlay_icon_state = "attachment_pulse"
 	heat_addition = 150
-	power_usage = 50
+	power_usage = STANDARD_CELL_CHARGE * 0.05
 	projectile_override = /obj/projectile/beam/pulse
 	burst_to_add = 2
 	delay_to_add = 2

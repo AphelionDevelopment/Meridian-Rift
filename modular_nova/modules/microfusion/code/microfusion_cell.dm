@@ -15,7 +15,7 @@ These are basically advanced cells.
 	charging_icon = "mf_in" //This is stored in cell.dmi in the aesthetics module
 	icon_state = "microfusion"
 	w_class = WEIGHT_CLASS_NORMAL
-	maxcharge = 1200 //12 shots
+	maxcharge = STANDARD_CELL_CHARGE * 1.2 //12 shots
 	chargerate = 0 //Standard microfusion cells can't be recharged, they're single use.
 	microfusion_readout = TRUE
 	ratingdesc = FALSE //MF cells are rated in MF, not kilojoules
@@ -174,7 +174,7 @@ These are basically advanced cells.
 	name = "makeshift microfusion cell"
 	desc = "An... Apparatus, comprised of an everyday aluminum can with several civilian-grade batteries tightly packed together and plugged in. This vaguely resembles a microfusion cell, if you tilt your head to a precise fifty degree angle. While the effects on enemy combatants may be dubious, it will certainly do incredible damage to the gun's warranty. What the hell were you thinking when you came up with this?"
 	icon_state = "microfusion_makeshift"
-	maxcharge = 600
+	maxcharge = STANDARD_CELL_CHARGE * 0.6 //6 shots
 	max_attachments = 0
 	// Matches what the crafting recipe below actually consumes, rather than the printed cell's materials
 	custom_materials = list(
@@ -191,7 +191,7 @@ These are basically advanced cells.
 	name = "enhanced microfusion cell"
 	desc = "A second generation microfusion cell, weighing about the same as the standard-issue cell and having the same space for attachments; however, it has a higher capacity."
 	icon_state = "microfusion_enhanced"
-	maxcharge = 1500
+	maxcharge = STANDARD_CELL_CHARGE * 1.5 //15 shots
 	custom_materials = list(
 		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
 		/datum/material/glass = SMALL_MATERIAL_AMOUNT * 2,
@@ -202,7 +202,7 @@ These are basically advanced cells.
 	name = "advanced microfusion cell"
 	desc = "A third generation microfusion cell, boasting a much higher shot count. Additionally, these come with support for up to two modifications to the cell itself."
 	icon_state = "microfusion_advanced"
-	maxcharge = 1700
+	maxcharge = STANDARD_CELL_CHARGE * 1.7 //17 shots
 	max_attachments = 2
 	custom_materials = list(
 		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
@@ -216,7 +216,7 @@ These are basically advanced cells.
 	name = "bluespace microfusion cell"
 	desc = "A fourth generation microfusion cell, employing bluespace technology to store power in a medium that's bigger on the inside. This has the highest capacity of any man-portable cell, and has flexibility for three different attachments to the cell itself."
 	icon_state = "microfusion_bluespace"
-	maxcharge = 2000
+	maxcharge = STANDARD_CELL_CHARGE * 2 //20 shots
 	max_attachments = 3
 	custom_materials = list(
 		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
@@ -232,6 +232,6 @@ These are basically advanced cells.
 	name = "nanocarbon fusion cell"
 	desc = "This cell combines both top-of-the-line nanotech and advanced microfusion power to brute force the most common issue of Nanotrasen Asset Protection operatives, ammunition, through sheer volume. Intended for use with Nanotrasen-brand capacitor arrays only. Warranty void if dropped in toilet."
 	icon_state = "microfusion_nanocarbon"
-	maxcharge = 30000
+	maxcharge = STANDARD_CELL_CHARGE * 30 //300 shots
 	max_attachments = 420
 
