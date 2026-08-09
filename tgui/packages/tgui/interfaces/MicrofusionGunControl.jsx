@@ -14,27 +14,39 @@ import { toFixed } from 'tgui-core/math';
 import { useBackend } from '../backend';
 import { Window } from '../layouts';
 
-// Schematic palette. The window is dark, so this is a phosphor-on-glass readout.
 const MFD = {
   wire: '#2f8f6e',
-  wireBright: '#4fe3ab',
-  fill: 'rgba(63, 214, 160, 0.08)',
-  empty: '#31514a',
+  glass: 'rgba(0, 22, 16, 0.65)',
   text: '#8ff5cd',
   selected: '#ffd964',
   fault: '#ff5f56',
 };
 
-// Where each bay sits on the schematic below. Keys match the slot ids the gun reports.
-const NODES = [
-  { id: 'unique', label: 'UNIQUE', x: 52, y: 91 },
-  { id: 'camo', label: 'FRAME', x: 110, y: 83 },
-  { id: 'rail', label: 'RAIL', x: 175, y: 48 },
-  { id: 'cell', label: 'CELL', x: 175, y: 132, fixed: true },
-  { id: 'emitter', label: 'EMITTER', x: 240, y: 82, fixed: true },
-  { id: 'underbarrel', label: 'UNDER', x: 278, y: 110 },
-  { id: 'barrel', label: 'BARREL', x: 348, y: 80 },
-];
+// The gun sheet is 40x32, so the schematic works in icon-pixel space.
+const ICON_W = 40;
+const ICON_H = 32;
+
+/**
+ * Where the marker for an empty bay sits, in icon pixels. Filled bays don't use
+ * these -- their own overlay is the hit target -- so these only need to point at
+ * roughly the right part of the frame.
+ */
+const SLOT_ANCHORS = {
+  rail: { x: 19, y: 7, label: 'RAIL' },
+  barrel: { x: 32, y: 15, label: 'BARREL' },
+  underbarrel: { x: 24, y: 24, label: 'UNDER' },
+  unique: { x: 7, y: 13, label: 'UNIQUE' },
+  camo: { x: 13, y: 21, label: 'FRAME' },
+};
+
+/** Rebuilds the src DmIcon would have used, so the sprite can live inside an SVG. */
+const iconUrl = (icon, iconState) => {
+  const ref = globalThis.Byond?.iconRefMap?.[icon];
+  if (!ref || !iconState) {
+    return null;
+  }
+  return `${ref}?state=${iconState}&dir=2&movement=false&frame=1`;
+};
 
 const heatColor = (percent) => {
   if (percent >= 70) {
@@ -46,139 +58,245 @@ const heatColor = (percent) => {
   return 'good';
 };
 
-/** One selectable bay on the schematic. */
-const SchematicNode = (props) => {
-  const { node, state, selected, onSelect } = props;
-  const isFault = state === 'fault';
-  const isFilled = state === 'filled' || isFault;
-  let stroke = MFD.empty;
-  if (isFault) {
-    stroke = MFD.fault;
-  } else if (isFilled) {
-    stroke = MFD.wireBright;
-  }
-
+/** A single big readout tile in the status strip. */
+const Gauge = (props) => {
+  const { label, value, sub, onClick, active, color } = props;
   return (
-    <g onClick={() => onSelect(node.id)} style={{ cursor: 'pointer' }}>
-      {selected && (
-        <circle
-          cx={node.x}
-          cy={node.y}
-          r={13}
-          fill="none"
-          stroke={MFD.selected}
-          strokeWidth={1.5}
-        />
-      )}
-      <circle
-        cx={node.x}
-        cy={node.y}
-        r={8}
-        fill={isFilled ? MFD.fill : 'transparent'}
-        stroke={stroke}
-        strokeWidth={1.5}
-        strokeDasharray={isFilled ? undefined : '3 2'}
-      />
-      {isFilled && <circle cx={node.x} cy={node.y} r={3} fill={stroke} />}
-      <text
-        x={node.x}
-        y={node.y + 24}
-        textAnchor="middle"
-        fontSize={9}
+    <Section
+      fill
+      onClick={onClick}
+      style={onClick ? { cursor: 'pointer' } : undefined}
+    >
+      <Box
         fontFamily="monospace"
-        fill={selected ? MFD.selected : MFD.text}
+        fontSize="0.85rem"
+        color={active ? MFD.selected : 'label'}
       >
-        {node.label}
-      </text>
-    </g>
+        {label}
+      </Box>
+      <Box fontFamily="monospace" fontSize="1.6rem" bold color={color}>
+        {value}
+      </Box>
+      {!!sub && (
+        <Box fontFamily="monospace" fontSize="0.8rem" color="label">
+          {sub}
+        </Box>
+      )}
+    </Section>
   );
 };
 
-/** Wireframe side elevation of the weapon with every bay marked. */
-const Schematic = (props) => {
-  const { stateFor, selected, onSelect } = props;
-  const line = {
-    fill: 'none',
-    stroke: MFD.wire,
-    strokeWidth: 1.5,
-    strokeLinejoin: 'round',
-  };
+/** The always-visible top strip: shots, charge, thermal, integrity. */
+const StatusStrip = (props) => {
+  const { data, selected, onSelect } = props;
+  const {
+    has_cell,
+    cell_data,
+    has_emitter,
+    phase_emitter_data,
+    gun_heat_dissipation,
+  } = data;
+
+  const chargePercent = has_cell
+    ? (cell_data.charge / cell_data.max_charge) * 100
+    : 0;
+  let chargeColor = 'good';
+  if (chargePercent <= 25) {
+    chargeColor = 'bad';
+  } else if (chargePercent <= 50) {
+    chargeColor = 'average';
+  }
+  const heatPercent = has_emitter ? phase_emitter_data.heat_percent : 0;
 
   return (
-    <svg viewBox="0 0 400 175" width="100%" style={{ display: 'block' }}>
-      {/* grid backdrop */}
-      {[...Array(9).keys()].map((i) => (
-        <line
-          key={`h${i}`}
-          x1={0}
-          y1={i * 20}
-          x2={400}
-          y2={i * 20}
-          stroke={MFD.wire}
-          strokeWidth={0.3}
-          opacity={0.25}
+    <Stack>
+      <Stack.Item grow basis={0}>
+        <Gauge
+          label="SHOTS"
+          value={has_cell ? cell_data.shots_left : '--'}
+          sub={has_cell ? `${cell_data.shot_cost} MF each` : 'no cell'}
+          color={has_cell ? chargeColor : 'bad'}
+          active={selected === 'cell'}
+          onClick={() => onSelect('cell')}
         />
-      ))}
-      {[...Array(20).keys()].map((i) => (
-        <line
-          key={`v${i}`}
-          x1={i * 20}
-          y1={0}
-          x2={i * 20}
-          y2={175}
-          stroke={MFD.wire}
-          strokeWidth={0.3}
-          opacity={0.25}
+      </Stack.Item>
+      <Stack.Item grow basis={0}>
+        <Gauge
+          label="CELL"
+          value={`${toFixed(chargePercent, 0)}%`}
+          sub={
+            has_cell
+              ? `${cell_data.charge} / ${cell_data.max_charge} MF`
+              : 'no cell seated'
+          }
+          color={has_cell ? chargeColor : 'bad'}
+          active={selected === 'cell'}
+          onClick={() => onSelect('cell')}
         />
-      ))}
+      </Stack.Item>
+      <Stack.Item grow basis={0}>
+        <Gauge
+          label="THERMAL"
+          value={has_emitter ? `${toFixed(heatPercent, 0)}%` : '--'}
+          sub={
+            has_emitter
+              ? `throttle ${phase_emitter_data.throttle_percentage}% | -${phase_emitter_data.heat_dissipation_per_tick}/t`
+              : 'no emitter'
+          }
+          color={has_emitter ? heatColor(heatPercent) : 'bad'}
+          active={selected === 'emitter'}
+          onClick={() => onSelect('emitter')}
+        />
+      </Stack.Item>
+      <Stack.Item grow basis={0}>
+        <Gauge
+          label="INTEGRITY"
+          value={
+            has_emitter ? `${toFixed(phase_emitter_data.integrity, 0)}%` : '--'
+          }
+          sub={`frame dissipation ${gun_heat_dissipation}`}
+          color={
+            has_emitter && phase_emitter_data.integrity < 50 ? 'bad' : 'good'
+          }
+          active={selected === 'emitter'}
+          onClick={() => onSelect('emitter')}
+        />
+      </Stack.Item>
+    </Stack>
+  );
+};
 
-      {/* stock and receiver */}
-      <path d="M22 78 L86 70 L86 104 L22 100 Z" {...line} />
-      <path d="M86 62 L250 62 L250 104 L86 104 Z" {...line} />
-      {/* top rail */}
-      <path d="M120 54 L232 54 L232 62 L120 62 Z" {...line} />
-      {/* grip */}
-      <path d="M108 104 L136 104 L128 142 L106 142 Z" {...line} />
-      {/* cell well */}
-      <path d="M152 104 L200 104 L196 146 L156 146 Z" {...line} />
-      {/* emitter housing and barrel */}
-      <path d="M250 70 L286 70 L286 94 L250 94 Z" {...line} />
-      <path d="M286 74 L372 74 L372 88 L286 88 Z" {...line} />
-      <path d="M372 70 L384 70 L384 92 L372 92 Z" {...line} />
-      {/* underbarrel rail */}
-      <path d="M256 94 L304 94 L304 100 L256 100 Z" {...line} />
-      {/* bore centreline */}
-      <line
-        x1={90}
-        y1={81}
-        x2={384}
-        y2={81}
-        stroke={MFD.wire}
-        strokeWidth={0.6}
-        strokeDasharray="6 4"
-        opacity={0.7}
+/**
+ * The weapon as it actually looks: base sprite, the frame's own overlays, then
+ * one layer per attachment. Attachment layers hit-test on their painted pixels,
+ * so clicking the scope picks the scope. Empty bays get a ring instead.
+ */
+const Schematic = (props) => {
+  const { gunIcon, gunIconState, frameOverlays, attachments, emptySlots } =
+    props;
+  const { selected, hovered, onSelect, onHover } = props;
+
+  const base = iconUrl(gunIcon, gunIconState);
+  if (!base) {
+    return <NoticeBox>SPRITE FEED UNAVAILABLE</NoticeBox>;
+  }
+
+  return (
+    <svg
+      viewBox={`0 0 ${ICON_W} ${ICON_H}`}
+      width="100%"
+      style={{ imageRendering: 'pixelated', display: 'block' }}
+    >
+      <defs>
+        <filter
+          id="mfd-outline"
+          x="-25%"
+          y="-25%"
+          width="150%"
+          height="150%"
+          colorInterpolationFilters="sRGB"
+        >
+          <feMorphology
+            in="SourceAlpha"
+            operator="dilate"
+            radius="1"
+            result="fat"
+          />
+          <feFlood floodColor={MFD.selected} result="tint" />
+          <feComposite in="tint" in2="fat" operator="in" result="ring" />
+          <feMerge>
+            <feMergeNode in="ring" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      <image
+        href={base}
+        x={0}
+        y={0}
+        width={ICON_W}
+        height={ICON_H}
+        style={{ pointerEvents: 'none' }}
       />
+      {frameOverlays.map((state) => {
+        const url = iconUrl(gunIcon, state);
+        return (
+          url && (
+            <image
+              key={state}
+              href={url}
+              x={0}
+              y={0}
+              width={ICON_W}
+              height={ICON_H}
+              style={{ pointerEvents: 'none' }}
+            />
+          )
+        );
+      })}
 
-      {NODES.map((node) => (
-        <SchematicNode
-          key={node.id}
-          node={node}
-          state={stateFor(node)}
-          selected={selected === node.id}
-          onSelect={onSelect}
-        />
-      ))}
+      {attachments.map((attachment) => {
+        const url = iconUrl(gunIcon, attachment.overlay_state);
+        if (!url) {
+          return null;
+        }
+        const lit =
+          selected === attachment.slot_id || hovered === attachment.slot_id;
+        return (
+          <image
+            key={attachment.ref}
+            href={url}
+            x={0}
+            y={0}
+            width={ICON_W}
+            height={ICON_H}
+            pointerEvents="visiblePainted"
+            filter={lit ? 'url(#mfd-outline)' : undefined}
+            style={{ cursor: 'pointer' }}
+            onClick={() => onSelect(attachment.slot_id)}
+            onMouseEnter={() => onHover(attachment.slot_id)}
+            onMouseLeave={() => onHover(null)}
+          />
+        );
+      })}
+
+      {emptySlots.map((slot) => {
+        const anchor = SLOT_ANCHORS[slot];
+        if (!anchor) {
+          return null;
+        }
+        const lit = selected === slot || hovered === slot;
+        return (
+          <g
+            key={slot}
+            style={{ cursor: 'pointer' }}
+            onClick={() => onSelect(slot)}
+            onMouseEnter={() => onHover(slot)}
+            onMouseLeave={() => onHover(null)}
+          >
+            <circle
+              cx={anchor.x}
+              cy={anchor.y}
+              r={3.2}
+              fill="transparent"
+              stroke={lit ? MFD.selected : MFD.wire}
+              strokeWidth={0.6}
+              strokeDasharray="1.4 1"
+            />
+            <circle cx={anchor.x} cy={anchor.y} r={0.7} fill={MFD.wire} />
+          </g>
+        );
+      })}
     </svg>
   );
 };
 
-/** Readout for the phase emitter bay. */
 const EmitterPanel = (props) => {
   const { act, emitter, present } = props;
   if (!present) {
     return <NoticeBox danger>NO PHASE EMITTER SEATED</NoticeBox>;
   }
-  const percent = emitter.heat_percent;
   return (
     <>
       {!!emitter.damaged && <NoticeBox danger>EMITTER DAMAGED</NoticeBox>}
@@ -199,16 +317,10 @@ const EmitterPanel = (props) => {
             value={emitter.current_heat}
             minValue={0}
             maxValue={emitter.max_heat}
-            color={heatColor(percent)}
+            color={heatColor(emitter.heat_percent)}
           >
-            {emitter.current_heat} / {emitter.max_heat} ({toFixed(percent, 1)}%)
+            {emitter.current_heat} / {emitter.max_heat}
           </ProgressBar>
-        </LabeledList.Item>
-        <LabeledList.Item label="Throttle at">
-          {emitter.throttle_percentage}%
-        </LabeledList.Item>
-        <LabeledList.Item label="Dissipation">
-          {emitter.heat_dissipation_per_tick} / tick
         </LabeledList.Item>
         <LabeledList.Item label="Cycle time">
           {emitter.process_time}
@@ -243,18 +355,10 @@ const EmitterPanel = (props) => {
   );
 };
 
-/** Readout for the cell bay. */
 const CellPanel = (props) => {
   const { act, cell, present } = props;
   if (!present) {
     return <NoticeBox danger>NO CELL SEATED</NoticeBox>;
-  }
-  const percent = (cell.charge / cell.max_charge) * 100;
-  let color = 'good';
-  if (percent <= 25) {
-    color = 'bad';
-  } else if (percent <= 50) {
-    color = 'average';
   }
   return (
     <>
@@ -262,14 +366,10 @@ const CellPanel = (props) => {
       <LabeledList>
         <LabeledList.Item label="Unit">{cell.type}</LabeledList.Item>
         <LabeledList.Item label="Charge">
-          <ProgressBar
-            value={cell.charge}
-            minValue={0}
-            maxValue={cell.max_charge}
-            color={color}
-          >
-            {cell.charge} / {cell.max_charge} MF
-          </ProgressBar>
+          {cell.charge} / {cell.max_charge} MF
+        </LabeledList.Item>
+        <LabeledList.Item label="Remaining">
+          {cell.shots_left} shots at {cell.shot_cost} MF
         </LabeledList.Item>
         <LabeledList.Item label="Modules">
           {cell.attachments.length
@@ -286,7 +386,6 @@ const CellPanel = (props) => {
   );
 };
 
-/** Readout for one attachment bay. */
 const AttachmentPanel = (props) => {
   const { act, attachment, label } = props;
   if (!attachment) {
@@ -341,7 +440,9 @@ export const MicrofusionGunControl = (props) => {
   const {
     gun_name,
     gun_desc,
-    gun_heat_dissipation,
+    gun_icon,
+    gun_icon_state,
+    frame_overlays = [],
     has_cell,
     cell_data,
     has_emitter,
@@ -350,99 +451,88 @@ export const MicrofusionGunControl = (props) => {
     slots = [],
   } = data;
 
-  const [selected, setSelected] = useState('emitter');
+  const [selected, setSelected] = useState('cell');
+  const [hovered, setHovered] = useState(null);
 
-  // Bays this frame actually has, plus the two fixed modules.
   const bySlot = {};
   for (const attachment of attachments) {
     bySlot[attachment.slot_id] = attachment;
   }
-  const nodes = NODES.filter(
-    (node) => node.fixed || slots.indexOf(node.id) !== -1,
-  );
+  const emptySlots = slots.filter((slot) => !bySlot[slot]);
 
-  const stateFor = (node) => {
-    if (node.id === 'cell') {
-      if (!has_cell) {
-        return 'empty';
-      }
-      return cell_data.status ? 'fault' : 'filled';
-    }
-    if (node.id === 'emitter') {
-      if (!has_emitter) {
-        return 'empty';
-      }
-      return phase_emitter_data.damaged ? 'fault' : 'filled';
-    }
-    return bySlot[node.id] ? 'filled' : 'empty';
-  };
-
-  const activeNode = nodes.find((node) => node.id === selected) || nodes[0];
-  const activeId = activeNode?.id;
-
-  let panelTitle = activeNode?.label;
-  if (activeId !== 'cell' && activeId !== 'emitter' && bySlot[activeId]) {
-    panelTitle = bySlot[activeId].name;
+  let panelTitle = 'Readout';
+  if (selected === 'cell') {
+    panelTitle = 'Power Cell';
+  } else if (selected === 'emitter') {
+    panelTitle = 'Phase Emitter';
+  } else if (bySlot[selected]) {
+    panelTitle = bySlot[selected].name;
+  } else if (SLOT_ANCHORS[selected]) {
+    panelTitle = SLOT_ANCHORS[selected].label;
   }
 
   return (
     <Window
-      title={'Micron Control Systems Incorporated: ' + gun_name}
-      width={760}
-      height={560}
+      title={`Micron Control Systems Incorporated: ${gun_name}`}
+      width={820}
+      height={620}
     >
       <Window.Content scrollable>
         <Stack fill vertical>
           <Stack.Item>
-            <Section title={gun_name}>
-              <Box color="label">{gun_desc}</Box>
-            </Section>
+            <StatusStrip
+              data={data}
+              selected={selected}
+              onSelect={setSelected}
+            />
           </Stack.Item>
           <Stack.Item grow>
             <Stack fill>
               <Stack.Item grow={3}>
-                <Section
-                  fill
-                  title="Frame Schematic"
-                  buttons={
-                    <Box color="label" fontFamily="monospace">
-                      FRAME DISSIPATION {gun_heat_dissipation}
-                    </Box>
-                  }
-                >
+                <Section fill title={gun_name}>
                   <Box
-                    backgroundColor="rgba(0, 20, 14, 0.6)"
+                    backgroundColor={MFD.glass}
                     style={{ border: `1px solid ${MFD.wire}` }}
-                    p={1}
+                    p={2}
                   >
                     <Schematic
-                      stateFor={stateFor}
-                      selected={activeId}
+                      gunIcon={gun_icon}
+                      gunIconState={gun_icon_state}
+                      frameOverlays={frame_overlays}
+                      attachments={attachments}
+                      emptySlots={emptySlots}
+                      selected={selected}
+                      hovered={hovered}
                       onSelect={setSelected}
+                      onHover={setHovered}
                     />
                   </Box>
                   <Box mt={1} color="label" fontSize="0.9rem">
-                    Select a bay on the schematic to inspect it.
+                    {gun_desc}
+                  </Box>
+                  <Box mt={1} color="label" fontSize="0.85rem">
+                    Click a fitted part to inspect it, or a dashed ring for an
+                    empty bay.
                   </Box>
                 </Section>
               </Stack.Item>
               <Stack.Item grow={2}>
                 <Section fill scrollable title={panelTitle}>
-                  {activeId === 'emitter' && (
+                  {selected === 'emitter' && (
                     <EmitterPanel
                       act={act}
                       emitter={phase_emitter_data}
                       present={has_emitter}
                     />
                   )}
-                  {activeId === 'cell' && (
+                  {selected === 'cell' && (
                     <CellPanel act={act} cell={cell_data} present={has_cell} />
                   )}
-                  {activeId !== 'emitter' && activeId !== 'cell' && (
+                  {selected !== 'emitter' && selected !== 'cell' && (
                     <AttachmentPanel
                       act={act}
-                      attachment={bySlot[activeId]}
-                      label={activeNode?.label}
+                      attachment={bySlot[selected]}
+                      label={SLOT_ANCHORS[selected]?.label || 'THIS'}
                     />
                   )}
                 </Section>

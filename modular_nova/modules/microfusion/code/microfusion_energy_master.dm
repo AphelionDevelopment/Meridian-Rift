@@ -718,6 +718,22 @@
 	data["gun_desc"] = desc
 	data["gun_heat_dissipation"] = heat_dissipation_bonus
 	data["slots"] = attachment_slots //So the UI can draw the bays this frame has, empty ones included
+	data["gun_icon"] = icon
+	data["gun_icon_state"] = icon_state
+
+	// The non-attachment overlays the gun is currently wearing, so the UI can compose the same sprite we do.
+	var/list/frame_overlays = list()
+	if(!phase_emitter || phase_emitter.damaged)
+		frame_overlays += "[icon_state]_phase_emitter_[phase_emitter ? "damaged" : "missing"]"
+	else if(cell)
+		var/ratio = get_charge_ratio()
+		if(ratio == 0 && display_empty)
+			frame_overlays += "[icon_state]_empty"
+		else if(shaded_charge)
+			frame_overlays += "[icon_state]_charge[ratio]_[phase_emitter.icon_state]"
+	else
+		frame_overlays += "[icon_state]_phase_emitter_missing"
+	data["frame_overlays"] = frame_overlays
 
 	if(phase_emitter)
 		data["has_emitter"] = TRUE
@@ -749,6 +765,8 @@
 			"max_charge" = cell.maxcharge,
 			"status" = cell.meltdown,
 			"attachments" = attachments,
+			"shots_left" = microfusion_lens ? round(cell.charge / (microfusion_lens.e_cost + extra_power_usage)) : 0,
+			"shot_cost" = microfusion_lens ? (microfusion_lens.e_cost + extra_power_usage) : 0,
 		)
 	else
 		data["has_cell"] = FALSE
@@ -768,6 +786,7 @@
 				"desc" = attachment.desc,
 				"slot" = capitalize(attachment.slot),
 				"slot_id" = attachment.slot,
+				"overlay_state" = "[icon_state]_[attachment.attachment_overlay_icon_state]",
 				"information" = attachment.get_information_data(),
 				"has_modifications" = has_modifications,
 				"modify" = attachment_functions,
