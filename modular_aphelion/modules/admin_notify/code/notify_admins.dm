@@ -28,7 +28,7 @@ GAME_VERB_DESC(/client, notify_admins, "Notify Admins", "Ask staff to come and o
 	for(var/client/admin_client as anything in GLOB.admins)
 		if(!admin_client.prefs?.read_preference(/datum/preference/toggle/admin_notify_alert))
 			continue
-		SEND_SOUND(admin_client, sound('modular_nova/modules/verbs/sound/admin_notify.ogg', volume = 50))
+		SEND_SOUND(admin_client, sound('modular_aphelion/modules/admin_notify/sound/admin_notify.ogg', volume = 50))
 		window_flash(admin_client)
 
 	if(!length(GLOB.admins))

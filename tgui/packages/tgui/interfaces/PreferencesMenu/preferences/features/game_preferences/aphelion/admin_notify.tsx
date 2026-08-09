@@ -1,4 +1,4 @@
-// THIS IS A NOVA SECTOR UI FILE
+// THIS IS AN APHELION UI FILE
 // For use with the Admin Notify Verb, if admins dont want to hear a ping for it
 import { CheckboxInput, type FeatureToggle } from '../../base';
 
