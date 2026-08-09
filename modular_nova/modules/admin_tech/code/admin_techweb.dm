@@ -433,3 +433,284 @@
 	id = "admin_borg_engineer"
 	build_path = /obj/item/borg/upgrade/transform/admin/engineer
 	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MECHFAB_CYBORG_MODULES)
+
+//
+// Medical - surgical and reagent gear
+//
+/datum/design/admin/scalpel
+	name = "Subspace Laser Scalpel"
+	id = "admin_scalpel"
+	build_path = /obj/item/scalpel/advanced/alien/admin
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_TOOLS)
+
+/datum/design/admin/retractor
+	name = "Subspace Mechanical Pinches"
+	id = "admin_retractor"
+	build_path = /obj/item/retractor/advanced/alien/admin
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_TOOLS)
+
+/datum/design/admin/cautery
+	name = "Subspace Searing Tool"
+	id = "admin_cautery"
+	build_path = /obj/item/cautery/advanced/alien/admin
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_TOOLS)
+
+/datum/design/admin/blood_filter
+	name = "Subspace Medical Combitool"
+	id = "admin_blood_filter"
+	build_path = /obj/item/blood_filter/advanced/alien/admin
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_TOOLS)
+
+/datum/design/admin/ph_meter
+	name = "Subspace pH Meter"
+	id = "admin_ph_meter"
+	build_path = /obj/item/ph_meter/admin
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_TOOLS)
+
+/datum/design/admin/patch_applicator
+	name = "Subspace Patch Applicator"
+	id = "admin_patch_applicator"
+	build_path = /obj/item/reagent_containers/applicator/patch/admin
+
+/datum/design/admin/pill_applicator
+	name = "Subspace Pill Applicator"
+	id = "admin_pill_applicator"
+	build_path = /obj/item/reagent_containers/applicator/pill/admin
+
+/datum/design/admin/beaker_noreact
+	name = "Subspace Cryostasis Beaker"
+	id = "admin_beaker_noreact"
+	build_path = /obj/item/reagent_containers/cup/beaker/admin/noreact
+
+/datum/design/admin/beaker_small
+	name = "Small Subspace Beaker"
+	id = "admin_beaker_small"
+	build_path = /obj/item/reagent_containers/cup/beaker/admin/small
+
+//
+// Internals - the rest of the tanks
+//
+/datum/design/admin/tank_empty
+	name = "Empty Subspace Tank"
+	id = "admin_tank_empty"
+	build_path = /obj/item/tank/internals/admin
+
+/datum/design/admin/tank_tritium
+	name = "Tritium Subspace Tank"
+	id = "admin_tank_tritium"
+	build_path = /obj/item/tank/internals/admin/tritium
+
+/datum/design/admin/tank_freon
+	name = "Freon Subspace Tank"
+	id = "admin_tank_freon"
+	build_path = /obj/item/tank/internals/admin/freon
+
+/datum/design/admin/tank_juggermol
+	name = "'JUGGERMOL' Subspace Tank"
+	id = "admin_tank_juggermol"
+	build_path = /obj/item/tank/internals/admin/mix/juggermol
+
+/datum/design/admin/tank_fusionfur
+	name = "'Fusion-Fur' Subspace Tank"
+	id = "admin_tank_fusionfur"
+	build_path = /obj/item/tank/internals/admin/mix/fusionfur
+
+/datum/design/admin/tank_beeshead
+	name = "'Bee's Head' Subspace Tank"
+	id = "admin_tank_beeshead"
+	build_path = /obj/item/tank/internals/admin/mix/beeshead
+
+//
+// Worn kit - the bluespace technician loadout
+//
+/datum/design/admin/techsuit
+	name = "Bluespace Techsuit"
+	id = "admin_techsuit"
+	build_path = /obj/item/clothing/under/admin
+
+/datum/design/admin/letterman
+	name = "Bluespace Letterman"
+	id = "admin_letterman"
+	build_path = /obj/item/clothing/suit/admin
+
+/datum/design/admin/gauntlets
+	name = "Bluespace Gauntlets"
+	id = "admin_gauntlets"
+	build_path = /obj/item/clothing/gloves/tackler/admin
+
+/datum/design/admin/magboots
+	name = "Bluespace Magboots"
+	id = "admin_magboots"
+	build_path = /obj/item/clothing/shoes/magboots/advance/admin
+
+/datum/design/admin/visor
+	name = "Bluespace Visor"
+	id = "admin_visor"
+	build_path = /obj/item/clothing/head/helmet/perceptomatrix/admin
+
+/datum/design/admin/gas_mask
+	name = "Bluespace Mask"
+	id = "admin_gas_mask"
+	build_path = /obj/item/clothing/mask/gas/atmos/admin
+
+/datum/design/admin/energy_shield
+	name = "CentCom Tactical Shield Projector"
+	id = "admin_energy_shield"
+	build_path = /obj/item/clothing/accessory/energy_shield/admin
+
+/datum/design/admin/cytotheca
+	name = "Bluespace Cytotheca"
+	id = "admin_cytotheca"
+	build_path = /obj/item/storage/neck/admin/cytotheca
+
+/datum/design/admin/armor_vest
+	name = "Technician's Vest"
+	id = "admin_armor_vest"
+	build_path = /obj/item/clothing/suit/armor/vest/debug
+
+//
+// Identification
+//
+/datum/design/admin/id_admin
+	name = "Admin ID"
+	id = "admin_id_admin"
+	build_path = /obj/item/card/id/advanced/debug/admin
+
+/datum/design/admin/id_bluespace
+	name = "Bluespace ID"
+	id = "admin_id_bluespace"
+	build_path = /obj/item/card/id/advanced/debug/admin/bluespace
+
+/datum/design/admin/id_subspace
+	name = "Subspace ID"
+	id = "admin_id_subspace"
+	build_path = /obj/item/card/id/advanced/debug/admin/subspace
+
+/datum/design/admin/id_centcomm
+	name = "CentComm Master ID"
+	id = "admin_id_centcomm"
+	build_path = /obj/item/card/id/advanced/debug/admin/centcomm
+
+//
+// Kits - prepacked boxes, for when you would rather not print things one at a time
+//
+/datum/design/admin/debug_box
+	name = "Subspace Box"
+	id = "admin_debug_box"
+	build_path = /obj/item/storage/box/debug
+
+/datum/design/admin/taser
+	name = "Debug Taser"
+	id = "admin_taser"
+	build_path = /obj/item/gun/energy/taser/debug
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_WEAPONS)
+
+//
+// Subspace tier - the badmin variants of the above. Same slots, fewer manners.
+//
+/datum/design/admin/headset_subspace
+	name = "Subspace Headset"
+	id = "admin_headset_subspace"
+	build_path = /obj/item/radio/headset/admin/subspace
+
+/datum/design/admin/techsuit_subspace
+	name = "Subspace Techsuit"
+	id = "admin_techsuit_subspace"
+	build_path = /obj/item/clothing/under/admin/subspace
+
+/datum/design/admin/letterman_subspace
+	name = "Subspace Letterman"
+	id = "admin_letterman_subspace"
+	build_path = /obj/item/clothing/suit/admin/subspace
+
+/datum/design/admin/gauntlets_subspace
+	name = "Subspace Gauntlets"
+	id = "admin_gauntlets_subspace"
+	build_path = /obj/item/clothing/gloves/tackler/admin/subspace
+
+/datum/design/admin/magboots_subspace
+	name = "Subspace Magboots"
+	id = "admin_magboots_subspace"
+	build_path = /obj/item/clothing/shoes/magboots/advance/admin/subspace
+
+/datum/design/admin/visor_subspace
+	name = "Subspace Visor"
+	id = "admin_visor_subspace"
+	build_path = /obj/item/clothing/head/helmet/perceptomatrix/admin/subspace
+
+/datum/design/admin/gas_mask_subspace
+	name = "Subspace Mask"
+	id = "admin_gas_mask_subspace"
+	build_path = /obj/item/clothing/mask/gas/atmos/admin/subspace
+
+/datum/design/admin/energy_shield_bluespace
+	name = "Bluespace Shield Projector"
+	id = "admin_energy_shield_bluespace"
+	build_path = /obj/item/clothing/accessory/energy_shield/admin/bluespace
+
+/datum/design/admin/energy_shield_subspace
+	name = "Subspace Shield Projector"
+	id = "admin_energy_shield_subspace"
+	build_path = /obj/item/clothing/accessory/energy_shield/admin/subspace
+
+/datum/design/admin/cytotheca_subspace
+	name = "Subspace Cytotheca"
+	id = "admin_cytotheca_subspace"
+	build_path = /obj/item/storage/neck/admin/cytotheca/subspace
+
+/datum/design/admin/pocket_subspace
+	name = "Subspace Pocket"
+	id = "admin_pocket_subspace"
+	build_path = /obj/item/storage/bag/admin/subspace
+
+/datum/design/admin/construction_bag_subspace
+	name = "Subspace Construction Bag"
+	id = "admin_construction_bag_subspace"
+	build_path = /obj/item/storage/bag/construction/admin/subspace
+
+/datum/design/admin/utility_belt_empty
+	name = "Technician's Satchel"
+	id = "admin_utility_belt_empty"
+	build_path = /obj/item/storage/belt/utility/admin
+
+/datum/design/admin/utility_belt_bluespace
+	name = "Bluespace Technician's Satchel"
+	id = "admin_utility_belt_bluespace"
+	build_path = /obj/item/storage/belt/utility/admin/full/bluespace
+
+/datum/design/admin/utility_belt_subspace
+	name = "Subspace Technician's Satchel"
+	id = "admin_utility_belt_subspace"
+	build_path = /obj/item/storage/belt/utility/admin/full/subspace
+
+/datum/design/admin/pouch_cytotheca
+	name = "Slimy Subspace Pouch"
+	id = "admin_pouch_cytotheca"
+	build_path = /obj/item/storage/subspace_pouch/cytotheca
+
+/datum/design/admin/debug_box_schrodinger
+	name = "Schrodinger's Subspace Box"
+	id = "admin_debug_box_schrodinger"
+	build_path = /obj/item/storage/box/debug/schrodinger
+
+/datum/design/admin/patch_applicator_instant
+	name = "Instant Subspace Patch Applicator"
+	id = "admin_patch_applicator_instant"
+	build_path = /obj/item/reagent_containers/applicator/patch/admin/instant
+
+/datum/design/admin/pill_applicator_xr
+	name = "Extended Release Subspace Pill Applicator"
+	id = "admin_pill_applicator_xr"
+	build_path = /obj/item/reagent_containers/applicator/pill/admin/xr
+
+/datum/design/admin/annihilator
+	name = "Annihilator"
+	id = "admin_annihilator"
+	build_path = /obj/item/gun/energy/pulse/destroyer/annihilator
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_WEAPONS)
+
+/datum/design/admin/modsuit_danger
+	name = "Bluespace MODsuit (Danger Modules)"
+	id = "admin_modsuit_danger"
+	build_path = /obj/item/mod/control/pre_equipped/bluespace/danger_module_debug
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUITS)

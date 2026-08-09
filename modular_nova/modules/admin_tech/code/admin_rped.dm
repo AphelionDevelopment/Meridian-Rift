@@ -1,7 +1,8 @@
 // Originally from: NOVA MODULE ICSPAWNING https://github.com/Skyrat-SS13/Skyrat-tg/pull/104
 /obj/item/storage/part_replacer/bluespace/admin
 	name = "subspace rped"
-	desc = "A specialized bluespace RPED for technicians that can manufacture stock parts on the fly. Alt-Right-Click to manufacture parts, change settings, or clear its internal storage."
+	desc = "A specialized bluespace RPED for technicians that can manufacture stock parts on the fly. It fills in \
+		whatever a machine or an unbuilt frame is missing before it works, so nothing is ever short a part."
 	storage_type = /datum/storage/rped/bluespace/admin
 	w_class = WEIGHT_CLASS_TINY
 	slot_flags = ITEM_SLOT_ADMIN
@@ -10,17 +11,68 @@
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
 	/// Whether or not auto-clear is enabled
 	var/auto_clear = TRUE
+	/// How many of a given type the manufacture menu produces per selection.
+	var/batch_size = 30
 	/// List of valid types for pick_stock_part().
 	var/static/list/valid_stock_part_types = list(
 		/obj/item/circuitboard/machine,
 		/obj/item/circuitboard/computer,
 		/obj/item/stock_parts,
+		/obj/item/stack/sheet,
 		/obj/item/reagent_containers/cup/beaker,
+	)
+	/// Manufacture menu entries that batch out a fixed set of types. Add an entry here rather than another else-if.
+	var/static/list/bulk_manufacture_options = list(
+		"Tier 4 Parts" = list(
+			/obj/item/stock_parts/capacitor/quadratic,
+			/obj/item/stock_parts/scanning_module/triphasic,
+			/obj/item/stock_parts/servo/femto,
+			/obj/item/stock_parts/micro_laser/quadultra,
+			/obj/item/stock_parts/matter_bin/bluespace,
+			/obj/item/stock_parts/power_store/cell/bluespace,
+			/obj/item/stock_parts/power_store/battery/bluespace,
+		),
+		"Cable Coils" = list(/obj/item/stack/cable_coil),
+		"Glass Sheets" = list(/obj/item/stack/sheet/glass),
+		"Plasteel Sheets" = list(/obj/item/stack/sheet/plasteel),
+		"Bluespace Crystals" = list(/obj/item/stack/sheet/bluespace_crystal),
+		"Infinite Megacell" = list(/obj/item/stock_parts/power_store/battery/infinite),
+		"Infinite Power Cell" = list(/obj/item/stock_parts/power_store/cell/infinite),
+	)
+	/// Manufacture menu entries that open the subtype browser at the given root. Roots must pass valid_stock_part_types.
+	var/static/list/browse_manufacture_options = list(
+		"Machine Boards" = /obj/item/circuitboard/machine,
+		"Computer Boards" = /obj/item/circuitboard/computer,
+		"Stock Parts" = /obj/item/stock_parts,
+		"Material Sheets" = /obj/item/stack/sheet,
+		"Beakers" = /obj/item/reagent_containers/cup/beaker,
 	)
 
 /obj/item/storage/part_replacer/bluespace/admin/Initialize(mapload)
 	. = ..()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
+	// A machine frame is a structure rather than machinery, and a frame's own item_interaction runs before any
+	// interact_with_atom on the thing held - so the frame handling that used to sit in interact_with_atom below could
+	// never fire. This signal goes out ahead of both, which lets us stock up and then let the frame install as normal.
+	RegisterSignal(src, COMSIG_ITEM_INTERACTING_WITH_ATOM, PROC_REF(on_interacting_with_atom))
+
+/obj/item/storage/part_replacer/bluespace/admin/examine(mob/user)
+	. = ..()
+	. += span_notice("Alt-Right-Click to manufacture parts, set the batch size, or clear its internal storage.")
+	. += span_notice("Leftovers pulled out of an upgraded machine are [auto_clear ? "destroyed" : "kept"].")
+
+/// Tops the RPED up with whatever an unbuilt machine frame is still asking for, then stands aside so the frame installs them.
+/obj/item/storage/part_replacer/bluespace/admin/proc/on_interacting_with_atom(datum/source, mob/living/user, atom/target, list/modifiers)
+	SIGNAL_HANDLER
+	if(!istype(target, /obj/structure/frame/machine))
+		return NONE
+	var/obj/structure/frame/machine/machine_frame = target
+	// Prioritize using the circuit's components list first, if present, to maintain consistency.
+	var/obj/item/circuitboard/machine/circuit = machine_frame.circuit
+	var/list/required = istype(circuit) ? circuit.req_components : machine_frame.req_components
+	if(length(required))
+		spawn_parts_for_components(user, required)
+	return NONE
 
 /datum/storage/rped/bluespace/admin
 	max_slots = 1000
@@ -43,7 +95,7 @@
 
 /// An extension to the default RPED part replacement action - if you don't have the requisite parts in the RPED already, it will spawn T4 versions to use.
 /obj/item/storage/part_replacer/bluespace/admin/interact_with_atom(obj/attacked_object, mob/living/user, list/modifiers)
-	//duplicate checks from parent since
+	//duplicate checks from parent since we need to stock up before the parent actually swaps anything
 	if(user.combat_mode)
 		return ITEM_INTERACT_SKIP_TO_ATTACK
 	if(!ismachinery(attacked_object) || istype(attacked_object, /obj/machinery/computer))
@@ -52,46 +104,30 @@
 	if(!LAZYLEN(attacked_machinery.component_parts))
 		return ITEM_INTERACT_FAILURE
 
-	// We start with setting up a list of the current contents of the RPED when using auto-clear.  This is used to detect new items after upgrades are applied & remove them.
-	var/list/old_contents = list()
-	var/list/inv_grab = atom_storage.return_inv(FALSE)
-	if(auto_clear)
-		old_contents = atom_storage.return_inv(FALSE)
-	// Once old_contents has been initialized, if needed, we check if the target object is a machine frame.
-	var/obj/structure/frame/attacked_frame = attacked_object
-	if(istype(attacked_frame, /obj/structure/frame/machine))
-		var/obj/structure/frame/machine/machine_frame = attacked_frame
-		var/obj/item/circuitboard/machine/circuit = machine_frame.circuit
-		// Prioritize using the circuit's components list first, if present, to maintain consistency.
-		if(istype(circuit))
-			spawn_parts_for_components(user, circuit.req_components)
-		else if(machine_frame.req_components)
-			spawn_parts_for_components(user, machine_frame.req_components)
-	else
-		// It's not a machine frame, so let's check if it's a regular machine.
-		if(ismachinery(attacked_object) && !istype(attacked_object, /obj/machinery/computer))
-			var/obj/item/circuitboard/machine/circuit = attacked_machinery.circuit
-			// If it is, we need to use the circuit's components; there's no good way to get required components off of an already-built machine.
-			if(istype(circuit))
-				spawn_parts_for_components(user, circuit.req_components)
+	// Snapshot taken before the swap so auto-clear can tell what came out of the machine from what we walked in with.
+	var/list/old_contents = auto_clear ? atom_storage.return_inv(FALSE) : null
+
+	// There's no good way to get required components off of an already-built machine, so we go through its circuit.
+	var/obj/item/circuitboard/machine/circuit = attacked_machinery.circuit
+	if(istype(circuit))
+		spawn_parts_for_components(user, circuit.req_components)
+
 	. = ..()
-	// If auto-clear is in use,
-	if(auto_clear)
-		inv_grab.Cut()
-		inv_grab = atom_storage.return_inv(FALSE)
-		for(var/obj/item/stored_item in inv_grab)
-			if(!(stored_item in old_contents))
-				qdel(stored_item)
+
+	if(!auto_clear)
+		return
+	for(var/obj/item/stored_item in atom_storage.return_inv(FALSE))
+		if(!(stored_item in old_contents))
+			qdel(stored_item)
 
 /// A bespoke proc for spawning in parts
 /obj/item/storage/part_replacer/bluespace/admin/proc/spawn_parts_for_components(mob/living/user, list/required_components)
 	// Since req_components in machineboards can list item types *OR* /datum/stock_part subtypes this gets a little complicated.
-	var/list/subtypes = list()
 	for(var/req_component in required_components)
 		// Start off noting how many the recipe calls for, a counter for how many matching parts have been found, and generating a list of subtypes for use in later checks.
 		var/parts_amount_required = required_components[req_component]
 		var/found_matching = 0
-		subtypes = typesof(req_component)
+		var/list/subtypes = typesof(req_component)
 
 		if(!parts_amount_required)
 			continue
@@ -102,40 +138,39 @@
 			if(ispath(req_component, /obj/item/stack))
 				// Stacks generate the matching count based on how many matching stacks are in the RPED's inventory with sufficient count.
 				// To find stacks inside the RPED, we search its contents for anything that's a subtype of /obj/item/stack.
-				for(var/obj/stored_item in contents)
-					var/obj/item/stack/stored_item_as_stack = stored_item
-					if(istype(stored_item_as_stack))
-						// If a stack item is found, we check if it's in the typesof list for the current requested component, and if so, mark its count.
-						if(stored_item_as_stack.type in subtypes)
-							found_matching += stored_item_as_stack.amount
-							// If there's enough, we can return early.
-							if(found_matching >= parts_amount_required)
-								break
+				for(var/obj/item/stack/stored_stack in contents)
+					// If a stack item is found, we check if it's in the typesof list for the current requested component, and if so, mark its count.
+					if(stored_stack.type in subtypes)
+						found_matching += stored_stack.amount
+						// If there's enough, we can return early.
+						if(found_matching >= parts_amount_required)
+							break
 				// If there's not enough left, spawn enough of the appropriate type that there will be.  Stacks' Initialialize accepts an amount for the newly-spawned stack to have, and will auto-split as needed.
 				if(found_matching < parts_amount_required)
 					atom_storage.attempt_insert(new req_component(src, parts_amount_required - found_matching), user, TRUE)
-					continue
-			else
-				// It's not a stack, which means now we have to count how many matching items are present.
-				for(var/obj/stored_item in contents)
-					if(stored_item.type in subtypes)
-						found_matching += 1
-						// If there's enough, we can break - no need to spawn extras.
-						if(found_matching >= parts_amount_required)
-							break
-				// If there's still not enough, we're going to have to spawn enough in manually.
-				if(found_matching < parts_amount_required)
-					for(var/i in 1 to parts_amount_required - found_matching)
-						atom_storage.attempt_insert(new req_component(src), user, TRUE)
-					continue
+				continue
+
+			// It's not a stack, which means now we have to count how many matching items are present.
+			for(var/obj/stored_item in contents)
+				if(stored_item.type in subtypes)
+					found_matching += 1
+					// If there's enough, we can break - no need to spawn extras.
+					if(found_matching >= parts_amount_required)
+						break
+			// If there's still not enough, we're going to have to spawn enough in manually.
+			for(var/i in 1 to parts_amount_required - found_matching)
+				atom_storage.attempt_insert(new req_component(src), user, TRUE)
+			continue
 
 		/// If it's not an obj, then it's a subtype of /datum/stock_part - or *should be*, anyway.
-		else if(ispath(req_component, /datum/stock_part))
-			var/datum/stock_part/part_type = new req_component()
-			var/base_type = part_type.physical_object_base_type
+		if(ispath(req_component, /datum/stock_part))
+			var/datum/stock_part/part_type = req_component
+			// initial() rather than instantiating the datum - we only ever want to read the tier and the paths off it.
+			var/base_type = initial(part_type.physical_object_base_type)
+
 			// Specific machines sometimes call for specific tiers of part; give them precisely what they ask for, just in case.
-			if(part_type.tier > 1)
-				base_type = part_type.physical_object_type
+			if(initial(part_type.tier) > 1)
+				base_type = initial(part_type.physical_object_type)
 				// Search to see if we have enough of that exact item, and if not, we'll spawn more.
 				for(var/obj/stored_item in contents)
 					if(stored_item.type == base_type)
@@ -143,11 +178,6 @@
 						// If there's enough, we can return early.
 						if(found_matching >= parts_amount_required)
 							break
-				// If there's still not enough, we're going to have to spawn enough in manually.
-				if(found_matching < parts_amount_required)
-					for(var/i in 1 to parts_amount_required - found_matching)
-						atom_storage.attempt_insert(new base_type(src), user, TRUE)
-					continue
 			else
 				// For everything else, just make sure we have enough valid items of the stock part's subtypes.
 				subtypes = typesof(base_type)
@@ -158,83 +188,59 @@
 						if(found_matching >= parts_amount_required)
 							break
 
-				// If there's still not enough, we're going to have to spawn enough in manually.
 				if(found_matching < parts_amount_required)
-					// Reset the subtypes list so we can pick the highest tier of part available.
-					subtypes = typesof(req_component)
+					// Pick the highest tier the requested part has available, so machines get the best we can give them.
 					var/highest_tier = 0
+					for(var/datum/stock_part/sub_part as anything in typesof(req_component))
+						if(initial(sub_part.tier) > highest_tier)
+							highest_tier = initial(sub_part.tier)
+							base_type = initial(sub_part.physical_object_type)
 
-					// Search those subtypes for the highest.  This SHOULD only ever go up to 4, but that's on the assumption upstream doesn't change it.
-					for(var/subtype_path in subtypes)
-						var/datum/stock_part/sub_part = new subtype_path()
-						if(sub_part.tier > highest_tier)
-							highest_tier = sub_part.tier
-							base_type = sub_part.physical_object_type
-
-					// Once the best component has been found, fill in enough remaining.
-					for(var/i in 1 to parts_amount_required - found_matching)
-						atom_storage.attempt_insert(new base_type(src), user, TRUE)
-					continue
+			// Once the best component has been found, fill in enough remaining.
+			for(var/i in 1 to parts_amount_required - found_matching)
+				atom_storage.attempt_insert(new base_type(src), user, TRUE)
+			continue
 
 		// If it's not a /datum/stock_part subtype either, something has gone wrong and devs should probably be alerted.
-		if(found_matching < parts_amount_required)
-			to_chat(user, span_notice("Something went wrong manufacturing [req_component]. Alert the devs, and let them know what machine it was!"))
+		to_chat(user, span_notice("Something went wrong manufacturing [req_component]. Alert the devs, and let them know what machine it was!"))
 
 /// BSTs' special Bluespace RPED can manufacture parts on Alt-RMB, either cables, glass, machine boards, or stock parts.
 /obj/item/storage/part_replacer/bluespace/admin/click_alt_secondary(mob/user)
+	// Every other tool in this module gates its admin-only half the same way, and this one hands out infinite tier 4 parts.
+	if(!user.client?.holder)
+		return
+
 	// Ask the user what they want to make, or if they want to clear the storage.
-	var/spawn_selection = tgui_input_list(user, "Pick a part, or clear storage", "RPED Manufacture", list("Clear All Items", "Toggle Auto-Clear", "Tier 4 Parts", "Cable Coils", "Glass Sheets", "Plasteel Sheets", "Bluespace Crystals", "Infinite Megacell", "Infinite Power Cell", "Machine Boards", "Computer Boards", "Stock Parts", "Beakers"))
+	var/list/menu = list("Clear All Items", "Toggle Auto-Clear", "Set Batch Size")
+	menu += bulk_manufacture_options
+	menu += browse_manufacture_options
+	var/spawn_selection = tgui_input_list(user, "Pick a part, or clear storage", "RPED Manufacture", menu)
 	// If they didn't cancel out of the list selection, we do things.  Clear-all removes all items, auto-clear destroys left-overs after upgrades, and everything else is pretty self-explanatory.
 	// Machine boards and stock parts use a recursive subtype selector.
 	if(isnull(spawn_selection))
 		return
-	else if(spawn_selection == "Clear All Items")
-		var/list/inv_grab = atom_storage.return_inv(FALSE)
-		for(var/obj/item/stored_item in inv_grab)
-			qdel(stored_item)
-	else if(spawn_selection == "Toggle Auto-Clear")
-		auto_clear = !auto_clear
-		to_chat(user, span_notice("The RPED will now [(auto_clear ? "destroy" : "keep")] items left over after upgrades."))
-	else if(spawn_selection == "Tier 4 Parts")
-		for(var/i in 1 to 30)
-			atom_storage.attempt_insert(new /obj/item/stock_parts/capacitor/quadratic(src), user, TRUE)
-			atom_storage.attempt_insert(new /obj/item/stock_parts/scanning_module/triphasic(src), user, TRUE)
-			atom_storage.attempt_insert(new /obj/item/stock_parts/servo/femto(src), user, TRUE)
-			atom_storage.attempt_insert(new /obj/item/stock_parts/micro_laser/quadultra(src), user, TRUE)
-			atom_storage.attempt_insert(new /obj/item/stock_parts/matter_bin/bluespace(src), user, TRUE)
-			atom_storage.attempt_insert(new /obj/item/stock_parts/power_store/cell/bluespace(src), user, TRUE)
-			atom_storage.attempt_insert(new /obj/item/stock_parts/power_store/battery/bluespace(src), user, TRUE)
-	else if(spawn_selection == "Cable Coils")
-		atom_storage.attempt_insert(new /obj/item/stack/cable_coil(src), user, TRUE)
-	else if(spawn_selection == "Glass Sheets")
-		for(var/i in 1 to 30)
-			atom_storage.attempt_insert(new /obj/item/stack/sheet/glass(src), user, TRUE)
-	else if(spawn_selection == "Plasteel Sheets")
-		for(var/i in 1 to 30)
-			atom_storage.attempt_insert(new /obj/item/stack/sheet/plasteel(src), user, TRUE)
-	else if(spawn_selection == "Bluespace Crystals")
-		for(var/i in 1 to 30)
-			atom_storage.attempt_insert(new /obj/item/stack/sheet/bluespace_crystal(src), user, TRUE)
-	else if(spawn_selection == "Infinite Megacell")
-		for(var/i in 1 to 30)
-			atom_storage.attempt_insert(new /obj/item/stock_parts/power_store/battery/infinite(src), user, TRUE)
-	else if(spawn_selection == "Infinite Power Cell")
-		for(var/i in 1 to 30)
-			atom_storage.attempt_insert(new /obj/item/stock_parts/power_store/cell/infinite(src), user, TRUE)
-	else
-		var/subtype
-		if(spawn_selection == "Machine Boards")
-			subtype = /obj/item/circuitboard/machine
-		else if(spawn_selection == "Computer Boards")
-			subtype = /obj/item/circuitboard/computer
-		else if(spawn_selection == "Material Sheets")
-			subtype = /obj/item/stack/sheet
-		else if(spawn_selection == "Stock Parts")
-			subtype = /obj/item/stock_parts
-		else if(spawn_selection == "Beakers")
-			subtype = /obj/item/reagent_containers/cup/beaker
-		if(subtype)
-			pick_stock_part(user, FALSE, subtype)
+
+	switch(spawn_selection)
+		if("Clear All Items")
+			for(var/obj/item/stored_item in atom_storage.return_inv(FALSE))
+				qdel(stored_item)
+		if("Toggle Auto-Clear")
+			auto_clear = !auto_clear
+			to_chat(user, span_notice("The RPED will now [(auto_clear ? "destroy" : "keep")] items left over after upgrades."))
+		if("Set Batch Size")
+			var/new_size = tgui_input_number(user, "How many of each type should a selection produce?", "RPED Batch Size", batch_size, 100, 1)
+			if(isnull(new_size))
+				return
+			batch_size = new_size
+			to_chat(user, span_notice("The RPED will now produce [batch_size] of each type per selection."))
+		else
+			var/list/bulk_types = bulk_manufacture_options[spawn_selection]
+			if(bulk_types)
+				for(var/obj/item/part_type as anything in bulk_types)
+					for(var/i in 1 to batch_size)
+						atom_storage.attempt_insert(new part_type(src), user, TRUE)
+			else
+				pick_stock_part(user, FALSE, browse_manufacture_options[spawn_selection])
 
 /// A bespoke proc for picking a subtype to spawn in a relatively user-friendly way.
 /obj/item/storage/part_replacer/bluespace/admin/proc/pick_stock_part(mob/user, recurse, subtype)
@@ -270,12 +276,14 @@
 
 	// Finally, once the listed is generated, ask the user what they want to spawn.
 	var/target_item = tgui_input_list(user, "Select Subtype", "RPED Manufacture", sort_list(items_temp))
-	if(target_item)
-		// If they select something, and the name:path binding is valid, then either spawn it, OR, if it has subtypes, and isn't the parent type, recurse to let them pick a subtype.
-		if(items_temp[target_item])
-			var/the_item = items_temp[target_item]
-			if(length(subtypesof(the_item)) && the_item != subtype)
-				pick_stock_part(user, TRUE, the_item)
-			else
-				for(var/i in 1 to 25)
-					atom_storage.attempt_insert(new the_item(src), user, TRUE)
+	if(!target_item)
+		return
+	// If they select something, and the name:path binding is valid, then either spawn it, OR, if it has subtypes, and isn't the parent type, recurse to let them pick a subtype.
+	var/the_item = items_temp[target_item]
+	if(!the_item)
+		return
+	if(length(subtypesof(the_item)) && the_item != subtype)
+		pick_stock_part(user, TRUE, the_item)
+		return
+	for(var/i in 1 to batch_size)
+		atom_storage.attempt_insert(new the_item(src), user, TRUE)

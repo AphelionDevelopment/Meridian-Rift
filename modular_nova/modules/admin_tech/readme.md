@@ -46,6 +46,8 @@ ADMIN_OBJ_FLAGS goes on obj_flags, ADMIN_OBJ_FLAGS_NOVA goes on obj_flags_nova, 
 
 `/obj/machinery/rnd/production/colony_lathe/admin` prints the module's gear. It runs on `/datum/techweb/autounlocking/admin`, whose `allowed_buildtypes` is `ADMIN_TECHWEB | COLONY_FABRICATOR`, so it is a superset of the rapid construction fabricator rather than a replacement for it.
 
+Just about everything in the module is on it - roughly 110 designs, sorted into tools, weaponry, equipment, storage, medical, internals, worn kit, identification, MOD suits, cyborg upgrades and the subspace tier. What is deliberately left off is ammo casings, firing pins, robot model datums and abstract parent types.
+
 Adding a printable means adding a `/datum/design/admin` subtype in admin_techweb.dm. Only `name`, `id` and `build_path` are usually needed - the parent supplies `build_type`, the token material cost and the category list. Two rules the CI unit tests enforce:
 
 - keep `RND_CATEGORY_INITIAL` in the category list, or an autounlocking techweb will not pick the design up
