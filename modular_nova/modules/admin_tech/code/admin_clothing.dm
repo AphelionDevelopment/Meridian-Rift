@@ -44,7 +44,7 @@
 	worn_icon_state = "blue-headset"
 	keyslot2 = null
 	keyslot = /obj/item/encryptionkey/admin
-	inhand_icon_state = "null"
+	inhand_icon_state = null
 	subspace_transmission = TRUE
 	/// If true, subspace_transmission can be toggled at will.
 	subspace_switchable = TRUE
@@ -184,15 +184,12 @@
 	desc = "One of Central Command's best kept secrets, resting on the eyes of many of its officers, operatives, and technicians."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "contacts"
-	inhand_icon_state = "trayson-"
-	worn_icon = null
-	worn_icon_state = null
+	inhand_icon_state = "trayson-"	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon_state = "contacts"
 	base_icon_state = "trayson-"
 	flags_cover = GLASSESCOVERSEYES// dont ask me why were doing this we just are
 	flash_protect = FLASH_PROTECTION_WELDER//No need for the welding gas mask from before
-	lighting_cutoff = LIGHTING_CUTOFF_HIGH//Slightly better vision just for wearing them, regardless of mode
-//	invis_view = SEE_INVISIBLE_OBSERVER//On by default, gets defaulted to standard vision with switch mode 0
-	glass_colour_type = FALSE//Stop touching my icon omg
+	lighting_cutoff = LIGHTING_CUTOFF_HIGH//Slightly better vision just for wearing them, regardless of mode	glass_colour_type = FALSE//Stop touching my icon omg
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | ACID_PROOF
 	modes = list(MODE_NONE, MODE_MESON, MODE_TRAY, MODE_PIPE_CONNECTABLE, MODE_ATMOS_THERMAL, MODE_AREA_BLUEPRINTS, MODE_SHUTTLE)
 	clothing_traits = list(
@@ -285,7 +282,7 @@
 	worn_icon_state = "blue-visor"
 	base_icon_state = "blue-visor"
 	worn_icon_muzzled = "blue-visor"
-	inhand_icon_state = "null"
+	inhand_icon_state = null
 	core_installed = TRUE
 	armor_type = /datum/armor/admin
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | ACID_PROOF
@@ -340,7 +337,7 @@
 	icon_state = "blue-mask"
 	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "blue-mask"
-	inhand_icon_state = "null"
+	inhand_icon_state = null
 	max_filters = 2
 	starting_filter_type = /obj/item/gas_filter/admin
 	armor_type = /datum/armor/admin
@@ -522,7 +519,7 @@
 	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "blue-techsuit"
 	worn_icon_digi = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing_digi.dmi'
-	inhand_icon_state = "null"
+	inhand_icon_state = null
 	has_sensor = NO_SENSORS//admin techs should NEVER be on sensors
 	resistance_flags = INDESTRUCTIBLE
 	body_parts_covered = CHEST|GROIN|LEGS|FEET|ARMS|HANDS

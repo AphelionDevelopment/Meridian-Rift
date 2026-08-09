@@ -1,9 +1,7 @@
 /// Tracks each player's currently-active holosigns placed via Manage Holosigns, keyed by ckey. Admins are exempt from the CONFIG max_player_holosigns cap.
 GLOBAL_LIST_EMPTY(holosign_privacy_tracker)
 
-/mob/living/verb/manage_holosigns()
-	set name = "Manage Holosigns"
-	set category = "IC"
+GAME_VERB_DESC(/mob/living, manage_holosigns, "Manage Holosigns", "Place or clear your own privacy holosigns.", "IC")
 
 	/// Populate the list of types of holosigns
 	var/list/options = list(

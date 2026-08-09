@@ -143,7 +143,7 @@ Admin Variants of Common Tools
 	desc = "An artisinally crafted pocket liner utilizing advanced technologies, techniques, and materials."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "blue-pocket"
-	worn_icon_state = "null"
+	worn_icon_state = null
 	storage_type = /datum/storage/admin/bag
 	w_class = WEIGHT_CLASS_TINY
 	slot_flags = ITEM_SLOT_ADMIN
@@ -209,7 +209,7 @@ Admin Variants of Common Tools
 		Peeking inside the pocket, cherenkov-esque radiation illuminates a mass of materials and supplies."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "blue-bag"
-	worn_icon_state = "null" // Don't fuck with my drip
+	worn_icon_state = null // Don't fuck with my drip
 	storage_type = /datum/storage/admin/bag
 	w_class = WEIGHT_CLASS_TINY
 	slot_flags = ITEM_SLOT_ADMIN
@@ -782,7 +782,7 @@ Admin Variants of Common Tools
 	light_range = 10
 	light_angle = 360
 	w_class = WEIGHT_CLASS_TINY
-	slot_flags = list(ITEM_SLOT_ADMIN, ITEM_SLOT_ID)
+	slot_flags = ITEM_SLOT_ADMIN// a bitfield, not a list - and ITEM_SLOT_ADMIN already carries ITEM_SLOT_ID
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA

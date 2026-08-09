@@ -167,7 +167,6 @@
 		/obj/item/mod/module/jetpack/advanced,
 		/obj/item/mod/module/stealth/ninja,
 		/obj/item/mod/module/anomaly_locked/kinesis/admin,
-		/obj/item/mod/module/dispenser,
 		/obj/item/mod/module/shove_blocker,
 		/obj/item/mod/module/quick_cuff,
 		/obj/item/mod/module/anti_magic,
