@@ -53,8 +53,8 @@
 	var/list/preferred_spawn_methods = list()
 	/// Admin-only: Preferred outfit typepaths for the IC Quick Spawn menu.
 	var/list/preferred_spawn_outfits = list()
-	// NOVA EDIT ADDITION END
 
+	// NOVA EDIT ADDITION END
 /datum/preferences/proc/species_updated(species_type)
 	all_quirks = list()
 	// Reset cultural stuff
