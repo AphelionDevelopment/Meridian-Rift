@@ -577,9 +577,6 @@
 
 	var/atom/target = destinations[picked]// sets up our target from the selection through our destinations
 	var/turf/target_turf = get_turf(target)// checks the turf at our target. this does some kinda funny stuff if you sniff further in. dont, it's ok
-	//if(!target_turf)// BUT WAIT, what if there ISNT a turf???
-		//balloon_alert(user, "invalid destination!")// WHIIIINE
-		//return CLICK_ACTION_BLOCKING// thanks for wasting all of the above resources :')
 
 	living_user.abstract_move(target_turf)// Poof!
 	log_admin("[key_name(user)] teleported via subspace techsuit to [picked].")// Log this shit because like lol lmao
