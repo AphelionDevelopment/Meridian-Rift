@@ -4,7 +4,7 @@
 /// This one is empty, subtypes should use [/obj/item/storage/belt/utility/admin/full]
 /// to consistently implement the same amount of items.
 /obj/item/storage/belt/utility/admin
-	name = "\improper bluespace satchel"
+	name = "bluespace satchel"
 	desc = "This bad boy can fit all your bus in one place. Why do you have this?!"
 	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "admeme_satchel"
