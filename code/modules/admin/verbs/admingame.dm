@@ -474,7 +474,7 @@ ADMIN_VERB(wallhacks, R_ADMIN, "Admin Wallhacks", "Toggles full-bright, perfect 
 	if(!user.mob)
 		return
 
-	if(HAS_TRAIT(user.mob, TRAIT_ADMIN_WALLHACKS))
+	if(!HAS_TRAIT(user.mob, TRAIT_ADMIN_WALLHACKS))
 		ADD_TRAIT(user.mob, TRAIT_XRAY_HEARING, ADMIN_TRAIT)
 		ADD_TRAIT(user.mob, TRAIT_ADMIN_WALLHACKS, ADMIN_TRAIT)
 		user.mob.sight |= (SEE_TURFS|SEE_MOBS|SEE_OBJS)

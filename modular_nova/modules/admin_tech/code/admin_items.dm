@@ -4,15 +4,8 @@
 //! Sprite redits to CEV-ERIS, y'all really fucked with this one, it has no reason to look this cool.
 //! TODO:
 //! - pickup people or machines with it too? wouldn't that be cool
-/* Magic macro that we cant get working. Commented trails sitting about the document.
-#define ADMIN_ITEM_VARS(path) ##path {\
-	w_class = WEIGHT_CLASS_TINY; \
-	slot_flags = ITEM_SLOT_ADMIN; \
-	resistance_flags = INDESTRUCTIBLE; \
-	obj_flags = ADMIN_OBJ_FLAGS; \
-}\
-// Thank you to sammy for the above insanity. That's called a macro! This is applied through ADMIN_ITEM_VARS(path) under each item, and applies our unique obj flags for admin types without having to update the three hundred items in here. See under /obj/item/storage/bag/admin for example usage.
-*/
+// Thank you to sammy for the ADMIN_ITEM_VARS macro idea - a macro that stamped the shared admin vars onto each item so you didn't have to update three hundred of them by hand.
+// It never worked, and a commented-out #define trips the define sanity check, so it lives on only as the //ADMIN_ITEM_VARS(...) trails left under each item below.
 /*
 	add_filter("admin_active_item", 1, outline_filter(1, "#cc00ff", OUTLINE_SQUARE))
 	game_plane_master_controller.remove_filter("admin_active_item")
@@ -23,6 +16,7 @@
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 */
 
 /*
@@ -41,6 +35,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/crowbar/power/alien/admin/Initialize(mapload)
 	. = ..()
@@ -58,6 +53,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/screwdriver/power/alien/admin/Initialize(mapload)
 	. = ..()
@@ -77,6 +73,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/weldingtool/advanced/admin/Initialize(mapload)
 	. = ..()
@@ -93,6 +90,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/scalpel/advanced/alien/admin/Initialize(mapload)
 	. = ..()
@@ -109,6 +107,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/retractor/advanced/alien/admin/Initialize(mapload)
 	. = ..()
@@ -125,6 +124,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/cautery/advanced/alien/admin/Initialize(mapload)
 	. = ..()
@@ -141,6 +141,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/blood_filter/advanced/alien/admin/Initialize(mapload)
 	. = ..()
@@ -159,6 +160,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/storage/bag/admin)
 
 // First usage of the admin manufacturing company, to specifically denote items added through this module.
@@ -197,6 +199,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/storage/subspace_pouch)
 
 /obj/item/storage/subspace_pouch/Initialize(mapload)
@@ -223,6 +226,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/storage/bag/construction/admin)
 
 /obj/item/storage/bag/construction/admin/Initialize(mapload)
@@ -329,6 +333,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/pinpointer/crew/admin)
 
 /obj/item/pinpointer/crew/admin/Initialize(mapload)
@@ -357,6 +362,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/gun/energy/recharge/fisher/admin)
 
 /obj/item/gun/energy/recharge/fisher/admin/Initialize(mapload)
@@ -373,6 +379,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/holochip/fiftythousand)
 
 /obj/item/holochip/fiftythousand/Initialize(mapload)
@@ -393,6 +400,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS | EMAGGED
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/door_remote/admin/Initialize(mapload)
 	. = ..()
@@ -420,6 +428,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/construction/rcd/arcd/mattermanipulator/admin)
 
 /obj/item/construction/rcd/arcd/mattermanipulator/admin/Initialize(mapload)
@@ -446,6 +455,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/construction/rld/admin)
 
 /obj/item/construction/rld/admin/Initialize(mapload)
@@ -467,6 +477,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/card/emag/admin)
 
 /obj/item/card/emag/admin/Initialize(mapload)
@@ -486,6 +497,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/lightreplacer/blue/admin)
 
 /obj/item/lightreplacer/blue/admin/Initialize(mapload)
@@ -506,6 +518,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/holosign_creator/atmos/admin)
 
 /obj/item/holosign_creator/atmos/admin/Initialize(mapload)
@@ -539,6 +552,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/forcefield_projector/admin)
 
 /obj/item/forcefield_projector/admin/Initialize(mapload)
@@ -578,6 +592,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/survivalcapsule/admin/fan)
 
 /obj/item/survivalcapsule/admin/fan/Initialize(mapload)
@@ -605,6 +620,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 // Design types for debug service constructor, I just smushed the two lists together, because no other plumber exists with the full list. why are we like this? is this even all of them?
 	var/static/list/admin_design_types = list(
 		//Category 1 synthesizers
@@ -668,6 +684,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/shears/admin)
 
 /obj/item/shears/admin/Initialize(mapload)
@@ -707,6 +724,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/gun/energy/cell_loaded/medigun/admin)
 
 /obj/item/gun/energy/cell_loaded/medigun/admin/Initialize(mapload)
@@ -742,6 +760,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/surgery_tray/admin)
 
 /obj/item/surgery_tray/admin/Initialize(mapload)
@@ -770,6 +789,7 @@ Admin Variants of Common Tools
 	slot_flags = list(ITEM_SLOT_ADMIN, ITEM_SLOT_ID)
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/modular_computer/pda/admin)
 
 // Sets up PDA details and other small things.
@@ -831,6 +851,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 	/// Current firing mode. "normal" just does the usual fidget-toy pointer stuff. "burn" and "melt" are legitimate hitscan damage modes, cycled via ctrl-click.
 	var/beam_mode = "normal"
 //ADMIN_ITEM_VARS(/obj/item/laser_pointer/admin)
@@ -919,6 +940,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/reagent_containers/syringe/admin)
 
 /obj/item/reagent_containers/syringe/admin/Initialize(mapload)
@@ -948,6 +970,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/reagent_containers/applicator/patch/admin)
 
 /obj/item/reagent_containers/applicator/patch/admin/Initialize(mapload)
@@ -984,6 +1007,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 	/// How many "layers" we have remaining. Each layer equates to 1 second of digestion -> var/layers_remaining = 3. This PRETTY COOL VARIABLE is used almost exclusively by unit tests. Very sad stuff.
 //ADMIN_ITEM_VARS(/obj/item/reagent_containers/applicator/pill/admin)
 
@@ -1016,6 +1040,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/reagent_containers/cup/watering_can/advanced/admin)
 
 /obj/item/reagent_containers/cup/watering_can/advanced/admin/Initialize(mapload)
@@ -1052,11 +1077,11 @@ Admin Variants of Common Tools
 	. = ..()
 	metabolization_rate = 0.5 * REAGENTS_METABOLISM
 	affected_mob.add_traits(trait_buffs, type)
-	affected_mob.set_stat(CONSCIOUS) //This doesn't touch knocked out
+	affected_mob.set_stat(STABLE) //This doesn't touch knocked out
 	affected_mob.updatehealth()
 	affected_mob.update_sight()
-	REMOVE_TRAIT(affected_mob, TRAIT_KNOCKEDOUT, STAT_TRAIT)
-	REMOVE_TRAIT(affected_mob, TRAIT_KNOCKEDOUT, CRIT_HEALTH_TRAIT) //Because these are normally updated using set_health() - but we don't want to adjust health, and the addition of NOHARDCRIT blocks it being added after, but doesn't remove it if it was added before
+	REMOVE_TRAIT(affected_mob, TRAIT_KNOCKEDOUT, STAT_TRAIT) //Because these are normally updated using set_health() - but we don't want to adjust health, and the addition of NOHARDCRIT blocks it being added after, but doesn't remove it if it was added before
+	REMOVE_TRAIT(affected_mob, TRAIT_KNOCKEDOUT, TRAIT_DEATHCOMA) //As above, this is the one death itself applies
 	REMOVE_TRAIT(affected_mob, TRAIT_KNOCKEDOUT, OXYLOSS_TRAIT) //As above, removes unconsciousness if it was added before the reagent was administered
 	affected_mob.set_resting(FALSE) //Please get up, no one wants a deaththrows juggernaught that lies on the floor all the time
 	affected_mob.SetAllImmobility(0)
@@ -1071,7 +1096,8 @@ Admin Variants of Common Tools
 		return
 	//Following is for those brought back from the dead only
 	var/creation_impurity = 1 - creation_purity
-	REMOVE_TRAIT(affected_mob, TRAIT_KNOCKEDOUT, CRIT_HEALTH_TRAIT)
+	REMOVE_TRAIT(affected_mob, TRAIT_KNOCKEDOUT, STAT_TRAIT)
+	REMOVE_TRAIT(affected_mob, TRAIT_KNOCKEDOUT, TRAIT_DEATHCOMA)
 	REMOVE_TRAIT(affected_mob, TRAIT_KNOCKEDOUT, OXYLOSS_TRAIT)
 	for(var/datum/wound/iter_wound as anything in affected_mob.all_wounds)
 		iter_wound.adjust_blood_flow(4 * creation_impurity * metabolization_ratio * seconds_per_tick)
@@ -1115,6 +1141,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/reagent_containers/hypospray/combat/subspace)
 
 /obj/item/reagent_containers/hypospray/combat/subspace/Initialize(mapload)
@@ -1147,6 +1174,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/extinguisher/subspace)
 
 /obj/item/extinguisher/subspace/Initialize(mapload)
@@ -1189,6 +1217,7 @@ Admin Variants of Common Tools
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/pneumatic_cannon/subspace)
 
 /obj/item/pneumatic_cannon/subspace/Initialize(mapload)
@@ -1257,6 +1286,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/choice_beacon/job_locker)
 
 /obj/item/choice_beacon/job_locker/generate_display_names()
@@ -1276,6 +1306,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/choice_beacon/job_locker/debug)
 
 /obj/item/choice_beacon/job_locker/debug/Initialize(mapload)
@@ -1300,6 +1331,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/summon_beacon/vendors/debug)
 
 /obj/item/summon_beacon/vendors/debug/Initialize(mapload)
@@ -1331,6 +1363,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/gun/magic/subspace)
 
 /obj/item/gun/magic/subspace/Initialize(mapload)
@@ -1368,6 +1401,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 	var/colour = COLOR_PURPLE_GRAY //what colour the ink is!
 	var/degrees = 67
 	var/font = PEN_FONT
@@ -1484,6 +1518,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/firing_pin/admin)
 
 /obj/item/firing_pin/admin/Initialize(mapload)
@@ -1524,6 +1559,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 // Reactionless subspace beaker
 /obj/item/reagent_containers/cup/beaker/admin/noreact
@@ -1569,6 +1605,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/gun/syringe/admin)
 
 /obj/item/gun/syringe/admin/Initialize(mapload)
@@ -1603,6 +1640,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/melee/baseball_bat/admin)
 
 /obj/item/melee/baseball_bat/admin/Initialize(mapload)
@@ -1656,6 +1694,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/gun/energy/pulse/destroyer/annihilator/Initialize(mapload)
 	. = ..()
@@ -1700,6 +1739,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/gun/energy/modular_laser_rifle/carbine/admin)
 
 /obj/item/gun/energy/modular_laser_rifle/admin/emp_act(severity)
@@ -1985,9 +2025,11 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/clothing/accessory/energy_shield/admin/Initialize(mapload)
 	. = ..()
+	clothing_flags |= ADMIN_CLOTHING_FLAGS// set here rather than in the type def so the parent type's own clothing flags survive
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
 // Unrealistic shield
@@ -2024,6 +2066,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/soap/admin/Initialize(mapload)
 	. = ..()
@@ -2052,6 +2095,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/mop/advanced/admin/Initialize(mapload)
 	. = ..()
@@ -2068,6 +2112,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 	var/obj/item/reagent_containers/beaker
 	var/amount = /obj/item/reagent_containers/cup/beaker/admin/small::volume//I find myself dispensing full beakers rather than small drops of them.
@@ -2225,6 +2270,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 	/// How many units of reagent get fired per shot.
 	var/reagent_per_shot = 15
 
@@ -2301,11 +2347,11 @@ obj/item/gun/chem/admin/examine(mob/user)
 	name = "subspace health analyzer"
 	icon_state = "health_adv"
 	desc = "A hand-held body scanner able to distinguish vital signs of the subject with high accuracy."
-	advanced = TRUE
 	w_class = WEIGHT_CLASS_TINY
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/healthanalyzer/advanced/admin/Initialize(mapload)
 	. = ..()
@@ -2349,8 +2395,8 @@ obj/item/gun/chem/admin/examine(mob/user)
 			for(var/datum/antagonist/antag as anything in target.mind.antag_datums)
 				report += "<span class='alert ml-2'>&rdsh; [antag.name]</span>"
 
-	report += "<span class='notice ml-1'>Status: [target.stat == CONSCIOUS ? "Conscious" : target.stat == UNCONSCIOUS ? "Unconscious" : target.stat == DEAD ? "Dead" : "Unknown"]</span>"
-	if(user.client.holder)// Secures CKEY data behind holder check.
+	report += "<span class='notice ml-1'>Status: [target.stat == STABLE ? "Conscious" : target.stat == SOFT_CRIT ? "Barely Conscious" : target.stat == HARD_CRIT ? "Unconscious" : target.stat == DEAD ? "Dead" : "Unknown"]</span>"
+	if(user.client?.holder)// Secures CKEY data behind holder check.
 		report += "<span class='notice ml-1'>Client: [target.client ? "Connected ([target.client.ckey])" : "No client attached"]</span>"
 
 	to_chat(user, custom_boxed_message("purplebox_box", report.Join("<br>")))//ourple,,,
@@ -2374,6 +2420,7 @@ obj/item/gun/chem/admin/examine(mob/user)
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/ph_meter/admin/Initialize(mapload)
 	. = ..()
@@ -2401,6 +2448,7 @@ obj/item/gun/chem/admin/examine(mob/user)
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 	/// Named buffer slots. Assoc slot_name -> stored buffer datum.
 	var/list/buffer_slots
 	/// Which slot is currently mirrored into `buffer`.

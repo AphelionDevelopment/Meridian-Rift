@@ -11,17 +11,17 @@
 	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-tank"
 	inhand_icon_state = "emergency_tank"
-	worn_icon = "modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi"
+	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "sub-tank"
 	tank_holder_icon_state = "holder_emergency_engi"
-	obj_flags = CONDUCTS_ELECTRICITY
 	force = 10
 	distribute_pressure = TANK_DEFAULT_RELEASE_PRESSURE
 	volume = 490//default tanks are 70, and this is a multiple for some scaling and mixing formulae
 	w_class = WEIGHT_CLASS_TINY
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
-	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags = ADMIN_OBJ_FLAGS | CONDUCTS_ELECTRICITY
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/tank/internals/admin/Initialize(mapload)
 	. = ..()
@@ -38,8 +38,7 @@
 	distribute_pressure = TANK_DEFAULT_RELEASE_PRESSURE
 
 /obj/item/tank/internals/admin/oxygen/populate_gas()
-	air_contents.assert_gas(/datum/gas/oxygen)
-	air_contents.gases[/datum/gas/oxygen][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C)
+	air_contents.set_gas(/datum/gas/oxygen, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C))
 
 //Pluoxium - The cooler oxygen
 /obj/item/tank/internals/admin/pluoxium
@@ -48,8 +47,7 @@
 	distribute_pressure = 3
 
 /obj/item/tank/internals/admin/pluoxium/populate_gas()
-	air_contents.assert_gas(/datum/gas/pluoxium)
-	air_contents.gases[/datum/gas/pluoxium][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C)
+	air_contents.set_gas(/datum/gas/pluoxium, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C))
 
 //Plasma - Plasmama, where have you gone, we miss you
 /obj/item/tank/internals/admin/plasma
@@ -58,8 +56,7 @@
 	distribute_pressure = TANK_PLASMAMAN_RELEASE_PRESSURE
 
 /obj/item/tank/internals/admin/plasma/populate_gas()
-	air_contents.assert_gas(/datum/gas/plasma)
-	air_contents.gases[/datum/gas/plasma][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C)
+	air_contents.set_gas(/datum/gas/plasma, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C))
 
 //Nitrogen - Criminal cats breathe this.
 /obj/item/tank/internals/admin/nitrogen
@@ -68,8 +65,7 @@
 	distribute_pressure = TANK_DEFAULT_RELEASE_PRESSURE
 
 /obj/item/tank/internals/admin/nitrogen/populate_gas()
-	air_contents.assert_gas(/datum/gas/nitrogen)
-	air_contents.gases[/datum/gas/nitrogen][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C)
+	air_contents.set_gas(/datum/gas/nitrogen, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C))
 
 //'Ooops, lots of dust. Dont breathe this!'
 //Tritium - Just fuckin' straight radiation.
@@ -79,8 +75,7 @@
 	distribute_pressure = TANK_DEFAULT_RELEASE_PRESSURE
 
 /obj/item/tank/internals/admin/tritium/populate_gas()
-	air_contents.assert_gas(/datum/gas/tritium)
-	air_contents.gases[/datum/gas/tritium][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C)
+	air_contents.set_gas(/datum/gas/tritium, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C))
 
 //Freon - Funny ice-cycle tank
 /obj/item/tank/internals/admin/freon
@@ -89,8 +84,7 @@
 	distribute_pressure = TANK_DEFAULT_RELEASE_PRESSURE
 
 /obj/item/tank/internals/admin/freon/populate_gas()
-	air_contents.assert_gas(/datum/gas/freon)
-	air_contents.gases[/datum/gas/freon][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C)
+	air_contents.set_gas(/datum/gas/freon, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C))
 
 //Now we get into some gas mixes
 //Mixes containing nitrium can be poisonous. The higher the output pressure of a mix with nitrium, the higher the likelihood or rate of poisoning, but the more impactful the boon.
@@ -102,10 +96,9 @@
 	distribute_pressure = 23
 
 /obj/item/tank/internals/admin/mix/juggermol/populate_gas()
-	air_contents.assert_gases(/datum/gas/pluoxium, /datum/gas/healium, /datum/gas/nitrium)
-	air_contents.gases[/datum/gas/pluoxium][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.112
-	air_contents.gases[/datum/gas/healium][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.333
-	air_contents.gases[/datum/gas/nitrium][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.555
+	air_contents.set_gas(/datum/gas/pluoxium, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.112)
+	air_contents.set_gas(/datum/gas/healium, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.333)
+	air_contents.set_gas(/datum/gas/nitrium, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.555)
 
 //Anti-conflagratory. Good for firebugs. Doesn't save your clothing.
 /obj/item/tank/internals/admin/mix/fusionfur
@@ -114,9 +107,8 @@
 	distribute_pressure = 8
 
 /obj/item/tank/internals/admin/mix/fusionfur/populate_gas()
-	air_contents.assert_gases(/datum/gas/pluoxium, /datum/gas/halon, /datum/gas/hypernoblium)
-	air_contents.gases[/datum/gas/pluoxium][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.95
-	air_contents.gases[/datum/gas/halon][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.05
+	air_contents.set_gas(/datum/gas/pluoxium, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.95)
+	air_contents.set_gas(/datum/gas/halon, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.05)
 
 //Stupid in a tank. Give one to the clown.
 //if you say it bee-zed, the name makes slightly more sense. Feel free to rename this one if you're funnier than me, dear reader.
@@ -129,8 +121,7 @@
 	distribute_pressure = 23
 
 /obj/item/tank/internals/admin/mix/beeshead/populate_gas()
-	air_contents.assert_gases(/datum/gas/pluoxium, /datum/gas/nitrous_oxide, /datum/gas/bz, /datum/gas/helium)
-	air_contents.gases[/datum/gas/pluoxium][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.75
-	air_contents.gases[/datum/gas/nitrous_oxide][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.05
-	air_contents.gases[/datum/gas/bz][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.05
-	air_contents.gases[/datum/gas/helium][MOLES] = (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.15
+	air_contents.set_gas(/datum/gas/pluoxium, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.75)
+	air_contents.set_gas(/datum/gas/nitrous_oxide, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.05)
+	air_contents.set_gas(/datum/gas/bz, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.05)
+	air_contents.set_gas(/datum/gas/helium, (29*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C) * 0.15)

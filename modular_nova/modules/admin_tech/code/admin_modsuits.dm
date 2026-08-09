@@ -63,6 +63,7 @@
 	applied_core = /obj/item/mod/core/infinite
 	w_class = WEIGHT_CLASS_TINY
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 	applied_modules = list(
 		/obj/item/mod/module/storage/admin,
 		/obj/item/mod/module/dispenser/subspacebox,
@@ -151,6 +152,7 @@
 	applied_core = /obj/item/mod/core/infinite
 	w_class = WEIGHT_CLASS_TINY
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 	applied_modules = list(
 		/obj/item/mod/module/storage/admin,
 		/obj/item/mod/module/dispenser/subspacebox,
@@ -177,7 +179,7 @@
 		/obj/item/mod/module/medbeam,
 		/obj/item/mod/module/surgical_processor/preloaded,
 		/obj/item/mod/module/admin/carbine,
-		/obj/item/mod/module/baton_holster/preloaded,
+		/obj/item/mod/module/holster,
 		/obj/item/mod/module/flamethrower,
 		/obj/item/mod/module/adrenaline_boost,
 		/obj/item/mod/module/jaeger_sprint,

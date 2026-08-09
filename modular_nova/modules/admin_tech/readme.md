@@ -39,6 +39,9 @@ code\modules\tgui\states.dm - Modular edit to fix ui opening at distance with th
 
 ADMIN_OBJ_FLAGS - code\_\_DEFINES\~nova_defines/obj_flags.dm - code\_\_DEFINES\~nova_defines_globalvars\bitfields.dm
 
+These are three separate defines because they target three separate bitfields whose bits overlap - do not merge them back into one:
+ADMIN_OBJ_FLAGS goes on obj_flags, ADMIN_OBJ_FLAGS_NOVA goes on obj_flags_nova, ADMIN_CLOTHING_FLAGS goes on clothing_flags (set with |= in Initialize so the parent type's own flags survive).
+
 ### Traits:
 
 TRAIT_NOSTRIP - Prevents item removal by Strip Menu

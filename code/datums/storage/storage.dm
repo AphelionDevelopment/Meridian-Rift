@@ -1148,8 +1148,9 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 
 	modeswitch_action = null
 
+/// Updates views of all objects in storage and stretches UI to appropriate size
+// NOVA EDIT CHANGE START - ADMIN_TECH - the column maths moved inside the per-viewer loop so widescreen players can be given more columns
 // Because this proc loops per viewer and calls update_position each proc call, we can pretty easily provide a check to insulate us in the future when exposing non-widescreen players to oversized storage elements
-// I don't think I'm allowed to comment this like I usually do.
 // This is NOT a config edit because I can see applications where people might want to better adjust the sizing of a ui for some reason.
 /datum/storage/proc/orient_storage()
 	var/adjusted_contents = length(real_location.contents)
@@ -1162,11 +1163,11 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 		if (isnull(storage_interfaces[ui_user]))
 			continue
 
-		/// If you ever need to reference the columns var, please use this instead.
+		// If you ever need to reference the columns var, please use this instead.
 		var/user_max_columns = screen_max_columns
 		if(ui_user.client?.prefs?.read_preference(/datum/preference/toggle/widescreen))
 			user_max_columns = screen_max_columns_widescreen
-		/// Math pass to handle the division of the ui
+		// Math pass to handle the division of the ui
 		var/additional_row = (!(adjusted_contents % user_max_columns) && adjusted_contents < max_slots)
 		var/columns = clamp(max_slots, 1, user_max_columns)
 		var/rows = clamp(ceil(adjusted_contents / columns) + additional_row, 1, screen_max_rows)
@@ -1182,7 +1183,7 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 			real_location,
 			numbered_contents,
 		)
-// NOVA EDIT ADDITION END - ADMIN_TECH
+// NOVA EDIT CHANGE END
 
 /**
  * Toggles the collectmode of our storage.

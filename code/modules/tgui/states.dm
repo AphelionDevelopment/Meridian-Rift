@@ -27,7 +27,7 @@
 		if(isAdminGhostAI(user))
 			. = max(., UI_INTERACTIVE)
 		// NOVA EDIT ADDITION START - ADMIN_TECH
-		else if(HAS_TRAIT_FROM(user.client, TRAIT_ADMIN_REACHABLE, ADMIN_TRAIT))
+		else if(HAS_TRAIT(user, TRAIT_ADMIN_REACHABLE))
 			. = max(., UI_INTERACTIVE)
 		// NOVA EDIT ADDITION END
 
@@ -106,7 +106,7 @@
  */
 /mob/living/proc/shared_living_ui_distance(atom/movable/src_object, viewcheck = TRUE, allow_tk = TRUE)
 	// NOVA EDIT ADDITION START - ADMIN_TECH
-	if(HAS_TRAIT_FROM(client, TRAIT_ADMIN_REACHABLE, ADMIN_TRAIT))
+	if(HAS_TRAIT(src, TRAIT_ADMIN_REACHABLE))
 		return UI_INTERACTIVE
 	// NOVA EDIT ADDITION END
 	var/obj/item/item_in_hand = get_active_held_item()

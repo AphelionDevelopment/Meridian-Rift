@@ -24,7 +24,7 @@
 /// Standalone for a dropped proc override
 /datum/storage/admin/cytotheca
 
-/datum/storage/admin/cytotheca/New(atom/parent, max_slots, max_specific_storage, max_total_storage)
+/datum/storage/admin/cytotheca/New(atom/parent, max_slots, max_specific_storage, max_total_storage, rustle_sound, remove_rustle_sound)
 	. = ..()
 	set_holdable(
 		can_hold_list = list(

@@ -14,7 +14,6 @@
 /datum/element/babel_clothing/Detach(datum/source, ...)// Handles separation anxiet- I mean our element detaching from its source
 	REMOVE_TRAIT(source, TRAIT_BABEL_CLOTHING, REF(src))
 	UnregisterSignal(source, COMSIG_ITEM_EQUIPPED)
-	UnregisterSignal(source, COMSIG_MOB_UNEQUIPPED_ITEM)
 	return ..()
 
 /datum/element/babel_clothing/proc/on_equipped(obj/item/source, mob/equipper, slot)// Do thing when worn
@@ -23,7 +22,10 @@
 	equipper.remove_blocked_language(GLOB.all_languages, source = LANGUAGE_ALL)// you saved me
 	if(equipper.mind)// all of this is directly from the book of babel itself
 		ADD_TRAIT(equipper.mind, TRAIT_TOWER_OF_BABEL, REF(src))
-	RegisterSignal(equipper, COMSIG_MOB_UNEQUIPPED_ITEM, PROC_REF(on_mob_unequipped_item))//signal pass off to the actual mob for the unequip
+	// Elements are singletons, so a second babel item on the same mob would re-register this and runtime. One listener per wearer is all we need.
+	if(!HAS_TRAIT_FROM(equipper, TRAIT_BABEL_LISTENER, REF(src)))
+		ADD_TRAIT(equipper, TRAIT_BABEL_LISTENER, REF(src))
+		RegisterSignal(equipper, COMSIG_MOB_UNEQUIPPED_ITEM, PROC_REF(on_mob_unequipped_item))//signal pass off to the actual mob for the unequip
 
 /datum/element/babel_clothing/proc/on_mob_unequipped_item(mob/wearer, obj/item/unequipped, force, atom/newloc, no_move, invdrop, silent)
 	SIGNAL_HANDLER// it sniff the handler
@@ -32,6 +34,7 @@
 	for(var/obj/item/worn as anything in wearer.get_equipped_items())// we look at wearer items
 		if(worn != unequipped && HAS_TRAIT(worn, TRAIT_BABEL_CLOTHING))// sniffs about for if we have another item doing the same thing, so we dont oopsie a stack of items. who the fuck is wearing multiple items with this? who cares. bug squish in advance.
 			return // still wearing another babel item, keep the languages
+	REMOVE_TRAIT(wearer, TRAIT_BABEL_LISTENER, REF(src))
 	UnregisterSignal(wearer, COMSIG_MOB_UNEQUIPPED_ITEM)// cleans up our messes
 	wearer.remove_all_languages(source = LANGUAGE_BABEL)// stupifies you cutely :3c
 	if(wearer.mind)// of course they have a mind, we're just... you know. we look first. its responsible to look both ways before crossing the street
@@ -64,6 +67,9 @@
 	grant(user)
 
 /datum/element/reveal_wires/proc/grant(mob/holder)
+	// Elements are singletons, so a second wire-revealing item on the same mob would re-register these and runtime.
+	if(HAS_TRAIT_FROM(holder, TRAIT_SHOW_ALL_WIRES, REF(src)))
+		return
 	ADD_TRAIT(holder, TRAIT_SHOW_ALL_WIRES, REF(src))
 	RegisterSignal(holder, COMSIG_MOB_UNEQUIPPED_ITEM, PROC_REF(on_mob_unequipped_item))
 	RegisterSignal(holder, COMSIG_ITEM_DROPPED, PROC_REF(on_mob_dropped_item))

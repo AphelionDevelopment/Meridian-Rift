@@ -10,17 +10,17 @@ GLOBAL_LIST_EMPTY(holosign_privacy_tracker)
 		"Privacy Holosign" = /obj/structure/holosign/privacy,
 		"Clear All Holosigns" = "clear",
 	)
-	if(CONFIG_GET(flag/disable_erp_preferences) || client?.prefs.read_preference(/datum/preference/toggle/master_erp_preferences)) // Only if they have ERP preferences setup
+	if(!CONFIG_GET(flag/disable_erp_preferences) && client?.prefs?.read_preference(/datum/preference/toggle/master_erp_preferences)) // Only if they have ERP preferences setup
 		options["Lewd Advisory Holosign"] = /obj/structure/holosign/privacy/erp
 
 	/// Sets up our input list
-	var/choice = tgui_input_list(usr, "Choose an action", "Manage Holosigns", options)
+	var/choice = tgui_input_list(src, "Choose an action", "Manage Holosigns", options)
 	if(!choice)// No choice kills the verb loop
 		return
 	if(choice == "Clear All Holosigns")// Clears all our holosigns
-		clear_managed_holosigns(usr)
+		clear_managed_holosigns(src)
 		return
-	place_managed_holosign(options[choice], usr)// If we get to this point, place our selection
+	place_managed_holosign(options[choice], src)// If we get to this point, place our selection
 
 // Handles the placement of the holosign itself
 /mob/living/proc/place_managed_holosign(sign_type, mob/living/user)// fresh proc waow
@@ -51,7 +51,7 @@ GLOBAL_LIST_EMPTY(holosign_privacy_tracker)
 
 /mob/living/proc/on_managed_holosign_deleted(obj/structure/holosign/privacy/source, force)// our deletion proc
 	SIGNAL_HANDLER// comsig sniffer that we setup above
-	for(var/tracked_ckey in GLOB.holosign_privacy_tracker)//refs the ckey in the glob first
+	for(var/tracked_ckey in GLOB.holosign_privacy_tracker.Copy())//copied because we drop keys from the glob as we go, and you can't mutate a list you're looping over
 		LAZYREMOVE(GLOB.holosign_privacy_tracker[tracked_ckey], source)//takes our source and wipes it from our glob
 		if(!LAZYLEN(GLOB.holosign_privacy_tracker[tracked_ckey]))// if we have no length on the list
 			GLOB.holosign_privacy_tracker -= tracked_ckey// remove our reference from the list, as its no longer populated
@@ -61,6 +61,6 @@ GLOBAL_LIST_EMPTY(holosign_privacy_tracker)
 	if(!LAZYLEN(placed))// if no length of list in placed
 		to_chat(user, span_notice("You have no privacy holosigns active."))// tell the dumbass
 		return// get out
-	for(var/obj/structure/holosign/privacy/hologram as anything in placed)// quick var to just setup a reference for this action. sets the var to anything thats inside of our placed reference
+	for(var/obj/structure/holosign/privacy/hologram as anything in placed.Copy())// copied because qdel fires the deletion handler above, which removes the entry from this very list mid-loop
 		qdel(hologram)// SMUSHES LIKE LITTLE BUG. DEAD.
 	to_chat(user, span_notice("You clear all of your active holosigns. So responsible!"))// give the good bean headpats because they cleaned up after themselves

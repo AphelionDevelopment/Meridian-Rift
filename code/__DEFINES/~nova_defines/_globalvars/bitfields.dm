@@ -3,6 +3,7 @@ DEFINE_BITFIELD(obj_flags_nova, list(
 	"ERP_ITEM" = ERP_ITEM,
 	"NO_CRYO_FREEZE" = NO_CRYO_FREEZE,
 	"NOSTRIP" = NOSTRIP,
+	"ADMIN_ITEM" = ADMIN_ITEM,
 ))
 
 DEFINE_BITFIELD(chemical_flags_nova, list(

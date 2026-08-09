@@ -123,8 +123,8 @@
 	return CLICK_ACTION_SUCCESS
 
 //
-/obj/item/gun/energy/cell_loaded/attack_self(mob/living/user as mob)
-	if(radial_select_mode && installedcells.len > 1)
+/obj/item/gun/energy/cell_loaded/attack_self(mob/user, list/modifiers)
+	if(radial_select_mode && installedcells.len > 1 && isliving(user))
 		select_via_radial(user)
 		return
 	return ..()
@@ -139,8 +139,7 @@
 	var/index = installedcells.Find(picked)
 	if(!index)
 		return
-//	this version doesn't show the ammo_type option, this might need to get refactored again select = (ammo_type.len - installedcells.len) + index. Could also take the version that shows ammo_type down to mediguns instead.
-	select = ammo_type.len + installedcells.len + index
+	select = (ammo_type.len - installedcells.len) + index
 	var/obj/item/ammo_casing/energy/shot = ammo_type[select]
 	fire_sound = shot.fire_sound
 	fire_delay = shot.delay

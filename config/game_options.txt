@@ -627,3 +627,6 @@ SPY_HARD_REWARD_TC_THRESHOLD 15
 
 ## Minimum time before a heretic can ascend, in minutes
 # MINIMUM_ASCENSION_TIME 3
+
+## Maximum number of privacy holosigns a non-admin player can have placed at once, via the Manage Holosigns verb
+MAX_PLAYER_HOLOSIGNS 10

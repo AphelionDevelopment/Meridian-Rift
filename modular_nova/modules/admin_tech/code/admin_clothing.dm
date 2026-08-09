@@ -112,7 +112,7 @@
 // Thank you, code\modules\mining\lavaland\mining_loot\megafauna\ash_drake.dm - /obj/item/melee/ghost_sword, very cool
 /obj/item/radio/headset/admin/click_ctrl_shift(mob/user)//CtrlShift click as its a secondary function for this item.
 	. = ..()
-	if(!user.client.holder)
+	if(!user.client?.holder)
 		return
 
 	if(!COOLDOWN_FINISHED(src, subspace_harmonic_signaller_cooldown))
@@ -207,6 +207,7 @@
 
 /obj/item/clothing/glasses/meson/engine/admin/debug/Initialize(mapload)
 	. = ..()
+	clothing_flags |= ADMIN_CLOTHING_FLAGS// set here rather than in the type def so the parent type's own clothing flags survive
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
 /obj/item/clothing/glasses/meson/engine/admin/debug/examine(mob/user)
@@ -283,6 +284,7 @@
 //Intercepts init icon state from parent, this might not be necessary. It also might not be working right, I dont know enough to know.
 /obj/item/clothing/head/helmet/perceptomatrix/admin/Initialize(mapload)
 	. = ..()
+	clothing_flags |= ADMIN_CLOTHING_FLAGS// set here rather than in the type def so the parent type's own clothing flags survive
 	AddComponent(/datum/component/hat_stabilizer, loose_hat = FALSE)
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
@@ -377,6 +379,7 @@
 
 /obj/item/clothing/mask/gas/atmos/admin/Initialize(mapload)
 	. = ..()
+	clothing_flags |= ADMIN_CLOTHING_FLAGS// set here rather than in the type def so the parent type's own clothing flags survive
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
 /obj/item/clothing/mask/gas/atmos/admin/subspace
@@ -403,6 +406,7 @@
 	w_class = WEIGHT_CLASS_TINY
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = ADMIN_OBJ_FLAGS
+	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
 	var/admin_godmode = TRUE
 
 /obj/item/storage/neck/admin/cytotheca/Initialize(mapload)
@@ -527,7 +531,7 @@
 	heat_protection = CHEST|GROIN|LEGS|FEET|ARMS|HANDS
 	max_heat_protection_temperature = SPACE_SUIT_MAX_TEMP_PROTECT
 	// It took a while to curate this trait list and I dont think its done. If you find anything else useful you should throw it on here.
-	clothing_traits = list(TRAIT_CLEANBOT_WHISPERER, TRAIT_AI_ACCESS, TRAIT_BLOB_ALLY, TRAIT_TENACIOUS, TRAIT_UNBREAKABLE, TRAIT_UNOBSERVANT, TRAIT_INVISIBLE_TO_CAMERA, TRAIT_CATLIKE_GRACE, TRAIT_NO_STRIP, TRAIT_TURF_IGNORE_SLIPPERY, TRAIT_TURF_IGNORE_SLOWDOWN, TRAIT_OVERWATCH_IMMUNE, TRAIT_TENTACLE_IMMUNE, TRAIT_WEATHER_IMMUNE, TRAIT_LAVA_IMMUNE, TRAIT_KNOW_ENGI_WIRES, TRAIT_FERAL_BITER, TRAIT_ADAMANTINE_EXTRACT_ARMOR, TRAIT_ROCK_EATER, TRAIT_SUPERMATTER_SOOTHER, TRAIT_UNNATURAL_RED_GLOWY_EYES, TRAIT_QUICKER_CARRY, TRAIT_NO_STAGGER, TRAIT_IGNORESLOWDOWN, TRAIT_NO_BLOOD_OVERLAY, TRAIT_NODISMEMBER, TRAIT_NOSOFTCRIT, TRAIT_NOHARDCRIT, TRAIT_NODEATH)
+	clothing_traits = list(TRAIT_CLEANBOT_WHISPERER, TRAIT_AI_ACCESS, TRAIT_BLOB_ALLY, TRAIT_TENACIOUS, TRAIT_UNBREAKABLE, TRAIT_UNOBSERVANT, TRAIT_INVISIBLE_TO_CAMERA, TRAIT_NO_STRIP, TRAIT_TURF_IGNORE_SLIPPERY, TRAIT_TURF_IGNORE_SLOWDOWN, TRAIT_OVERWATCH_IMMUNE, TRAIT_TENTACLE_IMMUNE, TRAIT_WEATHER_IMMUNE, TRAIT_LAVA_IMMUNE, TRAIT_KNOW_ENGI_WIRES, TRAIT_FERAL_BITER, TRAIT_ADAMANTINE_EXTRACT_ARMOR, TRAIT_ROCK_EATER, TRAIT_SUPERMATTER_SOOTHER, TRAIT_UNNATURAL_RED_GLOWY_EYES, TRAIT_QUICKER_CARRY, TRAIT_NO_STAGGER, TRAIT_IGNORESLOWDOWN, TRAIT_NO_BLOOD_OVERLAY, TRAIT_NODISMEMBER, TRAIT_NOSOFTCRIT, TRAIT_NOHARDCRIT, TRAIT_NODEATH)
 
 /obj/item/clothing/under/admin/examine(mob/user)
 	. = ..()
@@ -608,6 +612,7 @@
 
 /obj/item/clothing/suit/admin/Initialize(mapload)
 	. = ..()
+	clothing_flags |= ADMIN_CLOTHING_FLAGS// set here rather than in the type def so the parent type's own clothing flags survive
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
 /obj/item/clothing/suit/admin/IsReflect(def_zone)
@@ -640,6 +645,7 @@
 
 /obj/item/clothing/gloves/tackler/admin/Initialize(mapload)
 	. = ..()
+	clothing_flags |= ADMIN_CLOTHING_FLAGS// set here rather than in the type def so the parent type's own clothing flags survive
 	AddComponent(/datum/component/martial_art_giver, /datum/martial_art/kaza_ruk)
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
@@ -703,6 +709,7 @@
 
 /obj/item/clothing/shoes/magboots/advance/admin/Initialize(mapload)// Give them pockets, damnit
 	. = ..()
+	clothing_flags |= ADMIN_CLOTHING_FLAGS// set here rather than in the type def so the parent type's own clothing flags survive
 	create_storage(storage_type = /datum/storage/admin/pockets)//big pockets,,,
 	AddElement(/datum/element/ignites_matches)
 	AddComponent(/datum/component/squeak, list('sound/effects/jingle.ogg'=1), 25, 50, 16)
