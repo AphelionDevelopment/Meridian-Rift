@@ -49,12 +49,12 @@
 	new	/obj/item/storage/part_replacer/bluespace/admin(src)
 
 /obj/item/storage/belt/utility/admin/full/bluespace
-	name = "\improper bluespace technician's satchel"
+	name = "bluespace technician's satchel"
 	desc = "A hand crafted satchel made of the finest materials, processes, and a creatively integrated bluespace anomaly core. \
 		This one was carefully prestocked and organized by a Central Command Quartermaster to service an engineering aligned technician."
 
 /obj/item/storage/belt/utility/admin/full/subspace
-	name = "\improper subspace technician's satchel"
+	name = "subspace technician's satchel"
 	desc = "A hand crafted satchel made of the finest materials, processes, and a creatively integrated bluespace anomaly core. \
 		This one was prestocked by a Central Command Quartermaster who was told to stop asking what any of it was for."
 
