@@ -333,7 +333,7 @@
 /obj/item/clothing/mask/gas/atmos/admin
 	name = "bluespace mask"
 	desc = "A proprietary filtration mask which route gasses that CentCom deems toxic directly into the space between dimensions.\
-	Wasteful? Totally. Convenient? Extremely. Has the added side effect of partially displacing you into that dimension."
+		Wasteful? Totally. Convenient? Extremely. Has the added side effect of partially displacing you into that dimension."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "blue-mask"
 	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
