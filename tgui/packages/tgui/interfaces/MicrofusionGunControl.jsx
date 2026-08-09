@@ -68,37 +68,40 @@ const heatColor = (percent) => {
   return 'good';
 };
 
-/** A single big readout tile in the status strip. */
+/**
+ * A readout tile in the status strip. The tile body selects that module in the
+ * panel; anything you'd want to do to it without looking first rides along in
+ * the tile header, so there's no loose row of buttons floating over the layout.
+ */
 const Gauge = (props) => {
-  const { label, value, sub, onClick, active, color } = props;
+  const { label, value, sub, onClick, active, color, action } = props;
   return (
-    <Section
-      fill
-      onClick={onClick}
-      style={onClick ? { cursor: 'pointer' } : undefined}
-    >
+    <Section fill title={label} buttons={action}>
       <Box
-        fontFamily="monospace"
-        fontSize="0.85rem"
-        color={active ? MFD.selected : 'label'}
+        onClick={onClick}
+        style={onClick ? { cursor: 'pointer' } : undefined}
       >
-        {label}
-      </Box>
-      <Box fontFamily="monospace" fontSize="1.6rem" bold color={color}>
-        {value}
-      </Box>
-      {!!sub && (
-        <Box fontFamily="monospace" fontSize="0.8rem" color="label">
-          {sub}
+        <Box
+          fontFamily="monospace"
+          fontSize="1.6rem"
+          bold
+          color={active ? MFD.selected : color}
+        >
+          {value}
         </Box>
-      )}
+        {!!sub && (
+          <Box fontFamily="monospace" fontSize="0.8rem" color="label">
+            {sub}
+          </Box>
+        )}
+      </Box>
     </Section>
   );
 };
 
 /** The always-visible top strip: shots, charge, thermal, integrity. */
 const StatusStrip = (props) => {
-  const { data, selected, onSelect } = props;
+  const { act, data, selected, onSelect } = props;
   const {
     has_cell,
     cell_data,
@@ -142,6 +145,14 @@ const StatusStrip = (props) => {
           color={has_cell ? chargeColor : 'bad'}
           active={selected === 'cell'}
           onClick={() => onSelect('cell')}
+          action={
+            <Button
+              icon="eject"
+              disabled={!has_cell}
+              tooltip="Drop the cell into your hands"
+              onClick={() => act('eject_cell')}
+            />
+          }
         />
       </Stack.Item>
       <Stack.Item grow basis={0}>
@@ -156,6 +167,15 @@ const StatusStrip = (props) => {
           color={has_emitter ? heatColor(heatPercent) : 'bad'}
           active={selected === 'emitter'}
           onClick={() => onSelect('emitter')}
+          action={
+            <Button
+              icon="snowflake"
+              disabled={!has_emitter}
+              selected={has_emitter && !!phase_emitter_data.cooling_system}
+              tooltip="Toggle active cooling"
+              onClick={() => act('toggle_cooling_system')}
+            />
+          }
         />
       </Stack.Item>
       <Stack.Item grow basis={0}>
@@ -170,54 +190,27 @@ const StatusStrip = (props) => {
           }
           active={selected === 'emitter'}
           onClick={() => onSelect('emitter')}
+          action={
+            <>
+              {has_emitter && !!phase_emitter_data.hacked && (
+                <Button
+                  icon="bolt"
+                  color="bad"
+                  tooltip="Remove the emitter's safety governor"
+                  onClick={() => act('overclock_emitter')}
+                />
+              )}
+              <Button
+                icon="eject"
+                disabled={!has_emitter}
+                tooltip="Pull the phase emitter out of the frame"
+                onClick={() => act('eject_emitter')}
+              />
+            </>
+          }
         />
       </Stack.Item>
     </Stack>
-  );
-};
-
-/** The things you want without hunting through the readout for them. */
-const QuickActions = (props) => {
-  const { act, data } = props;
-  const { has_cell, has_emitter, phase_emitter_data } = data;
-  return (
-    <Section>
-      <Button
-        icon="snowflake"
-        disabled={!has_emitter}
-        selected={has_emitter && !!phase_emitter_data.cooling_system}
-        tooltip="Toggle the emitter's active cooling system"
-        onClick={() => act('toggle_cooling_system')}
-      >
-        COOLING
-      </Button>
-      {has_emitter && !!phase_emitter_data.hacked && (
-        <Button
-          icon="bolt"
-          color="bad"
-          tooltip="Remove the safety governor on the phase emitter"
-          onClick={() => act('overclock_emitter')}
-        >
-          OVERCLOCK
-        </Button>
-      )}
-      <Button
-        icon="eject"
-        disabled={!has_cell}
-        tooltip="Drop the power cell into your hands"
-        onClick={() => act('eject_cell')}
-      >
-        EJECT CELL
-      </Button>
-      <Button
-        icon="eject"
-        disabled={!has_emitter}
-        tooltip="Pull the phase emitter out of the frame"
-        onClick={() => act('eject_emitter')}
-      >
-        EJECT EMITTER
-      </Button>
-    </Section>
   );
 };
 
@@ -371,7 +364,7 @@ const Schematic = (props) => {
 };
 
 const EmitterPanel = (props) => {
-  const { act, emitter, present } = props;
+  const { emitter, present } = props;
   if (!present) {
     return <NoticeBox danger>NO PHASE EMITTER SEATED</NoticeBox>;
   }
@@ -404,37 +397,24 @@ const EmitterPanel = (props) => {
           {emitter.process_time}
         </LabeledList.Item>
         <LabeledList.Item label="Active cooling">
-          <Button
-            icon="snowflake"
-            selected={!!emitter.cooling_system}
-            onClick={() => act('toggle_cooling_system')}
-          >
+          <Box color={emitter.cooling_system ? 'good' : 'label'}>
             {emitter.cooling_system
               ? `ENGAGED (${emitter.cooling_system_rate}/tick)`
               : 'DISENGAGED'}
-          </Button>
+          </Box>
+        </LabeledList.Item>
+        <LabeledList.Item label="Governor">
+          <Box color={emitter.hacked ? 'bad' : 'label'}>
+            {emitter.hacked ? 'BYPASSED' : 'Intact'}
+          </Box>
         </LabeledList.Item>
       </LabeledList>
-      <Box mt={1}>
-        {!!emitter.hacked && (
-          <Button
-            icon="bolt"
-            color="bad"
-            onClick={() => act('overclock_emitter')}
-          >
-            OVERCLOCK
-          </Button>
-        )}
-        <Button icon="eject" onClick={() => act('eject_emitter')}>
-          EJECT EMITTER
-        </Button>
-      </Box>
     </>
   );
 };
 
 const CellPanel = (props) => {
-  const { act, cell, present } = props;
+  const { cell, present } = props;
   if (!present) {
     return <NoticeBox danger>NO CELL SEATED</NoticeBox>;
   }
@@ -455,11 +435,6 @@ const CellPanel = (props) => {
             : 'None installed'}
         </LabeledList.Item>
       </LabeledList>
-      <Box mt={1}>
-        <Button icon="eject" onClick={() => act('eject_cell')}>
-          EJECT CELL
-        </Button>
-      </Box>
     </>
   );
 };
@@ -482,9 +457,12 @@ const AttachmentPanel = (props) => {
           </LabeledList.Item>
         )}
       </LabeledList>
-      <Box mt={1}>
-        {!!attachment.has_modifications &&
-          attachment.modify.map((option) => (
+      {!!attachment.has_modifications && (
+        <Box mt={1}>
+          <Box color="label" fontSize="0.85rem" mb={0.5}>
+            Controls
+          </Box>
+          {attachment.modify.map((option) => (
             <Button
               key={option.reference}
               icon={option.icon}
@@ -499,16 +477,8 @@ const AttachmentPanel = (props) => {
               {option.title}
             </Button>
           ))}
-        <Button
-          icon="wrench"
-          color="bad"
-          onClick={() =>
-            act('remove_attachment', { attachment_ref: attachment.ref })
-          }
-        >
-          REMOVE
-        </Button>
-      </Box>
+        </Box>
+      )}
     </>
   );
 };
@@ -558,13 +528,11 @@ export const MicrofusionGunControl = (props) => {
         <Stack fill vertical>
           <Stack.Item>
             <StatusStrip
+              act={act}
               data={data}
               selected={selected}
               onSelect={setSelected}
             />
-          </Stack.Item>
-          <Stack.Item>
-            <QuickActions act={act} data={data} />
           </Stack.Item>
           <Stack.Item grow>
             <Stack fill>
@@ -598,16 +566,35 @@ export const MicrofusionGunControl = (props) => {
                 </Section>
               </Stack.Item>
               <Stack.Item grow={2}>
-                <Section fill scrollable title={panelTitle}>
+                <Section
+                  fill
+                  scrollable
+                  title={panelTitle}
+                  buttons={
+                    bySlot[selected] && (
+                      <Button
+                        icon="wrench"
+                        color="bad"
+                        tooltip="Take this part off the weapon"
+                        onClick={() =>
+                          act('remove_attachment', {
+                            attachment_ref: bySlot[selected].ref,
+                          })
+                        }
+                      >
+                        REMOVE
+                      </Button>
+                    )
+                  }
+                >
                   {selected === 'emitter' && (
                     <EmitterPanel
-                      act={act}
                       emitter={phase_emitter_data}
                       present={has_emitter}
                     />
                   )}
                   {selected === 'cell' && (
-                    <CellPanel act={act} cell={cell_data} present={has_cell} />
+                    <CellPanel cell={cell_data} present={has_cell} />
                   )}
                   {selected !== 'emitter' && selected !== 'cell' && (
                     <AttachmentPanel
