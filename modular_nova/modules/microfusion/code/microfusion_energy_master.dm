@@ -450,6 +450,16 @@
 	if(!can_shoot())
 		firing_burst = FALSE
 		return FALSE
+	// The whole burst is queued on timers before the first shot leaves, so the
+	// emitter has to be re-checked here. Otherwise overheating partway through
+	// still lets every shot that was already scheduled go off, and the gun
+	// keeps firing after the trigger is long released.
+	var/emitter_state = process_emitter()
+	if(emitter_state != SHOT_SUCCESS)
+		if(emitter_state)
+			balloon_alert(user, emitter_state)
+		firing_burst = FALSE
+		return FALSE
 	if(!chambered)
 		process_chamber() // Ditto.
 	if(!issilicon(user))
@@ -592,13 +602,18 @@
 // Cell, emitter and upgrade interactions
 
 /obj/item/gun/microfusion/proc/remove_emitter(mob/user)
-	playsound(src, sound_cell_insert, 50, TRUE)
-	phase_emitter.forceMove(get_turf(src))
-	if(user)
-		user.put_in_hands(phase_emitter)
-		balloon_alert(user, "removed phase emitter")
-	phase_emitter.parent_gun = null
+	if(!phase_emitter)
+		return
+	// Hold onto it before it moves. forceMove() out of the gun fires Exited(),
+	// which clears phase_emitter, so anything touching it afterwards is null.
+	var/obj/item/microfusion_phase_emitter/removed_emitter = phase_emitter
 	phase_emitter = null
+	playsound(src, sound_cell_insert, 50, TRUE)
+	removed_emitter.parent_gun = null
+	removed_emitter.forceMove(get_turf(src))
+	if(user)
+		user.put_in_hands(removed_emitter)
+		balloon_alert(user, "removed phase emitter")
 	update_appearance()
 
 /obj/item/gun/microfusion/proc/insert_emitter(obj/item/microfusion_phase_emitter/inserting_phase_emitter, mob/living/user)
