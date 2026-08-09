@@ -26,8 +26,8 @@ who would rather not be pinged can turn the alert off in their game preferences.
 
 ### Defines:
 
-- `code/__DEFINES/~nova_defines/banning.dm`: `BAN_ADMIN_NOTIFY`
-- `code/__DEFINES/~nova_defines/keybindings.dm`: `COMSIG_KB_NOTIFYADMINS_DOWN`
+- `code/__DEFINES/~aphelion_defines/banning.dm`: `BAN_ADMIN_NOTIFY`
+- `code/__DEFINES/~aphelion_defines/keybindings.dm`: `COMSIG_KB_NOTIFYADMINS_DOWN`
 
 ### Included files that are not contained in this module:
 
