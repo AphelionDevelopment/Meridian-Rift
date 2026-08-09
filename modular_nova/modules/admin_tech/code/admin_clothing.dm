@@ -184,7 +184,8 @@
 	desc = "One of Central Command's best kept secrets, resting on the eyes of many of its officers, operatives, and technicians."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "contacts"
-	inhand_icon_state = "trayson-"	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	inhand_icon_state = "trayson-"
+	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "contacts"
 	base_icon_state = "trayson-"
 	flags_cover = GLASSESCOVERSEYES// dont ask me why were doing this we just are
