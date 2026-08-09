@@ -27,17 +27,27 @@ const ICON_W = 40;
 const ICON_H = 32;
 
 /**
- * Where the marker for an empty bay sits, in icon pixels. Filled bays don't use
- * these -- their own overlay is the hit target -- so these only need to point at
- * roughly the right part of the frame.
+ * Empty bay markers. `x`/`y` is where the ring sits -- kept off the weapon so
+ * several empty bays can't stack on top of each other -- and `ax`/`ay` is the
+ * spot on the frame it points at, taken from where that bay's overlays actually
+ * paint on the 40x32 sheet.
  */
 const SLOT_ANCHORS = {
-  rail: { x: 19, y: 7, label: 'RAIL' },
-  barrel: { x: 32, y: 15, label: 'BARREL' },
-  underbarrel: { x: 24, y: 24, label: 'UNDER' },
-  unique: { x: 7, y: 13, label: 'UNIQUE' },
-  camo: { x: 13, y: 21, label: 'FRAME' },
+  rail: { x: 17, y: 3, ax: 20, ay: 10, label: 'RAIL' },
+  camo: { x: 4, y: 5, ax: 14, ay: 15, label: 'FRAME' },
+  unique: { x: 31, y: 3, ax: 19, ay: 15, label: 'UNIQUE' },
+  underbarrel: { x: 19, y: 29, ax: 22, ay: 18, label: 'UNDER' },
+  barrel: { x: 34, y: 27, ax: 31, ay: 15, label: 'BARREL' },
 };
+
+/**
+ * Hit-test priority, back to front. Frame reskins cover the whole receiver -- a
+ * camo overlay paints nearly as many pixels as the gun itself -- so if they sit
+ * on top they swallow every click meant for the parts bolted onto them. Drawing
+ * them first puts them at the bottom of both the visual and the hit stack, and
+ * a reskinned frame under its fittings is the right way round anyway.
+ */
+const SLOT_DEPTH = ['camo', 'unique', 'barrel', 'underbarrel', 'rail'];
 
 /** Rebuilds the src DmIcon would have used, so the sprite can live inside an SVG. */
 const iconUrl = (icon, iconState) => {
@@ -166,6 +176,51 @@ const StatusStrip = (props) => {
   );
 };
 
+/** The things you want without hunting through the readout for them. */
+const QuickActions = (props) => {
+  const { act, data } = props;
+  const { has_cell, has_emitter, phase_emitter_data } = data;
+  return (
+    <Section>
+      <Button
+        icon="snowflake"
+        disabled={!has_emitter}
+        selected={has_emitter && !!phase_emitter_data.cooling_system}
+        tooltip="Toggle the emitter's active cooling system"
+        onClick={() => act('toggle_cooling_system')}
+      >
+        COOLING
+      </Button>
+      {has_emitter && !!phase_emitter_data.hacked && (
+        <Button
+          icon="bolt"
+          color="bad"
+          tooltip="Remove the safety governor on the phase emitter"
+          onClick={() => act('overclock_emitter')}
+        >
+          OVERCLOCK
+        </Button>
+      )}
+      <Button
+        icon="eject"
+        disabled={!has_cell}
+        tooltip="Drop the power cell into your hands"
+        onClick={() => act('eject_cell')}
+      >
+        EJECT CELL
+      </Button>
+      <Button
+        icon="eject"
+        disabled={!has_emitter}
+        tooltip="Pull the phase emitter out of the frame"
+        onClick={() => act('eject_emitter')}
+      >
+        EJECT EMITTER
+      </Button>
+    </Section>
+  );
+};
+
 /**
  * The weapon as it actually looks: base sprite, the frame's own overlays, then
  * one layer per attachment. Attachment layers hit-test on their painted pixels,
@@ -236,30 +291,35 @@ const Schematic = (props) => {
         );
       })}
 
-      {attachments.map((attachment) => {
-        const url = iconUrl(gunIcon, attachment.overlay_state);
-        if (!url) {
-          return null;
-        }
-        const lit =
-          selected === attachment.slot_id || hovered === attachment.slot_id;
-        return (
-          <image
-            key={attachment.ref}
-            href={url}
-            x={0}
-            y={0}
-            width={ICON_W}
-            height={ICON_H}
-            pointerEvents="visiblePainted"
-            filter={lit ? 'url(#mfd-outline)' : undefined}
-            style={{ cursor: 'pointer' }}
-            onClick={() => onSelect(attachment.slot_id)}
-            onMouseEnter={() => onHover(attachment.slot_id)}
-            onMouseLeave={() => onHover(null)}
-          />
-        );
-      })}
+      {[...attachments]
+        .sort(
+          (a, b) =>
+            SLOT_DEPTH.indexOf(a.slot_id) - SLOT_DEPTH.indexOf(b.slot_id),
+        )
+        .map((attachment) => {
+          const url = iconUrl(gunIcon, attachment.overlay_state);
+          if (!url) {
+            return null;
+          }
+          const lit =
+            selected === attachment.slot_id || hovered === attachment.slot_id;
+          return (
+            <image
+              key={attachment.ref}
+              href={url}
+              x={0}
+              y={0}
+              width={ICON_W}
+              height={ICON_H}
+              pointerEvents="visiblePainted"
+              filter={lit ? 'url(#mfd-outline)' : undefined}
+              style={{ cursor: 'pointer' }}
+              onClick={() => onSelect(attachment.slot_id)}
+              onMouseEnter={() => onHover(attachment.slot_id)}
+              onMouseLeave={() => onHover(null)}
+            />
+          );
+        })}
 
       {emptySlots.map((slot) => {
         const anchor = SLOT_ANCHORS[slot];
@@ -267,6 +327,7 @@ const Schematic = (props) => {
           return null;
         }
         const lit = selected === slot || hovered === slot;
+        const stroke = lit ? MFD.selected : MFD.wire;
         return (
           <g
             key={slot}
@@ -275,16 +336,28 @@ const Schematic = (props) => {
             onMouseEnter={() => onHover(slot)}
             onMouseLeave={() => onHover(null)}
           >
+            {/* leader from the ring to the part of the frame this bay serves */}
+            <line
+              x1={anchor.x}
+              y1={anchor.y}
+              x2={anchor.ax}
+              y2={anchor.ay}
+              stroke={stroke}
+              strokeWidth={0.35}
+              opacity={0.75}
+            />
+            <circle cx={anchor.ax} cy={anchor.ay} r={0.6} fill={stroke} />
+            {/* transparent pad so the ring is easy to hit, not just its stroke */}
+            <circle cx={anchor.x} cy={anchor.y} r={3.4} fill="transparent" />
             <circle
               cx={anchor.x}
               cy={anchor.y}
-              r={3.2}
+              r={2.6}
               fill="transparent"
-              stroke={lit ? MFD.selected : MFD.wire}
+              stroke={stroke}
               strokeWidth={0.6}
               strokeDasharray="1.4 1"
             />
-            <circle cx={anchor.x} cy={anchor.y} r={0.7} fill={MFD.wire} />
           </g>
         );
       })}
@@ -485,6 +558,9 @@ export const MicrofusionGunControl = (props) => {
               selected={selected}
               onSelect={setSelected}
             />
+          </Stack.Item>
+          <Stack.Item>
+            <QuickActions act={act} data={data} />
           </Stack.Item>
           <Stack.Item grow>
             <Stack fill>
