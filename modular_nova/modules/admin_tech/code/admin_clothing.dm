@@ -644,6 +644,8 @@
 	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "blue-gauntlets"
 	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	// Gloves carrying anything past bio/acid/fire armour must declare the arms too, same as the punch mitts.
+	body_parts_covered = HANDS|ARMS
 	armor_type = /datum/armor/admin
 
 /obj/item/clothing/gloves/tackler/admin/Initialize(mapload)
@@ -675,6 +677,8 @@
 	magpulse_fishing_modifier = 10
 	fishing_modifier = 10
 	w_class = WEIGHT_CLASS_TINY
+	// Same rule for boots and the legs.
+	body_parts_covered = FEET|LEGS
 	armor_type = /datum/armor/admin
 	var/admin_spacewalk = FALSE
 

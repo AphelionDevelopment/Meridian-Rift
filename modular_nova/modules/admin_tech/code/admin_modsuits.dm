@@ -220,9 +220,11 @@
 
 /obj/item/mod/control/pre_equipped/bluespace/danger_module_debug/Initialize(mapload, new_theme, new_skin, new_core)
 	. = ..()
-	for(var/path in subtypesof(/obj/item/mod/module))
-		var/obj/item/mod/module/module = new path(src)
-		module.mod = src
-		modules += module
-		module.on_install()
-		module.forceMove(src)
+	// install() runs the incompatibility, complexity and required-part checks. Adding modules straight to the list the
+	// way this used to skipped all of them, which fitted three storage modules at once and left several signals
+	// registered twice over. Anything install() turns down gets binned rather than left loose in the chassis.
+	for(var/obj/item/mod/module/module_path as anything in subtypesof(/obj/item/mod/module))
+		var/obj/item/mod/module/module = new module_path(src)
+		install(module)
+		if(!(module in modules))
+			qdel(module)

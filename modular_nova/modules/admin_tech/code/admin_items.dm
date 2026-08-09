@@ -1723,6 +1723,9 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	name = "pulse annhilator"
 	desc = "An extreme-duty energy rifle built for pure destruction."
 	worn_icon_state = "pulse"
+	// The pulse gun appends the fire mode to its icon_state, and energy.dmi has no pulse_ANNIHILATE. There is only the
+	// one fire mode here anyway, so there is nothing for the suffix to distinguish.
+	modifystate = FALSE
 	cell_type = /obj/item/stock_parts/power_store/cell/infinite
 	ammo_type = list(/obj/item/ammo_casing/energy/laser/pulse/heavy)
 	pin = /obj/item/firing_pin/admin
