@@ -145,7 +145,7 @@ const Lamp = (props) => {
         flex: '1 1 0',
         minWidth: 0,
         textAlign: 'center',
-        padding: '3px 1px',
+        padding: '6px 2px',
         border: `1px solid ${lit ? skin.line : 'rgba(29,106,82,0.5)'}`,
         background: lit ? `${skin.line}26` : 'rgba(0,0,0,0.3)',
         clipPath: CHAMFER(5),
@@ -158,8 +158,11 @@ const Lamp = (props) => {
       <Box
         style={{
           fontFamily: 'monospace',
-          fontSize: '0.56rem',
-          letterSpacing: '0.12em',
+          fontSize: '0.78rem',
+          fontWeight: 'bold',
+          // Four lamps share a quarter of the window, so labels are kept to
+          // four characters and the tracking stays tight enough to fit them.
+          letterSpacing: '0.04em',
           textTransform: 'uppercase',
           color: lit ? skin.line : T.label,
           whiteSpace: 'nowrap',
@@ -449,16 +452,16 @@ const StatusStrip = (props) => {
       lit: cellIn && !dry && cell_data.shots_left <= 3,
       tone: 'amber',
     },
-    { label: 'No cell', lit: !cellIn, tone: 'danger' },
+    { label: 'None', lit: !cellIn, tone: 'danger' },
   ];
   const cellLamps = [
     { label: 'Melt', lit: meltdown, tone: 'danger', flash: true },
-    { label: 'Chrg', lit: lowCharge, tone: 'amber' },
-    { label: 'No cell', lit: !cellIn, tone: 'danger' },
+    { label: 'Low', lit: lowCharge, tone: 'amber' },
+    { label: 'None', lit: !cellIn, tone: 'danger' },
   ];
   const thermalLamps = [
     { label: 'Cool', lit: cooling, tone: 'cool' },
-    { label: 'Thrtl', lit: throttled, tone: 'amber' },
+    { label: 'Thrt', lit: throttled, tone: 'amber' },
     { label: 'Over', lit: overload, tone: 'danger', flash: true },
     { label: 'Gov', lit: hacked, tone: 'danger' },
   ];
