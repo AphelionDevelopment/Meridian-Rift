@@ -206,7 +206,13 @@ const MfdButton = (props) => {
 /** Framed panel with a cut corner and a rule under its heading. */
 const Panel = (props) => {
   const { title, actions, children, footer, scroll, glyph, accent } = props;
+  const { titleTooltip } = props;
   const rule = accent || T.edge;
+  const heading = (
+    <Legend size="0.8rem" color={accent || T.phosphor}>
+      {title}
+    </Legend>
+  );
   return (
     <Box
       style={{
@@ -242,9 +248,11 @@ const Panel = (props) => {
             }}
           >
             {glyph}
-            <Legend size="0.8rem" color={accent || T.phosphor}>
-              {title}
-            </Legend>
+            {titleTooltip ? (
+              <Tooltip content={titleTooltip}>{heading}</Tooltip>
+            ) : (
+              heading
+            )}
           </Box>
           <Box style={{ flex: '0 0 auto' }}>{actions}</Box>
         </Box>
@@ -904,7 +912,7 @@ export const MicrofusionGunControl = (props) => {
           <Stack.Item grow>
             <Stack fill>
               <Stack.Item grow={3}>
-                <Panel title={gun_name}>
+                <Panel title={gun_name} titleTooltip={gun_desc}>
                   <Box
                     style={{
                       background:
@@ -926,9 +934,6 @@ export const MicrofusionGunControl = (props) => {
                       onSelect={setSelected}
                       onHover={setHovered}
                     />
-                  </Box>
-                  <Box mt={1} style={{ color: T.label, fontSize: '0.85rem' }}>
-                    {gun_desc}
                   </Box>
                   <Box mt={1}>
                     <Legend size="0.66rem">
