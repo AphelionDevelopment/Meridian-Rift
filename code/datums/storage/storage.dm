@@ -1171,7 +1171,7 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 			continue
 		// NOVA EDIT ADDITION START-  the column maths moved inside the per-viewer loop so widescreen players can be given more columns
 		// Because this proc loops per viewer and calls update_position each proc call, we can pretty easily provide a check to insulate us in the future when exposing non-widescreen players to oversized storage elements
-// This is NOT a config edit because I can see applications where people might want to better adjust the sizing of a ui for some reason.
+		// This is NOT a config edit because I can see applications where people might want to better adjust the sizing of a ui for some reason.
 		// If you ever need to reference the columns var, please use this instead.
 		// Storages that never widen skip the preference read entirely, which is most of them.
 		var/user_max_columns = screen_max_columns
