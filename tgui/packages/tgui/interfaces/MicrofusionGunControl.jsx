@@ -31,7 +31,7 @@ export const MicrofusionGunControl = (props) => {
       width={500}
       height={700}
     >
-      <Window.Content>
+      <Window.Content scrollable>
         <Stack vertical grow>
           <Stack.Item>
             <Section title={'Gun Info'}>

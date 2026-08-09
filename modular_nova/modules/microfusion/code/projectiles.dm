@@ -52,7 +52,7 @@
 	icon_state = "laser_greyscale"
 	wound_bonus = 0
 	damage = 25 // Basically a hellfire beam
-	speed = 0.6
+	speed = 1.65 // Roughly a third faster than a stock laser
 	color = LIGHT_COLOR_FLARE
 	light_color = LIGHT_COLOR_FLARE
 
@@ -78,7 +78,7 @@
 	tracer_type = /obj/effect/projectile/tracer/heavy_laser
 	muzzle_type = /obj/effect/projectile/muzzle/heavy_laser
 	impact_type = /obj/effect/projectile/impact/heavy_laser
-	speed = 0.4
+	speed = 2.5 // Twice as fast as a stock laser
 
 /obj/projectile/beam/laser/microfusion/xray
 	name = "x-ray microfusion laser"
