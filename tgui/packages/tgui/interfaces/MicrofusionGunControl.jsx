@@ -1,37 +1,42 @@
 // THIS IS A NOVA SECTOR UI FILE
 import { useState } from 'react';
-import {
-  Box,
-  Button,
-  LabeledList,
-  NoticeBox,
-  ProgressBar,
-  Section,
-  Stack,
-} from 'tgui-core/components';
+import { Box, Icon, Stack, Tooltip } from 'tgui-core/components';
 import { toFixed } from 'tgui-core/math';
 
 import { useBackend } from '../backend';
 import { Window } from '../layouts';
 
-const MFD = {
-  wire: '#2f8f6e',
-  glass: 'rgba(0, 22, 16, 0.65)',
-  text: '#8ff5cd',
-  selected: '#ffd964',
-  fault: '#ff5f56',
+// Micron Control Systems house style: phosphor on smoked glass.
+const T = {
+  void: '#03100b',
+  glass: 'rgba(9, 34, 27, 0.82)',
+  glassLit: 'rgba(16, 58, 46, 0.9)',
+  edge: '#1d6a52',
+  edgeLit: '#4fe3ab',
+  dim: 'rgba(79, 227, 171, 0.16)',
+  phosphor: '#4fe3ab',
+  phosphorHot: '#a8ffe4',
+  label: '#5f9d88',
+  amber: '#ffc042',
+  danger: '#ff6a5f',
 };
 
-// The gun sheet is 40x32, so the schematic works in icon-pixel space.
+const TONE = {
+  primary: { line: T.edgeLit, text: T.phosphorHot, glow: 'rgba(79,227,171,0.55)' },
+  amber: { line: T.amber, text: '#ffe4a8', glow: 'rgba(255,192,66,0.55)' },
+  danger: { line: T.danger, text: '#ffc9c4', glow: 'rgba(255,106,95,0.55)' },
+};
+
+// Chamfered corners, cut top-left and bottom-right.
+const CHAMFER = (n) =>
+  `polygon(${n}px 0, 100% 0, 100% calc(100% - ${n}px), calc(100% - ${n}px) 100%, 0 100%, 0 ${n}px)`;
+
+const SCANLINES =
+  'repeating-linear-gradient(0deg, rgba(0,0,0,0.22) 0px, rgba(0,0,0,0.22) 1px, transparent 1px, transparent 3px)';
+
 const ICON_W = 40;
 const ICON_H = 32;
 
-/**
- * Empty bay markers. `x`/`y` is where the ring sits -- kept off the weapon so
- * several empty bays can't stack on top of each other -- and `ax`/`ay` is the
- * spot on the frame it points at, taken from where that bay's overlays actually
- * paint on the 40x32 sheet.
- */
 const SLOT_ANCHORS = {
   rail: { x: 17, y: 3, ax: 20, ay: 10, label: 'RAIL' },
   camo: { x: 4, y: 5, ax: 14, ay: 15, label: 'FRAME' },
@@ -41,15 +46,12 @@ const SLOT_ANCHORS = {
 };
 
 /**
- * Hit-test priority, back to front. Frame reskins cover the whole receiver -- a
- * camo overlay paints nearly as many pixels as the gun itself -- so if they sit
- * on top they swallow every click meant for the parts bolted onto them. Drawing
- * them first puts them at the bottom of both the visual and the hit stack, and
- * a reskinned frame under its fittings is the right way round anyway.
+ * Painting order, back to front. Frame reskins cover the whole receiver, so
+ * they go underneath the fittings bolted to them.
  */
 const SLOT_DEPTH = ['camo', 'unique', 'barrel', 'underbarrel', 'rail'];
 
-/** Rebuilds the src DmIcon would have used, so the sprite can live inside an SVG. */
+/** Rebuilds the src DmIcon would have used, so the sprite can live in an SVG. */
 const iconUrl = (icon, iconState) => {
   const ref = globalThis.Byond?.iconRefMap?.[icon];
   if (!ref || !iconState) {
@@ -58,48 +60,203 @@ const iconUrl = (icon, iconState) => {
   return `${ref}?state=${iconState}&dir=2&movement=false&frame=1`;
 };
 
-const heatColor = (percent) => {
-  if (percent >= 70) {
-    return 'bad';
+const clamp01 = (n) => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0));
+
+const bandColor = (fraction, invert) => {
+  const f = invert ? 1 - fraction : fraction;
+  if (f <= 0.25) {
+    return T.danger;
   }
-  if (percent >= 40) {
-    return 'average';
+  if (f <= 0.5) {
+    return T.amber;
   }
-  return 'good';
+  return T.phosphor;
 };
 
-/**
- * A readout tile in the status strip. The tile body selects that module in the
- * panel; anything you'd want to do to it without looking first rides along in
- * the tile header, so there's no loose row of buttons floating over the layout.
- */
-const Gauge = (props) => {
-  const { label, value, sub, onClick, active, color, action } = props;
+/** Wide-tracked caps, used for every label on the panel. */
+const Legend = (props) => (
+  <Box
+    style={{
+      fontFamily: 'monospace',
+      fontSize: props.size || '0.72rem',
+      letterSpacing: '0.22em',
+      textTransform: 'uppercase',
+      color: props.color || T.label,
+    }}
+  >
+    {props.children}
+  </Box>
+);
+
+/** A chamfered, glowing control. Bigger and louder than a stock tgui button. */
+const MfdButton = (props) => {
+  const { children, icon, onClick, disabled, tone, block, tooltip, active } =
+    props;
+  const [hover, setHover] = useState(false);
+  const skin = TONE[tone || 'primary'];
+  const on = !disabled && (hover || active);
+
+  const control = (
+    <Box
+      onClick={disabled ? undefined : onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: block ? 'block' : 'inline-block',
+        width: block ? '100%' : undefined,
+        marginRight: block ? undefined : '4px',
+        marginTop: '2px',
+        padding: block ? '10px 14px' : '7px 13px',
+        textAlign: 'center',
+        fontFamily: 'monospace',
+        fontSize: block ? '1rem' : '0.85rem',
+        letterSpacing: '0.16em',
+        textTransform: 'uppercase',
+        color: disabled ? T.label : skin.text,
+        border: `1px solid ${disabled ? T.edge : skin.line}`,
+        background: on
+          ? T.glassLit
+          : active
+            ? 'rgba(79,227,171,0.10)'
+            : T.glass,
+        clipPath: CHAMFER(9),
+        boxShadow: on ? `0 0 14px ${skin.glow}, inset 0 0 12px ${skin.glow}` : 'none',
+        opacity: disabled ? 0.35 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        transition: 'box-shadow 120ms linear, background 120ms linear',
+        userSelect: 'none',
+      }}
+    >
+      {!!icon && <Icon name={icon} mr={children ? 1 : 0} />}
+      {children}
+    </Box>
+  );
+
+  return tooltip ? <Tooltip content={tooltip}>{control}</Tooltip> : control;
+};
+
+/** Framed panel with a cut corner and a rule under its heading. */
+const Panel = (props) => {
+  const { title, actions, children, footer, scroll } = props;
   return (
-    <Section fill title={label} buttons={action}>
+    <Box
+      style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: T.glass,
+        border: `1px solid ${T.edge}`,
+        clipPath: CHAMFER(12),
+        padding: '10px 12px',
+      }}
+    >
+      {(!!title || !!actions) && (
+        <Box
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+            borderBottom: `1px solid ${T.edge}`,
+            paddingBottom: '6px',
+            marginBottom: '8px',
+            flex: '0 0 auto',
+          }}
+        >
+          <Legend size="0.8rem" color={T.phosphor}>
+            {title}
+          </Legend>
+          <Box style={{ flex: '0 0 auto' }}>{actions}</Box>
+        </Box>
+      )}
+      <Box
+        style={{
+          flex: '1 1 auto',
+          minHeight: 0,
+          overflowY: scroll ? 'auto' : 'visible',
+        }}
+      >
+        {children}
+      </Box>
+      {!!footer && (
+        <Box
+          style={{
+            flex: '0 0 auto',
+            borderTop: `1px solid ${T.edge}`,
+            paddingTop: '8px',
+            marginTop: '8px',
+          }}
+        >
+          {footer}
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+/** Discrete-segment bar. Reads as an instrument rather than a web progress bar. */
+const Segments = (props) => {
+  const { value, max, count, color, height } = props;
+  const total = count || 18;
+  const fraction = clamp01(value / (max || 1));
+  const lit = Math.round(fraction * total);
+  return (
+    <Box style={{ display: 'flex', gap: '2px', marginTop: '4px' }}>
+      {Array.from({ length: total }, (_, index) => {
+        const on = index < lit;
+        return (
+          <Box
+            key={index}
+            style={{
+              flex: '1 1 0',
+              height: height || '11px',
+              background: on ? color : T.dim,
+              boxShadow: on ? `0 0 7px ${color}` : 'none',
+              clipPath: 'polygon(0 0, 100% 0, 100% 68%, 68% 100%, 0 100%)',
+            }}
+          />
+        );
+      })}
+    </Box>
+  );
+};
+
+/** One instrument in the top strip. */
+const Gauge = (props) => {
+  const { label, value, unit, sub, fraction, color, onClick, active, actions } =
+    props;
+  return (
+    <Panel title={label} actions={actions}>
       <Box
         onClick={onClick}
         style={onClick ? { cursor: 'pointer' } : undefined}
       >
-        <Box
-          fontFamily="monospace"
-          fontSize="1.6rem"
-          bold
-          color={active ? MFD.selected : color}
-        >
-          {value}
-        </Box>
-        {!!sub && (
-          <Box fontFamily="monospace" fontSize="0.8rem" color="label">
-            {sub}
+        <Box style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+          <Box
+            style={{
+              fontFamily: 'monospace',
+              fontSize: '2rem',
+              lineHeight: 1,
+              fontWeight: 'bold',
+              color: active ? T.phosphorHot : color,
+              textShadow: `0 0 12px ${color}`,
+            }}
+          >
+            {value}
           </Box>
+          {!!unit && <Legend size="0.75rem">{unit}</Legend>}
+        </Box>
+        {fraction !== undefined && (
+          <Segments value={fraction} max={1} color={color} />
         )}
+        <Box mt={0.5}>
+          <Legend size="0.68rem">{sub}</Legend>
+        </Box>
       </Box>
-    </Section>
+    </Panel>
   );
 };
 
-/** The always-visible top strip: shots, charge, thermal, integrity. */
 const StatusStrip = (props) => {
   const { act, data, selected, onSelect } = props;
   const {
@@ -110,43 +267,48 @@ const StatusStrip = (props) => {
     gun_heat_dissipation,
   } = data;
 
-  const chargePercent = has_cell
-    ? (cell_data.charge / cell_data.max_charge) * 100
+  const chargeFraction = has_cell
+    ? clamp01(cell_data.charge / cell_data.max_charge)
     : 0;
-  let chargeColor = 'good';
-  if (chargePercent <= 25) {
-    chargeColor = 'bad';
-  } else if (chargePercent <= 50) {
-    chargeColor = 'average';
-  }
-  const heatPercent = has_emitter ? phase_emitter_data.heat_percent : 0;
+  const chargeTone = has_cell ? bandColor(chargeFraction) : T.danger;
+  const heatFraction = has_emitter
+    ? clamp01(phase_emitter_data.heat_percent / 100)
+    : 0;
+  const heatTone = has_emitter ? bandColor(heatFraction, true) : T.danger;
+  const integrityFraction = has_emitter
+    ? clamp01(phase_emitter_data.integrity / 100)
+    : 0;
+  const integrityTone = has_emitter ? bandColor(integrityFraction) : T.danger;
 
   return (
     <Stack>
       <Stack.Item grow basis={0}>
         <Gauge
-          label="SHOTS"
+          label="Shots"
           value={has_cell ? cell_data.shots_left : '--'}
-          sub={has_cell ? `${cell_data.shot_cost} MF each` : 'no cell'}
-          color={has_cell ? chargeColor : 'bad'}
+          unit="rds"
+          sub={has_cell ? `${cell_data.shot_cost} mf per shot` : 'no cell'}
+          color={chargeTone}
           active={selected === 'cell'}
           onClick={() => onSelect('cell')}
         />
       </Stack.Item>
       <Stack.Item grow basis={0}>
         <Gauge
-          label="CELL"
-          value={`${toFixed(chargePercent, 0)}%`}
+          label="Cell"
+          value={`${toFixed(chargeFraction * 100, 0)}`}
+          unit="%"
+          fraction={chargeFraction}
           sub={
             has_cell
-              ? `${cell_data.charge} / ${cell_data.max_charge} MF`
+              ? `${cell_data.charge} / ${cell_data.max_charge} mf`
               : 'no cell seated'
           }
-          color={has_cell ? chargeColor : 'bad'}
+          color={chargeTone}
           active={selected === 'cell'}
           onClick={() => onSelect('cell')}
-          action={
-            <Button
+          actions={
+            <MfdButton
               icon="eject"
               disabled={!has_cell}
               tooltip="Drop the cell into your hands"
@@ -157,21 +319,23 @@ const StatusStrip = (props) => {
       </Stack.Item>
       <Stack.Item grow basis={0}>
         <Gauge
-          label="THERMAL"
-          value={has_emitter ? `${toFixed(heatPercent, 0)}%` : '--'}
+          label="Thermal"
+          value={has_emitter ? `${toFixed(heatFraction * 100, 0)}` : '--'}
+          unit="%"
+          fraction={heatFraction}
           sub={
             has_emitter
-              ? `throttle ${phase_emitter_data.throttle_percentage}% | -${phase_emitter_data.heat_dissipation_per_tick}/t`
+              ? `throttle ${phase_emitter_data.throttle_percentage}% · -${phase_emitter_data.heat_dissipation_per_tick}/t`
               : 'no emitter'
           }
-          color={has_emitter ? heatColor(heatPercent) : 'bad'}
+          color={heatTone}
           active={selected === 'emitter'}
           onClick={() => onSelect('emitter')}
-          action={
-            <Button
+          actions={
+            <MfdButton
               icon="snowflake"
               disabled={!has_emitter}
-              selected={has_emitter && !!phase_emitter_data.cooling_system}
+              active={has_emitter && !!phase_emitter_data.cooling_system}
               tooltip="Toggle active cooling"
               onClick={() => act('toggle_cooling_system')}
             />
@@ -180,27 +344,27 @@ const StatusStrip = (props) => {
       </Stack.Item>
       <Stack.Item grow basis={0}>
         <Gauge
-          label="INTEGRITY"
+          label="Integrity"
           value={
-            has_emitter ? `${toFixed(phase_emitter_data.integrity, 0)}%` : '--'
+            has_emitter ? `${toFixed(phase_emitter_data.integrity, 0)}` : '--'
           }
+          unit="%"
+          fraction={integrityFraction}
           sub={`frame dissipation ${gun_heat_dissipation}`}
-          color={
-            has_emitter && phase_emitter_data.integrity < 50 ? 'bad' : 'good'
-          }
+          color={integrityTone}
           active={selected === 'emitter'}
           onClick={() => onSelect('emitter')}
-          action={
+          actions={
             <>
               {has_emitter && !!phase_emitter_data.hacked && (
-                <Button
+                <MfdButton
                   icon="bolt"
-                  color="bad"
+                  tone="danger"
                   tooltip="Remove the emitter's safety governor"
                   onClick={() => act('overclock_emitter')}
                 />
               )}
-              <Button
+              <MfdButton
                 icon="eject"
                 disabled={!has_emitter}
                 tooltip="Pull the phase emitter out of the frame"
@@ -215,14 +379,11 @@ const StatusStrip = (props) => {
 };
 
 /**
- * The weapon as it actually looks: base sprite, the frame's own overlays, then
- * one layer per attachment.
- *
- * The sprite itself is display only. SVG image elements hit-test on their whole
- * rectangle rather than their painted pixels, so full-frame layers stacked over
- * each other means whichever is on top eats every click on the panel. Each bay
- * gets a ring off to the side of the weapon instead, with a leader line to the
- * part of the frame it serves -- selecting one still outlines its overlay in
+ * The weapon as it actually looks. The sprite is display only -- SVG image
+ * elements hit-test on their whole rectangle rather than their painted pixels,
+ * so stacked full-frame layers would mean whichever sorts last eats every
+ * click. Each bay gets a ring beside the weapon instead, with a leader to the
+ * part of the frame it serves; selecting one still outlines its overlay in
  * place, so the feedback stays on the gun.
  */
 const Schematic = (props) => {
@@ -231,7 +392,7 @@ const Schematic = (props) => {
 
   const base = iconUrl(gunIcon, gunIconState);
   if (!base) {
-    return <NoticeBox>SPRITE FEED UNAVAILABLE</NoticeBox>;
+    return <Legend color={T.danger}>Sprite feed unavailable</Legend>;
   }
 
   return (
@@ -255,7 +416,7 @@ const Schematic = (props) => {
             radius="1"
             result="fat"
           />
-          <feFlood floodColor={MFD.selected} result="tint" />
+          <feFlood floodColor={T.amber} result="tint" />
           <feComposite in="tint" in2="fat" operator="in" result="ring" />
           <feMerge>
             <feMergeNode in="ring" />
@@ -322,7 +483,7 @@ const Schematic = (props) => {
         }
         const filled = !!filledSlots[slot];
         const lit = selected === slot || hovered === slot;
-        const stroke = lit ? MFD.selected : filled ? MFD.text : MFD.wire;
+        const stroke = lit ? T.amber : filled ? T.phosphor : T.edge;
         return (
           <g
             key={slot}
@@ -331,7 +492,6 @@ const Schematic = (props) => {
             onMouseEnter={() => onHover(slot)}
             onMouseLeave={() => onHover(null)}
           >
-            {/* leader from the ring to the part of the frame this bay serves */}
             <line
               x1={anchor.x}
               y1={anchor.y}
@@ -348,7 +508,7 @@ const Schematic = (props) => {
               cx={anchor.x}
               cy={anchor.y}
               r={2.6}
-              fill={filled ? MFD.glass : 'transparent'}
+              fill={filled ? 'rgba(79,227,171,0.14)' : 'transparent'}
               stroke={stroke}
               strokeWidth={filled ? 0.8 : 0.6}
               strokeDasharray={filled ? undefined : '1.4 1'}
@@ -363,52 +523,73 @@ const Schematic = (props) => {
   );
 };
 
+/** Label/value row in the readout. */
+const Row = (props) => (
+  <Box
+    style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      gap: '10px',
+      padding: '3px 0',
+      borderBottom: `1px solid rgba(29,106,82,0.35)`,
+    }}
+  >
+    <Legend>{props.label}</Legend>
+    <Box
+      style={{
+        fontFamily: 'monospace',
+        fontSize: '0.85rem',
+        color: props.color || T.phosphorHot,
+        textAlign: 'right',
+      }}
+    >
+      {props.children}
+    </Box>
+  </Box>
+);
+
+const Alert = (props) => (
+  <Box
+    style={{
+      border: `1px solid ${T.danger}`,
+      background: 'rgba(255,106,95,0.12)',
+      clipPath: CHAMFER(8),
+      padding: '6px 10px',
+      marginBottom: '8px',
+      boxShadow: `0 0 12px rgba(255,106,95,0.35)`,
+    }}
+  >
+    <Legend color={T.danger}>{props.children}</Legend>
+  </Box>
+);
+
 const EmitterPanel = (props) => {
   const { emitter, present } = props;
   if (!present) {
-    return <NoticeBox danger>NO PHASE EMITTER SEATED</NoticeBox>;
+    return <Alert>No phase emitter seated</Alert>;
   }
   return (
     <>
-      {!!emitter.damaged && <NoticeBox danger>EMITTER DAMAGED</NoticeBox>}
-      <LabeledList>
-        <LabeledList.Item label="Unit">{emitter.type}</LabeledList.Item>
-        <LabeledList.Item label="Integrity">
-          <ProgressBar
-            value={emitter.integrity}
-            minValue={0}
-            maxValue={100}
-            color={emitter.integrity < 50 ? 'bad' : 'good'}
-          >
-            {toFixed(emitter.integrity, 1)}%
-          </ProgressBar>
-        </LabeledList.Item>
-        <LabeledList.Item label="Thermal">
-          <ProgressBar
-            value={emitter.current_heat}
-            minValue={0}
-            maxValue={emitter.max_heat}
-            color={heatColor(emitter.heat_percent)}
-          >
-            {emitter.current_heat} / {emitter.max_heat}
-          </ProgressBar>
-        </LabeledList.Item>
-        <LabeledList.Item label="Cycle time">
-          {emitter.process_time}
-        </LabeledList.Item>
-        <LabeledList.Item label="Active cooling">
-          <Box color={emitter.cooling_system ? 'good' : 'label'}>
-            {emitter.cooling_system
-              ? `ENGAGED (${emitter.cooling_system_rate}/tick)`
-              : 'DISENGAGED'}
-          </Box>
-        </LabeledList.Item>
-        <LabeledList.Item label="Governor">
-          <Box color={emitter.hacked ? 'bad' : 'label'}>
-            {emitter.hacked ? 'BYPASSED' : 'Intact'}
-          </Box>
-        </LabeledList.Item>
-      </LabeledList>
+      {!!emitter.damaged && <Alert>Emitter damaged</Alert>}
+      <Row label="Unit">{emitter.type}</Row>
+      <Row label="Integrity">{toFixed(emitter.integrity, 1)}%</Row>
+      <Row label="Thermal">
+        {emitter.current_heat} / {emitter.max_heat}
+      </Row>
+      <Row label="Throttle at">{emitter.throttle_percentage}%</Row>
+      <Row label="Dissipation">{emitter.heat_dissipation_per_tick} / tick</Row>
+      <Row label="Cycle time">{emitter.process_time}</Row>
+      <Row
+        label="Active cooling"
+        color={emitter.cooling_system ? T.phosphor : T.label}
+      >
+        {emitter.cooling_system
+          ? `Engaged · ${emitter.cooling_system_rate}/tick`
+          : 'Disengaged'}
+      </Row>
+      <Row label="Governor" color={emitter.hacked ? T.danger : T.label}>
+        {emitter.hacked ? 'Bypassed' : 'Intact'}
+      </Row>
     </>
   );
 };
@@ -416,25 +597,21 @@ const EmitterPanel = (props) => {
 const CellPanel = (props) => {
   const { cell, present } = props;
   if (!present) {
-    return <NoticeBox danger>NO CELL SEATED</NoticeBox>;
+    return <Alert>No cell seated</Alert>;
   }
   return (
     <>
-      {!!cell.status && <NoticeBox danger>CELL MELTDOWN IMMINENT</NoticeBox>}
-      <LabeledList>
-        <LabeledList.Item label="Unit">{cell.type}</LabeledList.Item>
-        <LabeledList.Item label="Charge">
-          {cell.charge} / {cell.max_charge} MF
-        </LabeledList.Item>
-        <LabeledList.Item label="Remaining">
-          {cell.shots_left} shots at {cell.shot_cost} MF
-        </LabeledList.Item>
-        <LabeledList.Item label="Modules">
-          {cell.attachments.length
-            ? cell.attachments.join(', ')
-            : 'None installed'}
-        </LabeledList.Item>
-      </LabeledList>
+      {!!cell.status && <Alert>Cell meltdown imminent</Alert>}
+      <Row label="Unit">{cell.type}</Row>
+      <Row label="Charge">
+        {cell.charge} / {cell.max_charge} MF
+      </Row>
+      <Row label="Remaining">
+        {cell.shots_left} shots @ {cell.shot_cost} MF
+      </Row>
+      <Row label="Modules">
+        {cell.attachments.length ? cell.attachments.join(', ') : 'None'}
+      </Row>
     </>
   );
 };
@@ -442,41 +619,42 @@ const CellPanel = (props) => {
 const AttachmentPanel = (props) => {
   const { act, attachment, label } = props;
   if (!attachment) {
-    return <NoticeBox>{label} BAY EMPTY</NoticeBox>;
+    return (
+      <>
+        <Alert>{label} bay empty</Alert>
+        <Legend>Fit a part by striking the weapon with it.</Legend>
+      </>
+    );
   }
   return (
     <>
-      <Box color="label" mb={1}>
+      <Box mb={1} style={{ color: T.label, fontSize: '0.9rem' }}>
         {attachment.desc}
       </Box>
-      <LabeledList>
-        <LabeledList.Item label="Bay">{attachment.slot}</LabeledList.Item>
-        {!!attachment.information && (
-          <LabeledList.Item label="Readout">
-            {attachment.information}
-          </LabeledList.Item>
-        )}
-      </LabeledList>
+      <Row label="Bay">{attachment.slot}</Row>
+      {!!attachment.information && (
+        <Row label="Readout">{attachment.information}</Row>
+      )}
       {!!attachment.has_modifications && (
-        <Box mt={1}>
-          <Box color="label" fontSize="0.85rem" mb={0.5}>
-            Controls
+        <Box mt={1.5}>
+          <Legend>Controls</Legend>
+          <Box mt={0.5}>
+            {attachment.modify.map((option) => (
+              <MfdButton
+                key={option.reference}
+                icon={option.icon}
+                tone={option.color === 'red' ? 'danger' : 'amber'}
+                onClick={() =>
+                  act('modify_attachment', {
+                    attachment_ref: attachment.ref,
+                    modify_ref: option.reference,
+                  })
+                }
+              >
+                {option.title}
+              </MfdButton>
+            ))}
           </Box>
-          {attachment.modify.map((option) => (
-            <Button
-              key={option.reference}
-              icon={option.icon}
-              color={option.color}
-              onClick={() =>
-                act('modify_attachment', {
-                  attachment_ref: attachment.ref,
-                  modify_ref: option.reference,
-                })
-              }
-            >
-              {option.title}
-            </Button>
-          ))}
         </Box>
       )}
     </>
@@ -506,25 +684,29 @@ export const MicrofusionGunControl = (props) => {
   for (const attachment of attachments) {
     bySlot[attachment.slot_id] = attachment;
   }
+  const fitted = bySlot[selected];
 
   let panelTitle = 'Readout';
   if (selected === 'cell') {
     panelTitle = 'Power Cell';
   } else if (selected === 'emitter') {
     panelTitle = 'Phase Emitter';
-  } else if (bySlot[selected]) {
-    panelTitle = bySlot[selected].name;
+  } else if (fitted) {
+    panelTitle = fitted.name;
   } else if (SLOT_ANCHORS[selected]) {
-    panelTitle = SLOT_ANCHORS[selected].label;
+    panelTitle = `${SLOT_ANCHORS[selected].label} bay`;
   }
 
   return (
     <Window
       title={`Micron Control Systems Incorporated: ${gun_name}`}
-      width={820}
-      height={620}
+      width={860}
+      height={660}
     >
-      <Window.Content scrollable>
+      <Window.Content
+        scrollable
+        style={{ background: T.void, backgroundImage: SCANLINES }}
+      >
         <Stack fill vertical>
           <Stack.Item>
             <StatusStrip
@@ -537,11 +719,15 @@ export const MicrofusionGunControl = (props) => {
           <Stack.Item grow>
             <Stack fill>
               <Stack.Item grow={3}>
-                <Section fill title={gun_name}>
+                <Panel title={gun_name}>
                   <Box
-                    backgroundColor={MFD.glass}
-                    style={{ border: `1px solid ${MFD.wire}` }}
-                    p={2}
+                    style={{
+                      background:
+                        'radial-gradient(ellipse at 50% 45%, rgba(30,120,95,0.28), rgba(3,16,11,0.9) 70%)',
+                      border: `1px solid ${T.edge}`,
+                      clipPath: CHAMFER(10),
+                      padding: '14px',
+                    }}
                   >
                     <Schematic
                       gunIcon={gun_icon}
@@ -556,35 +742,35 @@ export const MicrofusionGunControl = (props) => {
                       onHover={setHovered}
                     />
                   </Box>
-                  <Box mt={1} color="label" fontSize="0.9rem">
+                  <Box mt={1} style={{ color: T.label, fontSize: '0.85rem' }}>
                     {gun_desc}
                   </Box>
-                  <Box mt={1} color="label" fontSize="0.85rem">
-                    Select a bay by its ring. Solid rings are fitted and light
-                    the part up on the frame, dashed rings are empty.
+                  <Box mt={1}>
+                    <Legend size="0.66rem">
+                      Solid rings are fitted · dashed rings are empty
+                    </Legend>
                   </Box>
-                </Section>
+                </Panel>
               </Stack.Item>
               <Stack.Item grow={2}>
-                <Section
-                  fill
-                  scrollable
+                <Panel
                   title={panelTitle}
-                  buttons={
-                    bySlot[selected] && (
-                      <Button
+                  scroll
+                  footer={
+                    fitted ? (
+                      <MfdButton
+                        block
                         icon="wrench"
-                        color="bad"
-                        tooltip="Take this part off the weapon"
+                        tone="danger"
                         onClick={() =>
                           act('remove_attachment', {
-                            attachment_ref: bySlot[selected].ref,
+                            attachment_ref: fitted.ref,
                           })
                         }
                       >
-                        REMOVE
-                      </Button>
-                    )
+                        Remove part
+                      </MfdButton>
+                    ) : undefined
                   }
                 >
                   {selected === 'emitter' && (
@@ -599,11 +785,11 @@ export const MicrofusionGunControl = (props) => {
                   {selected !== 'emitter' && selected !== 'cell' && (
                     <AttachmentPanel
                       act={act}
-                      attachment={bySlot[selected]}
-                      label={SLOT_ANCHORS[selected]?.label || 'THIS'}
+                      attachment={fitted}
+                      label={SLOT_ANCHORS[selected]?.label || 'This'}
                     />
                   )}
-                </Section>
+                </Panel>
               </Stack.Item>
             </Stack>
           </Stack.Item>
