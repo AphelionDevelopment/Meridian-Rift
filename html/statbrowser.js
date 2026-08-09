@@ -25,9 +25,11 @@ var mc_tab_parts = [['Loading...']];
 var href_token = null;
 var verb_tabs = [];
 var verbs = [['', '']]; // list with a list inside
+// APHELION EDIT ADDITION START
 var favourite_verbs = [];
 var verb_filter = '';
 var current_verb_cat = null;
+// APHELION EDIT ADDITION END
 var tickets = [];
 var interviewManager = { status: '', interviews: [] };
 var sdql2 = [];
@@ -72,7 +74,7 @@ function createStatusTab(name) {
   button.textContent = name;
   button.className = 'button';
   //ORDERING ALPHABETICALLY
-  button.style.order = { Status: 1, MC: 2, Favourites: 3 }[name] || name.charCodeAt(0);
+  button.style.order = { Status: 1, MC: 2, Favourites: 3 }[name] || name.charCodeAt(0); // APHELION EDIT CHANGE - ORIGINAL:  button.style.order = { Status: 1, MC: 2 }[name] || name.charCodeAt(0);
   //END ORDERING
   menu.appendChild(button);
   SendTabToByond(name);
@@ -227,8 +229,10 @@ function tab_change(tab) {
     draw_status();
   } else if (tab == 'MC') {
     draw_mc();
+  // APHELION EDIT ADDITION START
   } else if (tab == 'Favourites') {
     draw_favourites();
+  // APHELION EDIT ADDITION END
   } else if (verb_tabs_thingy) {
     draw_verbs(tab);
   } else if (tab == 'Debug Stat Panel') {
@@ -648,6 +652,7 @@ function make_verb_onclick(command) {
   };
 }
 
+// APHELION EDIT ADDITION START - replaces the original single draw_verbs() grid renderer with the favourites/search-aware panel below
 function toggle_favourite(verb_name) {
   var idx = favourite_verbs.indexOf(verb_name);
   if (idx === -1) {
@@ -791,8 +796,18 @@ function render_verb_category(container, cat) {
         newTable.className = 'grid-container';
         additions[subCat] = newTable;
       }
-
-      (subCat ? additions[subCat] : table).appendChild(make_verb_item(command));
+      /* // APHELION EDIT REMOVAL START
+      var a = document.createElement('a');
+      a.href = '#';
+      a.onclick = make_verb_onclick(command.replace(/\s/g, '-'));
+      a.className = 'grid-item';
+      var t = document.createElement('span');
+      t.textContent = command;
+      t.className = 'grid-item-text';
+      a.appendChild(t);
+      (subCat ? additions[subCat] : table).appendChild(a);
+      */ // APHELION EDIT REMOVAL END
+      (subCat ? additions[subCat] : table).appendChild(make_verb_item(command)); // APHELION EDIT ADDITION
     }
   }
 
@@ -861,6 +876,7 @@ function draw_favourites() {
   statcontentdiv.appendChild(results);
   render_verb_results();
 }
+// APHELION EDIT ADDITION END
 
 function set_theme(which) {
   if (which == 'light') {
@@ -944,7 +960,7 @@ if (!current_tab) {
   tab_change(defaultTab);
 }
 
-addPermanentTab('Favourites');
+addPermanentTab('Favourites'); // APHELION EDIT ADDITION
 
 window.onload = () => {
   Byond.sendMessage('Update-Verbs');
@@ -967,9 +983,11 @@ Byond.subscribeTo('init_verbs', (payload) => {
   checkStatusTab(); // remove all status tabs
   verb_tabs = payload.panel_tabs;
   verb_tabs.sort(); // sort it
+  // APHELION EDIT ADDITION START
   if (payload.favorite_verbs) {
     favourite_verbs = payload.favorite_verbs;
   }
+  // APHELION EDIT ADDITION END
   var do_update = false;
   var cat = '';
   for (var i = 0; i < verb_tabs.length; i++) {
@@ -986,12 +1004,15 @@ Byond.subscribeTo('init_verbs', (payload) => {
       draw_verbs(current_tab);
     }
   }
+  // APHELION EDIT ADDITION START
   if (current_tab == 'Favourites') {
     draw_favourites();
   }
+  // APHELION EDIT ADDITION END
   SendTabsToByond();
 });
 
+// APHELION EDIT ADDITION START
 Byond.subscribeTo('update_favourite_verbs', (payload) => {
   favourite_verbs = Array.isArray(payload) ? payload : [];
   if (current_tab == 'Favourites') {
@@ -1000,6 +1021,7 @@ Byond.subscribeTo('update_favourite_verbs', (payload) => {
     draw_verbs(current_tab);
   }
 });
+// APHELION EDIT ADDITION END
 
 Byond.subscribeTo('update_stat', (payload) => {
   status_tab_parts = [];

@@ -1143,8 +1143,8 @@ GLOBAL_LIST_INIT(unrecommended_builds, list(
 			continue
 		panel_tabs |= verb_to_init.category
 		verblist[++verblist.len] = list(verb_to_init.category, verb_to_init.name)
-	src.stat_panel.send_message("init_verbs", list(panel_tabs = panel_tabs, verblist = verblist, favorite_verbs = prefs?.favorite_verbs))
-
+	src.stat_panel.send_message("init_verbs", list(panel_tabs = panel_tabs, verblist = verblist, favorite_verbs = prefs?.favorite_verbs)) // APHELION EDIT CHANGE - ORIGINAL: src.stat_panel.send_message("init_verbs", list(panel_tabs = panel_tabs, verblist = verblist))
+// APHELION EDIT ADDITION START
 /client/proc/toggle_favourite_verb(verb_name)
 	if(IsAdminAdvancedProcCall())
 		return
@@ -1157,6 +1157,21 @@ GLOBAL_LIST_INIT(unrecommended_builds, list(
 		prefs.favorite_verbs |= verb_name
 	prefs.save_preferences()
 	src.stat_panel.send_message("update_favourite_verbs", prefs.favorite_verbs)
+
+	var/list/verbstoprocess = verbs.Copy()
+	if(mob)
+		verbstoprocess += mob.verbs
+		for(var/atom/movable/thing as anything in mob.contents)
+			verbstoprocess += thing.verbs
+	var/list/panel_verbs = list()
+	for(var/procpath/verb_to_init as anything in verbstoprocess)
+		if(!verb_to_init || verb_to_init.hidden)
+			continue
+		if(!SSverbs.verbs_by_verb_path[verb_to_init] && !SSadmin_verbs.admin_verbs_by_verb_path[verb_to_init])
+			continue
+		panel_verbs += list(SSverbs.serialize_verb(verb_to_init))
+	tgui_panel?.window?.send_message("verbs/init", list("verbs" = panel_verbs))
+// APHELION EDIT ADDITION END
 
 /client/proc/check_panel_loaded()
 	if(stat_panel.is_ready())
@@ -1208,8 +1223,10 @@ GLOBAL_LIST_INIT(unrecommended_builds, list(
 		if("Set-Tab")
 			stat_tab = payload["tab"]
 			SSstatpanels.immediate_send_stat_data(src)
+		// APHELION EDIT ADDITION START
 		if("Toggle-Favourite-Verb")
 			toggle_favourite_verb(payload["verb"])
+		// APHELION EDIT ADDITION END
 
 /// Checks if this client has met the days requirement passed in, or if
 /// they are exempt from it.
