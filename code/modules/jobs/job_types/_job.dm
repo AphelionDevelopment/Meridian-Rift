@@ -365,7 +365,7 @@
 	belt = /obj/item/modular_computer/pda
 	back = /obj/item/storage/backpack
 	shoes = /obj/item/clothing/shoes/sneakers/black
-	box = /obj/item/storage/box/survival
+	box = /obj/item/storage/box/personal_cache // NOVA EDIT CHANGE - PERSONAL_CACHE - ORIGINAL: box = /obj/item/storage/box/survival
 
 	preload = TRUE // These are used by the prefs ui, and also just kinda could use the extra help at roundstart
 

@@ -15,3 +15,5 @@
 #define TRAIT_DISPLAYING_AMMO_HUD "displaying_ammo_hud"
 /// Temporary trait used while a mob is actively sliding under a door.
 #define TRAIT_SLIDING_UNDER "sliding_under"
+/// Marks an item as a legitimate loadout pick, so cache_pouch/loadout can re-admit it by identity instead of by type.
+#define TRAIT_LOADOUT_POUCH_ITEM "loadout_pouch_item"

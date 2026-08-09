@@ -50,7 +50,8 @@
 	var/list/loadout_list = item_details[preference_source.read_preference(/datum/preference/loadout_index)]
 	var/list/loadout_datums = loadout_list_to_datums(loadout_list)
 	var/obj/item/storage/briefcase/empty/briefcase
-	var/obj/item/storage/box/erp/erpbox
+	var/obj/item/storage/box/cache_pouch/erp/erpbox // NOVA EDIT CHANGE - PERSONAL_CACHE - ORIGINAL: var/obj/item/storage/box/erp/erpbox
+	var/obj/item/storage/box/cache_pouch/loadout/pouch // NOVA EDIT ADDITION - PERSONAL_CACHE
 	var/erp_enabled = !CONFIG_GET(flag/disable_erp_preferences)
 	if(override_preference == LOADOUT_OVERRIDE_CASE && !visuals_only)
 		briefcase = new(loc)
@@ -67,6 +68,32 @@
 		briefcase.name = "[preference_source.read_preference(/datum/preference/name/real_name)]'s travel suitcase"
 		equipOutfit(equipped_outfit, visuals_only)
 		INVOKE_ASYNC(src, PROC_REF(put_in_hands), briefcase)
+	// NOVA EDIT ADDITION START - PERSONAL_CACHE
+	else if(override_preference == LOADOUT_OVERRIDE_CACHE_POUCH && !visuals_only)
+		equipOutfit(equipped_outfit, visuals_only)
+
+		var/obj/item/storage/box/survival/cache_box = locate(/obj/item/storage/box/survival) in get_all_gear()
+		var/pouch_in_hand = isnull(cache_box) || cache_box.cache_locked
+		pouch = new /obj/item/storage/box/cache_pouch/loadout(pouch_in_hand ? loc : cache_box)
+
+		for(var/datum/loadout_item/item as anything in loadout_datums)
+			if (erp_enabled && item.erp_box)
+				if (isnull(erpbox))
+					erpbox = new(loc)
+				new item.item_path(erpbox)
+			else
+				if (!item.can_be_applied_to(src, preference_source, equipping_job, allow_mechanical_loadout_items, visuals_only))
+					continue
+				if(istype(item, /datum/loadout_item/cache))
+					var/datum/loadout_item/cache/cache_item = item
+					cache_item.place_in_cache(cache_box, new item.item_path(loc))
+				else
+					var/obj/item/loadout_item = new item.item_path(pouch)
+					loadout_item.AddElement(/datum/element/loadout_pouch_item)
+
+		if(pouch_in_hand)
+			INVOKE_ASYNC(src, PROC_REF(put_in_hands), pouch)
+	// NOVA EDIT ADDITION END
 	else
 		for(var/datum/loadout_item/item as anything in loadout_datums)
 			if (erp_enabled && item.erp_box)
@@ -83,7 +110,17 @@
 					item.insert_path_into_outfit(equipped_outfit, src, visuals_only, override_preference)
 		equipOutfit(equipped_outfit, visuals_only)
 
-	var/list/new_contents = isnull(briefcase) ? get_all_gear() : briefcase.get_all_contents()
+	// NOVA EDIT CHANGE START - PERSONAL_CACHE - ORIGINAL: var/list/new_contents = isnull(briefcase) ? get_all_gear() : briefcase.get_all_contents()
+	var/list/new_contents
+	if(!isnull(briefcase))
+		new_contents = briefcase.get_all_contents()
+	else if(!isnull(pouch))
+		new_contents = pouch.get_all_contents()
+	else
+		new_contents = get_all_gear()
+	// NOVA EDIT CHANGE END
+
+	var/obj/item/storage/box/personal_cache/cache = locate(/obj/item/storage/box/personal_cache) in get_all_gear() // NOVA EDIT ADDITION - PERSONAL_CACHE - hoisted above the loop so the cache-pick lookup below can use it too
 
 	var/update = NONE
 	for(var/datum/loadout_item/item as anything in loadout_datums)
@@ -93,11 +130,16 @@
 		if(item.restricted_roles && equipping_job && !(equipping_job.title in item.restricted_roles))
 			continue
 
+		// NOVA EDIT CHANGE START - PERSONAL_CACHE - ORIGINAL: var/obj/item/equipped / if(erpbox && item.erp_box) / equipped = locate(item.item_path) in erpbox / else / equipped = locate(item.item_path) in new_contents
 		var/obj/item/equipped
 		if(erpbox && item.erp_box)
 			equipped = locate(item.item_path) in erpbox
+		else if(istype(item, /datum/loadout_item/cache))
+			// Cache picks get filed into a matrix the moment they spawn, so dig the whole cache - back.contents only ever sees the backpack root and would miss every one of them.
+			equipped = isnull(cache) ? null : (locate(item.item_path) in cache.get_all_contents())
 		else
 			equipped = locate(item.item_path) in new_contents
+		// NOVA EDIT CHANGE END
 
 		if(isnull(equipped))
 			continue
@@ -114,11 +156,17 @@
 		var/obj/item/clothing/under/uniform = w_uniform
 		uniform?.attach_accessory(new /obj/item/clothing/accessory/green_pin(), src, FALSE)
 
+	// NOVA EDIT CHANGE START - PERSONAL_CACHE - ORIGINAL: erpbox always went to the briefcase, or was equipped to the best slot (pocket) otherwise
 	if (!isnull(erpbox))
 		if (!isnull(briefcase))
 			briefcase.contents += erpbox
+		else if (!isnull(cache))
+			erpbox.forceMove(cache)
 		else
 			erpbox.equip_to_best_slot(src)
+
+	cache?.set_owner(src)
+	// NOVA EDIT CHANGE END
 
 	if(update)
 		update_clothing(update)

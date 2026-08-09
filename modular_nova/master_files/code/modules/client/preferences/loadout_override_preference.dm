@@ -5,7 +5,7 @@
 	savefile_identifier = PREFERENCE_CHARACTER
 
 /datum/preference/choiced/loadout_override_preference/init_possible_values()
-	return list(LOADOUT_OVERRIDE_JOB, LOADOUT_OVERRIDE_BACKPACK, LOADOUT_OVERRIDE_CASE)
+	return list(LOADOUT_OVERRIDE_JOB, LOADOUT_OVERRIDE_BACKPACK, LOADOUT_OVERRIDE_CASE, LOADOUT_OVERRIDE_CACHE_POUCH)
 
 /datum/preference/choiced/loadout_override_preference/create_default_value()
 	return LOADOUT_OVERRIDE_BACKPACK
