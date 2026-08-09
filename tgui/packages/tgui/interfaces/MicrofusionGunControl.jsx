@@ -132,26 +132,43 @@ const FaultGlyph = (props) => {
   );
 };
 
-/** A one-line condition banner inside a gauge. Flashes when it's urgent. */
-const Flare = (props) => {
-  const { tone, flash, children } = props;
+/**
+ * An annunciator lamp. Always drawn, dark until its condition trips, so the
+ * gauge never changes height and you learn where each fault will appear.
+ */
+const Lamp = (props) => {
+  const { label, lit, tone, flash } = props;
   const skin = TONE[tone || 'amber'];
   return (
     <Box
       style={{
-        marginTop: '6px',
-        padding: '3px 8px',
-        border: `1px solid ${skin.line}`,
-        background: 'rgba(0,0,0,0.35)',
-        clipPath: CHAMFER(6),
-        animation: flash
-          ? 'mfd-flash 0.7s steps(1, end) infinite, mfd-throb 1.4s ease-in-out infinite'
-          : undefined,
+        flex: '1 1 0',
+        minWidth: 0,
+        textAlign: 'center',
+        padding: '3px 1px',
+        border: `1px solid ${lit ? skin.line : 'rgba(29,106,82,0.5)'}`,
+        background: lit ? `${skin.line}26` : 'rgba(0,0,0,0.3)',
+        clipPath: CHAMFER(5),
+        boxShadow: lit ? `0 0 10px ${skin.glow}` : 'none',
+        opacity: lit ? 1 : 0.4,
+        animation:
+          lit && flash ? 'mfd-flash 0.7s steps(1, end) infinite' : undefined,
       }}
     >
-      <Legend size="0.66rem" color={skin.line}>
-        {children}
-      </Legend>
+      <Box
+        style={{
+          fontFamily: 'monospace',
+          fontSize: '0.56rem',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: lit ? skin.line : T.label,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {label}
+      </Box>
     </Box>
   );
 };
@@ -312,7 +329,7 @@ const Segments = (props) => {
 /** One instrument in the top strip. */
 const Gauge = (props) => {
   const { label, value, unit, sub, fraction, color, onClick, active } = props;
-  const { actions, alerts, glyph, accent } = props;
+  const { actions, lamps, glyph, accent } = props;
   return (
     <Panel title={label} actions={actions} glyph={glyph} accent={accent}>
       <Box
@@ -334,17 +351,28 @@ const Gauge = (props) => {
           </Box>
           {!!unit && <Legend size="0.75rem">{unit}</Legend>}
         </Box>
-        {fraction !== undefined && (
-          <Segments value={fraction} max={1} color={color} />
-        )}
-        <Box mt={0.5}>
+        <Segments value={fraction || 0} max={1} color={color} />
+        <Box
+          mt={0.5}
+          style={{
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
           <Legend size="0.68rem">{sub}</Legend>
         </Box>
-        {(alerts || []).map((alert) => (
-          <Flare key={alert.text} tone={alert.tone} flash={alert.flash}>
-            {alert.text}
-          </Flare>
-        ))}
+        <Box style={{ display: 'flex', gap: '3px', marginTop: '7px' }}>
+          {(lamps || []).map((lamp) => (
+            <Lamp
+              key={lamp.label}
+              label={lamp.label}
+              lit={lamp.lit}
+              tone={lamp.tone}
+              flash={lamp.flash}
+            />
+          ))}
+        </Box>
       </Box>
     </Panel>
   );
@@ -392,42 +420,37 @@ const StatusStrip = (props) => {
     : 0;
   const integrityTone = emitterIn ? bandColor(integrityFraction) : T.danger;
 
-  const thermalAlerts = [];
-  if (overload) {
-    thermalAlerts.push({
-      text: 'Thermal overload',
-      tone: 'danger',
-      flash: true,
-    });
-  } else if (throttled) {
-    thermalAlerts.push({
-      text: `Throttled at ${throttlePercent}%`,
-      tone: 'amber',
-    });
-  }
-  if (cooling) {
-    thermalAlerts.push({
-      text: `Cooling engaged · ${phase_emitter_data.cooling_system_rate}/tick`,
-      tone: 'cool',
-    });
-  }
-  if (hacked) {
-    thermalAlerts.push({ text: 'Governor bypassed', tone: 'danger' });
-  }
+  const lowCharge = cellIn && !dry && chargeFraction <= 0.25;
+  const weakEmitter = emitterIn && !damaged && phase_emitter_data.integrity < 50;
 
-  const integrityAlerts = [];
-  if (!emitterIn) {
-    integrityAlerts.push({ text: 'No emitter seated', tone: 'danger' });
-  } else if (damaged) {
-    integrityAlerts.push({
-      text: 'Emitter damaged — will not fire',
-      tone: 'danger',
-      flash: true,
-    });
-  }
-  if (hacked) {
-    integrityAlerts.push({ text: 'Governor bypassed', tone: 'danger' });
-  }
+  // Fixed annunciator sets. Every lamp is always drawn so the tiles keep the
+  // same height whatever is wrong, and you learn where a given fault shows up.
+  const shotLamps = [
+    { label: 'Dry', lit: dry, tone: 'danger', flash: true },
+    {
+      label: 'Low',
+      lit: cellIn && !dry && cell_data.shots_left <= 3,
+      tone: 'amber',
+    },
+    { label: 'No cell', lit: !cellIn, tone: 'danger' },
+  ];
+  const cellLamps = [
+    { label: 'Melt', lit: meltdown, tone: 'danger', flash: true },
+    { label: 'Chrg', lit: lowCharge, tone: 'amber' },
+    { label: 'No cell', lit: !cellIn, tone: 'danger' },
+  ];
+  const thermalLamps = [
+    { label: 'Cool', lit: cooling, tone: 'cool' },
+    { label: 'Thrtl', lit: throttled, tone: 'amber' },
+    { label: 'Over', lit: overload, tone: 'danger', flash: true },
+    { label: 'Gov', lit: hacked, tone: 'danger' },
+  ];
+  const integrityLamps = [
+    { label: 'Dmg', lit: damaged, tone: 'danger', flash: true },
+    { label: 'Weak', lit: weakEmitter, tone: 'amber' },
+    { label: 'Gov', lit: hacked, tone: 'amber' },
+    { label: 'None', lit: !emitterIn, tone: 'danger' },
+  ];
 
   return (
     <Stack>
@@ -437,14 +460,13 @@ const StatusStrip = (props) => {
           value={cellIn ? cell_data.shots_left : '--'}
           unit="rds"
           sub={cellIn ? `${cell_data.shot_cost} mf per shot` : 'no cell'}
+          fraction={chargeFraction}
           color={chargeTone}
           active={selected === 'cell'}
           onClick={() => onSelect('cell')}
           accent={dry || !cellIn ? T.danger : undefined}
           glyph={dry ? <FaultGlyph tone="danger" flash /> : undefined}
-          alerts={
-            dry ? [{ text: 'Cell dry', tone: 'danger', flash: true }] : undefined
-          }
+          lamps={shotLamps}
         />
       </Stack.Item>
       <Stack.Item grow basis={0}>
@@ -463,13 +485,7 @@ const StatusStrip = (props) => {
           onClick={() => onSelect('cell')}
           accent={meltdown || !cellIn ? T.danger : undefined}
           glyph={meltdown ? <FaultGlyph tone="danger" flash /> : undefined}
-          alerts={
-            meltdown
-              ? [{ text: 'Meltdown imminent', tone: 'danger', flash: true }]
-              : !cellIn
-                ? [{ text: 'No cell seated', tone: 'danger' }]
-                : undefined
-          }
+          lamps={cellLamps}
           actions={
             <MfdButton
               icon="eject"
@@ -510,7 +526,7 @@ const StatusStrip = (props) => {
               <FaultGlyph tone="amber" />
             ) : undefined
           }
-          alerts={thermalAlerts}
+          lamps={thermalLamps}
           actions={
             <MfdButton
               icon="snowflake"
@@ -545,7 +561,7 @@ const StatusStrip = (props) => {
               <FaultGlyph tone="amber" />
             ) : undefined
           }
-          alerts={integrityAlerts}
+          lamps={integrityLamps}
           actions={
             <>
               {hacked ? (
