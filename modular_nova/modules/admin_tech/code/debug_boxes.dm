@@ -265,7 +265,7 @@ GLOBAL_LIST_INIT(subspace_box_illustrations, list(
 	name = "nova sector plushies spawner"
 	icon_state = "plushie"
 	loot_subtype_path = /obj/item/toy/plush/nova
-	loot = list( )
+	loot = null
 
 //Scatter versions for... Whatever. Mapping, probably.
 /obj/effect/spawner/random/entertainment/plushie/nova/scatter
@@ -293,7 +293,7 @@ GLOBAL_LIST_INIT(subspace_box_illustrations, list(
 	name = "nova sector donator plushie spawner"
 	icon_state = "plushie"
 	loot_subtype_path = /obj/item/toy/plush/nova/donator/
-	loot = list( )
+	loot = null
 
 //Sane item to actually be used
 /obj/item/storage/box/hug/plushes/nova/donator
@@ -317,8 +317,6 @@ GLOBAL_LIST_INIT(subspace_box_illustrations, list(
 	name = "nova sector donator plushie spawner"
 	icon_state = "plushie"
 	spawn_all_loot = TRUE
-
-
 
 /obj/item/storage/box/hug/plushes/nova/donator/all/PopulateContents()
 	var/plush_path = /obj/effect/spawner/random/entertainment/plushie/nova/donator/all
