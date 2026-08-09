@@ -68,6 +68,10 @@
 /datum/design/admin
 	build_type = ADMIN_TECHWEB
 	materials = list(/datum/material/iron = SMALL_MATERIAL_AMOUNT)
+	// The token cost must not be stamped onto what comes out, or a printed multitool ends up made of ten iron instead
+	// of what it is normally made of. This also exempts these designs from the design_mats unit test, which otherwise
+	// requires the design cost and the item's custom_materials to agree.
+	inherit_materials = DESIGN_DONT_INHERIT_MATS
 	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_EQUIPMENT)
 
 // Tools
@@ -507,10 +511,10 @@
 	id = "admin_id_subspace"
 	build_path = /obj/item/card/id/advanced/debug/admin/subspace
 
-/datum/design/admin/id_centcomm
-	name = "CentComm Master ID"
-	id = "admin_id_centcomm"
-	build_path = /obj/item/card/id/advanced/debug/admin/centcomm
+/datum/design/admin/id_centcom
+	name = "CentCom Master ID"
+	id = "admin_id_centcom"
+	build_path = /obj/item/card/id/advanced/debug/admin/centcom
 
 // Kits - prepacked boxes, for when you would rather not print things one at a time
 

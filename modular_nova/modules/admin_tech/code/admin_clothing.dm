@@ -526,7 +526,7 @@
 	has_sensor = NO_SENSORS//admin techs should NEVER be on sensors
 	resistance_flags = INDESTRUCTIBLE
 	body_parts_covered = CHEST|GROIN|LEGS|FEET|ARMS|HANDS
-	armor_type = /datum/armor/admin
+	armor_type = /datum/armor/clothing_under/admin
 	cold_protection = CHEST | GROIN | LEGS | FEET | ARMS | HANDS
 	min_cold_protection_temperature = SPACE_SUIT_MIN_TEMP_PROTECT
 	heat_protection = CHEST|GROIN|LEGS|FEET|ARMS|HANDS
@@ -593,7 +593,7 @@
 	desc = parent_type::desc + " The tailoring on this one accounts for damage it has not taken yet."
 	icon_state = "sub-techsuit"
 	worn_icon_state = "sub-techsuit"
-	armor_type = /datum/armor/admin/badmin
+	armor_type = /datum/armor/clothing_under/admin/badmin
 
 //Admeme jackets. Oh so comfortable. And shiny
 /obj/item/clothing/suit/admin

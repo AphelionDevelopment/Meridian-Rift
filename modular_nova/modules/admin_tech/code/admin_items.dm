@@ -436,6 +436,9 @@ Admin Variants of Common Tools
 	desc = "A device used to rapidly provide lighting sources to an area. Reload with iron, plasteel, glass or compressed matter cartridges."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-rld"
+	// The parent draws a six segment ammo bar from sub-rld_charge1 through 6, none of which admin_items.dmi has, which
+	// runtimes on every update_appearance. Matter is INFINITY here anyway, so the bar would sit full forever.
+	has_ammobar = FALSE
 	worn_icon_state = "RPD"
 	lefthand_file = 'icons/mob/inhands/equipment/tools_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/equipment/tools_righthand.dmi'

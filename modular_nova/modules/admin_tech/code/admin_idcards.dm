@@ -53,17 +53,17 @@
 	pointer_color = COLOR_PURPLE
 
 //Additional admin ID stuff
-/obj/item/card/id/advanced/debug/admin/centcomm
-	name = "\improper CentComm Master ID"
+/obj/item/card/id/advanced/debug/admin/centcom
+	name = "\improper CentCom Master ID"
 	desc = "A Master ID card from Central Command. Has ALL the all access, to a suspicious degree. Reads as static on sec huds and registers as no threat at all, which is the most suspicious part."
 	icon_state = "card_centcom"
 	assigned_icon_state = "assigned_centcom"
-	trim = /datum/id_trim/admin/centcomm
+	trim = /datum/id_trim/admin/centcom
 	wildcard_slots = WILDCARD_LIMIT_ADMIN
 
-/datum/id_trim/admin/centcomm
+/datum/id_trim/admin/centcom
 	assignment = "Central Command"
-	trim_state = "trim_centcomm"
+	trim_state = "trim_centcom"
 	department_color = COLOR_CENTCOM_BLUE
 	subdepartment_color = COLOR_ENGINEERING_ORANGE
 	sechud_icon_state = SECHUD_SCRAMBLED

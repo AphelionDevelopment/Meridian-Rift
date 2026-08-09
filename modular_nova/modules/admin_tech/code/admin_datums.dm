@@ -64,3 +64,29 @@
 	fire = 100
 	melee = 100
 	wound = 100
+
+/// Jumpsuits are unit tested for using a /datum/armor/clothing_under subtype, so the two above can't be used on the
+/// techsuits. Single inheritance means the values have to be repeated here rather than shared - keep them in step.
+/datum/armor/clothing_under/admin
+	acid = 98
+	bio = 95
+	bomb = 95
+	bullet = 95
+	consume = 95
+	energy = 95
+	laser = 95
+	fire = 98
+	melee = 95
+	wound = 95
+
+/datum/armor/clothing_under/admin/badmin
+	acid = 100
+	bio = 100
+	bomb = 100
+	bullet = 100
+	consume = 100
+	energy = 100
+	laser = 100
+	fire = 100
+	melee = 100
+	wound = 100
