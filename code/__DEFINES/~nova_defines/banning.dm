@@ -8,3 +8,4 @@
 #define BAN_ANTAGONIST "General antagonist ban"
 #define BAN_OPFOR "OPFOR ban"
 #define BAN_LOOC "LOOC"
+#define BAN_ADMIN_NOTIFY "Admin Notify ban"
