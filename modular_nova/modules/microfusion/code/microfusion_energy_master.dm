@@ -271,12 +271,42 @@
 	remove_emitter()
 
 /obj/item/gun/microfusion/click_alt(mob/user)
-	. = ..()
-	if(can_interact(user))
-		var/obj/item/microfusion_gun_attachment/to_remove = input(user, "Please select what part you'd like to remove.", "Remove attachment")  as null|obj in sort_names(attachments)
-		if(!to_remove)
-			return
-		remove_attachment(to_remove, user)
+	if(!can_interact(user))
+		return NONE
+	if(!length(attachments))
+		balloon_alert(user, "nothing installed!")
+		return CLICK_ACTION_BLOCKING
+
+	var/list/choices = list()
+	var/list/choice_lookup = list() //Keyed by ref so two attachments sharing a name can't collide
+	for(var/obj/item/microfusion_gun_attachment/attachment as anything in attachments)
+		var/datum/radial_menu_choice/choice = new()
+		choice.name = attachment.name
+		choice.image = image(icon = attachment.icon, icon_state = attachment.icon_state)
+		choice.info = span_notice(attachment.desc)
+		choices[REF(attachment)] = choice
+		choice_lookup[REF(attachment)] = attachment
+
+	var/picked = show_radial_menu(
+		user,
+		src,
+		choices,
+		custom_check = CALLBACK(src, PROC_REF(can_pick_attachment), user),
+		require_near = TRUE,
+		tooltips = TRUE,
+	)
+	if(!picked)
+		return CLICK_ACTION_BLOCKING
+
+	var/obj/item/microfusion_gun_attachment/to_remove = choice_lookup[picked]
+	if(QDELETED(to_remove) || !(to_remove in attachments)) //It could have come off while the menu was open
+		return CLICK_ACTION_BLOCKING
+	remove_attachment(to_remove, user)
+	return CLICK_ACTION_SUCCESS
+
+/// Re-checked every tick the removal radial menu is open, so walking away closes it.
+/obj/item/gun/microfusion/proc/can_pick_attachment(mob/user)
+	return can_interact(user)
 
 /obj/item/gun/microfusion/proc/remove_all_attachments()
 	if(attachments.len)
@@ -687,6 +717,7 @@
 	data["gun_name"] = name
 	data["gun_desc"] = desc
 	data["gun_heat_dissipation"] = heat_dissipation_bonus
+	data["slots"] = attachment_slots //So the UI can draw the bays this frame has, empty ones included
 
 	if(phase_emitter)
 		data["has_emitter"] = TRUE
@@ -736,6 +767,7 @@
 				"name" = uppertext(attachment.name),
 				"desc" = attachment.desc,
 				"slot" = capitalize(attachment.slot),
+				"slot_id" = attachment.slot,
 				"information" = attachment.get_information_data(),
 				"has_modifications" = has_modifications,
 				"modify" = attachment_functions,

@@ -11,8 +11,18 @@
 		RegisterSignals(target, list(COMSIG_UPDATE_AMMO_HUD, COMSIG_GUN_CHAMBER_PROCESSED), PROC_REF(update_ballistic))
 	else if(istype(target, /obj/item/gun/energy))
 		RegisterSignals(target, list(COMSIG_UPDATE_AMMO_HUD, COMSIG_GUN_CHAMBER_PROCESSED), PROC_REF(update_energy))
+	else if(istype(target, /obj/item/gun/microfusion))
+		RegisterSignals(target, list(COMSIG_UPDATE_AMMO_HUD, COMSIG_GUN_CHAMBER_PROCESSED), PROC_REF(update_microfusion))
 	else // non guns don't need the chamber_processed signal registered
 		RegisterSignal(target, COMSIG_UPDATE_AMMO_HUD, PROC_REF(update_welder))
+
+	// Something created directly inside a mob's hands never fires COMSIG_ITEM_EQUIPPED, so it would
+	// sit there with no counter until it was dropped and picked back up. Catch that case here.
+	var/obj/item/item_target = target
+	if(ismob(item_target.loc))
+		var/mob/holder = item_target.loc
+		if(holder.is_holding(item_target))
+			on_equipped(item_target, holder, holder.get_held_index_of_item(item_target))
 
 /**
  * Resolves the ammo HUD screen object for a given holder or item.

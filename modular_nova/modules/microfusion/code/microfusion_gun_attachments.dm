@@ -544,11 +544,19 @@ Allows for a scope to be attached to the gun.
 		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
 	)
 
+/// Toggle button the scope attachment hands the weapon, so zooming isn't hidden behind a right click.
+/datum/action/item_action/toggle_microfusion_scope
+	name = "Toggle Scope"
+	desc = "Peer down the scope mounted on your weapon."
+
 /obj/item/microfusion_gun_attachment/scope/run_attachment(obj/item/gun/microfusion/microfusion_gun)
 	. = ..()
 	if(microfusion_gun.GetComponent(/datum/component/scope))
 		return
-	microfusion_gun.AddComponent(/datum/component/scope, range_modifier = 1.5)
+	microfusion_gun.AddComponent(/datum/component/scope, \
+		range_modifier = 1.5, \
+		zoom_method = ZOOM_METHOD_ITEM_ACTION, \
+		item_action_type = /datum/action/item_action/toggle_microfusion_scope)
 
 /obj/item/microfusion_gun_attachment/scope/remove_attachment(obj/item/gun/microfusion/microfusion_gun)
 	. = ..()
