@@ -190,7 +190,17 @@
 /// Mob is currently tied by a knotting interaction.
 #define TRAIT_KNOTTED "knotted"
 
+// Trait which shows wire legend when applied to something
+#define TRAIT_SHOW_ALL_WIRES "show_all_wires"
+
 /// The trait for Holosynths
 #define TRAIT_HOLOSYNTH "holosynthetic"
 
+//Admin Traits
+/// Trait for wallhacks admin verb
+#define TRAIT_ADMIN_WALLHACKS "admin_wallhacks"
+/// Trait for clothing which provides the effects of the book of babel, which is handled by the babel_clothing element
+#define TRAIT_BABEL_CLOTHING "babel_clothing"
+/// Trait involved in reveal_wires element, to show the wire legend of anything when working
+#define TRAIT_REVEAL_WIRES_ITEM "reveal_wires_item"
 // END TRAIT DEFINES

@@ -255,6 +255,16 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	//favorite outfits
 	favorite_outfits = savefile.get_entry("favorite_outfits", favorite_outfits)
 
+	// NOVA EDIT ADDITION START - ICSPAWNING
+	preferred_spawn_methods = SANITIZE_LIST(savefile.get_entry("preferred_spawn_methods"))
+	var/list/raw_spawn_outfits = SANITIZE_LIST(savefile.get_entry("preferred_spawn_outfits"))
+	preferred_spawn_outfits = list()
+	for(var/slot_name in raw_spawn_outfits)
+		var/outfit_path = text2path(raw_spawn_outfits[slot_name])
+		if(ispath(outfit_path))
+			preferred_spawn_outfits[slot_name] = outfit_path
+	// NOVA EDIT ADDITION END
+
 	var/list/parsed_favs = list()
 	for(var/typetext in favorite_outfits)
 		var/datum/outfit/path = text2path(typetext)
@@ -342,6 +352,13 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	savefile.set_entry("favorite_outfits", favorite_outfits)
 	savefile.set_entry("favorite_verbs", favorite_verbs)
 	savefile.set_entry("job_assigned_profiles", job_assigned_profiles)
+	// NOVA EDIT ADDITION START - ICSPAWNING
+	savefile.set_entry("preferred_spawn_methods", preferred_spawn_methods)
+	var/list/serialized_spawn_outfits = list()
+	for(var/slot_name in preferred_spawn_outfits)
+		serialized_spawn_outfits[slot_name] = "[preferred_spawn_outfits[slot_name]]"
+	savefile.set_entry("preferred_spawn_outfits", serialized_spawn_outfits)
+	// NOVA EDIT ADDITION END
 	savefile.save()
 	return TRUE
 

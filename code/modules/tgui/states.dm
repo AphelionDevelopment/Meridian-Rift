@@ -26,6 +26,10 @@
 		// If they turn on ghost AI control, admins can always interact.
 		if(isAdminGhostAI(user))
 			. = max(., UI_INTERACTIVE)
+		// NOVA EDIT ADDITION START - ADMIN_TECH
+		else if(HAS_TRAIT_FROM(user.client, TRAIT_ADMIN_REACHABLE, ADMIN_TRAIT))
+			. = max(., UI_INTERACTIVE)
+		// NOVA EDIT ADDITION END
 
 		// Regular ghosts can always at least view if in range.
 		if(user.client)
@@ -101,6 +105,10 @@
  * return UI_state The state of the UI.
  */
 /mob/living/proc/shared_living_ui_distance(atom/movable/src_object, viewcheck = TRUE, allow_tk = TRUE)
+	// NOVA EDIT ADDITION START - ADMIN_TECH
+	if(HAS_TRAIT_FROM(client, TRAIT_ADMIN_REACHABLE, ADMIN_TRAIT))
+		return UI_INTERACTIVE
+	// NOVA EDIT ADDITION END
 	var/obj/item/item_in_hand = get_active_held_item()
 	if(istype(item_in_hand, /obj/item/machine_remote)) //snowflake, this lets you interact with all.
 		var/obj/item/machine_remote/remote = item_in_hand

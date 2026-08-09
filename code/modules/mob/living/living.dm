@@ -1460,6 +1460,10 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 /mob/living/can_perform_action(atom/target, action_bitflags)
 	if(!istype(target))
 		CRASH("Missing target arg for can_perform_action")
+	// NOVA EDIT ADDITION START - ADMIN_TECH
+	if(HAS_TRAIT(src, TRAIT_ADMIN_REACHABLE) && can_see_target(target))
+		return TRUE
+	// NOVA EDIT ADDITION END
 
 	if(IS_UNCONSCIOUS_OR_CRIT(src))
 		to_chat(src, span_warning("You are not conscious enough for this action!"))

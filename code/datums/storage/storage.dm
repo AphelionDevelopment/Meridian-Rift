@@ -132,6 +132,11 @@
 	/// Stops updates from being called on insert or remove, useful for mass insertions/removals - just don't forget to update it manually afterwards
 	VAR_FINAL/block_insert_remove_updates = FALSE
 
+	// NOVA EDIT ADDITION START - ADMIN_TECH
+	/// Extra columns granted to viewers with the widescreen preference enabled.
+	var/screen_max_columns_widescreen = 13
+	// NOVA EDIT ADDITION END - ADMIN_TECH
+
 /datum/storage/New(
 	atom/parent,
 	max_slots = src.max_slots,
@@ -1143,7 +1148,9 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 
 	modeswitch_action = null
 
-/// Updates views of all objects in storage and stretches UI to appropriate size
+// Because this proc loops per viewer and calls update_position each proc call, we can pretty easily provide a check to insulate us in the future when exposing non-widescreen players to oversized storage elements
+// I don't think I'm allowed to comment this like I usually do.
+// This is NOT a config edit because I can see applications where people might want to better adjust the sizing of a ui for some reason.
 /datum/storage/proc/orient_storage()
 	var/adjusted_contents = length(real_location.contents)
 	var/list/datum/numbered_display/numbered_contents
@@ -1151,15 +1158,19 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 		numbered_contents = process_numerical_display()
 		adjusted_contents = length(numbered_contents)
 
-	//if the ammount of contents reaches some multiplier of the final column (and its not the last slot), let the player view an additional row
-	var/additional_row = (!(adjusted_contents % screen_max_columns) && adjusted_contents < max_slots)
-
-	var/columns = clamp(max_slots, 1, screen_max_columns)
-	var/rows = clamp(ceil(adjusted_contents / columns) + additional_row, 1, screen_max_rows)
-
 	for (var/mob/ui_user as anything in storage_interfaces)
 		if (isnull(storage_interfaces[ui_user]))
 			continue
+
+		/// If you ever need to reference the columns var, please use this instead.
+		var/user_max_columns = screen_max_columns
+		if(ui_user.client?.prefs?.read_preference(/datum/preference/toggle/widescreen))
+			user_max_columns = screen_max_columns_widescreen
+		/// Math pass to handle the division of the ui
+		var/additional_row = (!(adjusted_contents % user_max_columns) && adjusted_contents < max_slots)
+		var/columns = clamp(max_slots, 1, user_max_columns)
+		var/rows = clamp(ceil(adjusted_contents / columns) + additional_row, 1, screen_max_rows)
+
 		storage_interfaces[ui_user].update_position(
 			screen_start_x,
 			screen_pixel_x,
@@ -1171,6 +1182,7 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 			real_location,
 			numbered_contents,
 		)
+// NOVA EDIT ADDITION END - ADMIN_TECH
 
 /**
  * Toggles the collectmode of our storage.
