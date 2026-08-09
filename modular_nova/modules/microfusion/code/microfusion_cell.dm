@@ -20,6 +20,10 @@ These are basically advanced cells.
 	microfusion_readout = TRUE
 	ratingdesc = FALSE //MF cells are rated in MF, not kilojoules
 	charge_light_type = null //We have no microfusion charge light sprite, so we suppress the generic one and report our own readout
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = SMALL_MATERIAL_AMOUNT * 2,
+	)
 
 	/// We use this to edit the reload time of the gun
 	var/reloading_time = 4 SECONDS
@@ -172,6 +176,11 @@ These are basically advanced cells.
 	icon_state = "microfusion_makeshift"
 	maxcharge = 600
 	max_attachments = 0
+	// Matches what the crafting recipe below actually consumes, rather than the printed cell's materials
+	custom_materials = list(
+		/datum/material/iron = SHEET_MATERIAL_AMOUNT * 1.2,
+		/datum/material/glass = SMALL_MATERIAL_AMOUNT * 0.1,
+	)
 
 /obj/item/stock_parts/power_store/cell/microfusion/makeshift/use(amount, force = FALSE)
 	if(prob(fail_prob))
@@ -183,6 +192,11 @@ These are basically advanced cells.
 	desc = "A second generation microfusion cell, weighing about the same as the standard-issue cell and having the same space for attachments; however, it has a higher capacity."
 	icon_state = "microfusion_enhanced"
 	maxcharge = 1500
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = SMALL_MATERIAL_AMOUNT * 2,
+		/datum/material/uranium = SMALL_MATERIAL_AMOUNT * 2,
+	)
 
 /obj/item/stock_parts/power_store/cell/microfusion/advanced
 	name = "advanced microfusion cell"
@@ -190,6 +204,13 @@ These are basically advanced cells.
 	icon_state = "microfusion_advanced"
 	maxcharge = 1700
 	max_attachments = 2
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/gold = SMALL_MATERIAL_AMOUNT * 3,
+		/datum/material/silver = SMALL_MATERIAL_AMOUNT * 3,
+		/datum/material/glass = SMALL_MATERIAL_AMOUNT * 3,
+		/datum/material/uranium = SMALL_MATERIAL_AMOUNT * 3,
+	)
 
 /obj/item/stock_parts/power_store/cell/microfusion/bluespace
 	name = "bluespace microfusion cell"
@@ -197,6 +218,15 @@ These are basically advanced cells.
 	icon_state = "microfusion_bluespace"
 	maxcharge = 2000
 	max_attachments = 3
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/gold = SMALL_MATERIAL_AMOUNT * 3,
+		/datum/material/glass = SMALL_MATERIAL_AMOUNT * 3,
+		/datum/material/diamond = SMALL_MATERIAL_AMOUNT * 3,
+		/datum/material/uranium = SMALL_MATERIAL_AMOUNT * 3,
+		/datum/material/titanium = SMALL_MATERIAL_AMOUNT * 3,
+		/datum/material/bluespace = SMALL_MATERIAL_AMOUNT * 3,
+	)
 
 /obj/item/stock_parts/power_store/cell/microfusion/nanocarbon
 	name = "nanocarbon fusion cell"

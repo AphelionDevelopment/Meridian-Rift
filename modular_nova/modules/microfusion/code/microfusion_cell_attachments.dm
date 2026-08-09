@@ -38,6 +38,13 @@ Allows the cell to be recharged at a gun recharger OR cell recharger.
 	attachment_overlay_icon_state = "microfusion_rechargeable"
 	/// The bonus charge rate by adding this attachment.
 	var/bonus_charge_rate = 250
+	custom_materials = list(
+		/datum/material/diamond = SHEET_MATERIAL_AMOUNT,
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/gold = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/uranium = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_cell_attachment/rechargeable/add_attachment(obj/item/stock_parts/power_store/cell/microfusion/microfusion_cell)
 	. = ..()
@@ -62,6 +69,12 @@ Increases the cell capacity by a set percentage.
 	var/capacity_increase = 20
 	/// The initial capacity of the cell before this upgrade is added!
 	var/initial_charge_capacity = 0
+	custom_materials = list(
+		/datum/material/gold = SHEET_MATERIAL_AMOUNT * 4,
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/plasma = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_cell_attachment/overcapacity/add_attachment(obj/item/stock_parts/power_store/cell/microfusion/microfusion_cell)
 	. = ..()
@@ -86,6 +99,12 @@ The cell is stable and will not emit sparks when firing.
 	desc = "A stabilizer system attachment combining a grounding system with additional containment coils for self-charging purposes, this gives additional safety to the cell it's attached to; preventing both sparks and leakage."
 	icon_state = "attachment_stabiliser"
 	attachment_overlay_icon_state = "microfusion_stabiliser"
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/plasma = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_cell_attachment/stabiliser/add_attachment(obj/item/stock_parts/power_store/cell/microfusion/microfusion_cell)
 	. = ..()
@@ -109,6 +128,14 @@ If the cell isn't stabilised by a stabiliser, it may emit a radiation pulse.
 	attachment_overlay_icon_state = "microfusion_selfcharge"
 	/// The amount of charge this cell will passively gain!
 	var/self_charge_amount = 20
+	custom_materials = list(
+		/datum/material/uranium = SHEET_MATERIAL_AMOUNT * 3,
+		/datum/material/titanium = SHEET_MATERIAL_AMOUNT * 3,
+		/datum/material/bluespace = SHEET_MATERIAL_AMOUNT,
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/diamond = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_cell_attachment/selfcharging/examine(mob/user)
 	. = ..()
@@ -140,6 +167,12 @@ Makes normal reloads easier
 	desc = "An aftermarket modification that makes the process of loading a MF cell far easier."
 	icon_state = "attachment_reloader"
 	attachment_overlay_icon_state = "microfusion_reloader"
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/plasma = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_cell_attachment/reloader/add_attachment(obj/item/stock_parts/power_store/cell/microfusion/microfusion_cell)
 	. = ..()
@@ -159,6 +192,12 @@ Makes tactical reloads easier
 	desc = "An aftermarket modification that makes the process of tactically loading a MF cell far easier and cooler."
 	icon_state = "attachment_tactical"
 	attachment_overlay_icon_state = "microfusion_tactical"
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/plasma = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_cell_attachment/tactical/add_attachment(obj/item/stock_parts/power_store/cell/microfusion/microfusion_cell)
 	. = ..()

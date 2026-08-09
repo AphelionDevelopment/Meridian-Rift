@@ -182,6 +182,11 @@
 	cooling_system_rate = 40
 	integrity = 120
 	color = "#ffffcc"
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_phase_emitter/advanced
 	name = "advanced microfusion phase emitter"
@@ -192,6 +197,12 @@
 	cooling_system_rate = 50
 	integrity = 150
 	color = "#99ffcc"
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/gold = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_phase_emitter/bluespace
 	name = "bluespace microfusion phase emitter"
@@ -202,6 +213,13 @@
 	cooling_system_rate = 60
 	integrity = 200
 	color = "#66ccff"
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/gold = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/diamond = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_phase_emitter/nanocarbon
 	name = "nanocarbon microfusion phase emitter"

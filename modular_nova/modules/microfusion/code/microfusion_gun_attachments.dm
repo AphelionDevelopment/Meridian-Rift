@@ -131,6 +131,12 @@ Turns the gun into a shotgun.
 	var/pellets_to_add = 2
 	/// The variation in pellet scatter.
 	var/variance_to_add = 20
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/diamond = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_gun_attachment/barrel/scatter/run_attachment(obj/item/gun/microfusion/microfusion_gun)
 	. = ..()
@@ -164,6 +170,12 @@ An overclocked shotgun.
 	spread_adjust = 15
 	projectile_override = /obj/projectile/beam/laser/microfusion/scatter/max
 	power_usage = 20
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/diamond = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /*
 SUPERHEAT ATTACHMENT
@@ -180,6 +192,12 @@ Lasers set the target on fire.
 	slot = GUN_SLOT_BARREL
 	projectile_override = /obj/projectile/beam/laser/microfusion/superheated
 	new_fire_sound = 'modular_nova/modules/modular_weapons/sounds/laser_firing/vaporize.ogg'
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/diamond = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/plasma = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /*
 HELLFIRE ATTACHMENT
@@ -196,6 +214,12 @@ Makes the gun shoot hellfire lasers.
 	slot = GUN_SLOT_BARREL
 	projectile_override = /obj/projectile/beam/laser/microfusion/hellfire
 	new_fire_sound = 'modular_nova/modules/modular_weapons/sounds/laser_firing/melt.ogg'
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/diamond = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/plasma = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /*
 REPEATER ATTACHMENT
@@ -214,6 +238,12 @@ The gun can fire volleys of shots.
 	burst_to_add = 1
 	delay_to_add = 5
 	projectile_override = /obj/projectile/beam/laser/microfusion/repeater
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/diamond = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/bluespace = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /*
 FOCUSED REPEATER ATTACHMENT
@@ -230,6 +260,12 @@ The gun can fire volleys of shots that penetrate armor.
 	slot = GUN_SLOT_BARREL
 	projectile_override = /obj/projectile/beam/laser/microfusion/penetrator
 	power_usage = 80 // A price to pay to penetrate through armor
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/diamond = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/bluespace = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /*
 X-RAY ATTACHMENT
@@ -249,6 +285,13 @@ The gun can fire X-RAY shots.
 	power_usage = 50
 	new_fire_sound = 'modular_nova/modules/modular_weapons/sounds/laser_firing/incinerate.ogg'
 	projectile_override = /obj/projectile/beam/laser/microfusion/xray
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/diamond = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/uranium = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/bluespace = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_gun_attachment/barrel/xray/examine(mob/user)
 	. = ..()
@@ -266,6 +309,11 @@ Makes operators operate operatingly.
 	icon_state = "attachment_suppressor"
 	slot = GUN_SLOT_BARREL
 	attachment_overlay_icon_state = "attachment_suppressor"
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_gun_attachment/barrel/suppressor/run_attachment(obj/item/gun/microfusion/microfusion_gun)
 	. = ..()
@@ -289,6 +337,11 @@ HONK!! Does subpar stamina damage but slips people.
 	delay_to_add = 2 SECONDS
 	new_fire_sound = 'sound/items/bikehorn.ogg'
 	projectile_override = /obj/projectile/beam/laser/microfusion/honk
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/bananium = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_gun_attachment/barrel/honk/examine(mob/user)
 	. = ..()
@@ -313,6 +366,13 @@ The gun fires fast heavy lasers but takes a long time to fire.
 	delay_to_add = 2.5 SECONDS
 	new_fire_sound = 'sound/items/weapons/lasercannonfire.ogg'
 	projectile_override = /obj/projectile/beam/laser/microfusion/lance
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/diamond = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/plasma = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/bluespace = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_gun_attachment/barrel/lance/examine(mob/user)
 	. = ..()
@@ -351,6 +411,11 @@ Greatly reduces recoil and spread.
 	slot = GUN_SLOT_UNDERBARREL
 	spread_adjust = -10
 	recoil_adjust = -1
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /*
 HEATSINK ATTACHMENT
@@ -365,6 +430,12 @@ HEATSINK ATTACHMENT
 	slot = GUN_SLOT_UNDERBARREL
 	/// Cooling bonus.
 	var/cooling_rate_increase = 50
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/gold = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_gun_attachment/heatsink/run_attachment(obj/item/gun/microfusion/microfusion_gun)
 	. = ..()
@@ -386,6 +457,12 @@ Enables you to change the light color of the laser.
 	attachment_overlay_icon_state = "attachment_rgb"
 	/// What color are we changing the sprite to?
 	var/color_to_apply = COLOR_MOSTLY_PURE_RED
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/gold = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_gun_attachment/rgb/process_fire(obj/item/gun/microfusion/microfusion_gun, obj/item/ammo_casing/chambered)
 	. = ..()
@@ -423,6 +500,12 @@ Allows for flashlights bayonets and adds 1 slot to equipment.
 	icon_state = "attachment_rail"
 	attachment_overlay_icon_state = "attachment_rail"
 	slot = GUN_SLOT_RAIL
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/gold = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_gun_attachment/rail/run_attachment(obj/item/gun/microfusion/microfusion_gun)
 	. = ..()
@@ -455,6 +538,11 @@ Allows for a scope to be attached to the gun.
 	icon_state = "attachment_scope"
 	attachment_overlay_icon_state = "attachment_scope"
 	slot = GUN_SLOT_RAIL
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/microfusion_gun_attachment/scope/run_attachment(obj/item/gun/microfusion/microfusion_gun)
 	. = ..()
@@ -481,6 +569,11 @@ All tactical, all the time.
 	slot = GUN_SLOT_CAMO
 	icon_state = "attachment_black"
 	attachment_overlay_icon_state = "attachment_black"
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/gold = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /*
 HONK CAMO ATTACHMENT
@@ -493,6 +586,11 @@ HONK!!
 	desc = "A frame modification for the MCR-01, plating the gun in bananium."
 	icon_state = "attachment_honk_camo"
 	attachment_overlay_icon_state = "attachment_honk_camo"
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/bananium = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /*
 SYNDIE CAMO ATTACHMENT
@@ -505,6 +603,11 @@ Totally not property of a hostile corporation.
 	desc = "A frame modification for the MCR-01, changing the color of the gun to a slick blood red."
 	icon_state = "attachment_syndi_camo"
 	attachment_overlay_icon_state = "attachment_syndi_camo"
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/titanium = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /*
 NANOTRASEN CAMO ATTACHMENT
@@ -517,6 +620,11 @@ Hail Nanotrasen.
 	desc = "A frame modification for the MCR-01, changing the color of the gun to blue."
 	icon_state = "attachment_nt_camo"
 	attachment_overlay_icon_state = "attachment_nt_camo"
+	custom_materials = list(
+		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/plasma = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /*
 UNDERCHARGER ATTACHMENT
