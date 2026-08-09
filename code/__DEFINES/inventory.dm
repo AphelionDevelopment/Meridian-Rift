@@ -90,6 +90,7 @@ DEFINE_BITFIELD(no_equip_flags, list(
 /// Admin Tool Slot Catcher
 #define ITEM_SLOT_ADMIN (ITEM_SLOT_POCKETS | ITEM_SLOT_BELT | ITEM_SLOT_SUITSTORE | ITEM_SLOT_BACK | ITEM_SLOT_ID )
 // NOVA EDIT ADDITION END
+
 //Bit flags for the flags_inv variable, which determine when a piece of clothing hides another. IE a helmet hiding glasses.
 //Make sure to update obscured_slots if you add more.
 #define HIDEGLOVES (1<<0)

@@ -136,9 +136,8 @@
 	/// Maximum columns for viewers with the widescreen preference on. Left equal to screen_max_columns so ordinary
 	/// storage keeps the layout everyone is used to - raise it per-storage when something is genuinely too wide to fit.
 	var/screen_max_columns_widescreen = 7
-
-
 	// NOVA EDIT ADDITION END - ADMIN_TECH
+
 /datum/storage/New(
 	atom/parent,
 	max_slots = src.max_slots,
@@ -1158,7 +1157,7 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 		numbered_contents = process_numerical_display()
 		adjusted_contents = length(numbered_contents)
 
-	/* // NOVA EDIT REMOVAL END
+	/* // NOVA EDIT REMOVAL START - ADMIN_TECH
 	//if the ammount of contents reaches some multiplier of the final column (and its not the last slot), let the player view an additional row
 	var/additional_row = (!(adjusted_contents % screen_max_columns) && adjusted_contents < max_slots)
 
@@ -1169,8 +1168,9 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 	for (var/mob/ui_user as anything in storage_interfaces)
 		if (isnull(storage_interfaces[ui_user]))
 			continue
-		// NOVA EDIT ADDITION START-  the column maths moved inside the per-viewer loop so widescreen players can be given more columns
-		// Because this proc loops per viewer and calls update_position each proc call, we can pretty easily provide a check to insulate us in the future when exposing non-widescreen players to oversized storage elements
+		// NOVA EDIT ADDITION START - ADMIN_TECH
+		// The column maths moved inside the per-viewer loop so widescreen players can be given more columns.
+		// Because this proc loops per viewer and calls update_position each proc call, we can pretty easily provide a check to insulate us in the future when exposing non-widescreen players to oversized storage elements.
 		// This is NOT a config edit because I can see applications where people might want to better adjust the sizing of a ui for some reason.
 		// If you ever need to reference the columns var, please use this instead.
 		// Storages that never widen skip the preference read entirely, which is most of them.

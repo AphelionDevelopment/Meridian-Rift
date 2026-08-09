@@ -1747,7 +1747,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 // The double fire came from /datum/laser_weapon_mode/proc/apply_to_weapon, which hardcodes burst_size = 2 on whatever gun the mode is applied to.
 // /datum/laser_weapon_mode/admin overrides that proc to do nothing, so the burst_size below is what actually sticks. Don't remove either half.
 /obj/item/gun/energy/modular_laser_rifle/carbine/admin
-	name = "\improper subspace carbine"
+	name = "subspace carbine"
 	desc = "A Hoshi carbine that came back from CentCom with thirteen firing modes instead of five and a cell that never runs down. Disturbs, disables, dismembers, mines, ionises, drops a black hole, or turns into a sword, depending on what you ask of it."
 	icon = 'modular_nova/modules/modular_weapons/icons/obj/company_and_or_faction_based/saibasan/guns32x.dmi'
 	icon_state = "hoshi_kill"
@@ -2039,7 +2039,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 // Dune-esque energy shields.
 // This one can be used for high importance CC people
 /obj/item/clothing/accessory/energy_shield/admin
-	name = "\improper centcom tactical shield projector"
+	name = "centcom tactical shield projector"
 	desc = "A military-spec energy shield designed for Central Command Officials."
 	max_shield_health = 250
 	recharge_delay = 4 SECONDS
@@ -2059,7 +2059,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 
 // Unrealistic shield
 /obj/item/clothing/accessory/energy_shield/admin/bluespace
-	name = "\improper bluespace shield projector"
+	name = "bluespace shield projector"
 	desc = "A cutting edge energy shield designed for Central Command's technicians."
 	max_shield_health = 1000
 	recharge_delay = 2 SECONDS
@@ -2069,7 +2069,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 
 // Even more unrealistic shield
 /obj/item/clothing/accessory/energy_shield/admin/subspace
-	name = "\improper subspace shield projector"
+	name = "subspace shield projector"
 	desc = "A narrative-bending energy shield designed for Central Command's technicians."
 	max_shield_health = 10000
 	recharge_delay = 0 SECONDS
@@ -2080,7 +2080,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 // Soap. Amazing
 // TODO: sprites
 /obj/item/soap/admin
-	name = "\improper subspace soap"
+	name = "subspace soap"
 	desc = "ACTUALLY the most advanced soap known to mankind. Because it does not actually exist. Where did you get this?"
 	icon_state = "soapomega"
 	inhand_icon_state = "soapomega"

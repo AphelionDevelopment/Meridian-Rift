@@ -6,10 +6,8 @@
 	return null
 
 /mob/living/carbon/examine(mob/user)
-	// NOVA EDIT CHANGE START - ADMIN_TECH - ORIGINAL: if(HAS_TRAIT(src, TRAIT_UNKNOWN_APPEARANCE) && !isobserver(user))
-	if(HAS_TRAIT(src, TRAIT_UNKNOWN_APPEARANCE) && !isobserver(user) && !user.client?.holder)
+	if(HAS_TRAIT(src, TRAIT_UNKNOWN_APPEARANCE) && !isobserver(user) && !user.client?.holder) // NOVA EDIT CHANGE - ADMIN_TECH - ORIGINAL: if(HAS_TRAIT(src, TRAIT_UNKNOWN_APPEARANCE) && !isobserver(user))
 		return list(span_warning("You're struggling to make out any details..."))
-	// NOVA EDIT CHANGE END
 	// NOVA EDIT ADDITION START - ADMIN_TECH
 	if(HAS_TRAIT(src, TRAIT_ADMIN_STEALTH) && !isobserver(user) && !user.client?.holder)
 		return list(span_warning("That is an administrative technician. You should not acknowledge their presence unless they acknowledge you."))

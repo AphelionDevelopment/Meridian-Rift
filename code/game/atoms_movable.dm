@@ -2109,6 +2109,7 @@
 		factions_printout += "\n[faction_string]"
 
 	return jointext(factions_printout, "")
+
 // NOVA EDIT ADDITION START - ADMIN_TECH
 // Helper for checking if you can see something. This might be a horrible idea! Someone correct me if it is. :)
 /atom/movable/proc/can_see_target(atom/target)
