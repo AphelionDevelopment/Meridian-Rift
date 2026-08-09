@@ -137,7 +137,6 @@
 	/// storage keeps the layout everyone is used to - raise it per-storage when something is genuinely too wide to fit.
 	var/screen_max_columns_widescreen = 7
 	// NOVA EDIT ADDITION END - ADMIN_TECH
-
 /datum/storage/New(
 	atom/parent,
 	max_slots = src.max_slots,
@@ -1150,20 +1149,26 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 	modeswitch_action = null
 
 /// Updates views of all objects in storage and stretches UI to appropriate size
-// NOVA EDIT CHANGE START - ADMIN_TECH - the column maths moved inside the per-viewer loop so widescreen players can be given more columns
-// Because this proc loops per viewer and calls update_position each proc call, we can pretty easily provide a check to insulate us in the future when exposing non-widescreen players to oversized storage elements
-// This is NOT a config edit because I can see applications where people might want to better adjust the sizing of a ui for some reason.
 /datum/storage/proc/orient_storage()
 	var/adjusted_contents = length(real_location.contents)
 	var/list/datum/numbered_display/numbered_contents
 	if(numerical_stacking)
 		numbered_contents = process_numerical_display()
 		adjusted_contents = length(numbered_contents)
+	/* // NOVA EDIT REMOVAL END
+	//if the ammount of contents reaches some multiplier of the final column (and its not the last slot), let the player view an additional row
+	var/additional_row = (!(adjusted_contents % screen_max_columns) && adjusted_contents < max_slots)
 
+	var/columns = clamp(max_slots, 1, screen_max_columns)
+	var/rows = clamp(ceil(adjusted_contents / columns) + additional_row, 1, screen_max_rows)
+
+	*/ // NOVA EDIT REMOVAL END
 	for (var/mob/ui_user as anything in storage_interfaces)
 		if (isnull(storage_interfaces[ui_user]))
 			continue
-
+		// NOVA EDIT ADDITION START-  the column maths moved inside the per-viewer loop so widescreen players can be given more columns
+		// Because this proc loops per viewer and calls update_position each proc call, we can pretty easily provide a check to insulate us in the future when exposing non-widescreen players to oversized storage elements
+// This is NOT a config edit because I can see applications where people might want to better adjust the sizing of a ui for some reason.
 		// If you ever need to reference the columns var, please use this instead.
 		// Storages that never widen skip the preference read entirely, which is most of them.
 		var/user_max_columns = screen_max_columns
@@ -1173,7 +1178,7 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 		var/additional_row = (!(adjusted_contents % user_max_columns) && adjusted_contents < max_slots)
 		var/columns = clamp(max_slots, 1, user_max_columns)
 		var/rows = clamp(ceil(adjusted_contents / columns) + additional_row, 1, screen_max_rows)
-
+		// NOVA EDIT ADDITION END
 		storage_interfaces[ui_user].update_position(
 			screen_start_x,
 			screen_pixel_x,
@@ -1185,7 +1190,6 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 			real_location,
 			numbered_contents,
 		)
-// NOVA EDIT CHANGE END
 
 /**
  * Toggles the collectmode of our storage.
