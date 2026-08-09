@@ -254,6 +254,9 @@ const Panel = (props) => {
             paddingBottom: '6px',
             marginBottom: '8px',
             flex: '0 0 auto',
+            // Reserve a button's worth of height so a panel without one still
+            // rules off level with the panels beside it.
+            minHeight: '34px',
           }}
         >
           <Box
@@ -334,7 +337,12 @@ const Gauge = (props) => {
     <Panel title={label} actions={actions} glyph={glyph} accent={accent}>
       <Box
         onClick={onClick}
-        style={onClick ? { cursor: 'pointer' } : undefined}
+        style={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          cursor: onClick ? 'pointer' : undefined,
+        }}
       >
         <Box style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
           <Box
@@ -362,7 +370,16 @@ const Gauge = (props) => {
         >
           <Legend size="0.68rem">{sub}</Legend>
         </Box>
-        <Box style={{ display: 'flex', gap: '3px', marginTop: '7px' }}>
+        {/* marginTop auto drops the lamps to the floor of the tile, so the
+            annunciator rows line up across the strip whatever sits above them */}
+        <Box
+          style={{
+            display: 'flex',
+            gap: '3px',
+            marginTop: 'auto',
+            paddingTop: '8px',
+          }}
+        >
           {(lamps || []).map((lamp) => (
             <Lamp
               key={lamp.label}
