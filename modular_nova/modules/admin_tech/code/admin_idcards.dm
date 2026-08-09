@@ -12,8 +12,8 @@
 	w_class = WEIGHT_CLASS_TINY
 	slot_flags = ITEM_SLOT_ADMIN
 	resistance_flags = INDESTRUCTIBLE
-	obj_flags = ADMIN_OBJ_FLAGS
-	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
+	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
+	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
 
 /obj/item/card/id/advanced/debug/admin/Initialize(mapload)
 	. = ..()

@@ -14,7 +14,7 @@ GLOBAL_LIST_INIT(subspace_box_contents, list(
 		"Another Subspace Box" = list(
 			/obj/item/storage/box/debug = 1
 		),
-        "Debug Tools" = list(
+		"Debug Tools" = list(
 			/obj/item/storage/box/stabilized = 1,
 			/obj/item/storage/box/pinpointer_pairs = 1,
 			/obj/item/storage/box/beakers/variety = 1,
@@ -52,7 +52,7 @@ GLOBAL_LIST_INIT(subspace_box_contents, list(
 			/obj/item/firing_pin/admin = 1,
 			/obj/item/survivalcapsule/admin/fan = 1,
 		),
-        "Medical" = list(//
+		"Medical" = list(//
 			/obj/item/gun/energy/cell_loaded/medigun/admin = 1,
 			/obj/item/surgery_tray/admin = 1,
 			/obj/item/shears/admin = 1,
@@ -78,7 +78,7 @@ GLOBAL_LIST_INIT(subspace_box_contents, list(
 			/obj/item/slimepotion/genderchange = 1,
 			/obj/item/slimepotion/peacepotion = 1,
 		),
-        "Power" = list(//Power Debugging -- TODO: flatpacks
+		"Power" = list(//Power Debugging -- TODO: flatpacks
 			/obj/item/stock_parts/power_store/cell/infinite = 7,
 			/obj/item/stock_parts/power_store/battery/infinite = 7,
 			/obj/item/mod/core/infinite = 2,
@@ -90,8 +90,8 @@ GLOBAL_LIST_INIT(subspace_box_contents, list(
 			/obj/item/screwdriver/power = 1,
 			/obj/item/clothing/gloves/chief_engineer = 1,
 			/obj/item/autosurgeon/toolset = 1,
-        ),
-        "Portals and Teleportation" = list(//Portals and Shit
+		),
+		"Portals and Teleportation" = list(//Portals and Shit
 			/obj/item/permanent_portal_anchor = 1,
 			/obj/item/permanent_portal_creator = 1,
 			/obj/item/swapper = 2,
@@ -99,8 +99,8 @@ GLOBAL_LIST_INIT(subspace_box_contents, list(
 			/obj/item/quantum_keycard = 1,
 			/obj/item/storage/box/syndie_kit/syndicate_teleporter = 1,
 
-        ),
-        "Care Package" = list(//Should be populated with toys and room party stuff
+		),
+		"Care Package" = list(//Should be populated with toys and room party stuff
 			/obj/item/storage/box/hug/plushes = 1,
 			/obj/item/storage/box/colonial_rations = 1,
 			/obj/item/pizzabox/infinite = 1,
@@ -128,7 +128,7 @@ GLOBAL_LIST_INIT(subspace_box_contents, list(
 			/obj/item/rolling_table_dock = 1,
 			/obj/item/pneumatic_cannon/subspace = 1,
 			/obj/item/melee/skateboard/hoverboard/admin = 1,
-        ),
+		),
 ))
 
 // Re-enable if you want to pair

@@ -93,7 +93,7 @@
 	voice = null
 
 /obj/item/gun/energy/modular_laser_rifle/proc/init_manufacturer_examine()
-    AddElement(/datum/element/manufacturer_examine, COMPANY_CYBERSUN)
+	AddElement(/datum/element/manufacturer_examine, COMPANY_CYBERSUN)
 
 /obj/item/gun/energy/modular_laser_rifle/examine(mob/user)
 	. = ..()

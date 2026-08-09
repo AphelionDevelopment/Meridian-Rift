@@ -35,7 +35,8 @@
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
 // Our new headset.
-// TODO: Reach interactions on machines STILL do not work, despite my best efforts.
+// The reach interactions on machines were failing because the tgui half of the check looked for TRAIT_ADMIN_REACHABLE on
+// the client datum, while turn_on() below puts it on the mob. Both halves read the mob now, see code\modules\tgui\states.dm.
 /obj/item/radio/headset/admin
 	name = "bluespace headset"
 	desc = "Keeps you tuned in on the subspace data streams and threads, enabling you to communicate and act with ease."
@@ -67,6 +68,11 @@
 	AddComponent(/datum/component/wearertargeting/earprotection, EAR_PROTECTION_HEAVY)
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 	AddElement(/datum/element/babel_clothing)
+	START_PROCESSING(SSobj, src)// process() below does the ghost orbit bookkeeping, and never ran until this was added
+
+/obj/item/radio/headset/admin/Destroy()
+	STOP_PROCESSING(SSobj, src)
+	return ..()
 
 /obj/item/radio/headset/admin/examine(mob/user)
 	. = ..()
@@ -136,7 +142,7 @@
 /obj/item/radio/headset/admin/proc/ghost_check()
 	var/turf/cur_turf = get_turf(src)
 	var/list/contents = cur_turf.get_all_contents()
-	var/mob/dead/observer/current_spirits = list()
+	var/list/current_spirits = list()
 	for(var/atom/random_thing in contents)
 		random_thing.transfer_observers_to(src)
 
@@ -332,7 +338,6 @@
 	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "blue-mask"
 	inhand_icon_state = "null"
-	resistance_flags = FIRE_PROOF
 	max_filters = 2
 	starting_filter_type = /obj/item/gas_filter/admin
 	armor_type = /datum/armor/admin
@@ -405,8 +410,8 @@
 	storage_type = /datum/storage/admin/cytotheca
 	w_class = WEIGHT_CLASS_TINY
 	resistance_flags = INDESTRUCTIBLE
-	obj_flags = ADMIN_OBJ_FLAGS
-	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
+	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
+	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
 	var/admin_godmode = TRUE
 
 /obj/item/storage/neck/admin/cytotheca/Initialize(mapload)
@@ -475,7 +480,7 @@
 	icon_state = "storage_pouch_icon"
 	worn_icon_state = "storage_pouch_icon"
 	storage_type = /datum/storage/admin/cytotheca
-	obj_flags = TRAIT_NODROP
+	// obj_flags used to be set to TRAIT_NODROP here, which is a trait string in an integer bitfield. The parent is already anchored, which is what that was reaching for.
 
 // Highway robbery off the stable slime box, idk if this is current for all available stables or not
 /obj/item/storage/subspace_pouch/cytotheca/PopulateContents()

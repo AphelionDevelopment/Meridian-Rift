@@ -62,8 +62,8 @@
 	starting_frequency = MODLINK_FREQ_CENTCOM
 	applied_core = /obj/item/mod/core/infinite
 	w_class = WEIGHT_CLASS_TINY
-	obj_flags = ADMIN_OBJ_FLAGS
-	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
+	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
+	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
 	applied_modules = list(
 		/obj/item/mod/module/storage/admin,
 		/obj/item/mod/module/dispenser/subspacebox,
@@ -151,8 +151,8 @@
 	starting_frequency = MODLINK_FREQ_CENTCOM
 	applied_core = /obj/item/mod/core/infinite
 	w_class = WEIGHT_CLASS_TINY
-	obj_flags = ADMIN_OBJ_FLAGS
-	obj_flags_nova = ADMIN_OBJ_FLAGS_NOVA
+	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
+	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
 	applied_modules = list(
 		/obj/item/mod/module/storage/admin,
 		/obj/item/mod/module/dispenser/subspacebox,
