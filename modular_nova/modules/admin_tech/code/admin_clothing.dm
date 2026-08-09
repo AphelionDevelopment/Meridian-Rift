@@ -35,8 +35,6 @@
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
 // Our new headset.
-// The reach interactions on machines were failing because the tgui half of the check looked for TRAIT_ADMIN_REACHABLE on
-// the client datum, while turn_on() below puts it on the mob. Both halves read the mob now, see code\modules\tgui\states.dm.
 /obj/item/radio/headset/admin
 	name = "bluespace headset"
 	desc = "Keeps you tuned in on the subspace data streams and threads, enabling you to communicate and act with ease."
@@ -57,7 +55,7 @@
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | ACID_PROOF
 	w_class = WEIGHT_CLASS_TINY
 	/// A cache of ghosts orbiting this item
-	var/list/mob/dead/observer/spirits
+	var/list/mob/dead/observer/spirits = list()
 	/// Whether the debug-reach feature is currently toggled on
 	var/admin_reach = FALSE
 	/// Cooldown for pinging ghosts
@@ -68,7 +66,6 @@
 	AddComponent(/datum/component/wearertargeting/earprotection, EAR_PROTECTION_HEAVY)
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 	AddElement(/datum/element/babel_clothing)
-	START_PROCESSING(SSobj, src)// process() below does the ghost orbit bookkeeping, and never ran until this was added
 
 /obj/item/radio/headset/admin/Destroy()
 	STOP_PROCESSING(SSobj, src)
@@ -126,6 +123,7 @@
 		return
 
 	COOLDOWN_START(src, subspace_harmonic_signaller_cooldown, 5 SECONDS) // let's just assume the admin is responsible behind the wheel
+	START_PROCESSING(SSobj, src)// keeps whoever turns up visible, and stops itself once they wander off
 	to_chat(user, span_notice("The subspace harmonic signaller charges up and releases a pulse, notifying all the eyes-between-spaces of your activities!"))
 	message_admins("[ADMIN_LOOKUPFLW(user)] alerted ghosts with their [name].")// Also tell admemes. I forgor what the admin follow thing is.
 	notify_ghosts(
@@ -136,14 +134,18 @@
 	)
 	return CLICK_ACTION_SUCCESS
 
+// Only ticks while there are ghosts to keep track of - see the signaller above. Scanning the turf forever would drag
+// every passing orbiter onto the headset whether anyone asked for them or not.
 /obj/item/radio/headset/admin/process()
-	ghost_check()
+	if(!ghost_check())
+		STOP_PROCESSING(SSobj, src)
 
 /obj/item/radio/headset/admin/proc/ghost_check()
 	var/turf/cur_turf = get_turf(src)
-	var/list/contents = cur_turf.get_all_contents()
+	if(isnull(cur_turf))
+		return 0
 	var/list/current_spirits = list()
-	for(var/atom/random_thing in contents)
+	for(var/atom/random_thing as anything in cur_turf.get_all_contents())
 		random_thing.transfer_observers_to(src)
 
 	for(var/mob/dead/observer/ghost in orbiters?.orbiter_list)
@@ -426,8 +428,8 @@
 /obj/item/storage/neck/admin/cytotheca/PopulateContents()
 	new /obj/item/storage/subspace_pouch/cytotheca(src)
 
-// The trait source has to stay REF(src) everywhere - item_ctrl_click below grants it that way, and a REMOVE_TRAIT
-// with a different source silently does nothing, which would have left godmode stuck on.
+// TRAIT_GODMODE must use REF(src) in all three of dropped(), equipped() and item_ctrl_click() - a REMOVE_TRAIT with a
+// mismatched source silently does nothing.
 /obj/item/storage/neck/admin/cytotheca/dropped(mob/user)
 	. = ..()
 	if(isnull(user))
@@ -436,8 +438,6 @@
 
 /obj/item/storage/neck/admin/cytotheca/equipped(mob/user, slot, initial = TRUE)
 	. = ..()
-	// There used to be a second copy of this proc directly below which REMOVED godmode on equip, and being the later
-	// definition it was the one that won. Removal belongs in dropped(), above.
 	if(admin_godmode && slot == ITEM_SLOT_NECK)
 		ADD_TRAIT(user, TRAIT_GODMODE, REF(src))
 
@@ -477,7 +477,6 @@
 	icon_state = "storage_pouch_icon"
 	worn_icon_state = "storage_pouch_icon"
 	storage_type = /datum/storage/admin/cytotheca
-	// obj_flags used to be set to TRAIT_NODROP here, which is a trait string in an integer bitfield. The parent is already anchored, which is what that was reaching for.
 
 // Highway robbery off the stable slime box, idk if this is current for all available stables or not
 /obj/item/storage/subspace_pouch/cytotheca/PopulateContents()
@@ -525,7 +524,7 @@
 	worn_icon_digi = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing_digi.dmi'
 	inhand_icon_state = "null"
 	has_sensor = NO_SENSORS//admin techs should NEVER be on sensors
-	resistance_flags = FIRE_PROOF | ACID_PROOF
+	resistance_flags = INDESTRUCTIBLE
 	body_parts_covered = CHEST|GROIN|LEGS|FEET|ARMS|HANDS
 	armor_type = /datum/armor/admin
 	cold_protection = CHEST | GROIN | LEGS | FEET | ARMS | HANDS

@@ -4,8 +4,8 @@
 //! Sprite redits to CEV-ERIS, y'all really fucked with this one, it has no reason to look this cool.
 //! TODO:
 //! - pickup people or machines with it too? wouldn't that be cool
-// Thank you to sammy for the ADMIN_ITEM_VARS macro idea - a macro that stamped the shared admin vars onto each item so you didn't have to update three hundred of them by hand.
-// It never worked, and a commented-out #define trips the define sanity check, so it lives on only as the //ADMIN_ITEM_VARS(...) trails left under each item below.
+// The //ADMIN_ITEM_VARS(...) trails under each item below are leftovers of an abandoned macro. Do not restore it as a
+// commented-out #define; the define sanity check fails on those.
 /*
 	add_filter("admin_active_item", 1, outline_filter(1, "#cc00ff", OUTLINE_SQUARE))
 	game_plane_master_controller.remove_filter("admin_active_item")
@@ -25,8 +25,7 @@ Admin Variants of Common Tools
 // Engie Tools
 /obj/item/crowbar/power/alien/admin
 	name = "subspace jaws of life"
-	desc = "Jaws of life whose hardlight emitter is fed by a sliver of humming purple crystal. \
-		It parts bulkheads the way you might part a curtain, and with about as much resistance."
+	desc = "Jaws of life running off a sliver of humming purple crystal. Bulkheads part like curtains, and about as fast."
 	usesound = 'sound/items/weapons/sonic_jackhammer.ogg'
 	icon = 'modular_nova/modules/alien_hybrid_tools/icons/tools.dmi'
 	toolspeed = 0.1
@@ -42,8 +41,7 @@ Admin Variants of Common Tools
 
 /obj/item/screwdriver/power/alien/admin
 	name = "subspace hand drill"
-	desc = "A hand drill with no motor, no battery, and no obvious reason to work. \
-		The purple crystal seated where the chuck should be turns whatever you point it at."
+	desc = "No motor, no battery, no obvious reason for it to work. The purple crystal where the chuck should be turns whatever you point it at."
 	usesound = 'sound/items/pshoom/pshoom.ogg'
 	icon = 'modular_nova/modules/alien_hybrid_tools/icons/tools.dmi'
 	toolspeed = 0.1
@@ -59,8 +57,7 @@ Admin Variants of Common Tools
 
 /obj/item/weldingtool/advanced/admin
 	name = "subspace welding tool"
-	desc = "A welder that has never needed refuelling, because there is nothing inside it to burn. \
-		The flame is simply there, cold to the touch, and very good at its job."
+	desc = "Never needs refuelling, because there's nothing in it to burn. The flame is just there, cold to the touch, and very good at its job."
 	icon = 'modular_nova/modules/mapping/icons/obj/items/advancedtools.dmi'
 	icon_state = "welder"
 	toolspeed = 0.1
@@ -96,8 +93,7 @@ Admin Variants of Common Tools
 
 /obj/item/retractor/advanced/alien/admin
 	name = "subspace mechanical pinches"
-	desc = "Rods and gears folded around a purple crystal core. They open tissue without tearing it, \
-		which the surgeon in you finds reassuring and the rest of you does not."
+	desc = "Rods and gears wrapped around a purple crystal core. Opens tissue without tearing it, which is either reassuring or deeply upsetting."
 	icon = 'modular_nova/modules/alien_hybrid_tools/icons/tools.dmi'
 	toolspeed = 0.1
 	w_class = WEIGHT_CLASS_TINY
@@ -112,8 +108,7 @@ Admin Variants of Common Tools
 
 /obj/item/cautery/advanced/alien/admin
 	name = "subspace searing tool"
-	desc = "A compact laser projector that seals whatever it touches. The beam is no colour you can name, \
-		and looking straight into it makes your teeth ache."
+	desc = "A compact laser projector that seals whatever it touches. The beam isn't a colour you can name, and looking at it makes your teeth ache."
 	icon = 'modular_nova/modules/alien_hybrid_tools/icons/tools.dmi'
 	toolspeed = 0.1
 	w_class = WEIGHT_CLASS_TINY
@@ -128,8 +123,7 @@ Admin Variants of Common Tools
 
 /obj/item/blood_filter/advanced/alien/admin
 	name = "subspace medical combitool"
-	desc = "A blood filter and a bonesetter occupying the same space at the same time. \
-		Central Command's paperwork insists that this is normal, and that you should stop asking."
+	desc = "A blood filter and a bonesetter in the same space at the same time. CentCom's paperwork insists this is normal. Stop asking."
 	icon = 'modular_nova/modules/alien_hybrid_tools/icons/tools.dmi'
 	toolspeed = 0.1
 	w_class = WEIGHT_CLASS_TINY
@@ -228,8 +222,6 @@ Admin Variants of Common Tools
 	. = ..()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
-// This was declared on /obj/item/storage/bag/admin, which is a different bag entirely - so the pocket got the
-// construction bag's text and the construction bag got none. The keys below are the ones the procs actually bind.
 /obj/item/storage/bag/construction/admin/examine(mob/user)
 	. = ..()
 	. += span_notice("Ctrl-Click while held to empty the bag and restock it from scratch.")
@@ -351,8 +343,7 @@ Admin Variants of Common Tools
 //code\modules\projectiles\guns\energy\recharge.dm
 /obj/item/gun/energy/recharge/fisher/admin
 	name = "subspace disruptor"
-	desc = "A near-silent disabler whose bolts ignore tables, mobs, machinery, structures, glass, grilles, doors and \
-		walls alike. It only stops for whatever you actually clicked on, so be sure that is what you meant to hit."
+	desc = "A near-silent disabler whose bolts ignore tables, mobs, machinery, structures, glass, grilles, doors and walls alike. It stops for whatever you clicked on and nothing else, so click carefully."
 	icon_state = "protolaser"
 	suppressed = SUPPRESSED_QUIET
 	recharge_time = 0.25 SECONDS
@@ -405,10 +396,11 @@ Admin Variants of Common Tools
 	. = ..()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
-// Should handle the icon switching.
+// The parent pins anything emagged to the emergency sprite, and this remote ships emagged, so icon_state has to be set
+// after ..() rather than before it. admin_items.dmi carries a sprite for all five modes.
 /obj/item/door_remote/admin/update_icon_state()
+	. = ..()
 	icon_state = "[base_icon_state]_[department]_[mode]"
-	return ..()
 
 // New admin RCD, but using the cooler RCD type. Did you know that there already exists a decently superior alternative to the /obj/item/construction/rcd/combat/admin?
 // It was /obj/item/construction/rcd/arcd and for whatever reason this unused one had the potential to be better. But wasn't used.
@@ -466,9 +458,7 @@ Admin Variants of Common Tools
 // code\game\objects\items\emags.dm
 /obj/item/card/emag/admin
 	name = "subspace emag-doorjack"
-	desc = "It's a card with a magnetic strip attached to some circuitry that hurts to look at. It needs no proximity \
-		and honours no blacklist, which means it will emag things the ordinary card politely refuses to, from across \
-		the room. Don't wave this at anything you care about."
+	desc = "It's a card with a magnetic strip attached to some circuitry that hurts to look at. No proximity needed and no blacklist honoured, so it does things the normal card politely refuses to, from across the room. Don't wave this at anything you care about."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-emag"
 	worn_icon_state = "emag"
@@ -541,9 +531,7 @@ Admin Variants of Common Tools
 // Debug Forcefield Projector & It's Structure
 /obj/item/forcefield_projector/admin
 	name = "subspace forcefield projector"
-	desc = "An experimental device that can create several forcefields at a distance. This one has no cap on how many, \
-		and the fields it makes cannot be broken - useful for walling something off in a hurry and regrettable if you \
-		forget where you left them."
+	desc = "An experimental device that can create several forcefields at a distance. No cap on how many, and nothing breaks them. Great for walling something off in a hurry, less great if you forget where you left them."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-projector-forcefield"
 	max_shield_integrity = INFINITY
@@ -776,9 +764,9 @@ Admin Variants of Common Tools
 // code\modules\modular_computers\computers\item\pda.dm
 /obj/item/modular_computer/pda/admin
 	name = "subspace PDA"
-	desc = "An unassuming and oddly heavy PDA, carrying every program Nanotrasen has ever written and several it has not. \
-		It arrives pre-jailbroken, its cell does not discharge, its storage does not fill, and it does not appear on \
-		anyone else's contact list."
+	desc = "An unassuming and oddly heavy PDA carrying every program Nanotrasen has ever written, and several it hasn't. \
+		Arrives pre-jailbroken. The cell doesn't run down, the storage doesn't fill, and nobody else's contact list \
+		has ever heard of you."
 	device_theme = PDA_THEME_SPOOKY
 	max_capacity = INFINITY
 	hardware_flag = PROGRAM_ALL//This might cause issues? Set to PROGRAM_PDA if it do
@@ -1191,7 +1179,7 @@ Admin Variants of Common Tools
 	. = ..()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
-// TODO: sprites, fix the loader still
+// TODO: sprites
 // Balls. Empty the stored balls in a directed space.
 /obj/item/pneumatic_cannon/subspace
 	name = "subspace ballmatter mass projector"
@@ -1256,6 +1244,19 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	"Dough" = /obj/item/food/dough,
 ))
 
+// can_load_item refuses anything with a larger w_class than the cannon itself. This one is WEIGHT_CLASS_TINY so it
+// rides in an admin pocket, which makes every sphere above too big to load - the beach, basket and dodge balls are
+// BULKY on purpose so they can't be pocketed. Nothing is really stored in here anyway; Fire() conjures a ball a moment
+// before it is thrown and throw_item() takes it straight back out, so the size limits have nothing to protect.
+/obj/item/pneumatic_cannon/subspace/can_load_item(obj/item/loading, mob/user)
+	if(!istype(loading))
+		return TRUE
+	if(allowed_typecache && !is_type_in_typecache(loading, allowed_typecache))
+		if(user)
+			to_chat(user, span_warning("[loading] won't fit into [src]!"))
+		return FALSE
+	return TRUE
+
 /// Spawns a single fresh ball of charge_type immediately before firing, so nothing sits stockpiled in the cannon between shots.
 /obj/item/pneumatic_cannon/subspace/Fire(mob/living/user, atom/target)
 	if(!charge_type)
@@ -1310,8 +1311,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 // The beacon is a debug variant which has access to all lockers in the game, for reasons.
 /obj/item/choice_beacon/job_locker/debug
 	name = "debug job locker beacon"
-	desc = "Calls down any secure locker in the game, fully stocked, as many times as you care to ask. The requisition \
-		paperwork it generates goes somewhere, presumably."
+	desc = "Calls down any secure locker in the game, fully stocked, as many times as you like. The requisition paperwork goes somewhere, presumably."
 	company_source = /obj/item/choice_beacon::company_source
 	uses = INFINITY
 	w_class = WEIGHT_CLASS_TINY
@@ -1332,12 +1332,9 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	return locker_list
 
 // Spawn all the vendors that you want.
-// The normal beacon uses a radial menu over a hand-picked list, which doesn't scale to every vendor in the game.
-// This one takes the full subtype list and picks from it with a tgui list instead.
 /obj/item/summon_beacon/vendors/debug
 	name = "debug vendor beacon"
-	desc = "Delivers a Vendor via orbital drop with patented Donk Co. SafeTec Technology! This one is not limited to \
-		the standard catalogue, nor to a standard number of drops."
+	desc = "Delivers a Vendor via orbital drop with patented Donk Co. SafeTec Technology! This one isn't limited to the standard catalogue, or to a standard number of drops."
 	uses = INFINITY
 	w_class = WEIGHT_CLASS_TINY
 	slot_flags = ITEM_SLOT_ADMIN
@@ -1407,9 +1404,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 // TODO: sprites
 /obj/item/gun/magic/subspace/dagenblicky
 	name = "subspace mass projector pen"
-	desc = "The pen is still mightier than a 20x138mm, largely because it fires one. It writes, it clicks open into an \
-		energy dagger, and it puts anti-materiel rounds through anything unlucky enough to be downrange, on an \
-		unlimited magazine and no firing pin."
+	desc = "The pen is still mightier than a 20x138mm, mostly because it fires one. It writes, it clicks open into an \
+		energy dagger, and it never runs out."
 	icon = 'icons/obj/service/bureaucracy.dmi'
 	icon_state = "digging_pen"
 	inhand_icon_state = "pen"
@@ -1510,6 +1506,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
  * as they're supposed to look like a normal pen.
  */
 /obj/item/gun/magic/subspace/dagenblicky/proc/on_transform(obj/item/source, mob/user, active)
+	SIGNAL_HANDLER
 	if(active)
 		name = hidden_name
 		desc = hidden_desc
@@ -1745,9 +1742,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 // /datum/laser_weapon_mode/admin overrides that proc to do nothing, so the burst_size below is what actually sticks. Don't remove either half.
 /obj/item/gun/energy/modular_laser_rifle/carbine/admin
 	name = "\improper subspace carbine"
-	desc = "A Hoshi carbine that came back from Central Command carrying thirteen firing modes instead of five, and a \
-		cell that does not deplete. It will disturb, disable, dismember, mine, ionise, drop a black hole, or turn into \
-		a sword, depending on what you ask of it."
+	desc = "A Hoshi carbine that came back from CentCom with thirteen firing modes instead of five and a cell that never runs down. Disturbs, disables, dismembers, mines, ionises, drops a black hole, or turns into a sword, depending on what you ask of it."
 	icon = 'modular_nova/modules/modular_weapons/icons/obj/company_and_or_faction_based/saibasan/guns32x.dmi'
 	icon_state = "hoshi_kill"
 	inhand_icon_state = "hoshi_kill"
@@ -1783,16 +1778,11 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
 //ADMIN_ITEM_VARS(/obj/item/gun/energy/modular_laser_rifle/carbine/admin)
 
-// The emp_act and Initialize overrides that used to live here were declared on /modular_laser_rifle/admin, which is not the
-// type of any item - the gun is /modular_laser_rifle/carbine/admin - so neither ever ran. Both were also redundant:
-// /carbine/emp_act already does the speak_up, and the base Initialize already does everything that Initialize did.
-// The runechat colours it set are applied from the weapon mode's gun_runetext_color by apply_stats().
 /obj/item/gun/energy/modular_laser_rifle/carbine/admin/init_manufacturer_examine()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
 // icons\obj\weapons\guns\projectiles.dmi icon arcane_barrage
 // Base firing mode does no damage but inflicts hallucinations and brain damage, see the on_hit below.
-// The casing used to point at /obj/projectile/beam/mindflayer, which is the lethal base beam, so none of that ever fired.
 /obj/item/ammo_casing/energy/mindflayer/admin
 	projectile_type = /obj/projectile/beam/mindflayer/admin
 	select_name = "Fourth Wall"
@@ -1976,8 +1966,6 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	gun_runetext_color = "#7a0bb7"
 
 // dismemberment and mining mode
-// Wired up through /obj/item/ammo_casing/energy/plasma/admin into the Excision weapon mode, which is in the carbine's mode list.
-// dismemberment and mine_range are both real vars on /obj/projectile and /obj/projectile/plasma respectively, so these all take.
 /obj/projectile/plasma/admin
 	name = "plasma sear"
 	icon_state = "plasmacutter"
@@ -2167,8 +2155,6 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 		ui = new(user, src, "ChemDebugSynthesizer", name) // reuse the existing tgui interface, narsie bless the work of other people
 		ui.open()
 
-// The fuller ui_data further down this file is the one that counts - it was overriding a shorter copy that used to sit here.
-
 // same logic as chem_synthesizer's handle_ui_act, stolen wholesale to fit our needs here
 /obj/item/handheld_debug_chem_synth/ui_act(action, params, datum/tgui/ui, datum/ui_state/state)
 	. = ..()
@@ -2278,6 +2264,10 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 
 // Admin Chem Gun
 // Why does the syringe gun exist when this beautiful creation exists. Some might call it balance, I call it hoarding the fun stuff to criminals
+/// Tank size of the subspace reagent projector, and the ceiling on what one shot may carry. The parent's 90u holder
+/// is six shots at the default volume, which is not what "subspace-fed" is supposed to mean.
+#define ADMIN_CHEMGUN_CAPACITY 1000
+
 /obj/item/gun/chem/admin
 	name = "subspace reagent projector"
 	desc = "A Central Command modified syringe gun, automatically synthesizes chemical darts, and can be attuned to produce any reagent."
@@ -2300,16 +2290,21 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
 	/// How many units of reagent get fired per shot.
 	var/reagent_per_shot = 15
+	/// What the projector is currently attuned to. It refills itself with this between shots.
+	var/datum/reagent/synthesized_reagent
 
 /obj/item/gun/chem/admin/Initialize(mapload)
 	. = ..()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
+	create_reagents(ADMIN_CHEMGUN_CAPACITY, OPENCONTAINER)
 	qdel(chambered)
 	chambered = new /obj/item/ammo_casing/chemgun/admin(src)
 
 /obj/item/gun/chem/admin/examine(mob/user)
 	. = ..()
 	. += span_notice("Use in hand to synthesize any reagent. Ctrl-Click to set the volume fired per shot. Currently [reagent_per_shot] units.")
+	if(synthesized_reagent)
+		. += span_notice("It is attuned to [initial(synthesized_reagent.name)], and tops itself back up between shots.")
 
 /// Lets you instantly (re)attune the gun's reagents to any chemical, at full volume, without needing to physically fill it.
 /obj/item/gun/chem/admin/attack_self(mob/user)
@@ -2321,15 +2316,32 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	var/datum/reagent/input_reagent = GLOB.name2reagent[selected_reagent]
 	if(!input_reagent)
 		return
+	synthesized_reagent = input_reagent
 	reagents.clear_reagents()
-	reagents.add_reagent(input_reagent, reagents.maximum_volume)
+	top_up()
 	to_chat(user, span_notice("\The [src] hums as it synthesizes a fresh batch of [initial(input_reagent.name)]."))
+
+/**
+ * Refills the tank with whatever the projector is attuned to
+ *
+ * Does nothing if it has not been attuned yet, or if someone has filled it by hand with something else - a manual
+ * mix is left alone rather than being diluted back to the synthesised reagent.
+ */
+/obj/item/gun/chem/admin/proc/top_up()
+	if(isnull(synthesized_reagent))
+		return
+	if(reagents.total_volume && !reagents.has_reagent(synthesized_reagent))
+		return
+	var/missing = reagents.maximum_volume - reagents.total_volume
+	if(missing <= 0)
+		return
+	reagents.add_reagent(synthesized_reagent, missing)
 
 /// Lets you adjust how many units of reagent get fired with each shot.
 /obj/item/gun/chem/admin/item_ctrl_click(mob/user)
 	if(!user.client?.holder)
 		return NONE
-	var/new_amount = tgui_input_number(user, "Set reagent volume fired per shot", "Reagent Per Shot", reagent_per_shot, 1000, 1)
+	var/new_amount = tgui_input_number(user, "Set reagent volume fired per shot", "Reagent Per Shot", reagent_per_shot, ADMIN_CHEMGUN_CAPACITY, 1)
 	if(isnull(new_amount))
 		return
 	reagent_per_shot = new_amount
@@ -2345,6 +2357,11 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	shrapnel_type = null
 	inject_flags = INJECT_CHECK_PENETRATE_THICK
 
+// The parent dart only holds 50u, which would silently clamp anything the projector is set to fire above that.
+/obj/projectile/bullet/dart/admin/Initialize(mapload)
+	. = ..()
+	create_reagents(ADMIN_CHEMGUN_CAPACITY, NO_REACT)
+
 // The Casing for our dart itself.
 /obj/item/ammo_casing/chemgun/admin
 	name = "subspace dart synthesiser"
@@ -2352,17 +2369,20 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	projectile_type = /obj/projectile/bullet/dart/admin
 
 // Prepares the casing
+// ..() has to run - it does the actual projectile setup - but it also hands over a hardcoded 15u and spends a dart.
+// Doing our own transfer first and then calling up meant every shot carried reagent_per_shot plus another 15u, and
+// burned two darts. So the dose is corrected afterwards instead, and the tank refills behind it.
 /obj/item/ammo_casing/chemgun/admin/ready_proj(atom/target, mob/living/user, quiet, zone_override = "")
-	if(!loaded_projectile)
-		return
-	if(istype(loc, /obj/item/gun/chem/admin))
-		var/obj/item/gun/chem/admin/CG = loc//MY SHORTEST VARIABLE YET
-		if(CG.syringes_left <= 0)// i dont like it
-			return
-		CG.reagents.trans_to(loaded_projectile, CG.reagent_per_shot, transferred_by = user)
-		loaded_projectile.name = "piercing chemical dart"
-		CG.syringes_left--// its too short. size queen vars.
-	return ..()
+	. = ..()
+	var/obj/item/gun/chem/admin/chem_gun = loc
+	if(!istype(chem_gun) || !loaded_projectile)
+		return .
+	loaded_projectile.reagents.trans_to(chem_gun.reagents, loaded_projectile.reagents.total_volume)
+	chem_gun.top_up()
+	chem_gun.reagents.trans_to(loaded_projectile, chem_gun.reagent_per_shot, transferred_by = user)
+	return .
+
+#undef ADMIN_CHEMGUN_CAPACITY
 
 /obj/projectile/bullet/dart/piercing
 	inject_flags = INJECT_CHECK_PENETRATE_THICK
@@ -2468,7 +2488,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	name = "subspace multitool"
 	desc = "An administrative-grade multitool with a small subspace buffer bank, holding seven buffers instead of one."
 	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
-	icon_state = "multitool"
+	icon_state = "sub-multitool"
 	inhand_icon_state = "multitool"
 	apc_scanner = FALSE
 	w_class = WEIGHT_CLASS_TINY

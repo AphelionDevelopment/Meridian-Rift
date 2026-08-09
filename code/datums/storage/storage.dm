@@ -133,8 +133,9 @@
 	VAR_FINAL/block_insert_remove_updates = FALSE
 
 	// NOVA EDIT ADDITION START - ADMIN_TECH
-	/// Extra columns granted to viewers with the widescreen preference enabled.
-	var/screen_max_columns_widescreen = 13
+	/// Maximum columns for viewers with the widescreen preference on. Left equal to screen_max_columns so ordinary
+	/// storage keeps the layout everyone is used to - raise it per-storage when something is genuinely too wide to fit.
+	var/screen_max_columns_widescreen = 7
 	// NOVA EDIT ADDITION END - ADMIN_TECH
 
 /datum/storage/New(
@@ -1164,8 +1165,9 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 			continue
 
 		// If you ever need to reference the columns var, please use this instead.
+		// Storages that never widen skip the preference read entirely, which is most of them.
 		var/user_max_columns = screen_max_columns
-		if(ui_user.client?.prefs?.read_preference(/datum/preference/toggle/widescreen))
+		if(screen_max_columns_widescreen > screen_max_columns && ui_user.client?.prefs?.read_preference(/datum/preference/toggle/widescreen))
 			user_max_columns = screen_max_columns_widescreen
 		// Math pass to handle the division of the ui
 		var/additional_row = (!(adjusted_contents % user_max_columns) && adjusted_contents < max_slots)

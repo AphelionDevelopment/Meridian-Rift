@@ -1,6 +1,9 @@
 // NOVA MODULE ICSPAWNING https://github.com/Skyrat-SS13/Skyrat-tg/pull/104
 // todo: update spawn-in type to a list, add new spawn-in animations and types (particularly a totally silent one, similar to how ctrlshiftclick works).
 
+/// Prefix a saved spawn slot wears in the quick spawn menu, so the menu entry can be turned back into a slot name.
+#define SPAWN_SLOT_PREFIX "Slot: "
+
 /mob/dead/observer/CtrlClickOn(mob/user)
 	quickicspawn(user)
 
@@ -13,7 +16,7 @@
 		var/list/spawn_options = list("Bluespace", "Pod", "Silent")
 		var/list/custom_slots = list()
 		for(var/slot_name in prefs.preferred_spawn_methods)
-			custom_slots += "Slot: [slot_name]"
+			custom_slots += "[SPAWN_SLOT_PREFIX][slot_name]"
 
 		var/teleport_option = tgui_alert(usr, "How would you like to be spawned in?", "IC Quick Spawn", custom_slots + spawn_options + list("Make a Custom Slot", "Clear Slots", "Cancel"))
 
@@ -30,7 +33,7 @@
 			var/method = tgui_alert(usr, "Select spawn method for this slot", "Save Custom Slot", spawn_options)
 			if(!method)
 				return
-			var/outfit = client.robust_dress_shop_nova()
+			var/outfit = user.client.robust_dress_shop_nova()
 			if(!outfit)
 				return
 
@@ -48,8 +51,8 @@
 				to_chat(usr, span_notice("Cleared all custom spawn slots."))
 			return
 
-		if (findtext(teleport_option, "Slot - "))
-			var/slot_name = copytext(teleport_option, 7) // Length of "Slot: " + 1
+		if (findtext(teleport_option, SPAWN_SLOT_PREFIX) == 1)
+			var/slot_name = copytext(teleport_option, length(SPAWN_SLOT_PREFIX) + 1)
 			teleport_option = prefs.preferred_spawn_methods[slot_name]
 			dresscode = prefs.preferred_spawn_outfits[slot_name]
 			character_option = "Selected Character" // Default for slots
@@ -68,7 +71,7 @@
 				if("Subspace Tech")
 					dresscode = /datum/outfit/admin/subspace
 				if("Show All Outfits")
-					dresscode = client.robust_dress_shop_nova()
+					dresscode = user.client.robust_dress_shop_nova()
 					if (!dresscode)
 						return
 
@@ -198,3 +201,5 @@
 		return custom_outfits[dresscode]
 
 	return dresscode
+
+#undef SPAWN_SLOT_PREFIX

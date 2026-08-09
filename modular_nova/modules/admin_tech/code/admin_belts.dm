@@ -56,8 +56,7 @@
 /obj/item/storage/belt/utility/admin/full/subspace
 	name = "\improper subspace technician's satchel"
 	desc = "A hand crafted satchel made of the finest materials, processes, and a creatively integrated bluespace anomaly core. \
-		This one was carefully prestocked and organized by a Central Command Quartermaster who was told to stop asking \
-		what any of it was for."
+		This one was prestocked by a Central Command Quartermaster who was told to stop asking what any of it was for."
 
 /obj/item/storage/belt/utility/admin/full/subspace/PopulateContents()
 	new	/obj/item/blueprints(src)
@@ -90,8 +89,8 @@
 	new	/obj/item/construction/rcd/arcd/mattermanipulator/admin(src)
 	new	/obj/item/multitool/admin(src)
 	new	/obj/item/weldingtool/advanced/admin(src)
-	new	/obj/item/crowbar/power(src)
-	new	/obj/item/screwdriver/power(src)
+	new	/obj/item/crowbar/power/alien/admin(src)
+	new	/obj/item/screwdriver/power/alien/admin(src)
 	new	/obj/item/pipe_dispenser/bluespace(src)
 	new	/obj/item/rpd_upgrade/unwrench(src)
 	new /obj/item/door_remote/admin(src)

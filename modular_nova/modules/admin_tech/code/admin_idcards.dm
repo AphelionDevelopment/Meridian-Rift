@@ -4,8 +4,7 @@
 
 /obj/item/card/id/advanced/debug/admin
 	name = "\improper Admin ID"
-	desc = "An Admin ID card. Has ALL the all access, you really shouldn't have this. Security huds read it as static, \
-		and no threat assessment ever manages to hold an opinion about the bearer."
+	desc = "An Admin ID card. Has ALL the all access, you really shouldn't have this. Sec huds read it as static, and no threat assessment ever manages to hold an opinion about you."
 	icon_state = "card_platinum"
 	assigned_icon_state = "assigned_centcom"
 	trim = /datum/id_trim/admin/bluespace
@@ -20,7 +19,6 @@
 	. = ..()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
-// Everything else on this one already matches the parent, so it only needs the name and flavour.
 /obj/item/card/id/advanced/debug/admin/bluespace
 	name = "\improper Bluespace ID"
 	desc = parent_type::desc + " This one is stamped for a Bluespace Technician."
@@ -57,8 +55,7 @@
 //Additional admin ID stuff
 /obj/item/card/id/advanced/debug/admin/centcomm
 	name = "\improper CentComm Master ID"
-	desc = "A Master ID card from Central Command. Has ALL the all access, to a suspicious degree. Reads as static on \
-		security huds and registers as no threat whatsoever, which is itself the most suspicious part."
+	desc = "A Master ID card from Central Command. Has ALL the all access, to a suspicious degree. Reads as static on sec huds and registers as no threat at all, which is the most suspicious part."
 	icon_state = "card_centcom"
 	assigned_icon_state = "assigned_centcom"
 	trim = /datum/id_trim/admin/centcomm

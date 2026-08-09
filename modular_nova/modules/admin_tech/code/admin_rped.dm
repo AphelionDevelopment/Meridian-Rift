@@ -1,8 +1,12 @@
 // Originally from: NOVA MODULE ICSPAWNING https://github.com/Skyrat-SS13/Skyrat-tg/pull/104
+
+/// Ceiling on how many of one type a single manufacture selection may produce.
+#define RPED_MAX_BATCH_SIZE 100
+
 /obj/item/storage/part_replacer/bluespace/admin
 	name = "subspace rped"
-	desc = "A specialized bluespace RPED for technicians that can manufacture stock parts on the fly. It fills in \
-		whatever a machine or an unbuilt frame is missing before it works, so nothing is ever short a part."
+	desc = "A specialized bluespace RPED for technicians that can manufacture stock parts on the fly. Fills in whatever \
+		a machine or an unbuilt frame is missing before it gets to work, so nothing is ever short a part."
 	storage_type = /datum/storage/rped/bluespace/admin
 	w_class = WEIGHT_CLASS_TINY
 	slot_flags = ITEM_SLOT_ADMIN
@@ -51,9 +55,8 @@
 /obj/item/storage/part_replacer/bluespace/admin/Initialize(mapload)
 	. = ..()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
-	// A machine frame is a structure rather than machinery, and a frame's own item_interaction runs before any
-	// interact_with_atom on the thing held - so the frame handling that used to sit in interact_with_atom below could
-	// never fire. This signal goes out ahead of both, which lets us stock up and then let the frame install as normal.
+	// A frame's own item_interaction runs ahead of interact_with_atom on the held item, so this signal is the only
+	// hook early enough to stock the RPED before the frame empties it.
 	RegisterSignal(src, COMSIG_ITEM_INTERACTING_WITH_ATOM, PROC_REF(on_interacting_with_atom))
 
 /obj/item/storage/part_replacer/bluespace/admin/examine(mob/user)
@@ -61,7 +64,16 @@
 	. += span_notice("Alt-Right-Click to manufacture parts, set the batch size, or clear its internal storage.")
 	. += span_notice("Leftovers pulled out of an upgraded machine are [auto_clear ? "destroyed" : "kept"].")
 
-/// Tops the RPED up with whatever an unbuilt machine frame is still asking for, then stands aside so the frame installs them.
+/**
+ * Tops the RPED up with whatever an unbuilt machine frame is still asking for.
+ *
+ * Returns NONE unconditionally so the frame's own interaction still runs and installs the parts.
+ * Arguments:
+ * * source - the RPED itself
+ * * user - the mob holding the RPED
+ * * target - what is being clicked; only machine frames are handled
+ * * modifiers - click modifiers, unused
+ */
 /obj/item/storage/part_replacer/bluespace/admin/proc/on_interacting_with_atom(datum/source, mob/living/user, atom/target, list/modifiers)
 	SIGNAL_HANDLER
 	if(!istype(target, /obj/structure/frame/machine))
@@ -104,7 +116,7 @@
 	if(!LAZYLEN(attacked_machinery.component_parts))
 		return ITEM_INTERACT_FAILURE
 
-	// Snapshot taken before the swap so auto-clear can tell what came out of the machine from what we walked in with.
+	// Auto-clear tells the machine's old parts from ours by comparing against this.
 	var/list/old_contents = auto_clear ? atom_storage.return_inv(FALSE) : null
 
 	// There's no good way to get required components off of an already-built machine, so we go through its circuit.
@@ -115,10 +127,11 @@
 	. = ..()
 
 	if(!auto_clear)
-		return
+		return .
 	for(var/obj/item/stored_item in atom_storage.return_inv(FALSE))
 		if(!(stored_item in old_contents))
 			qdel(stored_item)
+	return .
 
 /// A bespoke proc for spawning in parts
 /obj/item/storage/part_replacer/bluespace/admin/proc/spawn_parts_for_components(mob/living/user, list/required_components)
@@ -228,7 +241,7 @@
 			auto_clear = !auto_clear
 			to_chat(user, span_notice("The RPED will now [(auto_clear ? "destroy" : "keep")] items left over after upgrades."))
 		if("Set Batch Size")
-			var/new_size = tgui_input_number(user, "How many of each type should a selection produce?", "RPED Batch Size", batch_size, 100, 1)
+			var/new_size = tgui_input_number(user, "How many of each type should a selection produce?", "RPED Batch Size", batch_size, RPED_MAX_BATCH_SIZE, 1)
 			if(isnull(new_size))
 				return
 			batch_size = new_size
@@ -287,3 +300,5 @@
 		return
 	for(var/i in 1 to batch_size)
 		atom_storage.attempt_insert(new the_item(src), user, TRUE)
+
+#undef RPED_MAX_BATCH_SIZE

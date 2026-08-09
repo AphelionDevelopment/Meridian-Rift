@@ -6,10 +6,9 @@
 /// Admin lathe, waow so cool, wow, wow so cool
 /obj/machinery/rnd/production/colony_lathe/admin
 	name = "administrative fabricator"
-	desc = "A rapid construction fabricator with the material feedstock stage removed entirely, which is not something \
-		the laws of thermodynamics ordinarily permit. Everything it knows how to make, it makes instantly and for free, \
-		and it knows how to make every piece of subspace equipment Central Command has ever quietly signed off on. \
-		It repacks into a flatpack for transport."
+	desc = "A rapid construction fabricator with the feedstock stage removed entirely, which thermodynamics does not \
+		ordinarily allow for. Everything it knows, it prints instantly and for free, and it knows every piece of \
+		subspace equipment CentCom has ever quietly signed off on. Repacks into a flatpack."
 	icon = 'modular_nova/modules/colony_fabricator/icons/machines.dmi'
 	icon_state = "colony_lathe"
 	base_icon_state = "colony_lathe"
@@ -17,20 +16,16 @@
 	production_animation = "colony_lathe_n"
 	light_color = LIGHT_COLOR_BRIGHT_YELLOW
 	light_power = 5
-	// The admin designs are ADMIN_TECHWEB; this used to be COLONY_FABRICATOR against /datum/techweb/colony_fabricator,
-	// which meant the administrative fabricator could print everything except the administrative gear.
 	allowed_buildtypes = ADMIN_TECHWEB | COLONY_FABRICATOR
 	speedup_disabled = TRUE
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | ACID_PROOF
 	techweb_path = /datum/techweb/autounlocking/admin
 	repacked_type = /obj/item/flatpacked_machine/admin
 
-// The parent exposes this hook precisely so subtypes don't have to re-add a second manufacturer element in Initialize.
 /obj/machinery/rnd/production/colony_lathe/admin/give_manufacturer_examine()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
 // Zero coefficient means has_materials() and use_materials() both ask for nothing, so everything prints free.
-// The designs still carry a token cost because the design unit test rejects a design with a build_path and no cost.
 /obj/machinery/rnd/production/colony_lathe/admin/build_efficiency(datum/design/design)
 	return 0
 
@@ -61,23 +56,22 @@
 	. = ..()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
-
-/// Printables list of admin items
-/// When adding new items to the module, you should really add them here
-// This also adds some printables of other various debug items
-//
-// Everything here hangs off /datum/design/admin so a new entry only has to declare what makes it different.
-// RND_CATEGORY_INITIAL is what makes an autounlocking techweb pick a design up, so don't drop it from the category list.
+/**
+ * Base design for everything the administrative fabricator prints
+ *
+ * New printables in this module subtype this and declare only name, id, build_path, and a category if the default
+ * does not fit. Two constraints the CI unit tests enforce: RND_CATEGORY_INITIAL must stay in the category list or an
+ * autounlocking techweb will not pick the design up, and the material cost must not be empty, because a design with a
+ * build_path and no cost at all fails the design test. Nothing is charged in practice - the fabricator overrides
+ * build_efficiency() to zero.
+ */
 /datum/design/admin
 	build_type = ADMIN_TECHWEB
-	// Token cost only. The administrative fabricator zeroes its build efficiency, so nothing is actually consumed -
-	// but the design unit test fails any design that has a build_path and no material cost whatsoever.
 	materials = list(/datum/material/iron = SMALL_MATERIAL_AMOUNT)
 	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_EQUIPMENT)
 
-//
 // Tools
-//
+
 /datum/design/admin/multitool
 	name = "Subspace Multitool"
 	id = "admin_multitool"
@@ -174,9 +168,8 @@
 	build_path = /obj/item/reagent_containers/cup/watering_can/advanced/admin
 	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_TOOLS)
 
-//
 // Weaponry
-//
+
 /datum/design/admin/carbine
 	name = "Subspace Carbine"
 	id = "admin_carbine"
@@ -225,9 +218,8 @@
 	build_path = /obj/item/gun/syringe/admin
 	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_WEAPONS)
 
-//
 // Equipment
-//
+
 /datum/design/admin/pda
 	name = "Subspace PDA"
 	id = "admin_pda"
@@ -289,9 +281,8 @@
 	build_path = /obj/item/flatpacked_machine/admin
 	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_CONSTRUCTION)
 
-//
 // Storage
-//
+
 /datum/design/admin/pocket
 	name = "Bluespace Pocket"
 	id = "admin_pocket"
@@ -312,9 +303,8 @@
 	id = "admin_utility_belt"
 	build_path = /obj/item/storage/belt/utility/admin/full
 
-//
 // Medical
-//
+
 /datum/design/admin/health_analyzer
 	name = "Subspace Health Analyzer"
 	id = "admin_health_analyzer"
@@ -346,97 +336,6 @@
 	id = "admin_syringe"
 	build_path = /obj/item/reagent_containers/syringe/admin
 
-//
-// Internals
-//
-/datum/design/admin/tank_oxygen
-	name = "Oxygen Subspace Tank"
-	id = "admin_tank_oxygen"
-	build_path = /obj/item/tank/internals/admin/oxygen
-
-/datum/design/admin/tank_pluoxium
-	name = "Pluoxium Subspace Tank"
-	id = "admin_tank_pluoxium"
-	build_path = /obj/item/tank/internals/admin/pluoxium
-
-/datum/design/admin/tank_plasma
-	name = "Plasma Subspace Tank"
-	id = "admin_tank_plasma"
-	build_path = /obj/item/tank/internals/admin/plasma
-
-/datum/design/admin/tank_nitrogen
-	name = "Nitrogen Subspace Tank"
-	id = "admin_tank_nitrogen"
-	build_path = /obj/item/tank/internals/admin/nitrogen
-
-/datum/design/admin/gas_filter
-	name = "Subspace Gas Filter"
-	id = "admin_gas_filter"
-	build_path = /obj/item/gas_filter/admin
-
-//
-// MODsuits
-//
-/datum/design/admin/modsuit_bluespace
-	name = "Bluespace MODsuit"
-	id = "admin_modsuit_bluespace"
-	build_path = /obj/item/mod/control/pre_equipped/bluespace
-	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUITS)
-
-/datum/design/admin/modsuit_subspace
-	name = "Subspace MODsuit"
-	id = "admin_modsuit_subspace"
-	build_path = /obj/item/mod/control/pre_equipped/subspace
-	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUITS)
-
-/datum/design/admin/module_storage
-	name = "MOD Subspace Storage Module"
-	id = "admin_module_storage"
-	build_path = /obj/item/mod/module/storage/admin
-	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUIT_MODULES)
-
-/datum/design/admin/module_dispenser
-	name = "MOD Subspace Box Dispenser Module"
-	id = "admin_module_dispenser"
-	build_path = /obj/item/mod/module/dispenser/subspacebox
-	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUIT_MODULES)
-
-/datum/design/admin/module_infiltrator
-	name = "MOD Subspace Infiltrator Module"
-	id = "admin_module_infiltrator"
-	build_path = /obj/item/mod/module/infiltrator/admin
-	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUIT_MODULES)
-
-/datum/design/admin/module_carbine
-	name = "MOD Subspace Carbine Module"
-	id = "admin_module_carbine"
-	build_path = /obj/item/mod/module/admin/carbine
-	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUIT_MODULES)
-
-//
-// Cyborg
-//
-/datum/design/admin/borg_frontline
-	name = "Cyborg Upgrade: Frontline Walker"
-	id = "admin_borg_frontline"
-	build_path = /obj/item/borg/upgrade/transform/admin/frontline
-	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MECHFAB_CYBORG_MODULES)
-
-/datum/design/admin/borg_backline
-	name = "Cyborg Upgrade: Backline Walker"
-	id = "admin_borg_backline"
-	build_path = /obj/item/borg/upgrade/transform/admin/backline
-	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MECHFAB_CYBORG_MODULES)
-
-/datum/design/admin/borg_engineer
-	name = "Cyborg Upgrade: Engineering Walker"
-	id = "admin_borg_engineer"
-	build_path = /obj/item/borg/upgrade/transform/admin/engineer
-	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MECHFAB_CYBORG_MODULES)
-
-//
-// Medical - surgical and reagent gear
-//
 /datum/design/admin/scalpel
 	name = "Subspace Laser Scalpel"
 	id = "admin_scalpel"
@@ -487,9 +386,33 @@
 	id = "admin_beaker_small"
 	build_path = /obj/item/reagent_containers/cup/beaker/admin/small
 
-//
-// Internals - the rest of the tanks
-//
+// Internals
+
+/datum/design/admin/tank_oxygen
+	name = "Oxygen Subspace Tank"
+	id = "admin_tank_oxygen"
+	build_path = /obj/item/tank/internals/admin/oxygen
+
+/datum/design/admin/tank_pluoxium
+	name = "Pluoxium Subspace Tank"
+	id = "admin_tank_pluoxium"
+	build_path = /obj/item/tank/internals/admin/pluoxium
+
+/datum/design/admin/tank_plasma
+	name = "Plasma Subspace Tank"
+	id = "admin_tank_plasma"
+	build_path = /obj/item/tank/internals/admin/plasma
+
+/datum/design/admin/tank_nitrogen
+	name = "Nitrogen Subspace Tank"
+	id = "admin_tank_nitrogen"
+	build_path = /obj/item/tank/internals/admin/nitrogen
+
+/datum/design/admin/gas_filter
+	name = "Subspace Gas Filter"
+	id = "admin_gas_filter"
+	build_path = /obj/item/gas_filter/admin
+
 /datum/design/admin/tank_empty
 	name = "Empty Subspace Tank"
 	id = "admin_tank_empty"
@@ -520,9 +443,8 @@
 	id = "admin_tank_beeshead"
 	build_path = /obj/item/tank/internals/admin/mix/beeshead
 
-//
 // Worn kit - the bluespace technician loadout
-//
+
 /datum/design/admin/techsuit
 	name = "Bluespace Techsuit"
 	id = "admin_techsuit"
@@ -568,9 +490,8 @@
 	id = "admin_armor_vest"
 	build_path = /obj/item/clothing/suit/armor/vest/debug
 
-//
 // Identification
-//
+
 /datum/design/admin/id_admin
 	name = "Admin ID"
 	id = "admin_id_admin"
@@ -591,9 +512,8 @@
 	id = "admin_id_centcomm"
 	build_path = /obj/item/card/id/advanced/debug/admin/centcomm
 
-//
 // Kits - prepacked boxes, for when you would rather not print things one at a time
-//
+
 /datum/design/admin/debug_box
 	name = "Subspace Box"
 	id = "admin_debug_box"
@@ -605,9 +525,66 @@
 	build_path = /obj/item/gun/energy/taser/debug
 	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_WEAPONS)
 
-//
+// MODsuits
+
+/datum/design/admin/modsuit_bluespace
+	name = "Bluespace MODsuit"
+	id = "admin_modsuit_bluespace"
+	build_path = /obj/item/mod/control/pre_equipped/bluespace
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUITS)
+
+/datum/design/admin/modsuit_subspace
+	name = "Subspace MODsuit"
+	id = "admin_modsuit_subspace"
+	build_path = /obj/item/mod/control/pre_equipped/subspace
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUITS)
+
+/datum/design/admin/module_storage
+	name = "MOD Subspace Storage Module"
+	id = "admin_module_storage"
+	build_path = /obj/item/mod/module/storage/admin
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUIT_MODULES)
+
+/datum/design/admin/module_dispenser
+	name = "MOD Subspace Box Dispenser Module"
+	id = "admin_module_dispenser"
+	build_path = /obj/item/mod/module/dispenser/subspacebox
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUIT_MODULES)
+
+/datum/design/admin/module_infiltrator
+	name = "MOD Subspace Infiltrator Module"
+	id = "admin_module_infiltrator"
+	build_path = /obj/item/mod/module/infiltrator/admin
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUIT_MODULES)
+
+/datum/design/admin/module_carbine
+	name = "MOD Subspace Carbine Module"
+	id = "admin_module_carbine"
+	build_path = /obj/item/mod/module/admin/carbine
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MODSUIT_MODULES)
+
+// Cyborg
+
+/datum/design/admin/borg_frontline
+	name = "Cyborg Upgrade: Frontline Walker"
+	id = "admin_borg_frontline"
+	build_path = /obj/item/borg/upgrade/transform/admin/frontline
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MECHFAB_CYBORG_MODULES)
+
+/datum/design/admin/borg_backline
+	name = "Cyborg Upgrade: Backline Walker"
+	id = "admin_borg_backline"
+	build_path = /obj/item/borg/upgrade/transform/admin/backline
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MECHFAB_CYBORG_MODULES)
+
+/datum/design/admin/borg_engineer
+	name = "Cyborg Upgrade: Engineering Walker"
+	id = "admin_borg_engineer"
+	build_path = /obj/item/borg/upgrade/transform/admin/engineer
+	category = list(RND_CATEGORY_INITIAL, RND_CATEGORY_MECHFAB_CYBORG_MODULES)
+
 // Subspace tier - the badmin variants of the above. Same slots, fewer manners.
-//
+
 /datum/design/admin/headset_subspace
 	name = "Subspace Headset"
 	id = "admin_headset_subspace"
