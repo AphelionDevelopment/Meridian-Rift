@@ -4,8 +4,8 @@
 //! Sprite redits to CEV-ERIS, y'all really fucked with this one, it has no reason to look this cool.
 //! TODO:
 //! - pickup people or machines with it too? wouldn't that be cool
-// The //ADMIN_ITEM_VARS(...) trails under each item below are leftovers of an abandoned macro. Do not restore it as a
-// commented-out #define; the define sanity check fails on those.
+// ADMIN_ITEM_VARS was an abandoned macro idea. Do not reintroduce it as a commented-out #define; the define sanity
+// check fails on those.
 /*
 	add_filter("admin_active_item", 1, outline_filter(1, "#cc00ff", OUTLINE_SQUARE))
 	game_plane_master_controller.remove_filter("admin_active_item")
@@ -150,7 +150,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/storage/bag/admin)
 
 // First usage of the admin manufacturing company, to specifically denote items added through this module.
 /obj/item/storage/bag/admin/Initialize(mapload)
@@ -189,7 +188,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/storage/subspace_pouch)
 
 /obj/item/storage/subspace_pouch/Initialize(mapload)
 	. = ..()
@@ -216,7 +214,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/storage/bag/construction/admin)
 
 /obj/item/storage/bag/construction/admin/Initialize(mapload)
 	. = ..()
@@ -323,7 +320,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/pinpointer/crew/admin)
 
 /obj/item/pinpointer/crew/admin/Initialize(mapload)
 	. = ..()
@@ -353,7 +349,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/gun/energy/recharge/fisher/admin)
 
 /obj/item/gun/energy/recharge/fisher/admin/Initialize(mapload)
 	. = ..()
@@ -370,7 +365,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/holochip/fiftythousand)
 
 /obj/item/holochip/fiftythousand/Initialize(mapload)
 	. = ..()
@@ -420,7 +414,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/construction/rcd/arcd/mattermanipulator/admin)
 
 /obj/item/construction/rcd/arcd/mattermanipulator/admin/Initialize(mapload)
 	. = ..()
@@ -450,7 +443,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/construction/rld/admin)
 
 /obj/item/construction/rld/admin/Initialize(mapload)
 	. = ..()
@@ -472,7 +464,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/card/emag/admin)
 
 /obj/item/card/emag/admin/Initialize(mapload)
 	. = ..()
@@ -492,7 +483,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/lightreplacer/blue/admin)
 
 /obj/item/lightreplacer/blue/admin/Initialize(mapload)
 	. = ..()
@@ -513,7 +503,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/holosign_creator/atmos/admin)
 
 /obj/item/holosign_creator/atmos/admin/Initialize(mapload)
 	. = ..()
@@ -547,7 +536,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/forcefield_projector/admin)
 
 /obj/item/forcefield_projector/admin/Initialize(mapload)
 	. = ..()
@@ -587,7 +575,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/survivalcapsule/admin/fan)
 
 /obj/item/survivalcapsule/admin/fan/Initialize(mapload)
 	. = ..()
@@ -660,7 +647,6 @@ Admin Variants of Common Tools
 			/obj/machinery/plumbing/floor_pump/output = 20,
 		),
 	)
-//ADMIN_ITEM_VARS(/obj/item/construction/plumbing/admin)
 
 /obj/item/construction/plumbing/admin/Initialize(mapload)
 	plumbing_design_types = admin_design_types
@@ -679,7 +665,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/shears/admin)
 
 /obj/item/shears/admin/Initialize(mapload)
 	. = ..()
@@ -719,7 +704,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/gun/energy/cell_loaded/medigun/admin)
 
 /obj/item/gun/energy/cell_loaded/medigun/admin/Initialize(mapload)
 	. = ..()
@@ -755,7 +739,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/surgery_tray/admin)
 
 /obj/item/surgery_tray/admin/Initialize(mapload)
 	. = ..()
@@ -786,7 +769,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/modular_computer/pda/admin)
 
 // Sets up PDA details and other small things.
 /obj/item/modular_computer/pda/admin/Initialize(mapload)
@@ -855,7 +837,6 @@ Admin Variants of Common Tools
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
 	/// Current firing mode. "normal" just does the usual fidget-toy pointer stuff. "burn" and "melt" are legitimate hitscan damage modes, cycled via ctrl-click.
 	var/beam_mode = "normal"
-//ADMIN_ITEM_VARS(/obj/item/laser_pointer/admin)
 
 // sets up our pointer to not be shit
 /obj/item/laser_pointer/admin/Initialize(mapload)
@@ -942,7 +923,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/reagent_containers/syringe/admin)
 
 /obj/item/reagent_containers/syringe/admin/Initialize(mapload)
 	. = ..()
@@ -972,7 +952,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/reagent_containers/applicator/patch/admin)
 
 /obj/item/reagent_containers/applicator/patch/admin/Initialize(mapload)
 	. = ..()
@@ -1010,7 +989,6 @@ Admin Variants of Common Tools
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
 	/// How many "layers" we have remaining. Each layer equates to 1 second of digestion -> var/layers_remaining = 3. This PRETTY COOL VARIABLE is used almost exclusively by unit tests. Very sad stuff.
-//ADMIN_ITEM_VARS(/obj/item/reagent_containers/applicator/pill/admin)
 
 /obj/item/reagent_containers/applicator/pill/admin/Initialize(mapload)
 	. = ..()
@@ -1042,7 +1020,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/reagent_containers/cup/watering_can/advanced/admin)
 
 /obj/item/reagent_containers/cup/watering_can/advanced/admin/Initialize(mapload)
 	. = ..()
@@ -1143,7 +1120,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/reagent_containers/hypospray/combat/subspace)
 
 /obj/item/reagent_containers/hypospray/combat/subspace/Initialize(mapload)
 	. = ..()
@@ -1176,7 +1152,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/extinguisher/subspace)
 
 /obj/item/extinguisher/subspace/Initialize(mapload)
 	. = ..()
@@ -1219,7 +1194,6 @@ Admin Variants of Common Tools
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/pneumatic_cannon/subspace)
 
 /obj/item/pneumatic_cannon/subspace/Initialize(mapload)
 	. = ..()
@@ -1301,7 +1275,6 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/choice_beacon/job_locker)
 
 /obj/item/choice_beacon/job_locker/generate_display_names()
 	if(!locker_path)
@@ -1322,7 +1295,6 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/choice_beacon/job_locker/debug)
 
 /obj/item/choice_beacon/job_locker/debug/Initialize(mapload)
 	. = ..()
@@ -1344,7 +1316,6 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/summon_beacon/vendors/debug)
 
 /obj/item/summon_beacon/vendors/debug/examine(mob/user)
 	. = ..()
@@ -1398,7 +1369,6 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/gun/magic/subspace)
 
 /obj/item/gun/magic/subspace/Initialize(mapload)
 	. = ..()
@@ -1555,7 +1525,6 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/firing_pin/admin)
 
 /obj/item/firing_pin/admin/Initialize(mapload)
 	. = ..()
@@ -1642,7 +1611,6 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/gun/syringe/admin)
 
 /obj/item/gun/syringe/admin/Initialize(mapload)
 	. = ..()
@@ -1677,7 +1645,6 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/melee/baseball_bat/admin)
 
 /obj/item/melee/baseball_bat/admin/Initialize(mapload)
 	. = ..()
@@ -1782,7 +1749,6 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	resistance_flags = INDESTRUCTIBLE
 	obj_flags = parent_type::obj_flags | ADMIN_OBJ_FLAGS
 	obj_flags_nova = parent_type::obj_flags_nova | ADMIN_OBJ_FLAGS_NOVA
-//ADMIN_ITEM_VARS(/obj/item/gun/energy/modular_laser_rifle/carbine/admin)
 
 /obj/item/gun/energy/modular_laser_rifle/carbine/admin/init_manufacturer_examine()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
