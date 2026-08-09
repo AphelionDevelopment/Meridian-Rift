@@ -16,8 +16,7 @@
 	else // non guns don't need the chamber_processed signal registered
 		RegisterSignal(target, COMSIG_UPDATE_AMMO_HUD, PROC_REF(update_welder))
 
-	// Something created directly inside a mob's hands never fires COMSIG_ITEM_EQUIPPED, so it would
-	// sit there with no counter until it was dropped and picked back up. Catch that case here.
+	//Spawned straight into a hand never fires COMSIG_ITEM_EQUIPPED, so catch it here
 	var/obj/item/item_target = target
 	if(ismob(item_target.loc))
 		var/mob/holder = item_target.loc

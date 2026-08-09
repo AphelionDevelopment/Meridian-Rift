@@ -6,7 +6,7 @@ import { toFixed } from 'tgui-core/math';
 import { useBackend } from '../backend';
 import { Window } from '../layouts';
 
-// Micron Control Systems house style: phosphor on smoked glass.
+// Phosphor on smoked glass.
 const T = {
   void: '#03100b',
   glass: 'rgba(9, 34, 27, 0.82)',
@@ -30,7 +30,7 @@ const TONE = {
   cool: { line: T.cool, text: T.coolHot, glow: 'rgba(87,196,245,0.55)' },
 };
 
-// Inline styles can't express keyframes, so the panel ships its own sheet.
+// Keyframes can't be done inline.
 const KEYFRAMES = `
 @keyframes mfd-flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 @keyframes mfd-throb {
@@ -39,7 +39,7 @@ const KEYFRAMES = `
 }
 `;
 
-// Chamfered corners, cut top-left and bottom-right.
+// Cut corners, top left and bottom right.
 const CHAMFER = (n) =>
   `polygon(${n}px 0, 100% 0, 100% calc(100% - ${n}px), calc(100% - ${n}px) 100%, 0 100%, 0 ${n}px)`;
 
@@ -57,13 +57,10 @@ const SLOT_ANCHORS = {
   barrel: { x: 34, y: 27, ax: 31, ay: 15, label: 'BARREL' },
 };
 
-/**
- * Painting order, back to front. Frame reskins cover the whole receiver, so
- * they go underneath the fittings bolted to them.
- */
+// Back to front. Camo covers the whole receiver, so it goes under the fittings.
 const SLOT_DEPTH = ['camo', 'unique', 'barrel', 'underbarrel', 'rail'];
 
-/** Rebuilds the src DmIcon would have used, so the sprite can live in an SVG. */
+// The src DmIcon would have built, so the sprite can live in an SVG.
 const iconUrl = (icon, iconState) => {
   const ref = globalThis.Byond?.iconRefMap?.[icon];
   if (!ref || !iconState) {
@@ -85,7 +82,6 @@ const bandColor = (fraction, invert) => {
   return T.phosphor;
 };
 
-/** Wide-tracked caps, used for every label on the panel. */
 const Legend = (props) => (
   <Box
     style={{
@@ -100,10 +96,7 @@ const Legend = (props) => (
   </Box>
 );
 
-/**
- * Fault marker for a panel heading, drawn in the same thin-stroke idiom as the
- * bay rings on the schematic so the two read as one instrument.
- */
+// Fault marker, drawn like the bay rings so the two match.
 const FaultGlyph = (props) => {
   const { tone, flash } = props;
   const stroke = tone === 'danger' ? T.danger : T.amber;
@@ -132,10 +125,7 @@ const FaultGlyph = (props) => {
   );
 };
 
-/**
- * An annunciator lamp. Always drawn, dark until its condition trips, so the
- * gauge never changes height and you learn where each fault will appear.
- */
+// Always drawn, dark until it trips. Keeps every gauge the same height.
 const Lamp = (props) => {
   const { label, lit, tone, flash } = props;
   const skin = TONE[tone || 'amber'];
@@ -160,8 +150,7 @@ const Lamp = (props) => {
           fontFamily: 'monospace',
           fontSize: '0.78rem',
           fontWeight: 'bold',
-          // Four lamps share a quarter of the window, so labels are kept to
-          // four characters and the tracking stays tight enough to fit them.
+          // Four to a tile, so labels stay four characters.
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
           color: lit ? skin.line : T.label,
@@ -176,7 +165,6 @@ const Lamp = (props) => {
   );
 };
 
-/** A chamfered, glowing control. Bigger and louder than a stock tgui button. */
 const MfdButton = (props) => {
   const { children, icon, onClick, disabled, tone, block, tooltip, active } =
     props;
@@ -223,7 +211,6 @@ const MfdButton = (props) => {
   return tooltip ? <Tooltip content={tooltip}>{control}</Tooltip> : control;
 };
 
-/** Framed panel with a cut corner and a rule under its heading. */
 const Panel = (props) => {
   const { title, actions, children, footer, scroll, glyph, accent } = props;
   const { titleTooltip } = props;
@@ -257,8 +244,7 @@ const Panel = (props) => {
             paddingBottom: '6px',
             marginBottom: '8px',
             flex: '0 0 auto',
-            // Reserve a button's worth of height so a panel without one still
-            // rules off level with the panels beside it.
+            // Reserve a button's height so panels without one still line up.
             minHeight: '34px',
           }}
         >
@@ -305,7 +291,6 @@ const Panel = (props) => {
   );
 };
 
-/** Discrete-segment bar. Reads as an instrument rather than a web progress bar. */
 const Segments = (props) => {
   const { value, max, count, color, height } = props;
   const total = count || 18;
@@ -332,7 +317,6 @@ const Segments = (props) => {
   );
 };
 
-/** One instrument in the top strip. */
 const Gauge = (props) => {
   const { label, value, unit, sub, fraction, color, onClick, active } = props;
   const { actions, lamps, glyph, accent } = props;
@@ -373,8 +357,6 @@ const Gauge = (props) => {
         >
           <Legend size="0.68rem">{sub}</Legend>
         </Box>
-        {/* marginTop auto drops the lamps to the floor of the tile, so the
-            annunciator rows line up across the strip whatever sits above them */}
         <Box
           style={{
             display: 'flex',
@@ -408,8 +390,7 @@ const StatusStrip = (props) => {
     gun_heat_dissipation,
   } = data;
 
-  // Everything the strip needs to shout about, resolved to plain booleans --
-  // has_* arrive from DM as 0/1 and React will happily render a bare 0.
+  // has_* come from DM as 0 or 1, and React will happily print a bare 0.
   const cellIn = !!has_cell;
   const emitterIn = !!has_emitter;
   const damaged = emitterIn && !!phase_emitter_data.damaged;
@@ -443,8 +424,6 @@ const StatusStrip = (props) => {
   const lowCharge = cellIn && !dry && chargeFraction <= 0.25;
   const weakEmitter = emitterIn && !damaged && phase_emitter_data.integrity < 50;
 
-  // Fixed annunciator sets. Every lamp is always drawn so the tiles keep the
-  // same height whatever is wrong, and you learn where a given fault shows up.
   const shotLamps = [
     { label: 'Dry', lit: dry, tone: 'danger', flash: true },
     {
@@ -606,14 +585,8 @@ const StatusStrip = (props) => {
   );
 };
 
-/**
- * The weapon as it actually looks. The sprite is display only -- SVG image
- * elements hit-test on their whole rectangle rather than their painted pixels,
- * so stacked full-frame layers would mean whichever sorts last eats every
- * click. Each bay gets a ring beside the weapon instead, with a leader to the
- * part of the frame it serves; selecting one still outlines its overlay in
- * place, so the feedback stays on the gun.
- */
+// Sprite is display only. SVG images hit-test their whole rect and not their
+// pixels, so the top layer would eat every click. Bays get rings instead.
 const Schematic = (props) => {
   const { gunIcon, gunIconState, frameOverlays, attachments } = props;
   const { slots, filledSlots, selected, hovered, onSelect, onHover } = props;
@@ -730,7 +703,7 @@ const Schematic = (props) => {
               opacity={0.75}
             />
             <circle cx={anchor.ax} cy={anchor.ay} r={0.6} fill={stroke} />
-            {/* transparent pad so the ring is easy to hit, not just its stroke */}
+            {/* pad so you hit the ring and not just its stroke */}
             <circle cx={anchor.x} cy={anchor.y} r={3.4} fill="transparent" />
             <circle
               cx={anchor.x}
@@ -751,7 +724,6 @@ const Schematic = (props) => {
   );
 };
 
-/** Label/value row in the readout. */
 const Row = (props) => (
   <Box
     style={{

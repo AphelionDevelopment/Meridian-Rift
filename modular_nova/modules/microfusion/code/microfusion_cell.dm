@@ -19,7 +19,7 @@ These are basically advanced cells.
 	chargerate = 0 //Standard microfusion cells can't be recharged, they're single use.
 	microfusion_readout = TRUE
 	ratingdesc = FALSE //MF cells are rated in MF, not kilojoules
-	charge_light_type = null //We have no microfusion charge light sprite, so we suppress the generic one and report our own readout
+	charge_light_type = null //No MF charge light sprite, we do our own readout
 	custom_materials = list(
 		/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT,
 		/datum/material/glass = SMALL_MATERIAL_AMOUNT * 2,
@@ -68,7 +68,7 @@ These are basically advanced cells.
 	return ..()
 
 /obj/item/stock_parts/power_store/cell/microfusion/emp_act(severity)
-	var/prob_percent = charge / 100 * severity //Rolled against the charge we had before the EMP drained us
+	var/prob_percent = charge / 100 * severity //Rolled on the charge we had before the EMP
 	. = ..()
 	if(. & EMP_PROTECT_SELF)
 		return
@@ -151,7 +151,7 @@ These are basically advanced cells.
 	return TRUE
 
 /obj/item/stock_parts/power_store/cell/microfusion/proc/remove_attachments()
-	for(var/obj/item/microfusion_cell_attachment/cell_attachment as anything in attachments.Copy()) //Copied, we empty the real list as we go
+	for(var/obj/item/microfusion_cell_attachment/cell_attachment as anything in attachments.Copy()) //Copy, we're emptying the real one
 		cell_attachment.remove_attachment(src)
 		cell_attachment.forceMove(get_turf(src))
 		attachments -= cell_attachment
@@ -176,7 +176,7 @@ These are basically advanced cells.
 	icon_state = "microfusion_makeshift"
 	maxcharge = STANDARD_CELL_CHARGE * 0.6 //6 shots
 	max_attachments = 0
-	// Matches what the crafting recipe below actually consumes, rather than the printed cell's materials
+	//What the recipe below actually eats, not what a printed one is made of
 	custom_materials = list(
 		/datum/material/iron = SHEET_MATERIAL_AMOUNT * 1.2,
 		/datum/material/glass = SMALL_MATERIAL_AMOUNT * 0.1,

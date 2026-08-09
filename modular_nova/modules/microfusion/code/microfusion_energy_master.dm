@@ -108,8 +108,7 @@
 	RegisterSignal(src, COMSIG_ITEM_RECHARGED, PROC_REF(instant_recharge))
 	base_fire_delay = fire_delay
 	START_PROCESSING(SSobj, src)
-	// Subtypes list their pre-equipped attachments as typepaths. Snapshot and clear them first,
-	// since add_attachment() appends the real objects back onto this same list.
+	//Subtypes list these as typepaths, and add_attachment() puts the real objects back in here
 	var/list/preinstalled_attachments = attachments.Copy()
 	attachments.Cut()
 	for(var/attachment_type in preinstalled_attachments)
@@ -278,7 +277,7 @@
 		return CLICK_ACTION_BLOCKING
 
 	var/list/choices = list()
-	var/list/choice_lookup = list() //Keyed by ref so two attachments sharing a name can't collide
+	var/list/choice_lookup = list() //By ref, two attachments could share a name
 	for(var/obj/item/microfusion_gun_attachment/attachment as anything in attachments)
 		var/datum/radial_menu_choice/choice = new()
 		choice.name = attachment.name
@@ -304,14 +303,14 @@
 	remove_attachment(to_remove, user)
 	return CLICK_ACTION_SUCCESS
 
-/// Re-checked every tick the removal radial menu is open, so walking away closes it.
+/// Checked while the radial is open, walk away and it shuts.
 /obj/item/gun/microfusion/proc/can_pick_attachment(mob/user)
 	return can_interact(user)
 
 /obj/item/gun/microfusion/proc/remove_all_attachments()
 	if(!length(attachments))
 		return
-	for(var/obj/item/microfusion_gun_attachment/attachment as anything in attachments.Copy()) //Copied, we empty the real list as we go
+	for(var/obj/item/microfusion_gun_attachment/attachment as anything in attachments.Copy()) //Copy, we're emptying the real one
 		attachment.remove_attachment(src)
 		attachment.forceMove(get_turf(src))
 		attachments -= attachment
@@ -450,10 +449,7 @@
 	if(!can_shoot())
 		firing_burst = FALSE
 		return FALSE
-	// The whole burst is queued on timers before the first shot leaves, so the
-	// emitter has to be re-checked here. Otherwise overheating partway through
-	// still lets every shot that was already scheduled go off, and the gun
-	// keeps firing after the trigger is long released.
+	//The burst is queued on timers up front, so the emitter gets asked again every shot
 	var/emitter_state = process_emitter()
 	if(emitter_state != SHOT_SUCCESS)
 		if(emitter_state)
@@ -604,8 +600,7 @@
 /obj/item/gun/microfusion/proc/remove_emitter(mob/user)
 	if(!phase_emitter)
 		return
-	// Hold onto it before it moves. forceMove() out of the gun fires Exited(),
-	// which clears phase_emitter, so anything touching it afterwards is null.
+	//Grab it first, forceMove() fires Exited() and that nulls phase_emitter
 	var/obj/item/microfusion_phase_emitter/removed_emitter = phase_emitter
 	phase_emitter = null
 	playsound(src, sound_cell_insert, 50, TRUE)
@@ -733,11 +728,11 @@
 	data["gun_name"] = name
 	data["gun_desc"] = desc
 	data["gun_heat_dissipation"] = heat_dissipation_bonus
-	data["slots"] = attachment_slots //So the UI can draw the bays this frame has, empty ones included
+	data["slots"] = attachment_slots //The UI draws the empty bays off this
 	data["gun_icon"] = icon
 	data["gun_icon_state"] = icon_state
 
-	// The non-attachment overlays the gun is currently wearing, so the UI can compose the same sprite we do.
+	//What the gun is wearing besides attachments, so the UI builds the same sprite
 	var/list/frame_overlays = list()
 	if(!phase_emitter || phase_emitter.damaged)
 		frame_overlays += "[icon_state]_phase_emitter_[phase_emitter ? "damaged" : "missing"]"

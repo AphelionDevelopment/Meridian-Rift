@@ -519,7 +519,7 @@ Allows for flashlights bayonets and adds 1 slot to equipment.
 	var/component_to_delete = microfusion_gun.GetComponent(/datum/component/seclite_attachable)
 	if(component_to_delete)
 		qdel(component_to_delete)
-	// Deleting the component drops any attached bayonet for us.
+	//The component drops the bayonet for us
 	var/bayonet_mount = microfusion_gun.GetComponent(/datum/component/bayonet_attachable)
 	if(bayonet_mount)
 		qdel(bayonet_mount)
@@ -543,7 +543,7 @@ Allows for a scope to be attached to the gun.
 		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
 	)
 
-/// Toggle button the scope attachment hands the weapon, so zooming isn't hidden behind a right click.
+/// Zoom toggle the scope hands the gun.
 /datum/action/item_action/toggle_microfusion_scope
 	name = "Toggle Scope"
 	desc = "Peer down the scope mounted on your weapon."

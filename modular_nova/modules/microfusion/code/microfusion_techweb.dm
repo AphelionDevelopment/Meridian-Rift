@@ -116,7 +116,7 @@
 	description = "Microfusion tech that is proprietary tech of Honkicron Clownery Systems. HONK!!"
 	prereq_ids = list(
 		"basic_microfusion",
-		TECHWEB_NODE_MECH_CLOWN, //No plain clown research node exists any more, this is the closest gate
+		TECHWEB_NODE_MECH_CLOWN, //Closest thing to clown tech we have left
 	)
 	design_ids = list(
 		"microfusion_gun_attachment_honk",

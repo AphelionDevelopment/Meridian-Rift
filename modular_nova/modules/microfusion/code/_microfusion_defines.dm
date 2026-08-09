@@ -1,4 +1,4 @@
-/// The amount of cell charge drained during a drain failure. Half a standard cell, roughly five shots.
+/// The amount of cell charge drained during a drain failure.
 #define MICROFUSION_CELL_DRAIN_FAILURE (STANDARD_CELL_CHARGE * 0.5)
 /// The heavy EMP range for when a cell suffers an EMP failure.
 #define MICROFUSION_CELL_EMP_HEAVY_FAILURE 2
