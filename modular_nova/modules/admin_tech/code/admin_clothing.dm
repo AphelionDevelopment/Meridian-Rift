@@ -327,7 +327,7 @@
 		/datum/gas/proto_nitrate,
 		/datum/gas/tritium,
 		/datum/gas/zauker,
-		)
+	)
 
 //code\modules\clothing\masks\gasmask.dm
 /obj/item/clothing/mask/gas/atmos/admin
