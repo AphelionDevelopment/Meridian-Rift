@@ -1157,6 +1157,7 @@ GLOBAL_LIST_EMPTY(cached_storage_typecaches)
 	if(numerical_stacking)
 		numbered_contents = process_numerical_display()
 		adjusted_contents = length(numbered_contents)
+
 	/* // NOVA EDIT REMOVAL END
 	//if the ammount of contents reaches some multiplier of the final column (and its not the last slot), let the player view an additional row
 	var/additional_row = (!(adjusted_contents % screen_max_columns) && adjusted_contents < max_slots)
