@@ -477,26 +477,19 @@ ADMIN_VERB(wallhacks, R_ADMIN, "Admin Wallhacks", "Toggles full-bright, perfect 
 	if(!user.mob)
 		return
 
-	if(!HAS_TRAIT(user.mob, TRAIT_ADMIN_WALLHACKS))
-		ADD_TRAIT(user.mob, TRAIT_XRAY_HEARING, ADMIN_TRAIT)
-		ADD_TRAIT(user.mob, TRAIT_ADMIN_WALLHACKS, ADMIN_TRAIT)
-		user.mob.sight |= (SEE_TURFS|SEE_MOBS|SEE_OBJS)
-		user.mob.see_invisible = SEE_INVISIBLE_LIVING
-		user.mob.lighting_cutoff = LIGHTING_CUTOFF_FULLBRIGHT
-
+	// State lives on the client rather than the mob, so aghosting or possessing a new body can't strand the old one
+	// with wallhacks on. See modular_nova/master_files/code/modules/admin/admin.dm for both halves of the toggle.
+	if(user.admin_wallhacks_enabled)
+		user.disable_admin_wallhacks()
 	else
-		REMOVE_TRAIT(user.mob, TRAIT_XRAY_HEARING, ADMIN_TRAIT)
-		REMOVE_TRAIT(user.mob, TRAIT_ADMIN_WALLHACKS, ADMIN_TRAIT)
-		user.mob.sight &= ~(SEE_TURFS|SEE_MOBS|SEE_OBJS)
-		user.mob.see_invisible = initial(user.mob.see_invisible)
-		user.mob.lighting_cutoff = user.mob.default_lighting_cutoff()
-	user.mob.update_sight()
+		user.enable_admin_wallhacks()
 
-	var/wallhacks_on = HAS_TRAIT(user.mob, TRAIT_ADMIN_WALLHACKS)
+	var/wallhacks_on = user.admin_wallhacks_enabled
 	to_chat(user, "You toggled Admin Wallhacks [wallhacks_on ? "ON" : "OFF"].", confidential = TRUE)
 	message_admins("[key_name_admin(user)] toggled Admin Wallhacks [wallhacks_on ? "ON" : "OFF"].")
 	log_admin("[key_name(user)] toggled Admin Wallhacks [wallhacks_on ? "ON" : "OFF"].")
 	SSblackbox.record_feedback("nested tally", "admin_toggle", 1, list("Admin Wallhacks", "[wallhacks_on ? "Enabled" : "Disabled"]"))
+
 // NOVA EDIT ADDITION END - ADMIN_TECH
 
 ADMIN_VERB(show_traitor_panel, R_ADMIN, "Show Traitor Panel", "Edit mobs's memory and role", ADMIN_CATEGORY_GAME)

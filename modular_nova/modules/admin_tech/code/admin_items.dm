@@ -1244,6 +1244,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	return ..()
 
 /obj/item/pneumatic_cannon/subspace/item_ctrl_click(mob/user)
+	if(!user.client?.holder)
+		return NONE
 	// Ask the user what they want to attune the cannon to, or if they want to clear anything left loaded.
 	var/list/choices = GLOB.subspace_ballmatter_spheres.Copy()
 	choices += "Clear All"
@@ -1656,6 +1658,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 
 // Neato demo-mod selector. Easy to adapt code for modifying variables on items.
 /obj/item/melee/baseball_bat/admin/item_ctrl_click(mob/user)
+	if(!user.client?.holder)
+		return NONE
 	var/new_demo_mod = tgui_input_number(user, "Set demolition modifier", "Demolition Modifier", demolition_mod, 100, 0, round_value = FALSE)
 	if(isnull(new_demo_mod))
 		return

@@ -162,43 +162,40 @@
 	if (outfits[dresscode])
 		dresscode = outfits[dresscode]
 
+	// Each of the three submenus below maps display name -> outfit, so hold the picked name in its own variable and
+	// look the outfit up from it. Assigning the outfit back over dresscode and then indexing by that is how the
+	// Custom branch used to end up returning null.
 	if (dresscode == "As Job...")
-		var/list/job_paths = subtypesof(/datum/outfit/job)
 		var/list/job_outfits = list()
-		for(var/path in job_paths)
-			var/datum/outfit/O = path
-			job_outfits[initial(O.name)] = path
-		dresscode = tgui_input_list(src, "Select job equipment", "Robust quick dress shop", sort_list(job_outfits))
+		for(var/path in subtypesof(/datum/outfit/job))
+			var/datum/outfit/job_outfit = path
+			job_outfits[initial(job_outfit.name)] = path
 
-//		dresscode = input("Select job equipment", "Robust quick dress shop") as null|anything in sort_list(job_outfits)
-//		dresscode = job_outfits[dresscode]
-		if(isnull(dresscode))
+		var/selected_name = tgui_input_list(src, "Select job equipment", "Robust quick dress shop", sort_list(job_outfits))
+		if(isnull(selected_name))
 			return
-		return job_outfits[dresscode]
+		return job_outfits[selected_name]
 
 	if (dresscode == "As Plasmaman...")
-		var/list/plasmaman_paths = typesof(/datum/outfit/plasmaman)
 		var/list/plasmaman_outfits = list()
-		for(var/path in plasmaman_paths)
-			var/datum/outfit/O = path
-			plasmaman_outfits[initial(O.name)] = path
+		for(var/path in typesof(/datum/outfit/plasmaman))
+			var/datum/outfit/plasmaman_outfit = path
+			plasmaman_outfits[initial(plasmaman_outfit.name)] = path
 
-//		dresscode = input("Select plasmeme equipment", "Robust quick dress shop") as null|anything in sort_list(plasmaman_outfits)
-		dresscode = tgui_input_list(src, "Select plasmeme equipment", "Robust quick dress shop", sort_list(plasmaman_outfits))
-//		dresscode = plasmaman_outfits[dresscode]
-		if(isnull(dresscode))
+		var/selected_name = tgui_input_list(src, "Select plasmeme equipment", "Robust quick dress shop", sort_list(plasmaman_outfits))
+		if(isnull(selected_name))
 			return
-		return plasmaman_outfits[dresscode]
+		return plasmaman_outfits[selected_name]
 
 	if (dresscode == "Custom")
 		var/list/custom_outfits = list()
 		for(var/datum/outfit/req_outfit in GLOB.custom_outfits)
 			custom_outfits[req_outfit.name] = req_outfit
+
 		var/selected_name = tgui_input_list(src, "Select outfit", "Robust quick dress shop", sort_list(custom_outfits))
-		dresscode = custom_outfits[selected_name]
-		if(isnull(dresscode))
+		if(isnull(selected_name))
 			return
-		return custom_outfits[dresscode]
+		return custom_outfits[selected_name]
 
 	return dresscode
 

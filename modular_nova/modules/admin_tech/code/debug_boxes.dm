@@ -183,6 +183,8 @@ GLOBAL_LIST_INIT(subspace_box_illustrations, list(
 
 /obj/item/storage/box/debug/click_alt_secondary(mob/user)
 	. = ..()
+	if(!user.client?.holder)
+		return
 	if(currently_exploding)
 		user.balloon_alert(user, "already exploding!")
 		return
@@ -206,24 +208,26 @@ GLOBAL_LIST_INIT(subspace_box_illustrations, list(
 
 // Cleans all the contents out
 /obj/item/storage/box/debug/click_ctrl_shift(mob/user)
-	illustration = null
-	var/list/inv_grab = atom_storage.return_inv(FALSE)
-	for(var/obj/item/stored_item in inv_grab)
+	if(!user.client?.holder)
+		return
+	empty_box()
+
+/// Destroys everything in the box and clears the illustration overlay. Shared by every clear-out option below.
+/obj/item/storage/box/debug/proc/empty_box()
+	for(var/obj/item/stored_item in atom_storage.return_inv(recursive = FALSE))
 		qdel(stored_item)
+	illustration = null
 	update_appearance()
 
 /obj/item/storage/box/debug/item_ctrl_click(mob/user)
+	if(!user.client?.holder)
+		return NONE
 	// Ask the user what they want to make, or if they want to clear the storage.
 	var/choice = tgui_input_list(user, "Populate the Box", "Subspace Box Stuffer", GLOB.subspace_box_types)
-	// If they didn't cancel out of the list selection, we do things.  Clear-all removes all items.
 	if(isnull(choice))
 		return
-	// Empties the box of ITEMS.
 	if(choice == "Clear All Items")
-		var/list/inv_grab = atom_storage.return_inv(FALSE)
-		for(var/obj/item/stored_item in inv_grab)
-			qdel(stored_item)
-		illustration = null
+		empty_box()
 		return
 	// Checks contents lists with an input choice match
 	for(var/item_path in GLOB.subspace_box_contents[choice])
@@ -231,8 +235,6 @@ GLOBAL_LIST_INIT(subspace_box_illustrations, list(
 			new item_path(src)
 	if(choice in GLOB.subspace_box_illustrations)
 		illustration = GLOB.subspace_box_illustrations[choice]
-//	if(choice in GLOB.subspace_box_icontype)
-//		icon_state = GLOB.subspace_box_icontype[choice]
 	update_appearance()
 	return CLICK_ACTION_SUCCESS
 
@@ -241,23 +243,23 @@ GLOBAL_LIST_INIT(subspace_box_illustrations, list(
 /obj/item/storage/box/debug/schrodinger
 	name = "schrodinger's subspace box"
 	desc = "There is always a cat inside. Why are we asking?\
-	Alt+Rightclick to populate the contents."
+		Alt+Rightclick to populate the contents."
 
 /obj/item/storage/box/debug/schrodinger/click_alt_secondary(mob/user)
-	// Ask the user what they want to make, or if they want to clear the storage.
+	if(!user.client?.holder)
+		return
+	// Ask the user which cat they want, or if they want to empty the box out.
 	var/spawn_selection = tgui_input_list(user, "Populate the Box", "Box Stuffer", list("Clear All Items", "Cat", "Kitten"))
-	// If they didn't cancel out of the list selection, we do things.  Clear-all removes all items, auto-clear destroys left-overs after upgrades, and everything else is pretty self-explanatory.
 	if(isnull(spawn_selection))
 		return
-	// Empties the box
-	else if(spawn_selection == "Clear All Items")
-		var/list/inv_grab = atom_storage.return_inv(FALSE)
-		for(var/obj/item/stored_item in inv_grab)
-			qdel(stored_item)
-	else if(spawn_selection == "Cat")
-		atom_storage.attempt_insert(new /mob/living/basic/pet/cat(src), user, TRUE)
-	else if(spawn_selection == "Kitten")
-		atom_storage.attempt_insert(new /mob/living/basic/pet/cat/kitten(src), user, TRUE)
+
+	switch(spawn_selection)
+		if("Clear All Items")
+			empty_box()
+		if("Cat")
+			atom_storage.attempt_insert(new /mob/living/basic/pet/cat(src), user, override = TRUE)
+		if("Kitten")
+			atom_storage.attempt_insert(new /mob/living/basic/pet/cat/kitten(src), user, override = TRUE)
 
 // Fun Boxes and Spawners//
 // Nova Plushie Spawners, no filtering

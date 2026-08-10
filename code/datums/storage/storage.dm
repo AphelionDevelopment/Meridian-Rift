@@ -133,9 +133,11 @@
 	VAR_FINAL/block_insert_remove_updates = FALSE
 
 	// NOVA EDIT ADDITION START - ADMIN_TECH
-	/// Maximum columns for viewers with the widescreen preference on. Left equal to screen_max_columns so ordinary
-	/// storage keeps the layout everyone is used to - raise it per-storage when something is genuinely too wide to fit.
-	var/screen_max_columns_widescreen = 7
+	/// Maximum columns for viewers with the widescreen preference on. Opt-in: left null so every existing storage keeps
+	/// the layout everyone is used to, including subtypes that narrow screen_max_columns. Set it per-storage, above that
+	/// storage's own screen_max_columns, when something is genuinely too wide to fit.
+	var/screen_max_columns_widescreen
+
 	// NOVA EDIT ADDITION END - ADMIN_TECH
 
 /datum/storage/New(

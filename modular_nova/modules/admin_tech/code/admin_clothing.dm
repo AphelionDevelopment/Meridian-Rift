@@ -78,6 +78,9 @@
 
 /obj/item/radio/headset/admin/item_ctrl_click(mob/user)
 	. = CLICK_ACTION_BLOCKING
+	// Subspace Reach hands out TRAIT_ADMIN_REACHABLE, which bypasses reach, machine and action checks. Gate it like every other admin toggle.
+	if(!user.client?.holder)
+		return
 	if(user.get_item_by_slot(slot_flags) != src)
 		to_chat(user, span_warning("You need to be wearing [src] to toggle it."))
 		return
@@ -190,7 +193,8 @@
 	base_icon_state = "trayson-"
 	flags_cover = GLASSESCOVERSEYES// dont ask me why were doing this we just are
 	flash_protect = FLASH_PROTECTION_WELDER//No need for the welding gas mask from before
-	lighting_cutoff = LIGHTING_CUTOFF_HIGH//Slightly better vision just for wearing them, regardless of mode	glass_colour_type = FALSE//Stop touching my icon omg
+	lighting_cutoff = LIGHTING_CUTOFF_HIGH// Slightly better vision just for wearing them, regardless of mode
+	glass_colour_type = FALSE// Stop touching my icon omg
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | ACID_PROOF
 	modes = list(MODE_NONE, MODE_MESON, MODE_TRAY, MODE_PIPE_CONNECTABLE, MODE_ATMOS_THERMAL, MODE_AREA_BLUEPRINTS, MODE_SHUTTLE)
 	clothing_traits = list(
@@ -236,12 +240,7 @@
 
 	switch(vision_mode)// the active switcher
 		if(0)// normal sight. this switch disables everything when hit
-			vision_flags &= ~(SEE_TURFS|SEE_MOBS|SEE_OBJS)//that operator removes the flags, fuzzily
-			detach_clothing_traits(TRAIT_XRAY_VISION)// might not actually be necessary but fuck it, really,
-			REMOVE_TRAIT(human_user, TRAIT_XRAY_HEARING, ADMIN_TRAIT)// wall ears
-			human_user.see_invisible = initial(invis_view)// our actual see_invis processor
-			lighting_cutoff = LIGHTING_CUTOFF_HIGH// fullbright adjustment
-			remove_filter("admin_active_item")// clears outlines set later down this list
+			reset_vision(human_user)
 			balloon_alert(user, "vision: normal")
 		if(1)// perfect sight. Goldilocks land
 			vision_flags |= (SEE_TURFS|SEE_MOBS|SEE_OBJS)
@@ -262,6 +261,33 @@
 
 	human_user.update_sight()
 	return CLICK_ACTION_SUCCESS
+
+/**
+ * Winds the goggles back to mode 0 and strips everything the higher modes handed out.
+ *
+ * Shared by the mode cycle and by dropped(), so taking the goggles off in mode 1 or 2 can't leave the wearer
+ * with wall-hearing and x-ray for the rest of the round. Does not call update_sight() - the callers do.
+ * Arguments:
+ * * wearer - whoever is currently wearing them. Non-humans only get the item-side state reset.
+ */
+/obj/item/clothing/glasses/meson/engine/admin/debug/proc/reset_vision(mob/wearer)
+	vision_mode = 0
+	vision_flags &= ~(SEE_TURFS|SEE_MOBS|SEE_OBJS)
+	detach_clothing_traits(TRAIT_XRAY_VISION)
+	lighting_cutoff = LIGHTING_CUTOFF_HIGH
+	remove_filter("admin_active_item")// clears outlines set by the higher modes
+	if(!ishuman(wearer))
+		return
+	var/mob/living/carbon/human/human_wearer = wearer
+	REMOVE_TRAIT(human_wearer, TRAIT_XRAY_HEARING, ADMIN_TRAIT)// wall ears
+	human_wearer.see_invisible = initial(invis_view)// our actual see_invis processor
+
+/obj/item/clothing/glasses/meson/engine/admin/debug/dropped(mob/user)
+	. = ..()
+	if(!vision_mode)
+		return
+	reset_vision(user)
+	user.update_sight()
 
 #undef MODE_NONE
 #undef MODE_MESON
