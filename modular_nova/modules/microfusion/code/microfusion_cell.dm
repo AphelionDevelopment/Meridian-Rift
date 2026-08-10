@@ -53,7 +53,7 @@ These are basically advanced cells.
 	/// Do we show the microfusion readout instead of KJ?
 	var/microfusion_readout = FALSE
 
-/obj/item/stock_parts/power_store/cell/microfusion/Destroy()
+/obj/item/stock_parts/power_store/cell/microfusion/Destroy(force)
 	if(isnull(loc))
 		attachments = null
 		parent_gun = null
