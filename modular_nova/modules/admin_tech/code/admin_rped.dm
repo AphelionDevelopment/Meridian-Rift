@@ -157,7 +157,6 @@
 		// Anything else means a malformed recipe - let someone know.
 		to_chat(user, span_notice("Something went wrong manufacturing [req_component]. Alert the devs, and let them know what machine it was!"))
 
-
 /// Top a stack up to the required amount.
 /// Stacks auto-split on Initialize, so a single spawn covers whatever's short.
 /obj/item/storage/part_replacer/bluespace/admin/proc/restock_stack(mob/living/user, stack_type, amount_required)
