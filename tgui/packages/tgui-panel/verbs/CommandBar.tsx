@@ -271,6 +271,7 @@ export function CommandBar() {
     setFilledArgs([]);
     setSelectedIndex(0);
     setLastTypepathRequest('');
+    setHistoryIndex(-1);
   };
 
   const enterChatMode = (chatMode: Mode) => {
@@ -382,6 +383,19 @@ export function CommandBar() {
     heldKeysRef.current.delete(key);
     Byond.command(`KeyUp "${key}" 0 0 0 0`);
   };
+
+  const releaseHeldKeys = () => {
+    for (const key of heldKeysRef.current) {
+      Byond.command(`KeyUp "${key}" 0 0 0 0`);
+    }
+    heldKeysRef.current.clear();
+  };
+
+  useEffect(() => {
+    return () => {
+      releaseHeldKeys();
+    };
+  }, []);
 
   const blurToMap = () => {
     if (!hotkeys) return;
@@ -653,6 +667,7 @@ export function CommandBar() {
           }}
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
+          onBlur={releaseHeldKeys}
         />
       </div>
       <button
