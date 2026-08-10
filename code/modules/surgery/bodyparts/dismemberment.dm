@@ -109,10 +109,13 @@
 		phantom_owner.clear_alert(ALERT_EMBEDDED_OBJECT)
 		phantom_owner.clear_mood_event("embedded")
 
-	// A limb that is not there still hurts, and keeps hurting until something is put back in its place.
-	phantom_owner.add_pain_source(PAIN_SOURCE_PHANTOM_LIMB(body_zone), PAIN_PHANTOM_LIMB, body_zone)
-
 	if(!special)
+		// A limb that is not there still hurts, and keeps hurting until something is put back in its
+		// place. Neither a limb being swapped for another one nor a limb being deleted off a mob is
+		// that - species changes and teardown both come through here, and neither leaves a gap.
+		if(!QDELING(src))
+			phantom_owner.add_pain_source(PAIN_SOURCE_PHANTOM_LIMB(body_zone), PAIN_PHANTOM_LIMB, body_zone)
+
 		if(phantom_owner.dna)
 			for(var/datum/mutation/mutation as anything in phantom_owner.dna.mutations) //some mutations require having specific limbs to be kept.
 				if(mutation.limb_req && (mutation.limb_req == body_zone))

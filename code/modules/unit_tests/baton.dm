@@ -29,19 +29,32 @@
 /datum/unit_test/baton/proc/test_attack(mob/living/attacker, mob/living/defender, obj/item/melee/baton/baton)
 	// Perform an attack, while off baton cooldown
 	click_wrapper(attacker, defender, click_modifiers)
-	TEST_ASSERT_EQUAL(defender.get_stamina_loss(), asserted_stamina_damage(), \
-		"[baton_type::name] did an incorrect amount of stamina damage to target ([get_descriptor()])")
+	TEST_ASSERT_EQUAL(defender.get_stamina_loss(), asserted_pain(hits = 1), \
+		"[baton_type::name] left an incorrect amount of pain on target ([get_descriptor()])")
 	TEST_ASSERT_EQUAL(defender.get_brute_loss(), asserted_brute_damage(), \
 		"[baton_type::name] did an incorrect amount of brute damage to target ([get_descriptor()])")
 
 	// Now perform an attack while on baton cooldown
 	click_wrapper(attacker, defender, click_modifiers)
-	TEST_ASSERT_EQUAL(defender.get_stamina_loss(), asserted_stamina_damage(), \
-		"[baton_type::name] did an incorrect amount of stamina damage to target while on cooldown ([get_descriptor()])")
+	TEST_ASSERT_EQUAL(defender.get_stamina_loss(), asserted_pain(hits = 2), \
+		"[baton_type::name] left an incorrect amount of pain on target while on cooldown ([get_descriptor()])")
 	TEST_ASSERT_EQUAL(defender.get_brute_loss(), asserted_brute_damage() * 2, \
 		"[baton_type::name] did an incorrect amount of brute damage to target while on cooldown ([get_descriptor()])")
 
-/// How much stamina damage is expected from this test case
+/**
+ * Temporary pain the target should be carrying after a given number of connected swings.
+ *
+ * Stamina is temporary pain now, and so is the impact of anything that lands, so the baton's stun
+ * charge and the bruising from the stick itself end up in the same number. The charge only lands on
+ * the first swing - the second is on cooldown - while every swing that connects leaves its impact.
+ *
+ * Arguments:
+ * * hits - How many swings have connected.
+ */
+/datum/unit_test/baton/proc/asserted_pain(hits)
+	return asserted_stamina_damage() + (asserted_brute_damage() * hits * PAIN_IMPACT_RATIO)
+
+/// How much stamina damage the baton's stun charge is expected to deal
 /datum/unit_test/baton/proc/asserted_stamina_damage()
 	return baton_type::stamina_damage
 

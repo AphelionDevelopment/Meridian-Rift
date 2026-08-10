@@ -99,11 +99,12 @@
 			// overflow are for, and suffocation gets there on its own.
 			damage_dealt = -1 * adjust_organ_loss(ORGAN_SLOT_BRAIN, damage_amount, BRAIN_DAMAGE_COMBAT_MAXIMUM)
 
-	// Being hit hurts whether or not it wounds. This reads the damage the attack carried rather than
-	// what got through, because armour stops damage, not impact - a barely stopped round still spikes
-	// you. Plate headroom replaces the raw figure in Phase 6.
+	// Being hit hurts whether or not it wounds. This reads what armour, species and physiology let
+	// through rather than what the attack set out to deal, so plate is worth wearing for the thing
+	// that decides fights. Phase 6 replaces the scalar with plate headroom, at which point a barely
+	// stopped round can spike harder than a comfortably stopped one.
 	if(damagetype == BRUTE || damagetype == BURN)
-		add_temporary_pain(damage * PAIN_IMPACT_RATIO)
+		add_temporary_pain(damage_amount * PAIN_IMPACT_RATIO)
 
 	SEND_SIGNAL(src, COMSIG_MOB_AFTER_APPLY_DAMAGE, damage_dealt, damagetype, def_zone, blocked, wound_bonus, exposed_wound_bonus, sharpness, attack_direction, attacking_item, wound_clothing)
 	return damage_dealt

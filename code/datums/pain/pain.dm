@@ -23,6 +23,8 @@
 	var/dampening = 0
 	/// Set when organ damage moves. Organs tick constantly, so their floor is rebuilt on the next process instead of per hit.
 	var/floor_needs_recalculation = FALSE
+	/// Set when pain moved while the mob was in no state to take a health refresh. Retried next process.
+	var/health_update_deferred = FALSE
 	/// Permanent pain that is not an injury, as an assoc list of (source key -> list(zone, amount)).
 	/// Surgery without anaesthetic, phantom limbs, anything else that hurts without being a wound.
 	var/list/other_sources
@@ -56,8 +58,8 @@
 	RegisterSignal(parent, COMSIG_CARBON_GAIN_WOUND, PROC_REF(on_wounds_changed))
 	RegisterSignal(parent, COMSIG_CARBON_LOSE_WOUND, PROC_REF(on_wounds_changed))
 	RegisterSignal(parent, COMSIG_CARBON_ORGAN_DAMAGED, PROC_REF(on_organs_changed))
-	RegisterSignal(parent, COMSIG_ORGAN_IMPLANTED, PROC_REF(on_organs_changed))
-	RegisterSignal(parent, COMSIG_ORGAN_REMOVED, PROC_REF(on_organs_changed))
+	RegisterSignal(parent, COMSIG_CARBON_GAIN_ORGAN, PROC_REF(on_organs_changed))
+	RegisterSignal(parent, COMSIG_CARBON_LOSE_ORGAN, PROC_REF(on_organs_changed))
 	RegisterSignal(parent, COMSIG_MOB_STATCHANGE, PROC_REF(on_stat_changed))
 	RegisterSignal(parent, COMSIG_LIVING_POST_FULLY_HEAL, PROC_REF(on_fully_healed))
 	RegisterSignal(parent, COMSIG_QDELETING, PROC_REF(clear_parent_ref))
@@ -80,8 +82,8 @@
 		COMSIG_CARBON_GAIN_WOUND,
 		COMSIG_CARBON_LOSE_WOUND,
 		COMSIG_CARBON_ORGAN_DAMAGED,
-		COMSIG_ORGAN_IMPLANTED,
-		COMSIG_ORGAN_REMOVED,
+		COMSIG_CARBON_GAIN_ORGAN,
+		COMSIG_CARBON_LOSE_ORGAN,
 		COMSIG_MOB_STATCHANGE,
 		COMSIG_LIVING_POST_FULLY_HEAL,
 		COMSIG_QDELETING,
@@ -111,6 +113,11 @@
 	if(adrenaline_spent && !total_pain && !parent.has_status_effect(/datum/status_effect/adrenaline))
 		adrenaline_spent = FALSE
 
+	// Pain that moved while the body was coming apart never got its refresh. Take it now.
+	if(health_update_deferred && parent.get_bodypart(BODY_ZONE_CHEST))
+		health_update_deferred = FALSE
+		parent.updatehealth()
+
 	roll_bracket_effects()
 
 /// Wounds change the floor, and waiting a tick to feel a broken arm is the delay this system exists to remove.
@@ -122,11 +129,13 @@
 		try_trigger_adrenaline()
 
 /// Organ damage, insertion and removal all move the floor.
-/datum/pain/proc/on_organs_changed(datum/source, obj/item/organ/changed_organ, damage_amount, maximum)
+/datum/pain/proc/on_organs_changed(datum/source, obj/item/organ/changed_organ)
 	SIGNAL_HANDLER
 
-	// Every organ damages and heals itself on its own tick, so this fires constantly. Organ pain
-	// climbs slowly enough that rebuilding the floor once per second is soon enough.
+	// Deferred rather than immediate for two reasons. Every organ damages and heals itself on its own
+	// tick, so this fires constantly and organ pain climbs slowly enough that once per second is soon
+	// enough; and organs are pulled in bulk during a species change, where rebuilding the floor from a
+	// half-assembled body is how you get a runtime.
 	floor_needs_recalculation = TRUE
 
 /// A full heal takes the injuries with it, so the floor is rebuilt on the spot rather than a tick later.
@@ -142,6 +151,11 @@
 
 	if(old_stat == DEAD && new_stat != DEAD)
 		START_PROCESSING(SSpain, src)
+		// Death stripped everything this controller had applied and nothing else puts it back, so a
+		// mob that comes back still carrying its injuries has to be returned to the state it left in.
+		// Clearing the bracket is what forces its effects to reapply even if the band has not changed.
+		current_bracket = null
+		update_pain()
 	else if(old_stat != DEAD && new_stat == DEAD)
 		STOP_PROCESSING(SSpain, src)
 		clear_effects()
@@ -364,9 +378,13 @@
 	update_shock()
 
 	// The doll, the meter and the damage slowdown all read pain now, so pain moving has to run the
-	// same refresh that taking damage does rather than only redrawing.
+	// same refresh that taking damage does rather than only redrawing. Not mid-limb-surgery though:
+	// updatehealth() reads the chest without checking for one, and losing a limb moves pain.
 	if(felt_pain != old_felt_pain)
-		parent.updatehealth()
+		if(parent.get_bodypart(BODY_ZONE_CHEST))
+			parent.updatehealth()
+		else
+			health_update_deferred = TRUE
 
 /// Moves the mob into whichever bracket its felt pain now falls in, and applies that bracket's permanent effects.
 /datum/pain/proc/update_bracket()
