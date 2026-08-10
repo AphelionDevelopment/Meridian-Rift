@@ -44,6 +44,7 @@
 
 /obj/item/microfusion_phase_emitter/Destroy()
 	parent_gun = null
+	STOP_PROCESSING(SSobj, src)
 	return ..()
 
 /obj/item/microfusion_phase_emitter/process(seconds_per_tick)
