@@ -176,6 +176,10 @@
 		apply_status_effect(/datum/status_effect/tox_vomit)
 
 /mob/living/carbon/received_stamina_damage(current_level, amount_actual, amount)
+	// Stamina is temporary pain for anything carrying a pain controller: it decays on its own curve
+	// and raises its own shock, so neither the regeneration timer nor stamcrit apply. See pain_stamina.dm.
+	if(pain_controller)
+		return
 	. = ..()
 	if((maxHealth - current_level) <= crit_threshold && stat != DEAD)
 		apply_status_effect(/datum/status_effect/incapacitating/stamcrit)

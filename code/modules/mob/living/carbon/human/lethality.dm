@@ -10,19 +10,33 @@
 /mob/living/carbon/human/update_stat_from_condition()
 	// Death is the brain's, the blood's and the heart's business, and each of those kills where it
 	// lives. Nothing is left here but how conscious the mob is.
-	var/in_shock = has_status_effect(/datum/status_effect/incapacitating/pain_shock)
-	if((in_shock || undergoing_cardiac_arrest()) && !HAS_TRAIT(src, TRAIT_NOHARDCRIT))
+	// This runs on every updatehealth(), so the pain rungs are read off the controller's cached state
+	// rather than by scanning the status effect list twice.
+	var/datum/pain/pain = pain_controller
+	if((pain?.in_shock || undergoing_cardiac_arrest()) && !HAS_TRAIT(src, TRAIT_NOHARDCRIT))
 		set_stat(HARD_CRIT)
 		return FALSE
 
-	var/crawling = has_status_effect(/datum/status_effect/pain_crawl)
-	var/bled_out = CAN_HAVE_BLOOD(src) && get_blood_volume(apply_modifiers = TRUE) < BLOOD_VOLUME_BAD
-	if((crawling || bled_out) && !HAS_TRAIT(src, TRAIT_NOSOFTCRIT))
+	if((pain?.crawling || is_bled_out()) && !HAS_TRAIT(src, TRAIT_NOSOFTCRIT))
 		set_stat(SOFT_CRIT)
 		return FALSE
 
 	set_stat(STABLE)
 	return FALSE
+
+/**
+ * Whether this mob has lost enough blood to be going under from it.
+ *
+ * get_blood_volume() walks the reagent list when asked for modifiers, which is too much work for
+ * something the crit ladder asks on every updatehealth(). Modifiers only ever multiply and saline
+ * only ever adds, so a mob above the threshold with neither cannot be under it.
+ */
+/mob/living/carbon/proc/is_bled_out()
+	if(!CAN_HAVE_BLOOD(src))
+		return FALSE
+	if(blood_volume >= BLOOD_VOLUME_BAD && !length(blood_volume_modifiers))
+		return FALSE
+	return get_blood_volume(apply_modifiers = TRUE) < BLOOD_VOLUME_BAD
 
 /mob/living/carbon/human/is_dying()
 	// Being in agony is not the same as bleeding out. Someone put down by pain has everything to play
@@ -33,9 +47,7 @@
 		return TRUE
 	if(get_tox_loss() >= TOXLOSS_BRAIN_DAMAGE_THRESHOLD)
 		return TRUE
-	if(CAN_HAVE_BLOOD(src) && get_blood_volume(apply_modifiers = TRUE) < BLOOD_VOLUME_BAD)
-		return TRUE
-	return FALSE
+	return is_bled_out()
 
 /**
  * Turns suffocation and poisoning into the organ damage that actually kills.

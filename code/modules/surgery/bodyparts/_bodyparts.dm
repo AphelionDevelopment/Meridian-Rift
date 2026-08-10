@@ -714,11 +714,19 @@
  * sharpness - Flag on whether the attack is edged or pointy
  * attack_direction - The direction the bodypart is attacked from, used to send blood flying in the opposite direction.
  * damage_source - The source of damage, typically a weapon.
+ * wound_blocked - The armour percentage the injury roll should treat this hit as having been stopped by.
+ * Defaults to blocked, and exists because apply_damage() has already spent blocked on the damage by
+ * the time it gets here - it hands the percentage over separately rather than mitigating twice.
  */
-/obj/item/bodypart/proc/receive_damage(brute = 0, burn = 0, blocked = 0, updating_health = TRUE, forced = FALSE, required_bodytype = null, wound_bonus = 0, exposed_wound_bonus = 0, sharpness = NONE, attack_direction = null, damage_source, wound_clothing = TRUE)
+/obj/item/bodypart/proc/receive_damage(brute = 0, burn = 0, blocked = 0, updating_health = TRUE, forced = FALSE, required_bodytype = null, wound_bonus = 0, exposed_wound_bonus = 0, sharpness = NONE, attack_direction = null, damage_source, wound_clothing = TRUE, wound_blocked = null)
 	SHOULD_CALL_PARENT(TRUE)
 
 	var/hit_percent = forced ? 1 : (100-blocked)/100
+	if(isnull(wound_blocked))
+		wound_blocked = blocked
+	// Damage applied directly went around armour entirely, so there is nothing for it to have stopped.
+	if(forced)
+		wound_blocked = 0
 	if((!brute && !burn) || hit_percent <= 0)
 		return FALSE
 	if (!forced)
@@ -781,7 +789,11 @@
 					wounding_dmg *= 0.75 // piercing weapons pass along 75% of their wounding damage to the bone since it's more concentrated
 				wounding_type = WOUND_BLUNT
 
-		if (((exterior_ready_to_dismember && interior_ready_to_dismember) || dismemberable_by_total_damage()) && try_dismember(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus))
+		// A hit armour mostly stopped does not take a limb off, however mangled that limb already is.
+		// Break the armour first - see [/obj/item/bodypart/proc/check_wounding], which gates the other
+		// dismemberment path the same way.
+		var/can_take_the_limb = (wound_blocked < WOUND_NONPENETRATING_BLOCK)
+		if (can_take_the_limb && ((exterior_ready_to_dismember && interior_ready_to_dismember) || dismemberable_by_total_damage()) && try_dismember(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus))
 			return
 		// now we have our wounding_type and are ready to carry on with wounds and dealing the actual damage
 		if(wounding_dmg >= WOUND_MINIMUM_DAMAGE && wound_bonus != CANT_WOUND)
@@ -799,7 +811,7 @@
 				var/obj/item/stack/medical/wrap/gauze/our_gauze = current_gauze
 				our_gauze.get_hit(src)
 			//NOVA EDIT ADDITION END - MEDICAL
-			check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, attack_direction, damage_source = damage_source, wound_clothing = wound_clothing, blocked = blocked)
+			check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, attack_direction, damage_source = damage_source, wound_clothing = wound_clothing, blocked = wound_blocked)
 
 	for(var/datum/wound/iter_wound as anything in wounds)
 		iter_wound.receive_damage(wounding_type, wounding_dmg, wound_bonus, attack_direction, damage_source)

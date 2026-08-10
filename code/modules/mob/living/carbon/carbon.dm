@@ -789,6 +789,12 @@
 		for(var/datum/wound/wound as anything in all_wounds)
 			wound.remove_wound()
 
+	// Healing a part only walks its injury totals back down by the damage it was actually carrying,
+	// which is not enough for a part that was beaten well past its cap. A full heal wipes them.
+	if(heal_flags & (HEAL_BRUTE|HEAL_BURN))
+		for(var/obj/item/bodypart/limb as anything in bodyparts)
+			limb.reset_wounding_damage(brute = !!(heal_flags & HEAL_BRUTE), burn = !!(heal_flags & HEAL_BURN))
+
 	if(heal_flags & HEAL_LIMBS)
 		regenerate_limbs()
 		for(var/obj/item/bodypart/limb as anything in get_bodyparts(include_stumps = TRUE))

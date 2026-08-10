@@ -5,7 +5,8 @@
  * itself on the pain pool instead of a bar of its own. The ~550 existing stamina call sites keep
  * working through these three procs, so there is exactly one way to be put down and one number that
  * decides it. The pool carries its own decay curve and its own shock, so neither the stamina
- * regeneration timer nor the stamina crit ladder survive the conversion.
+ * regeneration timer nor the stamina crit ladder survive the conversion - both hang off
+ * received_stamina_damage(), which these overrides never reach and which bails on a controller anyway.
  *
  * Mobs without a controller - simple and basic mobs - keep plain stamina.
  */
@@ -35,10 +36,6 @@
 	var/old_pain = pain_controller.temporary_pain
 	pain_controller.adjust_temporary_pain(amount - old_pain)
 	return old_pain - pain_controller.temporary_pain
-
-/// The pain pool decays on its own curve and raises its own shock, so neither the regeneration timer nor stamcrit apply here.
-/mob/living/carbon/received_stamina_damage(current_level, amount_actual, amount)
-	return
 
 /mob/living/carbon/update_stamina_hud(shown_stamina_loss)
 	update_pain_hud()

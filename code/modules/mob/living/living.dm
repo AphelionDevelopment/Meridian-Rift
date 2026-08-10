@@ -2533,6 +2533,33 @@ GLOBAL_LIST_EMPTY(fire_appearances)
 	if(isnull(.) || . == stat)
 		return
 
+	switch(stat) // Current stat
+		if(STABLE)
+			log_combat(src, src, "left crit")
+		if(SOFT_CRIT)
+			log_combat(src, src, "entered soft crit")
+		if(HARD_CRIT)
+			log_combat(src, src, "entered hard crit")
+		if(DEAD)
+			log_combat(src, src, "died")
+
+	if(stat == DEAD)
+		remove_from_alive_mob_list()
+		add_to_dead_mob_list()
+	else if(. == DEAD)
+		remove_from_dead_mob_list()
+		add_to_alive_mob_list()
+
+	update_stat_traits()
+
+/**
+ * Applies the traits that come with the mob's current stat, and strips the ones that do not.
+ *
+ * Split out of set_stat() because the stat does not decide the trait set on its own: the pain crawl
+ * is a soft crit you can still use your hands in, so a mob can change which traits its rung grants
+ * without changing rung.
+ */
+/mob/living/proc/update_stat_traits()
 	// All the traits associated with any of a mob's stat
 	// Adding any traits below should also be done in here
 	var/list/removed_traits = list(
@@ -2547,20 +2574,20 @@ GLOBAL_LIST_EMPTY(fire_appearances)
 	var/list/added_traits = list()
 
 	switch(stat) // Current stat
-		if(STABLE)
-			log_combat(src, src, "left crit")
-
 		if(SOFT_CRIT)
-			log_combat(src, src, "entered soft crit")
 			added_traits.Add(
 				TRAIT_FLOORED,
-				TRAIT_HANDS_BLOCKED,
-				TRAIT_INCAPACITATED,
 				TRAIT_FORCE_WHISPER,
 			)
+			// Dragging yourself to your own pockets is the only way out of the pain crawl, so unlike
+			// every other soft crit it cannot take your hands away. See the pain shock table.
+			if(!has_status_effect(/datum/status_effect/pain_crawl))
+				added_traits.Add(
+					TRAIT_HANDS_BLOCKED,
+					TRAIT_INCAPACITATED,
+				)
 
 		if(HARD_CRIT)
-			log_combat(src, src, "entered hard crit")
 			added_traits.Add(
 				TRAIT_DEAF,
 				TRAIT_FLOORED,
@@ -2570,7 +2597,6 @@ GLOBAL_LIST_EMPTY(fire_appearances)
 			)
 
 		if(DEAD)
-			log_combat(src, src, "died")
 			added_traits.Add(
 				TRAIT_DEAF,
 				TRAIT_FLOORED,
@@ -2578,13 +2604,6 @@ GLOBAL_LIST_EMPTY(fire_appearances)
 				TRAIT_INCAPACITATED,
 				TRAIT_KNOCKEDOUT,
 			)
-
-	if(stat == DEAD)
-		remove_from_alive_mob_list()
-		add_to_dead_mob_list()
-	else if(. == DEAD)
-		remove_from_dead_mob_list()
-		add_to_alive_mob_list()
 
 	add_traits(added_traits, STAT_TRAIT)
 	remove_traits(removed_traits - added_traits, STAT_TRAIT)

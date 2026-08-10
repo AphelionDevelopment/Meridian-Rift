@@ -60,6 +60,7 @@
 					attack_direction = attack_direction,
 					damage_source = attacking_item,
 					wound_clothing = wound_clothing,
+					wound_blocked = blocked,
 				))
 					update_damage_overlays()
 				damage_dealt = actual_hit.get_damage() - delta // Unfortunately bodypart receive_damage doesn't return damage dealt so we do it manually
@@ -80,6 +81,7 @@
 					attack_direction = attack_direction,
 					damage_source = attacking_item,
 					wound_clothing = wound_clothing,
+					wound_blocked = blocked,
 				))
 					update_damage_overlays()
 				damage_dealt = actual_hit.get_damage() - delta // See above

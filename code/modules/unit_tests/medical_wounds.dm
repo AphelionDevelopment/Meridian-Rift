@@ -77,6 +77,25 @@
 	for(var/severity in severities)
 		TEST_ASSERT_EQUAL(severity, severities[1], "The same three cuts produced different injury tiers across runs: [json_encode(severities)]")
 
+/// A hit armour mostly stopped bruises and cracks bone. It never opens anyone up and never reaches
+/// the worst tier, no matter how many of them land - that is the helmeted head worked example, and
+/// the stand-in for plate headroom until plates exist.
+/datum/unit_test/wound_nonpenetrating/Run()
+	var/mob/living/carbon/human/armoured = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/bodypart/tested_part = armoured.get_bodypart(BODY_ZONE_R_ARM)
+
+	// Enough edged damage to have opened a bare arm several times over.
+	for(var/hit in 1 to 8)
+		armoured.apply_damage(WOUND_MAX_CONSIDERED_DAMAGE, BRUTE, tested_part, blocked = WOUND_NONPENETRATING_BLOCK, sharpness = SHARP_EDGED)
+
+	TEST_ASSERT(length(armoured.all_wounds), "A stopped hit should still bruise and break bone, but eight of them left no injury at all")
+	for(var/datum/wound/carried as anything in armoured.all_wounds)
+		var/datum/wound_pregen_data/pregen_data = GLOB.all_wound_pregen_data[carried.type]
+		TEST_ASSERT(!pregen_data.bleeds, "A hit armour stopped half of opened the patient up: [carried]")
+		TEST_ASSERT(carried.severity <= WOUND_NONPENETRATING_MAX_SEVERITY, "A hit armour stopped half of caused [carried], past the non-penetrating severity cap")
+
+	TEST_ASSERT(armoured.get_bodypart(BODY_ZONE_R_ARM), "A hit armour stopped half of took the limb off")
+
 /// This test is used for making sure species with bones but no flesh (skeletons, plasmamen) can only suffer BONE_WOUNDS, and nothing tagged with FLESH_WOUND (it's possible to require both)
 /datum/unit_test/test_human_bone/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)

@@ -1,5 +1,6 @@
 /// Allows us to roll for and apply a wound without actually dealing damage. Used for aggregate wounding power with pellet clouds
-/obj/item/bodypart/proc/painless_wound_roll(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, sharpness=NONE, wound_clothing)
+/// blocked is the armour percentage the cloud was stopped by, which decides whether it can wound properly. See [/obj/item/bodypart/proc/check_wounding].
+/obj/item/bodypart/proc/painless_wound_roll(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, sharpness=NONE, wound_clothing, blocked = 0)
 	SHOULD_CALL_PARENT(TRUE)
 
 	if(!owner || wounding_dmg <= WOUND_MINIMUM_DAMAGE || wound_bonus == CANT_WOUND || HAS_TRAIT(owner, TRAIT_GODMODE))
@@ -30,9 +31,10 @@
 			if(wounding_type == WOUND_PIERCE && !easy_dismember)
 				wounding_dmg *= 0.75 // piercing weapons pass along 75% of their wounding damage to the bone since it's more concentrated
 			wounding_type = WOUND_BLUNT
-		if (((exterior_ready_to_dismember && interior_ready_to_dismember) || dismemberable_by_total_damage(mangled_state)) && try_dismember(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus))
+		// As in receive_damage: armour that stopped most of the cloud stops it taking the limb.
+		if (blocked < WOUND_NONPENETRATING_BLOCK && ((exterior_ready_to_dismember && interior_ready_to_dismember) || dismemberable_by_total_damage(mangled_state)) && try_dismember(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus))
 			return
-	return check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, wound_clothing = wound_clothing)
+	return check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, wound_clothing = wound_clothing, blocked = blocked)
 
 /**
  * check_wounding() is where we handle selecting and applying a wound if we meet the criteria
@@ -186,6 +188,27 @@
 		accumulate_wounding_damage(WOUND_PIERCE, -brute)
 	if(burn > 0)
 		accumulate_wounding_damage(WOUND_BURN, -burn)
+
+/**
+ * Clears this part's injury totals outright, rather than walking them down by damage healed.
+ *
+ * A part cannot hold more damage than its cap but can keep accumulating past it, so healing one back
+ * to pristine still leaves it carrying whatever was dealt on top - one scratch from the injury it was
+ * about to get, permanently. Anything that puts the limb back to new has to clear that too.
+ *
+ * Arguments:
+ * * brute - Clear the three brute wounding types.
+ * * burn - Clear the burn wounding type.
+ */
+/obj/item/bodypart/proc/reset_wounding_damage(brute = TRUE, burn = TRUE)
+	if(!LAZYLEN(wounding_accumulation))
+		return
+
+	if(brute)
+		wounding_accumulation -= list(WOUND_BLUNT, WOUND_SLASH, WOUND_PIERCE)
+	if(burn)
+		wounding_accumulation -= list(WOUND_BURN)
+	UNSETEMPTY(wounding_accumulation)
 
 // try forcing a specific wound, but only if there isn't already a wound of that severity or greater for that type on this bodypart
 /obj/item/bodypart/proc/force_wound_upwards(datum/wound/potential_wound, smited = FALSE, wound_source)

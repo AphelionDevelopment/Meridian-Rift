@@ -28,6 +28,11 @@
 	var/list/other_sources
 	/// How badly the heart is failing to keep up, 0 to 1. Hits hurt more and drain slower the higher it is.
 	var/heart_strain = 0
+	/// Whether a spike is currently holding the mob blacked out. Cached because the crit ladder reads
+	/// it on every updatehealth(), and scanning the status effect list that often is not free.
+	var/in_shock = FALSE
+	/// Whether the floor alone is currently pinning the mob down. Cached for the same reason.
+	var/crawling = FALSE
 	/// The bracket felt_pain currently falls into.
 	var/datum/pain_bracket/current_bracket
 	/// Whether this mob has already spent its one shot at fight or flight.
@@ -358,11 +363,10 @@
 	update_bracket()
 	update_shock()
 
-	// The health doll and the meter both read pain now, so they have to be refreshed when pain moves
-	// rather than only when health does.
+	// The doll, the meter and the damage slowdown all read pain now, so pain moving has to run the
+	// same refresh that taking damage does rather than only redrawing.
 	if(felt_pain != old_felt_pain)
-		parent.update_health_hud()
-		parent.update_pain_hud()
+		parent.updatehealth()
 
 /// Moves the mob into whichever bracket its felt pain now falls in, and applies that bracket's permanent effects.
 /datum/pain/proc/update_bracket()
@@ -454,8 +458,8 @@
 	if(QDELETED(parent) || parent.stat == DEAD)
 		return
 
-	var/was_blacked_out = parent.has_status_effect(/datum/status_effect/incapacitating/pain_shock)
-	var/was_crawling = parent.has_status_effect(/datum/status_effect/pain_crawl)
+	var/was_blacked_out = in_shock
+	var/was_crawling = crawling
 
 	// A floor at the cap has nothing left to drain, so it crawls. Only treatment or a painkiller
 	// lifts that; waiting it out is not on the table.
@@ -470,6 +474,11 @@
 		// Down at the cap, up at the recovery threshold, so nobody yo-yos on the line. A floor of
 		// 70-99 can never reach that threshold, so it rises the moment its pool is gone instead.
 		should_black_out = (felt_pain >= PAIN_SHOCK_RECOVERY_THRESHOLD) && temporary_pain > 0
+
+	// Written before the early return, so anything that strips a shock behind our back - a full heal,
+	// an admin - is reconciled on the next pain change rather than leaving the ladder lying.
+	in_shock = should_black_out
+	crawling = should_crawl
 
 	if(should_black_out == was_blacked_out && should_crawl == was_crawling)
 		return
@@ -488,6 +497,10 @@
 
 	// Shock is a rung on the crit ladder now, so moving between these is a change of consciousness.
 	parent.update_stat()
+	// The crawl keeps its hands where every other soft crit does not, and set_stat only recomputes
+	// that on a change of rung - so a mob already soft critting for another reason needs a resync.
+	if(should_crawl != was_crawling)
+		parent.update_stat_traits()
 
 /// Fight or flight, once per mob. Massive trauma only.
 /datum/pain/proc/try_trigger_adrenaline()
@@ -512,6 +525,8 @@
 		parent.remove_actionspeed_modifier(actionspeed_mod)
 		QDEL_NULL(actionspeed_mod)
 	parent.clear_mood_event(PAIN_MOOD_CATEGORY)
+	in_shock = FALSE
+	crawling = FALSE
 	parent.remove_status_effect(/datum/status_effect/incapacitating/pain_shock)
 	parent.remove_status_effect(/datum/status_effect/pain_crawl)
 

@@ -43,3 +43,25 @@
 	// Treating the source is the only way out of the crawl.
 	victim.remove_pain_source("test_chest")
 	TEST_ASSERT(!victim.has_status_effect(/datum/status_effect/pain_crawl), "Lowering the floor should let the mob off the ground")
+
+/// The crawl is a soft crit you can still use your hands in. Dragging yourself to your own pockets is
+/// the only way out of a floor at the cap, so anything that takes the crawler's hands is a soft lock.
+/datum/unit_test/pain_crawl_keeps_hands/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+
+	victim.add_pain_source("test_chest", PAIN_CAP_CHEST, BODY_ZONE_CHEST)
+	victim.add_pain_source("test_arm", PAIN_CAP_LIMB, BODY_ZONE_R_ARM)
+
+	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/pain_crawl), "A floor at the cap should leave the mob crawling")
+	TEST_ASSERT_EQUAL(victim.stat, SOFT_CRIT, "The crawl should put the mob in soft crit")
+	TEST_ASSERT(HAS_TRAIT(victim, TRAIT_FLOORED), "A crawler should not be able to stand")
+	TEST_ASSERT(!HAS_TRAIT(victim, TRAIT_HANDS_BLOCKED), "A crawler cannot reach their own injector with their hands blocked")
+	TEST_ASSERT(!HAS_TRAIT(victim, TRAIT_INCAPACITATED), "A crawler cannot treat themselves while incapacitated")
+
+	// The exception is only the crawl's: every other soft crit is as helpless as it ever was.
+	victim.remove_pain_source("test_chest")
+	victim.remove_pain_source("test_arm")
+	victim.set_blood_volume(BLOOD_VOLUME_BAD - 1)
+	victim.updatehealth()
+	TEST_ASSERT_EQUAL(victim.stat, SOFT_CRIT, "Bleeding out past BLOOD_VOLUME_BAD should still soft crit")
+	TEST_ASSERT(HAS_TRAIT(victim, TRAIT_HANDS_BLOCKED), "Soft crit from bloodloss should still take the patient's hands")
