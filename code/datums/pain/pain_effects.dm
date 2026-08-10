@@ -30,7 +30,7 @@
 	if(!.)
 		return .
 
-	owner.add_traits(list(TRAIT_INCAPACITATED, TRAIT_IMMOBILIZED, TRAIT_FLOORED, TRAIT_HANDS_BLOCKED), PAIN_TRAIT)
+	owner.add_traits(list(TRAIT_INCAPACITATED, TRAIT_IMMOBILIZED, TRAIT_FLOORED, TRAIT_HANDS_BLOCKED), TRAIT_STATUS_EFFECT(id))
 	owner.visible_message(
 		span_warning("[owner] collapses, overwhelmed!"),
 		span_userdanger("The pain is too much. Everything goes black."),
@@ -38,7 +38,7 @@
 	return .
 
 /datum/status_effect/incapacitating/pain_shock/on_remove()
-	owner.remove_traits(list(TRAIT_INCAPACITATED, TRAIT_IMMOBILIZED, TRAIT_FLOORED, TRAIT_HANDS_BLOCKED), PAIN_TRAIT)
+	owner.remove_traits(list(TRAIT_INCAPACITATED, TRAIT_IMMOBILIZED, TRAIT_FLOORED, TRAIT_HANDS_BLOCKED), TRAIT_STATUS_EFFECT(id))
 	to_chat(owner, span_warning("You come to, wrecked."))
 	return ..()
 
@@ -62,7 +62,7 @@
 		return FALSE
 
 	// Floored but not hands-blocked: reaching your own pockets for an injector is the way out.
-	owner.add_traits(list(TRAIT_FLOORED, TRAIT_PACIFISM), PAIN_TRAIT)
+	owner.add_traits(list(TRAIT_FLOORED, TRAIT_PACIFISM), TRAIT_STATUS_EFFECT(id))
 	owner.visible_message(
 		span_warning("[owner] goes down, barely conscious!"),
 		span_userdanger("You can't stand. All you can do is drag yourself."),
@@ -70,7 +70,7 @@
 	return TRUE
 
 /datum/status_effect/pain_crawl/on_remove()
-	owner.remove_traits(list(TRAIT_FLOORED, TRAIT_PACIFISM), PAIN_TRAIT)
+	owner.remove_traits(list(TRAIT_FLOORED, TRAIT_PACIFISM), TRAIT_STATUS_EFFECT(id))
 	to_chat(owner, span_notice("You can get up again."))
 	return ..()
 

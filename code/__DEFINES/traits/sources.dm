@@ -254,9 +254,6 @@
 #define RIGHT_LEG_TRAIT "right_leg"
 #define LEFT_LEG_TRAIT "left_leg"
 
-///coming from the combat pain system - shock, crawling and bracket effects.
-#define PAIN_TRAIT "pain"
-
 ///coming from a fish trait datum.
 #define FISH_TRAIT_DATUM "fish_trait_datum"
 ///coming from a fish evolution datum

@@ -16,7 +16,7 @@
 	wound_flags = ACCEPTS_GAUZE
 	processes = TRUE
 	can_scar = FALSE
-	treatable_by = list(/obj/item/stack/medical/bone_gel)
+	// Nothing in a medkit treats a bruise. Rest does, and a splint makes rest work faster.
 
 	/// How many process ticks of rest this bruise needs before it fades.
 	var/regen_ticks_needed

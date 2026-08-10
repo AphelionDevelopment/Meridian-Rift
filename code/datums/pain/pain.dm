@@ -23,6 +23,11 @@
 	var/dampening = 0
 	/// Set when organ damage moves. Organs tick constantly, so their floor is rebuilt on the next process instead of per hit.
 	var/floor_needs_recalculation = FALSE
+	/// Permanent pain that is not an injury, as an assoc list of (source key -> list(zone, amount)).
+	/// Surgery without anaesthetic, phantom limbs, anything else that hurts without being a wound.
+	var/list/other_sources
+	/// How badly the heart is failing to keep up, 0 to 1. Hits hurt more and drain slower the higher it is.
+	var/heart_strain = 0
 	/// The bracket felt_pain currently falls into.
 	var/datum/pain_bracket/current_bracket
 	/// Whether this mob has already spent its one shot at fight or flight.
@@ -83,14 +88,18 @@
 		return
 
 	update_dampening()
+	// Checked every tick rather than off organ damage, because a heart can stop without being hurt.
+	update_heart_strain()
 
-	if(floor_needs_recalculation)
+	if(expire_pain_sources() || floor_needs_recalculation)
 		recalculate_floor()
 
 	if(temporary_pain > 0)
 		// Fast while high and slower as it falls, so a maxed pool drains to the shock recovery
 		// threshold in under five seconds but the last of it lingers.
 		var/decay = (PAIN_TEMPORARY_DECAY_FLAT + (temporary_pain * PAIN_TEMPORARY_DECAY_COEFFICIENT)) * seconds_per_tick
+		// A heart that cannot circulate cannot clear it either.
+		decay *= (1 - (heart_strain * PAIN_HEART_DECAY_BRAKE))
 		adjust_temporary_pain(-decay)
 
 	// Adrenaline is once per fight, and a mob with nothing left to feel is out of the fight.
@@ -151,7 +160,8 @@
 
 	for(var/obj/item/bodypart/part as anything in parent.bodyparts)
 		for(var/datum/wound/injury as anything in part.wounds)
-			floor_by_zone[part.body_zone] += injury.pain_factor
+			// Not the injury's raw factor: a wrapped or splinted one hurts a tier less than it should.
+			floor_by_zone[part.body_zone] += injury.get_pain_factor()
 
 	for(var/obj/item/organ/inner_organ as anything in parent.organs)
 		if(!inner_organ.pain_factor || !inner_organ.damage || !inner_organ.maxHealth)
@@ -162,12 +172,74 @@
 		// their own, or the head's cap would not be the head's cap.
 		floor_by_zone[deprecise_zone(inner_organ.zone)] += inner_organ.pain_factor * damage_ratio
 
+	// Everything that hurts without being an injury: an unnumbed surgery, a limb that is not there.
+	for(var/source_key in other_sources)
+		var/list/source = other_sources[source_key]
+		floor_by_zone[source[PAIN_SOURCE_ZONE]] += source[PAIN_SOURCE_AMOUNT]
+
 	var/new_floor = 0
 	for(var/zone in floor_by_zone)
 		new_floor += min(floor_by_zone[zone], get_zone_cap(zone))
 
 	pain_floor = min(round(new_floor, DAMAGE_PRECISION), PAIN_FLOOR_MAXIMUM)
 	update_pain()
+
+/// Works out how far behind the heart is. A failing one makes every hit land harder and hold longer.
+/datum/pain/proc/update_heart_strain()
+	var/obj/item/organ/heart/our_heart = parent.get_organ_slot(ORGAN_SLOT_HEART)
+	if(isnull(our_heart) || !our_heart.maxHealth)
+		heart_strain = 0
+		return
+
+	heart_strain = clamp(our_heart.damage / our_heart.maxHealth, 0, 1)
+	// A heart that has stopped is not partly behind, it is entirely behind.
+	if(!our_heart.is_beating())
+		heart_strain = 1
+
+/**
+ * Registers permanent pain that is not an injury.
+ *
+ * The floor is mostly wounds and ruined organs, but not everything that hurts is either: being cut
+ * open while awake, or a limb that is not there and aches anyway. Sources are keyed so a caller can
+ * take its own back off again without knowing about the others.
+ *
+ * Arguments:
+ * * source_key - Unique string for the source, used to remove it again.
+ * * amount - Permanent pain to add.
+ * * zone - Which bodypart zone it is felt in. Capped with everything else in that zone.
+ * * duration - How long it lasts. Zero means until someone takes it off again.
+ */
+/datum/pain/proc/add_pain_source(source_key, amount, zone = BODY_ZONE_CHEST, duration = 0)
+	LAZYINITLIST(other_sources)
+	other_sources[source_key] = list(deprecise_zone(zone), amount, duration ? world.time + duration : 0)
+	recalculate_floor()
+
+/**
+ * Removes a registered non-injury pain source.
+ *
+ * Arguments:
+ * * source_key - The key the source was added under.
+ */
+/datum/pain/proc/remove_pain_source(source_key)
+	if(!LAZYACCESS(other_sources, source_key))
+		return
+
+	LAZYREMOVE(other_sources, source_key)
+	recalculate_floor()
+
+/// Drops any non-injury pain the mob has had long enough to stop feeling. Returns TRUE if anything went.
+/datum/pain/proc/expire_pain_sources()
+	var/list/expired
+	for(var/source_key in other_sources)
+		var/list/source = other_sources[source_key]
+		if(source[PAIN_SOURCE_EXPIRY] && source[PAIN_SOURCE_EXPIRY] <= world.time)
+			LAZYADD(expired, source_key)
+
+	if(!length(expired))
+		return FALSE
+
+	other_sources -= expired
+	return TRUE
 
 /**
  * Returns how close a bodypart zone is to its own pain cap, from 0 to 1, as the mob would feel it.
@@ -212,6 +284,10 @@
 /datum/pain/proc/adjust_temporary_pain(amount)
 	if(!amount)
 		return
+
+	// A struggling heart makes everything land harder. Draining is slowed separately, in process().
+	if(amount > 0 && heart_strain)
+		amount *= (1 + (heart_strain * PAIN_HEART_STRAIN_MULTIPLIER))
 
 	var/new_temporary = clamp(temporary_pain + amount, 0, PAIN_TEMPORARY_MAXIMUM)
 	if(new_temporary == temporary_pain)
@@ -302,10 +378,15 @@
 	current_bracket = new_bracket
 	apply_bracket_effects()
 
-/// Syncs the movement and task speed penalties to the current bracket.
+/// Syncs the movement penalty, task speed penalty and moodlet to the current bracket.
 /datum/pain/proc/apply_bracket_effects()
 	if(QDELETED(parent) || isnull(current_bracket))
 		return
+
+	if(current_bracket.mood_event)
+		parent.add_mood_event(PAIN_MOOD_CATEGORY, current_bracket.mood_event)
+	else
+		parent.clear_mood_event(PAIN_MOOD_CATEGORY)
 
 	if(current_bracket.slowdown)
 		if(isnull(movespeed_mod))
@@ -373,31 +454,39 @@
 	if(QDELETED(parent) || parent.stat == DEAD)
 		return
 
-	var/in_shock = parent.has_status_effect(/datum/status_effect/incapacitating/pain_shock) || parent.has_status_effect(/datum/status_effect/pain_crawl)
+	var/was_blacked_out = parent.has_status_effect(/datum/status_effect/incapacitating/pain_shock)
+	var/was_crawling = parent.has_status_effect(/datum/status_effect/pain_crawl)
 
-	if(felt_pain < PAIN_SHOCK_THRESHOLD)
-		if(!in_shock)
-			return
-		// Down at the cap, up at the recovery threshold. A mob part way between stays down - unless the
-		// pool has drained entirely, which is how a floor of 70-99 gets back up: straight into the
-		// worst bracket, standing barely.
-		if(felt_pain >= PAIN_SHOCK_RECOVERY_THRESHOLD && temporary_pain)
-			return
+	// A floor at the cap has nothing left to drain, so it crawls. Only treatment or a painkiller
+	// lifts that; waiting it out is not on the table.
+	var/should_crawl = (pain_floor - dampening) >= PAIN_SHOCK_THRESHOLD
 
-		parent.remove_status_effect(/datum/status_effect/incapacitating/pain_shock)
-		parent.remove_status_effect(/datum/status_effect/pain_crawl)
-		// Shock is a rung on the crit ladder now, so leaving it is a change of consciousness.
-		parent.update_stat()
+	var/should_black_out = FALSE
+	if(felt_pain >= PAIN_SHOCK_THRESHOLD)
+		// Anything at the cap that is not purely the floor is a blackout - including a fresh hit on
+		// someone already crawling, which is what puts a crawler back down mid-drag.
+		should_black_out = !should_crawl || (temporary_pain >= PAIN_SHOCK_BLACKOUT_MINIMUM)
+	else if(was_blacked_out)
+		// Down at the cap, up at the recovery threshold, so nobody yo-yos on the line. A floor of
+		// 70-99 can never reach that threshold, so it rises the moment its pool is gone instead.
+		should_black_out = (felt_pain >= PAIN_SHOCK_RECOVERY_THRESHOLD) && temporary_pain > 0
+
+	if(should_black_out == was_blacked_out && should_crawl == was_crawling)
 		return
 
-	if(in_shock)
-		return
+	if(should_black_out != was_blacked_out)
+		if(should_black_out)
+			parent.apply_status_effect(/datum/status_effect/incapacitating/pain_shock)
+		else
+			parent.remove_status_effect(/datum/status_effect/incapacitating/pain_shock)
 
-	// A floor at the cap has nothing to drain, so it crawls rather than blacks out.
-	if(pain_floor - dampening >= PAIN_SHOCK_THRESHOLD)
-		parent.apply_status_effect(/datum/status_effect/pain_crawl)
-	else
-		parent.apply_status_effect(/datum/status_effect/incapacitating/pain_shock)
+	if(should_crawl != was_crawling)
+		if(should_crawl)
+			parent.apply_status_effect(/datum/status_effect/pain_crawl)
+		else
+			parent.remove_status_effect(/datum/status_effect/pain_crawl)
+
+	// Shock is a rung on the crit ladder now, so moving between these is a change of consciousness.
 	parent.update_stat()
 
 /// Fight or flight, once per mob. Massive trauma only.
@@ -422,8 +511,23 @@
 	if(actionspeed_mod)
 		parent.remove_actionspeed_modifier(actionspeed_mod)
 		QDEL_NULL(actionspeed_mod)
+	parent.clear_mood_event(PAIN_MOOD_CATEGORY)
 	parent.remove_status_effect(/datum/status_effect/incapacitating/pain_shock)
 	parent.remove_status_effect(/datum/status_effect/pain_crawl)
+
+/// Registers permanent pain from something that is not an injury. See [/datum/pain/proc/add_pain_source].
+/mob/living/proc/add_pain_source(source_key, amount, zone = BODY_ZONE_CHEST, duration = 0)
+	return
+
+/mob/living/carbon/add_pain_source(source_key, amount, zone = BODY_ZONE_CHEST, duration = 0)
+	pain_controller?.add_pain_source(source_key, amount, zone, duration)
+
+/// Takes a registered non-injury pain source back off. See [/datum/pain/proc/remove_pain_source].
+/mob/living/proc/remove_pain_source(source_key)
+	return
+
+/mob/living/carbon/remove_pain_source(source_key)
+	pain_controller?.remove_pain_source(source_key)
 
 /// Convenience accessor so callers do not have to null-check the controller themselves.
 /mob/living/proc/get_felt_pain()

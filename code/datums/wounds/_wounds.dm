@@ -62,6 +62,10 @@
 
 	/// Who owns the body part that we're wounding
 	var/mob/living/carbon/victim = null
+
+	/// Whether field treatment on this limb - gauze, a splint - quiets this injury by a tier.
+	/// TRUE for anything a bandage can do something about, FALSE for injuries that need a surgeon regardless.
+	var/pain_eased_by_treatment = TRUE
 	/// The bodypart we're parented to. Not guaranteed to be non-null, especially after/during removal or if we haven't been applied
 	var/obj/item/bodypart/limb = null
 
@@ -774,6 +778,23 @@
 			break
 
 	return file
+
+/**
+ * How much permanent pain this injury is currently costing its owner.
+ *
+ * Field treatment counts. A splinted fracture or a bandaged cut is a tier quieter than an untreated
+ * one, which is what lets a medic put someone back on their feet without a surgeon - the injury is
+ * still there, and the moment the gauze comes off it hurts exactly as much as it did.
+ */
+/datum/wound/proc/get_pain_factor()
+	if(!pain_factor || !pain_eased_by_treatment || isnull(limb))
+		return pain_factor
+
+	// Anything wrapped or splinted counts; get_splint_factor() is below 1 only when something is on the limb.
+	if(limb.get_splint_factor() < 1)
+		return PAIN_FACTOR_TIER_BELOW(pain_factor)
+
+	return pain_factor
 
 /// Returns what string is displayed when a limb that has sustained this wound is examined
 /// (This is examining the LIMB ITSELF, when it's not attached to someone.)

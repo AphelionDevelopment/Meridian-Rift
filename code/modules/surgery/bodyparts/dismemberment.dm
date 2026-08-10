@@ -109,6 +109,9 @@
 		phantom_owner.clear_alert(ALERT_EMBEDDED_OBJECT)
 		phantom_owner.clear_mood_event("embedded")
 
+	// A limb that is not there still hurts, and keeps hurting until something is put back in its place.
+	phantom_owner.add_pain_source(PAIN_SOURCE_PHANTOM_LIMB(body_zone), PAIN_PHANTOM_LIMB, body_zone)
+
 	if(!special)
 		if(phantom_owner.dna)
 			for(var/datum/mutation/mutation as anything in phantom_owner.dna.mutations) //some mutations require having specific limbs to be kept.
@@ -292,6 +295,9 @@
 		if(new_limb_owner.mob_mood?.has_mood_of_category("dismembered_[body_zone]") && !(bodypart_flags & BODYPART_STUMP))
 			new_limb_owner.clear_mood_event("dismembered_[body_zone]")
 			new_limb_owner.add_mood_event("phantom_pain_[body_zone]", /datum/mood_event/reattachment, src)
+
+	// Something is filling the gap again, so the ache of it being empty stops.
+	new_limb_owner.remove_pain_source(PAIN_SOURCE_PHANTOM_LIMB(body_zone))
 
 	for(var/datum/scar/scar as anything in scars)
 		if(scar in new_limb_owner.all_scars) // prevent double scars from happening for whatever reason

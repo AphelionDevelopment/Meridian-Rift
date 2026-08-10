@@ -125,12 +125,15 @@
 			if(!HAS_TRAIT(victim, TRAIT_ANALGESIA))
 				to_chat(victim, span_danger("The fracture in your [limb.plaintext_zone] shoots with pain as you strike [target]!"))
 			victim.apply_damage(rand(1, 5), BRUTE, limb, wound_bonus = CANT_WOUND, wound_clothing = FALSE)
+			// Working through a fracture is what feeds the meter. Pushing on costs you something.
+			victim.add_temporary_pain(pain_factor * PAIN_INJURY_USE_RATIO)
 		else
 			victim.visible_message(span_danger("[victim] weakly strikes [target] with [victim.p_their()] broken [limb.plaintext_zone], recoiling from pain!"), \
 			span_userdanger("You fail to strike [target] as the fracture in your [limb.plaintext_zone] lights up in unbearable pain!"), vision_distance=COMBAT_MESSAGE_RANGE)
 			INVOKE_ASYNC(victim, TYPE_PROC_REF(/mob, emote), "scream")
 			victim.Stun(0.5 SECONDS)
 			victim.apply_damage(rand(3, 7), BRUTE, limb, wound_bonus = CANT_WOUND, wound_clothing = FALSE)
+			victim.add_temporary_pain(pain_factor * PAIN_INJURY_USE_SPIKE_RATIO)
 			return COMPONENT_CANCEL_ATTACK_CHAIN
 
 	return NONE
@@ -160,6 +163,7 @@
 		if(!HAS_TRAIT(victim, TRAIT_ANALGESIA))
 			to_chat(victim, span_danger("The fracture in your [limb.plaintext_zone] explodes with pain as [gun] kicks back!"))
 		victim.apply_damage(rand(1, 3) * (severity - 1) * gun.weapon_weight, BRUTE, limb, wound_bonus = CANT_WOUND, wound_clothing = FALSE)
+		victim.add_temporary_pain(pain_factor * PAIN_INJURY_USE_RATIO)
 
 	if(!HAS_TRAIT(victim, TRAIT_ANALGESIA))
 		bonus_spread_values[MAX_BONUS_SPREAD_INDEX] += (15 * severity * limb.get_splint_factor())
@@ -419,6 +423,8 @@
 
 	severity = WOUND_SEVERITY_CRITICAL
 	pain_factor = PAIN_FACTOR_EXTREME
+	// A splint on a compound fracture stops it getting worse in transit. It does not make it hurt less.
+	pain_eased_by_treatment = FALSE
 	interaction_efficiency_penalty = 2.5
 	limp_slowdown = 7
 	limp_chance = 70

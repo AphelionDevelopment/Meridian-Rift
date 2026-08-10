@@ -155,6 +155,7 @@
 #include "combat_flash.dm"
 #include "combat_help.dm"
 #include "combat_pistol_whip.dm"
+#include "combat_pain.dm"
 #include "combat_stamina.dm"
 #include "combat_welder.dm"
 #include "component_tests.dm"
