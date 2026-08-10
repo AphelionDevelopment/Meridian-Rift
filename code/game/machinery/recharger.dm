@@ -105,8 +105,8 @@
 		if(!energy_gun.can_charge)
 			to_chat(user, span_notice("Your gun has no external power connector."))
 			return ITEM_INTERACT_BLOCKING
+	//NOVA EDIT ADDITION START
 
-	//NOVA EDIT ADDITION
 	if (istype(tool, /obj/item/gun/microfusion))
 		var/obj/item/gun/microfusion/microfusion_gun = tool
 		if(microfusion_gun.cell?.chargerate <= 0)
@@ -118,8 +118,8 @@
 		if(inserting_cell.chargerate <= 0)
 			to_chat(user, span_notice("[inserting_cell] cannot be recharged!"))
 			return ITEM_INTERACT_BLOCKING
-	//NOVA EDIT END
 
+	//NOVA EDIT ADDITION END
 	user.transferItemToLoc(tool, src)
 	return ITEM_INTERACT_SUCCESS
 
