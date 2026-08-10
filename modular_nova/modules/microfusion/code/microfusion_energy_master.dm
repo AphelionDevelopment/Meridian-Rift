@@ -131,9 +131,7 @@
 	if(cell)
 		cell.parent_gun = null
 		QDEL_NULL(cell)
-	if(attachments.len)
-		for(var/obj/item/iterating_item in attachments)
-			qdel(iterating_item)
+	QDEL_LIST(attachments)
 		attachments = null
 	if(phase_emitter)
 		QDEL_NULL(phase_emitter)
