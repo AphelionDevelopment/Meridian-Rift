@@ -485,7 +485,7 @@ Enables you to change the light color of the laser.
 /obj/item/microfusion_gun_attachment/rgb/get_modify_data()
 	return list(list("title" = "Change Color", "icon" = "wrench", "reference" = "color", "color" = "blue"))
 
-/obj/item/microfusion_gun_attachment/rgb/run_modify_data(params, mob/living/user)
+/obj/item/microfusion_gun_attachment/rgb/run_modify_data(params, mob/living/user, obj/item/gun/microfusion/microfusion_gun)
 	if(params == "color")
 		select_color(user)
 
