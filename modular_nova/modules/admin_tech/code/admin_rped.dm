@@ -290,7 +290,7 @@
 			if(isnull(bulk_types))
 				pick_stock_part(user, recurse = FALSE, subtype = browse_manufacture_options[spawn_selection])
 				return
-			for(var/part_type as anything in bulk_types)
+			for(var/part_type in bulk_types)
 				for(var/i in 1 to batch_size)
 					atom_storage.attempt_insert(new part_type(src), user, override = TRUE)
 
