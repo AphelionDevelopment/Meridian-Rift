@@ -135,87 +135,93 @@
 
 /// A bespoke proc for spawning in parts
 /obj/item/storage/part_replacer/bluespace/admin/proc/spawn_parts_for_components(mob/living/user, list/required_components)
-	// Since req_components in machineboards can list item types *OR* /datum/stock_part subtypes this gets a little complicated.
-	for(var/req_component in required_components)
-		// Start off noting how many the recipe calls for, a counter for how many matching parts have been found, and generating a list of subtypes for use in later checks.
-		var/parts_amount_required = required_components[req_component]
-		var/found_matching = 0
-		var/list/subtypes = typesof(req_component)
-
-		if(!parts_amount_required)
+	for(var/req_component, amount_required in required_components)
+		if(!amount_required)
 			continue
 
-		/// Then, check if the requested component is an object subtype - this means it's probably either materials (e.g, cables) or non-stock_part subtypes like beakers.
+		// Stacks first: they're a special kind of item, matched and spawned by amount.
+		if(ispath(req_component, /obj/item/stack))
+			restock_stack(user, req_component, amount_required)
+			continue
+
+		// Any other physical item: matched and spawned one-for-one.
 		if(ispath(req_component, /obj/item))
-			// If it's a stack, it needs special treatment.
-			if(ispath(req_component, /obj/item/stack))
-				// Stacks generate the matching count based on how many matching stacks are in the RPED's inventory with sufficient count.
-				// To find stacks inside the RPED, we search its contents for anything that's a subtype of /obj/item/stack.
-				for(var/obj/item/stack/stored_stack in contents)
-					// If a stack item is found, we check if it's in the typesof list for the current requested component, and if so, mark its count.
-					if(stored_stack.type in subtypes)
-						found_matching += stored_stack.amount
-						// If there's enough, we can return early.
-						if(found_matching >= parts_amount_required)
-							break
-				// If there's not enough left, spawn enough of the appropriate type that there will be.  Stacks' Initialialize accepts an amount for the newly-spawned stack to have, and will auto-split as needed.
-				if(found_matching < parts_amount_required)
-					atom_storage.attempt_insert(new req_component(src, parts_amount_required - found_matching), user, TRUE)
-				continue
-
-			// It's not a stack, which means now we have to count how many matching items are present.
-			for(var/obj/stored_item in contents)
-				if(stored_item.type in subtypes)
-					found_matching += 1
-					// If there's enough, we can break - no need to spawn extras.
-					if(found_matching >= parts_amount_required)
-						break
-			// If there's still not enough, we're going to have to spawn enough in manually.
-			for(var/i in 1 to parts_amount_required - found_matching)
-				atom_storage.attempt_insert(new req_component(src), user, TRUE)
+			restock_items(user, req_component, amount_required)
 			continue
 
-		/// If it's not an obj, then it's a subtype of /datum/stock_part - or *should be*, anyway.
+		// Stock part datums, which stand in for a physical object (and a tier of it).
 		if(ispath(req_component, /datum/stock_part))
-			var/datum/stock_part/part_type = req_component
-			// initial() rather than instantiating the datum - we only ever want to read the tier and the paths off it.
-			var/base_type = initial(part_type.physical_object_base_type)
-
-			// Specific machines sometimes call for specific tiers of part; give them precisely what they ask for, just in case.
-			if(initial(part_type.tier) > 1)
-				base_type = initial(part_type.physical_object_type)
-				// Search to see if we have enough of that exact item, and if not, we'll spawn more.
-				for(var/obj/stored_item in contents)
-					if(stored_item.type == base_type)
-						found_matching += 1
-						// If there's enough, we can return early.
-						if(found_matching >= parts_amount_required)
-							break
-			else
-				// For everything else, just make sure we have enough valid items of the stock part's subtypes.
-				subtypes = typesof(base_type)
-				for(var/obj/stored_item in contents)
-					if(stored_item.type in subtypes)
-						found_matching += 1
-						// If there's enough, we can return early.
-						if(found_matching >= parts_amount_required)
-							break
-
-				if(found_matching < parts_amount_required)
-					// Pick the highest tier the requested part has available, so machines get the best we can give them.
-					var/highest_tier = 0
-					for(var/datum/stock_part/sub_part as anything in typesof(req_component))
-						if(initial(sub_part.tier) > highest_tier)
-							highest_tier = initial(sub_part.tier)
-							base_type = initial(sub_part.physical_object_type)
-
-			// Once the best component has been found, fill in enough remaining.
-			for(var/i in 1 to parts_amount_required - found_matching)
-				atom_storage.attempt_insert(new base_type(src), user, TRUE)
+			restock_stock_part(user, req_component, amount_required)
 			continue
 
-		// If it's not a /datum/stock_part subtype either, something has gone wrong and devs should probably be alerted.
+		// Anything else means a malformed recipe - let someone know.
 		to_chat(user, span_notice("Something went wrong manufacturing [req_component]. Alert the devs, and let them know what machine it was!"))
+
+
+/// Top a stack up to the required amount.
+/// Stacks auto-split on Initialize, so a single spawn covers whatever's short.
+/obj/item/storage/part_replacer/bluespace/admin/proc/restock_stack(mob/living/user, stack_type, amount_required)
+	var/list/valid_types = typesof(stack_type)
+	var/found = 0
+	for(var/obj/item/stack/stored_stack in contents)
+		if(!(stored_stack.type in valid_types))
+			continue
+		found += stored_stack.amount
+		if(found >= amount_required)
+			return // Already have enough - nothing to spawn.
+
+	atom_storage.attempt_insert(new stack_type(src, amount_required - found), user, TRUE)
+
+
+/// Spawn one item per unit still missing after counting what we already hold.
+/obj/item/storage/part_replacer/bluespace/admin/proc/restock_items(mob/living/user, item_type, amount_required)
+	var/found = count_stored(typesof(item_type), amount_required)
+	spawn_shortfall(user, item_type, amount_required - found)
+
+
+/// Stock parts are datums mapped onto physical objects, sometimes at a specific tier.
+/obj/item/storage/part_replacer/bluespace/admin/proc/restock_stock_part(mob/living/user, datum/stock_part/part_type, amount_required)
+	// A specific tier above the basic one was asked for: match and spawn exactly that item.
+	if(initial(part_type.tier) > 1)
+		var/exact_type = initial(part_type.physical_object_type)
+		var/found = count_stored(list(exact_type), amount_required)
+		spawn_shortfall(user, exact_type, amount_required - found)
+		return
+
+	// Otherwise any physical object in the base type's family counts.
+	var/base_type = initial(part_type.physical_object_base_type)
+	var/found = count_stored(typesof(base_type), amount_required)
+	if(found >= amount_required)
+		return
+
+	// We're short, so spawn the highest tier variant this part has available.
+	var/spawn_type = base_type
+	var/highest_tier = 0
+	for(var/datum/stock_part/variant as anything in typesof(part_type))
+		if(initial(variant.tier) <= highest_tier)
+			continue
+		highest_tier = initial(variant.tier)
+		spawn_type = initial(variant.physical_object_type)
+
+	spawn_shortfall(user, spawn_type, amount_required - found)
+
+
+/// Count stored items whose type is in valid_types, stopping once we've seen enough.
+/obj/item/storage/part_replacer/bluespace/admin/proc/count_stored(list/valid_types, threshold)
+	var/found = 0
+	for(var/obj/stored_item in contents)
+		if(!(stored_item.type in valid_types))
+			continue
+		found += 1
+		if(found >= threshold)
+			break
+	return found
+
+
+/// Insert `amount` freshly-spawned copies of atom_type. A non-positive amount inserts nothing.
+/obj/item/storage/part_replacer/bluespace/admin/proc/spawn_shortfall(mob/living/user, atom_type, amount)
+	for(var/i in 1 to amount)
+		atom_storage.attempt_insert(new atom_type(src), user, TRUE)
 
 /// BSTs' special Bluespace RPED can manufacture parts on Alt-RMB, either cables, glass, machine boards, or stock parts.
 /obj/item/storage/part_replacer/bluespace/admin/click_alt_secondary(mob/user)
