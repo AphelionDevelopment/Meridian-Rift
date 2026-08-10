@@ -6,6 +6,7 @@
 
 	zone = BODY_ZONE_CHEST
 	slot = ORGAN_SLOT_HEART
+	pain_factor = PAIN_FACTOR_SEVERE
 	item_flags = NO_BLOOD_ON_ITEM
 	healing_factor = STANDARD_ORGAN_HEALING
 	decay_factor = 2.5 * STANDARD_ORGAN_DECAY //designed to fail around 6 minutes after death

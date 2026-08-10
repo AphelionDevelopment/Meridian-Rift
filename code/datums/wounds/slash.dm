@@ -304,6 +304,7 @@
 	occur_text = "is cut open, slowly leaking blood"
 	sound_effect = 'sound/effects/wounds/blood1.ogg'
 	severity = WOUND_SEVERITY_MODERATE
+	pain_factor = PAIN_FACTOR_LIGHT
 	initial_flow = 1.75
 	minimum_flow = 0.5
 	clot_rate = 0.04
@@ -336,6 +337,7 @@
 	occur_text = "is ripped open, veins spurting blood"
 	sound_effect = 'sound/effects/wounds/blood2.ogg'
 	severity = WOUND_SEVERITY_SEVERE
+	pain_factor = PAIN_FACTOR_MODERATE
 	initial_flow = 2.75
 	minimum_flow = 2
 	clot_rate = 0.02
@@ -370,6 +372,7 @@
 	occur_text = "is torn open, spraying blood wildly"
 	sound_effect = 'sound/effects/wounds/blood3.ogg'
 	severity = WOUND_SEVERITY_CRITICAL
+	pain_factor = PAIN_FACTOR_SEVERE
 	initial_flow = 3.75
 	minimum_flow = 3.5
 	clot_rate = -0.012 // critical cuts actively get worse instead of better

@@ -12,6 +12,7 @@
 	examine_desc = "appears to be moving sluggishly"
 	occur_text = "jitters for a moment before moving sluggishly"
 	severity = WOUND_SEVERITY_MODERATE
+	pain_factor = PAIN_FACTOR_MODERATE // NOVA EDIT ADDITION - COMBAT_PAIN
 	interaction_efficiency_penalty = 1.5
 	limp_slowdown = 2
 	limp_chance = 30
@@ -32,6 +33,7 @@
 	examine_desc = "is stiffly limp, the extremities splayed out widely"
 	occur_text = "goes completely stiff, seeming to lock into position"
 	severity = WOUND_SEVERITY_SEVERE
+	pain_factor = PAIN_FACTOR_SEVERE // NOVA EDIT ADDITION - COMBAT_PAIN
 	interaction_efficiency_penalty = 2
 	limp_slowdown = 5
 	limp_chance = 40

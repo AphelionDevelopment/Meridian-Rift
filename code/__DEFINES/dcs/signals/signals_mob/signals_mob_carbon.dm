@@ -20,6 +20,9 @@
 #define COMSIG_CARBON_LOSE_WOUND "carbon_lose_wound" //from /datum/wound/proc/remove_wound() (/mob/living/carbon/C, /datum/wound/W, /obj/item/bodypart/L)
 /// Called after limb AND victim has been unset
 #define COMSIG_CARBON_POST_LOSE_WOUND "carbon_post_lose_wound" //from /datum/wound/proc/remove_wound() (/datum/wound/lost_wound, /obj/item/bodypart/part, ignore_limb, replaced, destroying)
+/// Sent on the owner when one of its organs takes or heals damage, so listeners do not have to
+/// register against every organ individually and re-register on every insertion.
+#define COMSIG_CARBON_ORGAN_DAMAGED "carbon_organ_damaged" //from /obj/item/organ/proc/apply_organ_damage() (/obj/item/organ/damaged_organ, damage_amount, maximum)
 ///from base of /obj/item/bodypart/proc/can_attach_limb(): (new_limb, special) allows you to fail limb attachment
 #define COMSIG_ATTEMPT_CARBON_ATTACH_LIMB "attempt_carbon_attach_limb"
 	#define COMPONENT_NO_ATTACH (1<<0)

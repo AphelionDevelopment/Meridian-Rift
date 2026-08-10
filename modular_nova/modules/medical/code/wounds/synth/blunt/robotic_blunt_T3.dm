@@ -9,6 +9,7 @@
 	occur_text = "caves in on itself, damaged solder and shrapnel flying out in a miniature explosion"
 	examine_desc = "has caved in, with internal components visible through gaps in the metal"
 	severity = WOUND_SEVERITY_CRITICAL
+	pain_factor = PAIN_FACTOR_EXTREME // NOVA EDIT ADDITION - COMBAT_PAIN
 
 	disabling = TRUE
 

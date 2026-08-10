@@ -24,6 +24,7 @@
 	sound_effect = 'modular_nova/modules/medical/sound/robotic_slash_T1.ogg'
 
 	severity = WOUND_SEVERITY_MODERATE
+	pain_factor = PAIN_FACTOR_LIGHT // NOVA EDIT ADDITION - COMBAT_PAIN
 
 	sound_volume = 30
 
@@ -67,6 +68,7 @@
 	sound_effect = 'modular_nova/modules/medical/sound/robotic_slash_T2.ogg'
 
 	severity = WOUND_SEVERITY_SEVERE
+	pain_factor = PAIN_FACTOR_MODERATE // NOVA EDIT ADDITION - COMBAT_PAIN
 
 	sound_volume = 15
 
@@ -109,6 +111,7 @@
 		If the fault has become uncontrollable, extreme heat therapy is recommended."
 
 	severity = WOUND_SEVERITY_CRITICAL
+	pain_factor = PAIN_FACTOR_SEVERE // NOVA EDIT ADDITION - COMBAT_PAIN
 	wound_flags = (ACCEPTS_GAUZE|MANGLES_EXTERIOR|CAN_BE_GRASPED|SPLINT_OVERLAY)
 
 	sound_effect = 'modular_nova/modules/medical/sound/robotic_slash_T3.ogg'

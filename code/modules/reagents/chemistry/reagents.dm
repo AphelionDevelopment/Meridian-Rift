@@ -34,6 +34,9 @@
 	var/metabolization_rate = REAGENTS_METABOLISM
 	/// above this overdoses happen
 	var/overdose_threshold = 0
+	/// How much felt pain this reagent hides while metabolising. Painkillers never stack, so only
+	/// the strongest active one counts. Zero for anything that is not an analgesic.
+	var/pain_dampening = 0
 	/// You fucked up and this is now triggering its overdose effects, purge that shit quick.
 	var/overdosed = FALSE
 	///if false stops metab in liverless mobs

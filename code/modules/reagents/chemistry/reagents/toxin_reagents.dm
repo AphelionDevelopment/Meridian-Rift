@@ -882,6 +882,9 @@
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
 	randomized_spawns = REAGENT_SPAWN_ALL_RANDOM_SPAWNS
 	addiction_types = list(/datum/addiction/opioids = 25)
+	// Surgical grade analgesia. It still sits under /toxin because that is where it already lived -
+	// recategorising it as medicine is a separate change with its own chemistry fallout.
+	pain_dampening = PAIN_DAMPEN_FENTANYL
 
 /datum/reagent/toxin/fentanyl/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)
 	. = ..()

@@ -19,6 +19,8 @@
 	var/list/obj/item/organ/organs = list()
 	///Same as [above][/mob/living/carbon/var/organs], but stores "slot ID" - "organ" pairs for easy access.
 	var/list/organs_slot = list()
+	///Tracks the pain this mob is carrying and how much of it they actually feel.
+	var/datum/pain/pain_controller
 
 	///Whether or not the mob is handcuffed
 	var/obj/item/handcuffed = null

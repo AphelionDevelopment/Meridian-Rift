@@ -17,6 +17,7 @@
 
 	sound_effect = 'sound/effects/dismember.ogg'
 	severity = WOUND_SEVERITY_LOSS
+	pain_factor = PAIN_FACTOR_EXTREME
 	status_effect_type = null
 	scar_keyword = "dismember"
 	wound_flags = null

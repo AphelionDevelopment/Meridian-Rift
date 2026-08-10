@@ -345,6 +345,7 @@
 	examine_desc = "is glowing a dull thermal red and giving off heat"
 	treat_text = "Reduction of body temperature to expedite the passive heat dissipation - or, if thermal shock is to be risked, application of a fire extinguisher/shower."
 	severity = WOUND_SEVERITY_MODERATE
+	pain_factor = PAIN_FACTOR_LIGHT // NOVA EDIT ADDITION - COMBAT_PAIN
 
 	damage_multiplier_penalty = 1.15 //1.15x damage taken
 
@@ -395,6 +396,7 @@
 	treat_text = "Isolation from physical hazards, and accommodation of passive heat dissipation - active cooling may be used, but temperature differentials significantly \
 		raise the risk of thermal shock."
 	severity = WOUND_SEVERITY_SEVERE
+	pain_factor = PAIN_FACTOR_MODERATE // NOVA EDIT ADDITION - COMBAT_PAIN
 
 	a_or_from = "from"
 
@@ -439,6 +441,7 @@
 	treat_text = "Immediate confinement to cryogenics, as rapid overheating and physical vulnerability may occur. Active cooling is not advised, \
 		since the thermal shock may be lethal with such a temperature differential."
 	severity = WOUND_SEVERITY_CRITICAL
+	pain_factor = PAIN_FACTOR_SEVERE // NOVA EDIT ADDITION - COMBAT_PAIN
 
 	a_or_from = "from"
 

@@ -21,6 +21,9 @@
 	var/organ_flags = ORGAN_ORGANIC | ORGAN_EDIBLE | ORGAN_VIRGIN
 	/// Maximum damage the organ can take, ever.
 	var/maxHealth = STANDARD_ORGAN_THRESHOLD
+	/// Permanent pain a fully ruined organ adds to its owner's floor, scaled by how damaged it is.
+	/// Zero for organs that cannot hurt - the brain feels nothing itself.
+	var/pain_factor = 0
 	/**
 	 * Total damage this organ has sustained.
 	 * Should only ever be modified by apply_organ_damage!
@@ -255,6 +258,8 @@ INITIALIZE_IMMEDIATE(/obj/item/organ)
 		return FALSE
 	damage = clamp(damage + damage_amount, 0, maximum)
 	SEND_SIGNAL(src, COMSIG_ORGAN_ADJUST_DAMAGE, damage_amount, maximum, required_organ_flag)
+	if(owner)
+		SEND_SIGNAL(owner, COMSIG_CARBON_ORGAN_DAMAGED, src, damage_amount, maximum)
 	. = (prev_damage - damage) // return net damage
 	var/message = check_damage_thresholds()
 	prev_damage = damage

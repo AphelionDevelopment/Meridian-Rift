@@ -235,6 +235,7 @@
 	examine_desc = "is awkwardly janked out of place"
 	occur_text = "janks violently and becomes unseated"
 	severity = WOUND_SEVERITY_MODERATE
+	pain_factor = PAIN_FACTOR_MODERATE
 	interaction_efficiency_penalty = 1.3
 	limp_slowdown = 3
 	limp_chance = 50
@@ -377,6 +378,7 @@
 	occur_text = "sprays chips of bone and develops a nasty looking bruise"
 
 	severity = WOUND_SEVERITY_SEVERE
+	pain_factor = PAIN_FACTOR_SEVERE
 	interaction_efficiency_penalty = 2
 	limp_slowdown = 6
 	limp_chance = 60
@@ -416,6 +418,7 @@
 	occur_text = "cracks apart, exposing broken bones to open air"
 
 	severity = WOUND_SEVERITY_CRITICAL
+	pain_factor = PAIN_FACTOR_EXTREME
 	interaction_efficiency_penalty = 2.5
 	limp_slowdown = 7
 	limp_chance = 70

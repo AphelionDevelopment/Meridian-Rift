@@ -755,6 +755,7 @@
 	randomized_spawns = REAGENT_SPAWN_ALL_RANDOM_SPAWNS
 	addiction_types = list(/datum/addiction/opioids = 30)
 	metabolized_traits = list(TRAIT_ANALGESIA)
+	pain_dampening = PAIN_DAMPEN_MORPHINE
 
 /datum/reagent/medicine/morphine/on_mob_metabolize(mob/living/affected_mob)
 	. = ..()
@@ -2007,3 +2008,32 @@
 	if(affected_mob.losebreath >= 1)
 		affected_mob.losebreath -= 1 * metabolization_ratio * seconds_per_tick
 		return UPDATE_MOB_HEALTH
+
+/datum/reagent/medicine/paracetamol
+	name = "Paracetamol"
+	description = "A mild over-the-counter analgesic. Takes the edge off, and very little more. Easy to overdose on."
+	color = "#E8E8E8"
+	taste_description = "chalky bitterness"
+	metabolization_rate = 0.4 * REAGENTS_METABOLISM
+	overdose_threshold = 15
+	ph = 6.2
+	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	pain_dampening = PAIN_DAMPEN_PARACETAMOL
+
+/datum/reagent/medicine/paracetamol/overdose_process(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)
+	. = ..()
+	// The liver is what gives out first, and it is what kills people who take too many.
+	if(affected_mob.adjust_organ_loss(ORGAN_SLOT_LIVER, 2 * metabolization_ratio * seconds_per_tick))
+		return UPDATE_MOB_HEALTH
+
+/datum/reagent/medicine/ibuprofen
+	name = "Ibuprofen"
+	description = "A safer anti-inflammatory analgesic, weaker than most. Thins the blood, so think twice with an open wound."
+	color = "#F0D8B0"
+	taste_description = "bitterness"
+	metabolization_rate = 0.4 * REAGENTS_METABOLISM
+	overdose_threshold = 30
+	ph = 6.6
+	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	pain_dampening = PAIN_DAMPEN_IBUPROFEN
+	metabolized_traits = list(TRAIT_BLOODY_MESS)

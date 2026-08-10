@@ -104,6 +104,7 @@
 	examine_desc = "appears unnaturallly red and swollen"
 	occur_text = "swells up, its skin turning red"
 	severity = WOUND_SEVERITY_MODERATE
+	pain_factor = PAIN_FACTOR_MODERATE // NOVA EDIT ADDITION - COMBAT_PAIN
 	interaction_efficiency_penalty = 1.5
 	limp_slowdown = 2
 	limp_chance = 30
@@ -129,6 +130,7 @@
 	examine_desc = "is limp and awkwardly twitching, skin swollen and red"
 	occur_text = "twists in pain and goes limp, its tendon ruptured"
 	severity = WOUND_SEVERITY_SEVERE
+	pain_factor = PAIN_FACTOR_SEVERE // NOVA EDIT ADDITION - COMBAT_PAIN
 	interaction_efficiency_penalty = 2
 	limp_slowdown = 5
 	limp_chance = 40

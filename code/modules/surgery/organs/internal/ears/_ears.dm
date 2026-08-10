@@ -4,6 +4,7 @@
 	desc = "There are three parts to the ear. Inner, middle and outer. Only one of these parts should be normally visible."
 	zone = BODY_ZONE_HEAD
 	slot = ORGAN_SLOT_EARS
+	pain_factor = PAIN_FACTOR_MODERATE
 	gender = PLURAL
 
 	healing_factor = STANDARD_ORGAN_HEALING

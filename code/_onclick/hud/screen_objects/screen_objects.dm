@@ -993,9 +993,11 @@ INITIALIZE_IMMEDIATE(/atom/movable/screen) // I hate this place
 		else if(SEND_SIGNAL(body_part, COMSIG_BODYPART_UPDATING_HEALTH_HUD, owner, overridable_key) & OVERRIDE_BODYPART_HEALTH_HUD)
 			icon_key = overridable_key[1] // thanks i hate it
 		else if(!owner.has_status_effect(/datum/status_effect/grouped/screwy_hud/fake_healthy))
-			var/damage = body_part.get_damage() / body_part.max_damage
-			// calculate what icon state (1-5, or 0 if undamaged) to use based on damage
-			icon_key = clamp(ceil(damage * 5), 0, 5)
+			// The doll reads pain, not damage. Damage is a stat; pain is what your body would
+			// actually tell you, so this is deliberately blinded by painkillers.
+			var/pain = owner.get_zone_pain_ratio(part_zone)
+			// calculate what icon state (1-5, or 0 if painless) to use based on that zone's pain
+			icon_key = clamp(ceil(pain * 5), 0, 5)
 
 		if(length(body_part?.wounds))
 			LAZYSET(animated_zones, part_zone, TRUE)

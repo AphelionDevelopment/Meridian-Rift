@@ -5,6 +5,7 @@
 	icon_state = "" //Remove the inherent human icon that is visible on the map editor. We're rendering ourselves limb by limb, having it still be there results in a bug where the basic human icon appears below as south in all directions and generally looks nasty.
 
 	setup_mood()
+	setup_pain()
 	// This needs to be called very very early in human init (before organs / species are created at the minimum)
 	setup_organless_effects()
 	// Physiology needs to be created before species, as some species modify physiology
@@ -50,6 +51,9 @@
 		return
 	mob_mood = new /datum/mood(src)
 
+/mob/living/carbon/human/proc/setup_pain()
+	pain_controller = new /datum/pain(src)
+
 /mob/living/carbon/human/dummy/get_unconscious_appearance()
 	return null
 
@@ -76,6 +80,9 @@
 
 	if (mob_mood)
 		QDEL_NULL(mob_mood)
+
+	// SSpain holds a reference to the controller, so it has to be told to let go explicitly.
+	QDEL_NULL(pain_controller)
 
 	return ..()
 

@@ -1677,6 +1677,8 @@
 	ph = 5.8
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
 	randomized_spawns = REAGENT_SPAWN_ALL_RANDOM_SPAWNS
+	// An anaesthetic proper: you feel nothing at all, right up until you are asleep.
+	pain_dampening = PAIN_DAMPEN_TOTAL
 
 /datum/reagent/nitrous_oxide/expose_turf(turf/open/exposed_turf, reac_volume)
 	. = ..()

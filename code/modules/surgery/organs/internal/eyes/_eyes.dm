@@ -5,6 +5,7 @@
 	visual = TRUE
 	zone = BODY_ZONE_PRECISE_EYES
 	slot = ORGAN_SLOT_EYES
+	pain_factor = PAIN_FACTOR_SEVERE
 	gender = PLURAL
 
 	healing_factor = STANDARD_ORGAN_HEALING

@@ -7,6 +7,7 @@
 	examine_desc = "jostles with every move, solder visibly broken"
 	occur_text = "visibly cracks open, solder flying everywhere"
 	severity = WOUND_SEVERITY_SEVERE
+	pain_factor = PAIN_FACTOR_SEVERE // NOVA EDIT ADDITION - COMBAT_PAIN
 
 	simple_treat_text = "<b>If on the <b>chest</b>, <b>walk</b>, <b>grasp it</b>, <b>splint</b>, <b>rest</b> or <b>buckle yourself</b> to something to reduce movement effects. \
 	Afterwards, get <b>someone else</b>, ideally a <b>robo/engi</b> to <b>screwdriver/wrench</b> it, and then <b>re-solder it</b>!"

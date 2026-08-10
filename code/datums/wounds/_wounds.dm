@@ -56,6 +56,10 @@
 	/// Either WOUND_SEVERITY_TRIVIAL (meme wounds like stubbed toe), WOUND_SEVERITY_MODERATE, WOUND_SEVERITY_SEVERE, or WOUND_SEVERITY_CRITICAL (or maybe WOUND_SEVERITY_LOSS)
 	var/severity = WOUND_SEVERITY_MODERATE
 
+	/// Permanent pain this wound adds to its owner's pain floor while applied. Set per wound rather
+	/// than derived from severity, because a fracture hurts a tier harder than a cut of the same grade.
+	var/pain_factor = 0
+
 	/// Who owns the body part that we're wounding
 	var/mob/living/carbon/victim = null
 	/// The bodypart we're parented to. Not guaranteed to be non-null, especially after/during removal or if we haven't been applied

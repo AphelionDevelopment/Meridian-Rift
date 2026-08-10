@@ -1,0 +1,5 @@
+PROCESSING_SUBSYSTEM_DEF(pain)
+	name = "Pain"
+	ss_flags = SS_NO_INIT | SS_BACKGROUND
+	priority = FIRE_PRIORITY_PROCESS
+	wait = 1 SECONDS
