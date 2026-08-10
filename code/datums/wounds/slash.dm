@@ -29,6 +29,7 @@
 	required_limb_biostate = BIO_FLESH
 
 	wound_series = WOUND_SERIES_FLESH_SLASH_BLEED
+	bleeds = TRUE
 
 /datum/wound/slash/flesh
 	name = "Slashing (Cut) Flesh Wound"

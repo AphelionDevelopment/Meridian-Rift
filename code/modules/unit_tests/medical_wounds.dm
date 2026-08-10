@@ -1,42 +1,81 @@
-/// This test is used to make sure a flesh-and-bone base human can suffer all the types of wounds, and that suffering more severe wounds removes and replaces the lesser wound. Also tests that [/mob/living/carbon/proc/fully_heal] removes all wounds
+/// The worst severity among every wound this mob is carrying, or -1 if it has none.
+/datum/unit_test/proc/get_worst_wound_severity(mob/living/carbon/victim)
+	var/worst = -1
+	for(var/datum/wound/carried as anything in victim.all_wounds)
+		worst = max(worst, carried.severity)
+	return worst
+
+/// Wound series are exclusive: a limb may carry a fracture and a bruise, but never two fractures.
+/datum/unit_test/proc/assert_one_wound_per_series(mob/living/carbon/victim)
+	var/list/seen_series = list()
+	for(var/datum/wound/carried as anything in victim.all_wounds)
+		var/datum/wound_pregen_data/pregen_data = GLOB.all_wound_pregen_data[carried.type]
+		if(pregen_data.wound_series in seen_series)
+			TEST_FAIL("Patient carries two wounds of the same series ([pregen_data.wound_series]) at once")
+		seen_series += pregen_data.wound_series
+
+/**
+ * Checks that a flesh-and-bone human suffers every type of wound, that injuries escalate a tier at a
+ * time as damage accumulates, and that fully_heal clears them.
+ *
+ * Injuries are deterministic: damage piles up on the bodypart and crossing a threshold causes an
+ * injury of that tier, every time. Which flavour of injury lands at that tier is still random - a
+ * bruise rather than a fracture - so this asserts the tier, not the typepath.
+ */
 /datum/unit_test/test_human_base/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 
 	/// the limbs have no wound resistance like the chest and head do, so let's go with the r_arm
 	var/obj/item/bodypart/tested_part = victim.get_bodypart(BODY_ZONE_R_ARM)
+	/// One series per attack type, used as the yardstick for where each tier's threshold sits
+	var/list/reference_series = list(
+		list(/datum/wound/blunt/bone/moderate, /datum/wound/blunt/bone/severe, /datum/wound/blunt/bone/critical),
+		list(/datum/wound/slash/flesh/moderate, /datum/wound/slash/flesh/severe, /datum/wound/slash/flesh/critical),
+		list(/datum/wound/pierce/bleed/moderate, /datum/wound/pierce/bleed/severe, /datum/wound/pierce/bleed/critical),
+		list(/datum/wound/burn/flesh/moderate, /datum/wound/burn/flesh/severe, /datum/wound/burn/flesh/critical),
+	)
 	/// In order of the wound types we're trying to inflict, what sharpness do we need to deal them?
 	var/list/sharps = list(NONE, SHARP_EDGED, SHARP_POINTY, NONE)
 	/// Since burn wounds need burn damage, duh
 	var/list/dam_types = list(BRUTE, BRUTE, BRUTE, BURN)
 
-	var/i = 1
-	var/list/iter_test_wound_list
-
-	for(iter_test_wound_list in list(list(/datum/wound/blunt/bone/moderate, /datum/wound/blunt/bone/severe, /datum/wound/blunt/bone/critical),\
-										list(/datum/wound/slash/flesh/moderate, /datum/wound/slash/flesh/severe, /datum/wound/slash/flesh/critical),\
-										list(/datum/wound/pierce/bleed/moderate, /datum/wound/pierce/bleed/severe, /datum/wound/pierce/bleed/critical),\
-										list(/datum/wound/burn/flesh/moderate, /datum/wound/burn/flesh/severe, /datum/wound/burn/flesh/critical)))
-
+	for(var/i in 1 to length(reference_series))
 		TEST_ASSERT_EQUAL(length(victim.all_wounds), 0, "Patient is somehow wounded before test")
-		var/datum/wound/iter_test_wound
-		var/datum/wound_pregen_data/iter_pregen_data = GLOB.all_wound_pregen_data[iter_test_wound]
-		var/threshold_penalty = 0
 
-		for(iter_test_wound in iter_test_wound_list)
-			var/threshold = iter_pregen_data.threshold_minimum - threshold_penalty // just enough to guarantee the next tier of wound, given the existing wound threshold penalty
+		for(var/datum/wound/reference as anything in reference_series[i])
+			var/datum/wound_pregen_data/pregen_data = GLOB.all_wound_pregen_data[reference]
+			// Damage stays at the minimum so the limb survives all three tiers; the bonus is what puts
+			// the injury score on this tier's threshold.
 			if(dam_types[i] == BRUTE)
-				tested_part.receive_damage(WOUND_MINIMUM_DAMAGE, 0, wound_bonus = threshold, sharpness=sharps[i])
-			else if(dam_types[i] == BURN)
-				tested_part.receive_damage(0, WOUND_MINIMUM_DAMAGE, wound_bonus = threshold, sharpness=sharps[i])
+				tested_part.receive_damage(WOUND_MINIMUM_DAMAGE, 0, wound_bonus = pregen_data.threshold_minimum, sharpness = sharps[i])
+			else
+				tested_part.receive_damage(0, WOUND_MINIMUM_DAMAGE, wound_bonus = pregen_data.threshold_minimum, sharpness = sharps[i])
 
-			TEST_ASSERT(length(victim.all_wounds), "Patient has no wounds when one wound is expected. Severity: [initial(iter_test_wound.severity)]")
-			TEST_ASSERT_EQUAL(length(victim.all_wounds), 1, "Patient has more than one wound when only one is expected. Severity: [initial(iter_test_wound.severity)]")
-			var/datum/wound/actual_wound = victim.all_wounds[1]
-			TEST_ASSERT_EQUAL(actual_wound.type, iter_test_wound, "Patient has wound of incorrect severity. Expected: [initial(iter_test_wound.name)] Got: [actual_wound]")
-			threshold_penalty = actual_wound.threshold_penalty
-		i++
+			TEST_ASSERT(length(victim.all_wounds), "Patient has no wounds when one is expected. Severity: [initial(reference.severity)]")
+			TEST_ASSERT_EQUAL(get_worst_wound_severity(victim), initial(reference.severity), \
+				"Patient's worst injury is not the tier the attack crossed. Expected the tier of [initial(reference.name)]")
+			assert_one_wound_per_series(victim)
+
 		victim.fully_heal(ADMIN_HEAL_ALL) // should clear all wounds between types
+		TEST_ASSERT_EQUAL(length(victim.all_wounds), 0, "fully_heal left wounds behind")
 
+/// Identical damage to an identical part has to produce an identical injury tier. This is the whole
+/// point of deterministic injuries, so it gets its own test.
+/datum/unit_test/wound_determinism/Run()
+	var/list/severities = list()
+
+	for(var/attempt in 1 to 3)
+		var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+		var/obj/item/bodypart/tested_part = victim.get_bodypart(BODY_ZONE_R_ARM)
+
+		// Three solid cuts. Enough damage to walk the arm up to a critical injury with no bonuses of any kind.
+		for(var/hit in 1 to 3)
+			tested_part.receive_damage(WOUND_MAX_CONSIDERED_DAMAGE, 0, sharpness = SHARP_EDGED)
+
+		severities += get_worst_wound_severity(victim)
+
+	for(var/severity in severities)
+		TEST_ASSERT_EQUAL(severity, severities[1], "The same three cuts produced different injury tiers across runs: [json_encode(severities)]")
 
 /// This test is used for making sure species with bones but no flesh (skeletons, plasmamen) can only suffer BONE_WOUNDS, and nothing tagged with FLESH_WOUND (it's possible to require both)
 /datum/unit_test/test_human_bone/Run()
@@ -44,48 +83,40 @@
 
 	/// the limbs have no wound resistance like the chest and head do, so let's go with the r_arm
 	var/obj/item/bodypart/tested_part = victim.get_bodypart(BODY_ZONE_R_ARM)
+	var/list/reference_series = list(
+		list(/datum/wound/blunt/bone/moderate, /datum/wound/blunt/bone/severe, /datum/wound/blunt/bone/critical),
+		list(/datum/wound/slash/flesh/moderate, /datum/wound/slash/flesh/severe, /datum/wound/slash/flesh/critical),
+		list(/datum/wound/pierce/bleed/moderate, /datum/wound/pierce/bleed/severe, /datum/wound/pierce/bleed/critical),
+		list(/datum/wound/burn/flesh/moderate, /datum/wound/burn/flesh/severe, /datum/wound/burn/flesh/critical),
+	)
 	/// In order of the wound types we're trying to inflict, what sharpness do we need to deal them?
 	var/list/sharps = list(NONE, SHARP_EDGED, SHARP_POINTY, NONE)
 	/// Since burn wounds need burn damage, duh
 	var/list/dam_types = list(BRUTE, BRUTE, BRUTE, BURN)
 
-	var/i = 1
-	var/list/iter_test_wound_list
 	tested_part.biological_state &= ~BIO_FLESH // take away the base limb's flesh (ouchie!) ((not actually ouchie, this just affects their wounds and dismemberment handling))
 
-	for(iter_test_wound_list in list(list(/datum/wound/blunt/bone/moderate, /datum/wound/blunt/bone/severe, /datum/wound/blunt/bone/critical),\
-										list(/datum/wound/slash/flesh/moderate, /datum/wound/slash/flesh/severe, /datum/wound/slash/flesh/critical),\
-										list(/datum/wound/pierce/bleed/moderate, /datum/wound/pierce/bleed/severe, /datum/wound/pierce/bleed/critical),\
-										list(/datum/wound/burn/flesh/moderate, /datum/wound/burn/flesh/severe, /datum/wound/burn/flesh/critical)))
-
+	for(var/i in 1 to length(reference_series))
 		TEST_ASSERT_EQUAL(length(victim.all_wounds), 0, "Patient is somehow wounded before test")
-		var/datum/wound/iter_test_wound
-		var/datum/wound_pregen_data/iter_pregen_data = GLOB.all_wound_pregen_data[iter_test_wound]
-		var/threshold_penalty = 0
 
-		for(iter_test_wound in iter_test_wound_list)
-			var/threshold = iter_pregen_data.threshold_minimum - threshold_penalty // just enough to guarantee the next tier of wound, given the existing wound threshold penalty
+		for(var/datum/wound/reference as anything in reference_series[i])
+			var/datum/wound_pregen_data/pregen_data = GLOB.all_wound_pregen_data[reference]
 			if(dam_types[i] == BRUTE)
-				tested_part.receive_damage(WOUND_MINIMUM_DAMAGE, 0, wound_bonus = threshold, sharpness=sharps[i])
-			else if(dam_types[i] == BURN)
-				tested_part.receive_damage(0, WOUND_MINIMUM_DAMAGE, wound_bonus = threshold, sharpness=sharps[i])
+				tested_part.receive_damage(WOUND_MINIMUM_DAMAGE, 0, wound_bonus = pregen_data.threshold_minimum, sharpness = sharps[i])
+			else
+				tested_part.receive_damage(0, WOUND_MINIMUM_DAMAGE, wound_bonus = pregen_data.threshold_minimum, sharpness = sharps[i])
 
-			// so if we just tried to deal a flesh wound, make sure we didn't actually suffer it. We may have suffered a bone wound instead, but we just want to make sure we don't have a flesh wound
-			var/datum/wound_pregen_data/pregen_data = GLOB.all_wound_pregen_data[iter_test_wound]
-			if (pregen_data.required_limb_biostate & BIO_FLESH)
-				if(!length(victim.all_wounds)) // not having a wound is good news
-					continue
-				else // we have to check that it's actually a bone wound and not the intended wound type
-					TEST_ASSERT_EQUAL(length(victim.all_wounds), 1, "Patient has more than one wound when only one is expected. Severity: [initial(iter_test_wound.severity)]")
-					var/datum/wound/actual_wound = victim.all_wounds[1]
-					var/datum/wound_pregen_data/actual_pregen_data = GLOB.all_wound_pregen_data[actual_wound.type]
-					TEST_ASSERT((actual_pregen_data.required_limb_biostate & ~BIO_FLESH), "Limb has flesh wound despite no BIO_FLESH biological_state, expected either no wound or bone wound. Offending wound: [actual_wound]")
-					threshold_penalty = actual_wound.threshold_penalty
-			else // otherwise if it's a bone wound, check that we have it per usual
-				TEST_ASSERT(length(victim.all_wounds), "Patient has no wounds when one wound is expected. Severity: [initial(iter_test_wound.severity)]")
-				TEST_ASSERT_EQUAL(length(victim.all_wounds), 1, "Patient has more than one wound when only one is expected. Severity: [initial(iter_test_wound.severity)]")
-				var/datum/wound/actual_wound = victim.all_wounds[1]
-				TEST_ASSERT_EQUAL(actual_wound.type, iter_test_wound, "Patient has wound of incorrect severity. Expected: [initial(iter_test_wound.name)] Got: [actual_wound]")
-				threshold_penalty = actual_wound.threshold_penalty
-		i++
+			// A limb with no flesh can only take the wounds that do not need any. Bone wounds should still
+			// land on their tier; everything else should simply not happen.
+			for(var/datum/wound/suffered as anything in victim.all_wounds)
+				var/datum/wound_pregen_data/suffered_pregen_data = GLOB.all_wound_pregen_data[suffered.type]
+				TEST_ASSERT((suffered_pregen_data.required_limb_biostate & ~BIO_FLESH), \
+					"Limb has flesh wound despite no BIO_FLESH biological_state. Offending wound: [suffered]")
+
+			if(!(pregen_data.required_limb_biostate & BIO_FLESH))
+				TEST_ASSERT_EQUAL(get_worst_wound_severity(victim), initial(reference.severity), \
+					"Patient's worst injury is not the tier the attack crossed. Expected the tier of [initial(reference.name)]")
+
+			assert_one_wound_per_series(victim)
+
 		victim.fully_heal(ADMIN_HEAL_ALL) // should clear all wounds between types

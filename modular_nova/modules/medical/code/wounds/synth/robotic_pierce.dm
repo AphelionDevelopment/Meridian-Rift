@@ -8,6 +8,7 @@
 /datum/wound_pregen_data/electrical_damage/pierce
 	abstract = TRUE
 	wound_series = WOUND_SERIES_WIRE_PIERCE_ELECTRICAL_DAMAGE
+	bleeds = TRUE // NOVA EDIT ADDITION - COMBAT_INJURIES - oil lines are what a synth bleeds
 	required_wounding_type = WOUND_PIERCE
 
 /datum/wound/burn/electrical_damage/pierce/get_limb_examine_description()

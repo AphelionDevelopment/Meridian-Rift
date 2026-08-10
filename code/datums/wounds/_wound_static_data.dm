@@ -39,6 +39,9 @@
 	/// The series of wounds this is in. See wounds.dm (the defines file) for a more detailed explanation - but tldr is that no 2 wounds of the same series can be on a limb.
 	var/wound_series
 
+	/// Whether this wound opens its owner up. Hits that armour stopped never cause these, no matter how much punishment the limb has taken.
+	var/bleeds = FALSE
+
 	/// If true, we will attempt to, during a random wound roll, overpower and remove other wound typepaths from the possible wounds list using competition_mode.
 	var/compete_for_wounding = TRUE
 	/// The competition mode with which we will remove other wounds from a possible wound roll assuming [compete_for_wounding] is TRUE. See wounds.dm, the defines file, for more information on what these do.

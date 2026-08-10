@@ -32,29 +32,34 @@
 			wounding_type = WOUND_BLUNT
 		if (((exterior_ready_to_dismember && interior_ready_to_dismember) || dismemberable_by_total_damage(mangled_state)) && try_dismember(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus))
 			return
-	return check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, wound_clothing)
+	return check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, wound_clothing = wound_clothing)
 
 /**
- * check_wounding() is where we handle rolling for, selecting, and applying a wound if we meet the criteria
+ * check_wounding() is where we handle selecting and applying a wound if we meet the criteria
  *
- * We generate a "score" for how woundable the attack was based on the damage and other factors discussed in [/obj/item/bodypart/proc/check_woundings_mods], then go down the list from most severe to least severe wounds in that category.
- * We can promote a wound from a lesser to a higher severity this way, but we give up if we have a wound of the given type and fail to roll a higher severity, so no sidegrades/downgrades
+ * This attack's damage is added to what this part has already taken of the same wounding type, and
+ * that running total, modified by the factors in [/obj/item/bodypart/proc/check_woundings_mods],
+ * is compared against every wound's threshold. There is no roll: crossing a threshold means the
+ * injury, every time. What is still random is which injury you get out of the ones you qualify for -
+ * a torn muscle rather than a fracture - which is what [/datum/wound_pregen_data/proc/get_weight]
+ * decides.
  *
  * Arguments:
  * * woundtype- Either WOUND_BLUNT, WOUND_SLASH, WOUND_PIERCE, or WOUND_BURN based on the attack type.
- * * damage- How much damage is tied to this attack, since wounding potential scales with damage in an attack (see: WOUND_DAMAGE_EXPONENT)
- * * wound_bonus- The wound_bonus of an attack
+ * * damage- How much damage is tied to this attack. Capped per hit, so no single blow walks a limb up several tiers.
+ * * wound_bonus- The wound_bonus of an attack, which biases which tier it lands on
  * * exposed_wound_bonus- The exposed_wound_bonus of an attack
  * * wound_clothing- If this should damage clothing.
+ * * blocked- How much of the attack armour stopped, as a percentage. A mostly stopped hit cannot cause the worst injuries.
  */
-/obj/item/bodypart/proc/check_wounding(woundtype, damage, wound_bonus, exposed_wound_bonus, attack_direction, damage_source, wound_clothing)
+/obj/item/bodypart/proc/check_wounding(woundtype, damage, wound_bonus, exposed_wound_bonus, attack_direction, damage_source, wound_clothing, blocked = 0)
 	SHOULD_CALL_PARENT(TRUE)
 	RETURN_TYPE(/datum/wound)
 
 	if(!is_woundable())
 		return
 
-	// note that these are fed into an exponent, so these are magnified
+	// these decide how much of this hit is allowed to count towards the part's running total
 	var/easily_wounded = HAS_TRAIT(owner, TRAIT_EASILY_WOUNDED)
 	var/hardly_wounded = HAS_TRAIT(owner, TRAIT_HARDLY_WOUNDED)
 	var/considered_damage_cap = WOUND_MAX_CONSIDERED_DAMAGE
@@ -77,12 +82,17 @@
 	if(HAS_TRAIT(owner, TRAIT_EASYBLEED) && owner.can_bleed() && ((woundtype == WOUND_PIERCE) || (woundtype == WOUND_SLASH)))
 		damage *= 1.5
 
-	var/base_roll = rand(1, round(damage ** WOUND_DAMAGE_EXPONENT))
-	var/injury_roll = base_roll
-	injury_roll = check_woundings_mods(woundtype, injury_roll, damage, wound_bonus, exposed_wound_bonus, wound_clothing)
+	var/accumulated_damage = accumulate_wounding_damage(woundtype, damage)
+	var/injury_roll = check_woundings_mods(woundtype, accumulated_damage, damage, wound_bonus, exposed_wound_bonus, wound_clothing)
 	var/list/series_wounding_mods = check_series_wounding_mods()
 
-	if(injury_roll > WOUND_DISMEMBER_OUTRIGHT_THRESH && prob(get_damage() / max_damage * 100) && can_dismember())
+	// A hit armour mostly stopped bruises and burns. It does not open arteries, and it does not take
+	// limbs off - you have to get through the armour first.
+	var/non_penetrating = (blocked >= WOUND_NONPENETRATING_BLOCK)
+
+	// A limb comes off when it is already ruined and has taken a beating on top of that. No roll, but
+	// no shortcuts either: the part has to be mangled first, which is a critical injury's job.
+	if(!non_penetrating && injury_roll > WOUND_DISMEMBER_OUTRIGHT_THRESH && get_damage() >= max_damage && mangled_state && can_dismember())
 		var/datum/wound/loss/dismembering = new
 		dismembering.apply_dismember(src, woundtype, outright = TRUE, attack_direction = attack_direction)
 		return
@@ -91,6 +101,9 @@
 	for (var/datum/wound/wound_type as anything in GLOB.all_wound_pregen_data)
 		var/datum/wound_pregen_data/pregen_data = GLOB.all_wound_pregen_data[wound_type]
 		if (!pregen_data.compete_for_wounding)
+			continue
+
+		if (non_penetrating && (initial(wound_type.severity) > WOUND_NONPENETRATING_MAX_SEVERITY || pregen_data.bleeds))
 			continue
 
 		var/specific_injury_roll = (injury_roll + series_wounding_mods[pregen_data.wound_series])
@@ -129,8 +142,50 @@
 		new_wound = replaced_wound.replace_wound(new_wound, attack_direction = attack_direction)
 	else
 		new_wound.apply_wound(src, attack_direction = attack_direction, wound_source = damage_source)
-	log_wound(owner, new_wound, damage, wound_bonus, exposed_wound_bonus, base_roll) // dismembering wounds are logged in the apply_wound() for loss wounds since they delete themselves immediately, these will be immediately returned
+	log_wound(owner, new_wound, damage, wound_bonus, exposed_wound_bonus, injury_roll) // dismembering wounds are logged in the apply_wound() for loss wounds since they delete themselves immediately, these will be immediately returned
 	return new_wound
+
+/**
+ * Adds damage to this part's running total for a wounding type, and returns the new total.
+ *
+ * This total is what injuries are decided on, so it is the memory that makes the fourth hit worse
+ * than the first. It is not the part's damage: healing the part walks it back down, but nothing else
+ * does.
+ *
+ * Arguments:
+ * * wounding_type - One of the WOUND_* wounding types.
+ * * damage - Damage to add. Already capped per hit by the caller.
+ */
+/obj/item/bodypart/proc/accumulate_wounding_damage(wounding_type, damage)
+	LAZYINITLIST(wounding_accumulation)
+	wounding_accumulation[wounding_type] = max(wounding_accumulation[wounding_type] + damage, 0)
+	return wounding_accumulation[wounding_type]
+
+/// How much damage of a wounding type this part is carrying towards its next injury.
+/obj/item/bodypart/proc/get_wounding_damage(wounding_type)
+	return LAZYACCESS(wounding_accumulation, wounding_type) || 0
+
+/**
+ * Walks this part's injury totals back down as it is treated.
+ *
+ * Without this a limb that was healed to full would still be one scratch away from the injury it was
+ * about to receive, forever. Brute healing relieves all three brute wounding types, since there is
+ * no way to tell which of them the healing was meant for.
+ *
+ * Arguments:
+ * * brute - Brute damage healed.
+ * * burn - Burn damage healed.
+ */
+/obj/item/bodypart/proc/relieve_wounding_damage(brute, burn)
+	if(!LAZYLEN(wounding_accumulation))
+		return
+
+	if(brute > 0)
+		accumulate_wounding_damage(WOUND_BLUNT, -brute)
+		accumulate_wounding_damage(WOUND_SLASH, -brute)
+		accumulate_wounding_damage(WOUND_PIERCE, -brute)
+	if(burn > 0)
+		accumulate_wounding_damage(WOUND_BURN, -burn)
 
 // try forcing a specific wound, but only if there isn't already a wound of that severity or greater for that type on this bodypart
 /obj/item/bodypart/proc/force_wound_upwards(datum/wound/potential_wound, smited = FALSE, wound_source)

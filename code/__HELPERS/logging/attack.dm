@@ -47,7 +47,7 @@
  * * dealt_damage- How much damage is associated with the attack that dealt with this wound.
  * * dealt_wound_bonus- The wound_bonus, if one was specified, of the wounding attack
  * * dealt_exposed_wound_bonus- The exposed_wound_bonus, if one was specified *and applied*, of the wounding attack. Not shown if armor was present
- * * base_roll- Base wounding ability of an attack is a random number from 1 to (dealt_damage * WOUND_DAMAGE_EXPONENT). This is the number that was rolled in there, before mods
+ * * base_roll- The injury score the wound was decided on: the part's accumulated damage of this wounding type, after mods
  */
 /proc/log_wound(atom/victim, datum/wound/suffered_wound, dealt_damage, dealt_wound_bonus, dealt_exposed_wound_bonus, base_roll)
 	if(QDELETED(victim) || !suffered_wound)
@@ -56,9 +56,10 @@
 
 	if(dealt_damage)
 		message += " | Damage: [dealt_damage]"
-		// The base roll is useful since it can show how lucky someone got with the given attack. For example, dealing a cut
+		// The score is what the injury was decided on: this part's accumulated damage of this type,
+		// after armour and every other modifier. It says how close the next tier is.
 		if(base_roll)
-			message += " (rolled [base_roll]/[dealt_damage ** WOUND_DAMAGE_EXPONENT])"
+			message += " (injury score [round(base_roll, 0.1)])"
 
 	if(dealt_wound_bonus)
 		message += " | WB: [dealt_wound_bonus]"

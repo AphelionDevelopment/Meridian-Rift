@@ -106,6 +106,7 @@
 	required_limb_biostate = (BIO_WIRED)
 	required_wounding_type = WOUND_SLASH
 	wound_series = WOUND_SERIES_WIRE_SLASH_ELECTRICAL_DAMAGE
+	bleeds = TRUE // NOVA EDIT ADDITION - COMBAT_INJURIES - oil lines are what a synth bleeds
 
 /datum/wound_pregen_data/electrical_damage/generate_scar_priorities()
 	return list("[BIO_METAL]") // wire scars dont exist so we can just use metal

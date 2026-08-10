@@ -148,6 +148,11 @@
 	/// Our current stored wound damage multiplier
 	var/wound_damage_multiplier = 1
 
+	/// Damage this part has taken of each wounding type, as an assoc list of (WOUND_* -> damage).
+	/// Injuries are threshold crossings on these totals rather than rolls, so the same beating always
+	/// produces the same injury. Treating the part walks them back down.
+	var/list/wounding_accumulation
+
 	/// This number is added to the effective wound armor on this body part (as long as it isn't managled externally or internally), higher numbers mean more defense, negative means easier to wound
 	var/wound_resistance = 0
 	/// When this bodypart hits max damage, this number is added to all wound rolls. Obviously only relevant for bodyparts that have damage caps.
@@ -794,7 +799,7 @@
 				var/obj/item/stack/medical/wrap/gauze/our_gauze = current_gauze
 				our_gauze.get_hit(src)
 			//NOVA EDIT ADDITION END - MEDICAL
-			check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, attack_direction, damage_source = damage_source, wound_clothing = wound_clothing)
+			check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, attack_direction, damage_source = damage_source, wound_clothing = wound_clothing, blocked = blocked)
 
 	for(var/datum/wound/iter_wound as anything in wounds)
 		iter_wound.receive_damage(wounding_type, wounding_dmg, wound_bonus, attack_direction, damage_source)
@@ -915,6 +920,8 @@
 		set_brute_dam(round(max(brute_dam - brute, 0), DAMAGE_PRECISION))
 	if(burn)
 		set_burn_dam(round(max(burn_dam - burn, 0), DAMAGE_PRECISION))
+
+	relieve_wounding_damage(brute, burn)
 
 	if(owner)
 		if(can_be_disabled)
