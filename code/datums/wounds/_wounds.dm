@@ -483,6 +483,9 @@
 		limb.update_wounds(replaced_or_replacing)
 
 	start_limping_if_we_should()
+	// A wrapped injury hurts a tier less than a bare one, so the floor is stale the moment gauze goes
+	// on or comes off - which is one of the things that lands here. See [/datum/wound/proc/get_pain_factor].
+	victim?.mark_pain_dirty()
 
 /// Additional beneficial effects when the wound is gained, in case you want to give a temporary boost to allow the victim to try an escape or last stand
 /datum/wound/proc/second_wind()

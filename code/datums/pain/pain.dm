@@ -55,8 +55,10 @@
 	parent = new_parent
 	START_PROCESSING(SSpain, src)
 
-	RegisterSignal(parent, COMSIG_CARBON_GAIN_WOUND, PROC_REF(on_wounds_changed))
-	RegisterSignal(parent, COMSIG_CARBON_LOSE_WOUND, PROC_REF(on_wounds_changed))
+	RegisterSignal(parent, COMSIG_CARBON_GAIN_WOUND, PROC_REF(on_wound_gained))
+	// Deliberately the post signal. COMSIG_CARBON_LOSE_WOUND fires while the wound is still on the
+	// limb, so a floor rebuilt from it would count the injury that was just treated.
+	RegisterSignal(parent, COMSIG_CARBON_POST_LOSE_WOUND, PROC_REF(on_wound_lost))
 	RegisterSignal(parent, COMSIG_CARBON_ORGAN_DAMAGED, PROC_REF(on_organs_changed))
 	RegisterSignal(parent, COMSIG_CARBON_GAIN_ORGAN, PROC_REF(on_organs_changed))
 	RegisterSignal(parent, COMSIG_CARBON_LOSE_ORGAN, PROC_REF(on_organs_changed))
@@ -80,7 +82,7 @@
 
 	UnregisterSignal(parent, list(
 		COMSIG_CARBON_GAIN_WOUND,
-		COMSIG_CARBON_LOSE_WOUND,
+		COMSIG_CARBON_POST_LOSE_WOUND,
 		COMSIG_CARBON_ORGAN_DAMAGED,
 		COMSIG_CARBON_GAIN_ORGAN,
 		COMSIG_CARBON_LOSE_ORGAN,
@@ -120,13 +122,20 @@
 
 	roll_bracket_effects()
 
-/// Wounds change the floor, and waiting a tick to feel a broken arm is the delay this system exists to remove.
-/datum/pain/proc/on_wounds_changed(datum/source, datum/wound/changed_wound, obj/item/bodypart/limb)
+/// A new injury raises the floor, and waiting a tick to feel a broken arm is the delay this system exists to remove.
+/datum/pain/proc/on_wound_gained(datum/source, datum/wound/new_wound, obj/item/bodypart/limb)
 	SIGNAL_HANDLER
 
 	recalculate_floor()
-	if(changed_wound?.pain_factor >= PAIN_ADRENALINE_INJURY_TRIGGER)
+	// Massive trauma is what triggers fight or flight. Being rid of an injury is not trauma.
+	if(new_wound?.pain_factor >= PAIN_ADRENALINE_INJURY_TRIGGER)
 		try_trigger_adrenaline()
+
+/// Treating an injury has to take its pain with it. See New() for why this listens to the post signal.
+/datum/pain/proc/on_wound_lost(datum/source, datum/wound/lost_wound, obj/item/bodypart/limb)
+	SIGNAL_HANDLER
+
+	recalculate_floor()
 
 /// Organ damage, insertion and removal all move the floor.
 /datum/pain/proc/on_organs_changed(datum/source, obj/item/organ/changed_organ)
@@ -561,6 +570,17 @@
 
 /mob/living/carbon/remove_pain_source(source_key)
 	pain_controller?.remove_pain_source(source_key)
+
+/**
+ * Marks this mob's permanent floor as out of date, to be rebuilt on the next process.
+ *
+ * For the things that change how much an injury hurts without adding or removing one - a wrap going
+ * on or coming off. Deferred rather than immediate because those arrive one per wound on the limb,
+ * and a treated limb is worth exactly one rebuild.
+ */
+/mob/living/carbon/proc/mark_pain_dirty()
+	if(pain_controller)
+		pain_controller.floor_needs_recalculation = TRUE
 
 /// Convenience accessor so callers do not have to null-check the controller themselves.
 /mob/living/proc/get_felt_pain()

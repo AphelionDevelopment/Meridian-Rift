@@ -53,7 +53,9 @@
 /datum/wound/bruise/proc/on_hurt_hand_used(mob/living/user, atom/target, proximity)
 	SIGNAL_HANDLER
 
-	if(victim.get_active_hand() != limb || !ismob(target))
+	// This signal fires ahead of every unarmed click, throwing a punch or not, so the swing has to be
+	// confirmed as one before it costs anything - hugging someone is not working through an injury.
+	if(!proximity || !victim.combat_mode || victim.get_active_hand() != limb || !ismob(target))
 		return
 
 	victim.add_temporary_pain(use_pain)

@@ -19,6 +19,29 @@
 	TEST_ASSERT(compound, "Failed to escalate the fracture to a compound one")
 	TEST_ASSERT_EQUAL(compound.get_pain_factor(), PAIN_FACTOR_EXTREME, "A splint should not quiet a compound fracture")
 
+/// The floor is a cached sum, so everything that changes what an injury costs has to invalidate it.
+/// Treating one especially: a floor that keeps counting a healed wound is a crawl nobody can lift.
+/datum/unit_test/pain_floor_tracks_treatment/Run()
+	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
+	var/datum/pain/pain = patient.pain_controller
+	TEST_ASSERT(pain, "The test subject has no pain controller")
+
+	var/obj/item/bodypart/arm = patient.get_bodypart(BODY_ZONE_R_ARM)
+	arm.force_wound_upwards(/datum/wound/blunt/bone/severe)
+	TEST_ASSERT_EQUAL(pain.pain_floor, PAIN_FACTOR_SEVERE, "A fresh fracture should put its pain factor onto the floor")
+
+	// Wrapping a limb changes what its injuries cost without adding or removing one, so it only marks
+	// the floor stale rather than rebuilding on the spot. Both halves of that are worth asserting.
+	var/obj/item/stack/medical/wrap/gauze/wrap = allocate(/obj/item/stack/medical/wrap/gauze)
+	arm.apply_item(wrap, LIMB_ITEM_GAUZE)
+	TEST_ASSERT(pain.floor_needs_recalculation, "Wrapping a limb should mark the floor for a rebuild")
+	pain.recalculate_floor()
+	TEST_ASSERT_EQUAL(pain.pain_floor, PAIN_FACTOR_MODERATE, "A wrapped fracture should cost a tier less floor than a bare one")
+
+	var/datum/wound/fracture = arm.get_wound_type(/datum/wound/blunt/bone/severe)
+	fracture.remove_wound()
+	TEST_ASSERT_EQUAL(pain.pain_floor, 0, "Treating the injury did not take its pain off the floor with it")
+
 /// Fresh hits always black you out again: shoot a crawler and they go limp, stir, then drag on.
 /datum/unit_test/pain_crawler_blackout/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
