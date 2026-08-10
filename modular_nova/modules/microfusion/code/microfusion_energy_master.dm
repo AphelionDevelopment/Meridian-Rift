@@ -78,6 +78,8 @@
 /obj/item/gun/microfusion/emp_act(severity)
 	. = ..()
 	if(!(. & EMP_PROTECT_CONTENTS))
+		if(!cell)
+			return
 		cell.use(round(cell.charge / severity))
 		chambered = null //we empty the chamber
 		recharge_newshot() //and try to charge a new shot
