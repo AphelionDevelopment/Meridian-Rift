@@ -139,7 +139,6 @@
 	var/screen_max_columns_widescreen
 
 	// NOVA EDIT ADDITION END - ADMIN_TECH
-
 /datum/storage/New(
 	atom/parent,
 	max_slots = src.max_slots,

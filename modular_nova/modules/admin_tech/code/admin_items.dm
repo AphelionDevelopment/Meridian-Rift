@@ -709,8 +709,6 @@ Admin Variants of Common Tools
 	. = ..()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
-
-
 /*
 * Admin Cells for Cellgun
 * I thought about making a spread of admin medicells to replace the hypospray kit, as well as relocation cells to move things around CC

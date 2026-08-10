@@ -268,8 +268,8 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 		var/outfit_path = text2path(stored_outfit)
 		if(ispath(outfit_path, /datum/outfit))
 			preferred_spawn_outfits[slot_name] = outfit_path
-	// NOVA EDIT ADDITION END
 
+	// NOVA EDIT ADDITION END
 	var/list/parsed_favs = list()
 	for(var/typetext in favorite_outfits)
 		var/datum/outfit/path = text2path(typetext)

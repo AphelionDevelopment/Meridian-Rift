@@ -491,7 +491,6 @@ ADMIN_VERB(wallhacks, R_ADMIN, "Admin Wallhacks", "Toggles full-bright, perfect 
 	SSblackbox.record_feedback("nested tally", "admin_toggle", 1, list("Admin Wallhacks", "[wallhacks_on ? "Enabled" : "Disabled"]"))
 
 // NOVA EDIT ADDITION END - ADMIN_TECH
-
 ADMIN_VERB(show_traitor_panel, R_ADMIN, "Show Traitor Panel", "Edit mobs's memory and role", ADMIN_CATEGORY_GAME)
 	VERB_ARG_TYPED(target_mob, VERB_ARG_TYPE_MOB, VERB_ARG_SOURCE_WORLD, /mob)
 	var/datum/mind/target_mind = target_mob.mind
