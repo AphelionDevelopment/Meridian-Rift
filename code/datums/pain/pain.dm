@@ -21,6 +21,8 @@
 	var/felt_pain = 0
 	/// Felt pain the strongest active painkiller is hiding. Painkillers do not stack.
 	var/dampening = 0
+	/// Set when organ damage moves. Organs tick constantly, so their floor is rebuilt on the next process instead of per hit.
+	var/floor_needs_recalculation = FALSE
 	/// The bracket felt_pain currently falls into.
 	var/datum/pain_bracket/current_bracket
 	/// Whether this mob has already spent its one shot at fight or flight.
@@ -47,6 +49,7 @@
 	RegisterSignal(parent, COMSIG_ORGAN_IMPLANTED, PROC_REF(on_organs_changed))
 	RegisterSignal(parent, COMSIG_ORGAN_REMOVED, PROC_REF(on_organs_changed))
 	RegisterSignal(parent, COMSIG_MOB_STATCHANGE, PROC_REF(on_stat_changed))
+	RegisterSignal(parent, COMSIG_LIVING_POST_FULLY_HEAL, PROC_REF(on_fully_healed))
 	RegisterSignal(parent, COMSIG_QDELETING, PROC_REF(clear_parent_ref))
 
 	recalculate_floor()
@@ -70,6 +73,7 @@
 		COMSIG_ORGAN_IMPLANTED,
 		COMSIG_ORGAN_REMOVED,
 		COMSIG_MOB_STATCHANGE,
+		COMSIG_LIVING_POST_FULLY_HEAL,
 		COMSIG_QDELETING,
 	))
 	parent = null
@@ -80,11 +84,18 @@
 
 	update_dampening()
 
+	if(floor_needs_recalculation)
+		recalculate_floor()
+
 	if(temporary_pain > 0)
 		// Fast while high and slower as it falls, so a maxed pool drains to the shock recovery
 		// threshold in under five seconds but the last of it lingers.
 		var/decay = (PAIN_TEMPORARY_DECAY_FLAT + (temporary_pain * PAIN_TEMPORARY_DECAY_COEFFICIENT)) * seconds_per_tick
 		adjust_temporary_pain(-decay)
+
+	// Adrenaline is once per fight, and a mob with nothing left to feel is out of the fight.
+	if(adrenaline_spent && !total_pain && !parent.has_status_effect(/datum/status_effect/adrenaline))
+		adrenaline_spent = FALSE
 
 	roll_bracket_effects()
 
@@ -100,6 +111,15 @@
 /datum/pain/proc/on_organs_changed(datum/source, obj/item/organ/changed_organ, damage_amount, maximum)
 	SIGNAL_HANDLER
 
+	// Every organ damages and heals itself on its own tick, so this fires constantly. Organ pain
+	// climbs slowly enough that rebuilding the floor once per second is soon enough.
+	floor_needs_recalculation = TRUE
+
+/// A full heal takes the injuries with it, so the floor is rebuilt on the spot rather than a tick later.
+/datum/pain/proc/on_fully_healed(datum/source, heal_flags)
+	SIGNAL_HANDLER
+
+	adrenaline_spent = FALSE
 	recalculate_floor()
 
 /// Corpses feel nothing, so stop burning cycles on them until they are back up.
@@ -108,11 +128,13 @@
 
 	if(old_stat == DEAD && new_stat != DEAD)
 		START_PROCESSING(SSpain, src)
-		return
-
-	if(old_stat != DEAD && new_stat == DEAD)
+	else if(old_stat != DEAD && new_stat == DEAD)
 		STOP_PROCESSING(SSpain, src)
 		clear_effects()
+	else
+		return
+
+	parent.update_pain_hud()
 
 /**
  * Rebuilds the permanent floor from every wound and damaged organ the mob is carrying.
@@ -124,6 +146,7 @@
 	if(QDELETED(parent))
 		return
 
+	floor_needs_recalculation = FALSE
 	floor_by_zone.Cut()
 
 	for(var/obj/item/bodypart/part as anything in parent.bodyparts)
@@ -135,7 +158,9 @@
 			continue
 		// A lightly bruised organ should not hurt as much as a failing one.
 		var/damage_ratio = min(inner_organ.damage / inner_organ.maxHealth, 1)
-		floor_by_zone[inner_organ.zone] += inner_organ.pain_factor * damage_ratio
+		// Eyes and tongues live in precise zones. They hurt the head they sit in, not a zone of
+		// their own, or the head's cap would not be the head's cap.
+		floor_by_zone[deprecise_zone(inner_organ.zone)] += inner_organ.pain_factor * damage_ratio
 
 	var/new_floor = 0
 	for(var/zone in floor_by_zone)
@@ -204,17 +229,17 @@
 		return
 
 	var/strongest = 0
-	// Nothing numbs like not being able to feel at all.
-	if(HAS_TRAIT(parent, TRAIT_ANALGESIA))
-		strongest = PAIN_DAMPEN_TOTAL
-	else
-		for(var/datum/reagent/held_reagent as anything in parent.reagents?.reagent_list)
-			strongest = max(strongest, held_reagent.pain_dampening)
+	for(var/datum/reagent/held_reagent as anything in parent.reagents?.reagent_list)
+		strongest = max(strongest, held_reagent.pain_dampening)
 
-		// Being extremely drunk numbs you too, with all the drawbacks of being extremely drunk.
-		var/datum/status_effect/inebriated/inebriation = parent.has_status_effect(/datum/status_effect/inebriated)
-		if(inebriation?.drunk_value >= PAIN_DAMPEN_DRUNK_REQUIREMENT)
-			strongest = max(strongest, PAIN_DAMPEN_ALCOHOL)
+	// Being extremely drunk numbs you too, with all the drawbacks of being extremely drunk.
+	var/datum/status_effect/inebriated/inebriation = parent.has_status_effect(/datum/status_effect/inebriated)
+	if(inebriation?.drunk_value >= PAIN_DAMPEN_DRUNK_REQUIREMENT)
+		strongest = max(strongest, PAIN_DAMPEN_ALCOHOL)
+
+	// Nothing numbs like not being able to feel at all.
+	if(has_total_analgesia())
+		strongest = PAIN_DAMPEN_TOTAL
 
 	// Adrenaline is not a painkiller, it just hides half of whatever is left on top of one.
 	if(parent.has_status_effect(/datum/status_effect/adrenaline))
@@ -226,6 +251,28 @@
 	dampening = strongest
 	update_pain()
 
+/**
+ * Whether something other than a painkiller has numbed this mob completely.
+ *
+ * Painkillers grant TRAIT_ANALGESIA as well, but they carry their own dampening value and are never
+ * total - morphine is forty points, not immunity. Anything else holding the trait (the numb quirk,
+ * stasis, a trauma, admin chems) means the mob genuinely cannot feel anything.
+ */
+/datum/pain/proc/has_total_analgesia()
+	if(!HAS_TRAIT(parent, TRAIT_ANALGESIA))
+		return FALSE
+
+	var/list/painkiller_sources = list()
+	for(var/datum/reagent/held_reagent as anything in parent.reagents?.reagent_list)
+		if(held_reagent.pain_dampening)
+			painkiller_sources += METABOLIZATION_TRAIT(held_reagent.type)
+
+	for(var/source in GET_TRAIT_SOURCES(parent, TRAIT_ANALGESIA))
+		if(!(source in painkiller_sources))
+			return TRUE
+
+	return FALSE
+
 /// Recomputes the totals and the bracket. Everything that changes pain ends up here.
 /datum/pain/proc/update_pain()
 	var/old_felt_pain = felt_pain
@@ -235,10 +282,11 @@
 	update_bracket()
 	update_shock()
 
-	// The health doll reads pain now, so it has to be refreshed when pain moves rather than only
-	// when health does.
+	// The health doll and the meter both read pain now, so they have to be refreshed when pain moves
+	// rather than only when health does.
 	if(felt_pain != old_felt_pain)
 		parent.update_health_hud()
+		parent.update_pain_hud()
 
 /// Moves the mob into whichever bracket its felt pain now falls in, and applies that bracket's permanent effects.
 /datum/pain/proc/update_bracket()

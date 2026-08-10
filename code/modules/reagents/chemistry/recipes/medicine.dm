@@ -444,3 +444,13 @@
 	results = list(/datum/reagent/medicine/naloxone = 4)
 	required_reagents = list(/datum/reagent/medicine/morphine = 1, /datum/reagent/hydrogen_peroxide = 1, /datum/reagent/bromine = 1, /datum/reagent/consumable/ethanol = 1)
 	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_HEALING | REACTION_TAG_OTHER
+
+/datum/chemical_reaction/medicine/paracetamol
+	results = list(/datum/reagent/medicine/paracetamol = 3)
+	required_reagents = list(/datum/reagent/acetone = 1, /datum/reagent/ammonia = 1, /datum/reagent/carbon = 1)
+	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_HEALING | REACTION_TAG_OTHER
+
+/datum/chemical_reaction/medicine/ibuprofen
+	results = list(/datum/reagent/medicine/ibuprofen = 3)
+	required_reagents = list(/datum/reagent/acetone = 1, /datum/reagent/consumable/ethanol = 1, /datum/reagent/oxygen = 1)
+	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_HEALING | REACTION_TAG_OTHER

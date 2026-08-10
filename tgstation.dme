@@ -2154,6 +2154,7 @@
 #include "code\datums\pain\pain.dm"
 #include "code\datums\pain\pain_bracket.dm"
 #include "code\datums\pain\pain_effects.dm"
+#include "code\datums\pain\pain_stamina.dm"
 #include "code\datums\personality\_personality.dm"
 #include "code\datums\personality\_personality_groups.dm"
 #include "code\datums\personality\personality_preference.dm"

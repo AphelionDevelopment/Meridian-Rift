@@ -3110,6 +3110,7 @@
 	randomized_spawns = REAGENT_SPAWN_ALL_RANDOM_SPAWNS
 	self_consuming = TRUE
 	metabolized_traits = list(TRAIT_ANALGESIA)
+	pain_dampening = PAIN_DAMPEN_MODERATE
 	/// Whether we've had at least WOUND_DETERMINATION_SEVERE (2.5u) of determination at any given time. No damage slowdown immunity or indication we're having a second wind if it's just a single moderate wound
 	var/significant = FALSE
 

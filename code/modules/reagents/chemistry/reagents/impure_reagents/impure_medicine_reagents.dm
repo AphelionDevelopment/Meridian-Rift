@@ -938,6 +938,7 @@ Basically, we fill the time between now and 2s from now with hands based off the
 	ph = 2.5
 	addiction_types = list(/datum/addiction/opioids = 10)
 	metabolized_traits = list(TRAIT_ANALGESIA)
+	pain_dampening = PAIN_DAMPEN_STRONG
 	tox_damage = 0
 
 /datum/reagent/inverse/krokodil/expose_mob(mob/living/exposed_mob, methods=TOUCH, reac_volume)

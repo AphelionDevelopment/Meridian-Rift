@@ -1283,11 +1283,11 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 	if(HAS_TRAIT(src, TRAIT_GRABRESISTANCE)) //If we have grab resistance from some source, treat the grab state as one lower.
 		effective_grab_state--
 	// NOVA EDIT ADDITION START
-	if(staminaloss > STAMINA_THRESHOLD_HARD_RESIST)
+	if(get_stamina_loss() > STAMINA_THRESHOLD_HARD_RESIST)
 		effective_grab_state++
 
 	var/mob/living/living_mob = pulledby
-	if(istype(living_mob) && living_mob.staminaloss > STAMINA_THRESHOLD_HARD_RESIST)
+	if(istype(living_mob) && living_mob.get_stamina_loss() > STAMINA_THRESHOLD_HARD_RESIST)
 		effective_grab_state--
 	// NOVA EDIT ADDITION END
 

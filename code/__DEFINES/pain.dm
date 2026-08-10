@@ -25,6 +25,10 @@
 /// Ceiling on total and felt pain. Both mob-facing values run 0 to this.
 #define PAIN_MAXIMUM 100
 
+/// Portion of an attack's damage that lands as temporary pain, on top of whatever it wounds.
+/// Brute and burn only - suffocating and poisoning are the organs' business.
+#define PAIN_IMPACT_RATIO 0.5
+
 /// Temporary pain shed per second no matter how much is left.
 #define PAIN_TEMPORARY_DECAY_FLAT 2
 /// Portion of the remaining temporary pain shed per second. Drains fast while high, lingers once low.
@@ -63,6 +67,16 @@
 #define PAIN_DAMPEN_FENTANYL 70
 /// Anaesthetic gas. You feel nothing at all, then you are asleep.
 #define PAIN_DAMPEN_TOTAL 100
+
+// Grades for the analgesic chems the design does not name individually. Anything that numbs without
+// a value here is read as total numbness, so a painkiller missing one is a painkiller that makes you
+// invincible.
+/// A mild additive, or a painkiller that is mostly something else.
+#define PAIN_DAMPEN_WEAK 10
+/// A field painkiller: takes the edge off a bad injury without hiding it.
+#define PAIN_DAMPEN_MODERATE 25
+/// Opioid grade. Enough to keep someone upright who should not be.
+#define PAIN_DAMPEN_STRONG 40
 
 /// Lowest felt pain for each bracket. Effects for each live on the matching /datum/pain_bracket.
 #define PAIN_BRACKET_MINOR_THRESHOLD 0

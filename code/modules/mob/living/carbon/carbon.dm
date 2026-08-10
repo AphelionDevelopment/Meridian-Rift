@@ -10,6 +10,9 @@
 	ADD_TRAIT(src, TRAIT_CAN_HOLD_ITEMS, INNATE_TRAIT) // Carbons are assumed to be innately capable of having arms, we check their arms count instead
 	ADD_TRAIT(src, TRAIT_CAN_THROW_ITEMS, INNATE_TRAIT) // same here
 	breathing_loop = new(src, _direct = TRUE)
+	// Anything with bodyparts, organs and wounds can be hurt, and anything that can be hurt can be
+	// put down by it - monkeys and xenos included, or they would simply be immune to stuns.
+	pain_controller = new /datum/pain(src)
 
 /mob/living/carbon/Destroy()
 	//This must be done first, so the mob ghosts correctly before DNA etc is nulled
@@ -28,6 +31,8 @@
 	remove_from_all_data_huds()
 	QDEL_NULL(dna)
 	QDEL_NULL(breathing_loop)
+	// SSpain holds a reference to the controller, so it has to be told to let go explicitly.
+	QDEL_NULL(pain_controller)
 	GLOB.carbon_list -= src
 
 /mob/living/carbon/throw_impact(atom/hit_atom, datum/thrownthing/throwingdatum)

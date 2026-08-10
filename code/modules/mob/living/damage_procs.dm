@@ -95,6 +95,12 @@
 		if(BRAIN)
 			damage_dealt = -1 * adjust_organ_loss(ORGAN_SLOT_BRAIN, damage_amount)
 
+	// Being hit hurts whether or not it wounds. This reads the damage the attack carried rather than
+	// what got through, because armour stops damage, not impact - a barely stopped round still spikes
+	// you. Plate headroom replaces the raw figure in Phase 6.
+	if(damagetype == BRUTE || damagetype == BURN)
+		add_temporary_pain(damage * PAIN_IMPACT_RATIO)
+
 	SEND_SIGNAL(src, COMSIG_MOB_AFTER_APPLY_DAMAGE, damage_dealt, damagetype, def_zone, blocked, wound_bonus, exposed_wound_bonus, sharpness, attack_direction, attacking_item, wound_clothing)
 	return damage_dealt
 

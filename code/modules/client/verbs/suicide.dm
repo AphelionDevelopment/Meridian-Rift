@@ -127,7 +127,7 @@ GAME_VERB_HIDDEN(/mob/living, suicide, "suicide")
 
 	if(damage_type & SHAME)
 		adjust_stamina_loss(max_stamina)
-		if (!has_status_effect(/datum/status_effect/incapacitating/stamcrit))
+		if (!has_status_effect(/datum/status_effect/incapacitating/stamcrit) && !has_status_effect(/datum/status_effect/incapacitating/pain_shock))
 			Paralyze(10 SECONDS, ignore_canstun = TRUE) // No will to go on, for 10 seconds
 		set_suicide(FALSE)
 		add_mood_event("shameful_suicide", /datum/mood_event/shameful_suicide)
