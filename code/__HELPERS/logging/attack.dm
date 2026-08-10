@@ -69,6 +69,42 @@
 
 	victim.log_message(message, LOG_ATTACK, color="blue")
 
+/**
+ * log_overflow() is for damage that ran out of bodypart to go into and landed on what the part was
+ * protecting instead. It is one of exactly two ways combat is allowed to kill, so it gets a category
+ * of its own alongside the attack log it also writes to.
+ *
+ * Arguments:
+ * * victim - Whoever it happened to
+ * * weapon - What did it, if the damage carried a source
+ * * zone - Plaintext name of the bodypart that had nothing left to give
+ * * target_description - What the damage landed on instead: an organ, or dismemberment
+ * * amount - How much landed there
+ */
+/proc/log_overflow(atom/victim, atom/weapon, zone, target_description, amount)
+	if(QDELETED(victim))
+		return
+
+	var/message = "OVERFLOW: [zone] -> [target_description] ([round(amount, 0.1)])[weapon ? " from [weapon]" : ""]"
+	logger.Log(LOG_CATEGORY_EXECUTION, "[key_name(victim)]: [message]")
+	victim.log_message(message, LOG_ATTACK, color = "red")
+
+/**
+ * log_finisher() is for an execution: a deliberate killing blow on someone who had already stopped
+ * being able to stop it. The other of the two ways combat kills, and the one worth reading first.
+ *
+ * Arguments:
+ * * victim - Whoever was finished off
+ * * user - Whoever did it
+ * * weapon - What they did it with
+ */
+/proc/log_finisher(atom/victim, atom/user, atom/weapon)
+	if(QDELETED(victim))
+		return
+
+	logger.Log(LOG_CATEGORY_EXECUTION, "[key_name(user)] -> [key_name(victim)]: FINISHER[weapon ? " with [weapon]" : ""]")
+	log_combat(user, victim, "executed", weapon)
+
 /// Logging for bombs detonating
 /proc/log_bomber(atom/user, details, atom/bomb, additional_details, message_admins = TRUE)
 	var/bomb_message = "[details][bomb ? " [bomb.name] at [AREACOORD(bomb)]": ""][additional_details ? " [additional_details]" : ""]."

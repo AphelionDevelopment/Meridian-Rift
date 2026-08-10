@@ -793,6 +793,12 @@
 		// Break the armour first - see [/obj/item/bodypart/proc/check_wounding], which gates the other
 		// dismemberment path the same way.
 		var/can_take_the_limb = (wound_blocked < WOUND_NONPENETRATING_BLOCK)
+		// A part whose injuries were already maxed has nothing left to absorb this with, so it goes to
+		// whatever the part was protecting. Asked before this hit's own injuries land, which is what
+		// keeps the blow that ruins a part from also being the blow that kills through it.
+		if(can_take_the_limb && wound_bonus != CANT_WOUND && is_injury_capacity_maxed() \
+			&& apply_overflow(wounding_dmg, wounding_type, attack_direction, damage_source))
+			return
 		if (can_take_the_limb && ((exterior_ready_to_dismember && interior_ready_to_dismember) || dismemberable_by_total_damage()) && try_dismember(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus))
 			return
 		// now we have our wounding_type and are ready to carry on with wounds and dealing the actual damage

@@ -50,6 +50,21 @@
 	return is_bled_out()
 
 /**
+ * The most brain damage ordinary violence is allowed to leave.
+ *
+ * Beating someone's head in makes them stupid, not dead. Crossing the line is what overflow and
+ * finishers are for, and suffocation gets there on its own. Read off the brain rather than assumed,
+ * because not every brain gives out at the standard threshold - a surplus one goes at half of it, and
+ * a flat cap would leave that brain uncapped and its owner unkillable at the same time.
+ */
+/mob/living/proc/get_brain_damage_combat_cap()
+	return BRAIN_DAMAGE_COMBAT_MAXIMUM
+
+/mob/living/carbon/get_brain_damage_combat_cap()
+	var/obj/item/organ/our_brain = get_organ_slot(ORGAN_SLOT_BRAIN)
+	return isnull(our_brain) ? BRAIN_DAMAGE_COMBAT_MAXIMUM : (our_brain.maxHealth - 1)
+
+/**
  * Turns suffocation and poisoning into the organ damage that actually kills.
  *
  * This is the bridge that keeps space, drowning, strangling, a stopped heart and every poison in the

@@ -421,6 +421,13 @@
 	if(check_botched(user, target))
 		return NONE
 
+	// A loaded gun held against a helpless target's head is an execution rather than a shot. See
+	// [/mob/living/carbon/human/proc/try_finisher] for the rest of the conditions.
+	if(flag)
+		var/mob/living/carbon/human/finishable = target
+		if(istype(finishable) && finishable.try_finisher(user, src))
+			return ITEM_INTERACT_BLOCKING
+
 	var/obj/item/bodypart/other_hand = user.has_hand_for_held_index(user.get_inactive_hand_index()) //returns non-disabled inactive hands
 	if(weapon_weight == WEAPON_HEAVY && (user.get_inactive_held_item() || !other_hand))
 		balloon_alert(user, "use both hands!")

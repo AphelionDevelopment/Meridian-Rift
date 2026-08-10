@@ -342,7 +342,9 @@
 
 	if(HAS_TRAIT(src, TRAIT_BRAIN_DAMAGE_NODEATH))
 		return
-	if(damage >= BRAIN_DAMAGE_DEATH) //rip
+	// Its own ceiling rather than the standard one: a brain that gives out at half the usual threshold
+	// can never reach a flat 200, and a brain that cannot die is a head nothing can kill through.
+	if(damage >= maxHealth) //rip
 		to_chat(owner, span_userdanger("The last spark of life in your brain fizzles out..."))
 		owner.investigate_log("has been killed by brain damage.", INVESTIGATE_DEATHS)
 		owner.death()

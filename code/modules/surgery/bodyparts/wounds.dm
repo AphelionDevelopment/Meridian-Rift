@@ -92,12 +92,8 @@
 	// limbs off - you have to get through the armour first.
 	var/non_penetrating = (blocked >= WOUND_NONPENETRATING_BLOCK)
 
-	// A limb comes off when it is already ruined and has taken a beating on top of that. No roll, but
-	// no shortcuts either: the part has to be mangled first, which is a critical injury's job.
-	if(!non_penetrating && injury_roll > WOUND_DISMEMBER_OUTRIGHT_THRESH && get_damage() >= max_damage && mangled_state && can_dismember())
-		var/datum/wound/loss/dismembering = new
-		dismembering.apply_dismember(src, woundtype, outright = TRUE, attack_direction = attack_direction)
-		return
+	// Losing a limb outright is not decided here. It is a limb's overflow - the thing that happens to a
+	// part with no worse injury left to take - and lives in [/obj/item/bodypart/proc/apply_overflow].
 
 	var/list/datum/wound/possible_wounds = list()
 	for (var/datum/wound/wound_type as anything in GLOB.all_wound_pregen_data)

@@ -95,6 +95,8 @@
 #define LOG_CATEGORY_CONFIG "config"
 #define LOG_CATEGORY_DYNAMIC "dynamic"
 #define LOG_CATEGORY_ECONOMY "economy"
+/// Overflow and finishers - every time combat actually killed someone, in one place
+#define LOG_CATEGORY_EXECUTION "execution"
 #define LOG_CATEGORY_FISHING "fishing"
 #define LOG_CATEGORY_FILTER "filter"
 #define LOG_CATEGORY_MANIFEST "manifest"

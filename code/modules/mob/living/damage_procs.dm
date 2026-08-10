@@ -97,7 +97,7 @@
 		if(BRAIN)
 			// Violence stops just short of brain death. Crossing that line is what finishers and
 			// overflow are for, and suffocation gets there on its own.
-			damage_dealt = -1 * adjust_organ_loss(ORGAN_SLOT_BRAIN, damage_amount, BRAIN_DAMAGE_COMBAT_MAXIMUM)
+			damage_dealt = -1 * adjust_organ_loss(ORGAN_SLOT_BRAIN, damage_amount, get_brain_damage_combat_cap())
 
 	// Being hit hurts whether or not it wounds. This reads what armour, species and physiology let
 	// through rather than what the attack set out to deal, so plate is worth wearing for the thing

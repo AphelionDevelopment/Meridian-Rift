@@ -25,6 +25,11 @@
 	category = LOG_CATEGORY_ECONOMY
 	config_flag = /datum/config_entry/flag/log_econ
 
+/// Overflow and finishers both write here as well as to the attack log, so that "who was executed
+/// this round" is one search rather than a trawl through every hit anybody landed.
+/datum/log_category/execution
+	category = LOG_CATEGORY_EXECUTION
+
 /datum/log_category/manifest
 	category = LOG_CATEGORY_MANIFEST
 	config_flag = /datum/config_entry/flag/log_manifest
