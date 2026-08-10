@@ -598,6 +598,8 @@
 						fail_reason = "Patient's heart is missing."
 					if (DEFIB_FAIL_FAILING_HEART)
 						fail_reason = "Patient's heart too damaged, replace or repair and try again."
+					if (DEFIB_FAIL_NO_BLOOD)
+						fail_reason = "Patient's blood volume too low to circulate, transfuse and try again."
 					if (DEFIB_FAIL_TISSUE_DAMAGE)
 						fail_reason = "Tissue damage too severe, repair and try again."
 					if (DEFIB_FAIL_HUSK)

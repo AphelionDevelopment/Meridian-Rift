@@ -93,7 +93,9 @@
 		if(STAMINA)
 			damage_dealt = -1 * adjust_stamina_loss(damage_amount, forced = forced)
 		if(BRAIN)
-			damage_dealt = -1 * adjust_organ_loss(ORGAN_SLOT_BRAIN, damage_amount)
+			// Violence stops just short of brain death. Crossing that line is what finishers and
+			// overflow are for, and suffocation gets there on its own.
+			damage_dealt = -1 * adjust_organ_loss(ORGAN_SLOT_BRAIN, damage_amount, BRAIN_DAMAGE_COMBAT_MAXIMUM)
 
 	// Being hit hurts whether or not it wounds. This reads the damage the attack carried rather than
 	// what got through, because armour stops damage, not impact - a barely stopped round still spikes

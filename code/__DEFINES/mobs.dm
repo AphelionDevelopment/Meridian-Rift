@@ -12,6 +12,21 @@
 
 /// Amount of oxyloss that KOs a human
 #define OXYLOSS_PASSOUT_THRESHOLD 50
+
+// Suffocation and poison kill through the organs they ruin rather than through a damage total, so
+// each has a point past which it starts costing you something you cannot simply walk off.
+/// Oxyloss past this starves the brain, and a starved brain is how suffocation, drowning and cardiac arrest kill.
+#define OXYLOSS_BRAIN_DAMAGE_THRESHOLD 60
+/// Brain damage per second while suffocating past that threshold. Roughly two minutes from held breath to brain death.
+#define OXYLOSS_BRAIN_DAMAGE_RATE 1.5
+/// Toxloss past this starts destroying the liver that is trying to clear it.
+#define TOXLOSS_LIVER_DAMAGE_THRESHOLD 40
+/// Liver damage per second while poisoned past that threshold.
+#define TOXLOSS_LIVER_DAMAGE_RATE 0.5
+/// Toxloss past this is no longer something the liver can be blamed for, and starts killing the brain.
+#define TOXLOSS_BRAIN_DAMAGE_THRESHOLD 100
+/// Brain damage per second while poisoned that badly.
+#define TOXLOSS_BRAIN_DAMAGE_RATE 1
 //Blood levels
 #define BLOOD_VOLUME_MAXIMUM 1000 // NOVA EDIT CHANGE - Blood volume balancing (mainly for Hemophages as nobody else really goes much above regular blood volume) - ORIGINAL: #define BLOOD_VOLUME_MAXIMUM 1000
 #define BLOOD_VOLUME_MAX_LETHAL (BLOOD_VOLUME_MAXIMUM * 1.075) // 2150 units if BLOOD_VOLUME_MAXIMUM is 2000
@@ -331,6 +346,9 @@
 #define BRAIN_DAMAGE_ASYNC_BLINKING 60
 #define BRAIN_DAMAGE_SEVERE 100
 #define BRAIN_DAMAGE_DEATH 200
+/// The most brain damage a hit is allowed to leave. Beating someone's head in makes them stupid, not dead;
+/// crossing the line is what finishers and overflow are for.
+#define BRAIN_DAMAGE_COMBAT_MAXIMUM (BRAIN_DAMAGE_DEATH - 1)
 
 #define BRAIN_TRAUMA_MILD /datum/brain_trauma/mild
 #define BRAIN_TRAUMA_SEVERE /datum/brain_trauma/severe
@@ -665,9 +683,14 @@
 //NOVA EDIT ADDITION START
 #define DEFIB_FAIL_DNR (1<<12)
 //NOVA EDIT ADDITION END
+/// A heart with nothing to pump is a heart that will not restart. Transfuse first.
+#define DEFIB_FAIL_NO_BLOOD (1<<13)
+
+/// How much blood a patient needs in them before a defibrillator has anything to work with.
+#define DEFIB_MINIMUM_BLOOD BLOOD_VOLUME_OKAY
 
 // Bit mask of possible return values by can_defib that would result in a revivable patient
-#define DEFIB_REVIVABLE_STATES (DEFIB_FAIL_NO_HEART | DEFIB_FAIL_FAILING_HEART | DEFIB_FAIL_HUSK | DEFIB_FAIL_TISSUE_DAMAGE | DEFIB_FAIL_FAILING_BRAIN | DEFIB_FAIL_GOLEM | DEFIB_POSSIBLE)
+#define DEFIB_REVIVABLE_STATES (DEFIB_FAIL_NO_HEART | DEFIB_FAIL_FAILING_HEART | DEFIB_FAIL_HUSK | DEFIB_FAIL_TISSUE_DAMAGE | DEFIB_FAIL_FAILING_BRAIN | DEFIB_FAIL_GOLEM | DEFIB_FAIL_NO_BLOOD | DEFIB_POSSIBLE)
 
 #define SLEEP_CHECK_DEATH(X, A) \
 	sleep(X); \
@@ -701,7 +724,7 @@
 #define SILENCE_RANGED_MESSAGE (1<<0)
 
 /// Returns whether or not the given mob can succumb
-#define CAN_SUCCUMB(target) ((target.stat == SOFT_CRIT || target.stat == HARD_CRIT) && !HAS_TRAIT(target, TRAIT_NODEATH))
+#define CAN_SUCCUMB(target) ((target.stat == SOFT_CRIT || target.stat == HARD_CRIT) && !HAS_TRAIT(target, TRAIT_NODEATH) && target.is_dying())
 
 // Body position defines.
 /// Mob is standing up, usually associated with lying_angle value of 0.

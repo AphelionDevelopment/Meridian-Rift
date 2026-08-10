@@ -700,20 +700,35 @@
 	if(HAS_TRAIT(src, TRAIT_GODMODE))
 		return
 	if(stat != DEAD)
-		if(health <= HEALTH_THRESHOLD_DEAD && !HAS_TRAIT(src, TRAIT_NODEATH))
-			death()
+		if(update_stat_from_condition())
 			return
-		if(health <= hardcrit_threshold && !HAS_TRAIT(src, TRAIT_NOHARDCRIT))
-			set_stat(HARD_CRIT)
-		else if(health <= crit_threshold && !HAS_TRAIT(src, TRAIT_NOSOFTCRIT))
-			set_stat(SOFT_CRIT)
-		else
-			set_stat(STABLE)
 	update_damage_hud()
 	update_health_hud()
 	update_stamina_hud()
 	med_hud_set_status()
 
+/**
+ * Moves this mob up or down the consciousness ladder to match what is currently wrong with it.
+ *
+ * Split out of update_stat() because what counts as "wrong" differs by mob: a health bar for
+ * anything that runs on one, and the state of the organs keeping you alive for anything that does
+ * not. See the combat overhaul plan, phase 0.
+ *
+ * Returns TRUE if the mob died, in which case the caller should stop - a corpse has no HUD to update.
+ */
+/mob/living/carbon/proc/update_stat_from_condition()
+	if(health <= HEALTH_THRESHOLD_DEAD && !HAS_TRAIT(src, TRAIT_NODEATH))
+		death()
+		return TRUE
+
+	if(health <= hardcrit_threshold && !HAS_TRAIT(src, TRAIT_NOHARDCRIT))
+		set_stat(HARD_CRIT)
+	else if(health <= crit_threshold && !HAS_TRAIT(src, TRAIT_NOSOFTCRIT))
+		set_stat(SOFT_CRIT)
+	else
+		set_stat(STABLE)
+
+	return FALSE
 
 //called when we get cuffed/uncuffed
 /mob/living/carbon/proc/update_handcuffed()
@@ -838,6 +853,10 @@
 	var/brain_status = SEND_SIGNAL(src, COMSIG_CARBON_DEFIB_BRAIN_CHECK) || can_defib_brain(get_organ_by_type(/obj/item/organ/brain))
 	if (brain_status)
 		return brain_status
+
+	// A restarted heart still needs something to pump. Whoever bled out gets a transfusion first.
+	if (CAN_HAVE_BLOOD(src) && get_blood_volume() < DEFIB_MINIMUM_BLOOD)
+		return DEFIB_FAIL_NO_BLOOD
 
 	return DEFIB_POSSIBLE
 

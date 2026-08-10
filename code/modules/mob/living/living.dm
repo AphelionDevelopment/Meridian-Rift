@@ -1092,6 +1092,17 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 
 	revive(NONE, excess_healing=max(healing_amount, 0), force_grab_ghost=FALSE) // and any excess healing is passed along
 
+/**
+ * Whether this mob is actually on its way out, as opposed to merely on the floor.
+ *
+ * Only used to decide whether giving up is on the table. Anything that runs on a health bar is dying
+ * whenever it is in crit, which is what this returns; mobs whose death comes from their organs answer
+ * for themselves, because pain puts people down without killing them and you cannot give up on a
+ * fight you are not actually losing.
+ */
+/mob/living/proc/is_dying()
+	return TRUE
+
 /// Checks if we are actually able to ressuscitate this mob.
 /// (We don't want to revive then to have them instantly die again)
 /mob/living/proc/can_be_revived()

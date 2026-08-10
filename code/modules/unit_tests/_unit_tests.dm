@@ -158,6 +158,7 @@
 #include "combat_stamina.dm"
 #include "combat_welder.dm"
 #include "component_tests.dm"
+#include "death_contract.dm"
 #include "confusion.dm"
 #include "connect_loc.dm"
 #include "container_sanity.dm"

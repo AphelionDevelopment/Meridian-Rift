@@ -376,15 +376,18 @@
 	var/in_shock = parent.has_status_effect(/datum/status_effect/incapacitating/pain_shock) || parent.has_status_effect(/datum/status_effect/pain_crawl)
 
 	if(felt_pain < PAIN_SHOCK_THRESHOLD)
-		// Down at the cap, up at the recovery threshold. A mob part way between stays down.
-		if(in_shock && felt_pain < PAIN_SHOCK_RECOVERY_THRESHOLD)
-			parent.remove_status_effect(/datum/status_effect/incapacitating/pain_shock)
-			parent.remove_status_effect(/datum/status_effect/pain_crawl)
-		// A floor of 70-99 can never drop under the recovery threshold on its own, so the mob rises
-		// the moment the temporary pool is gone - straight into the worst bracket, standing barely.
-		else if(in_shock && !temporary_pain)
-			parent.remove_status_effect(/datum/status_effect/incapacitating/pain_shock)
-			parent.remove_status_effect(/datum/status_effect/pain_crawl)
+		if(!in_shock)
+			return
+		// Down at the cap, up at the recovery threshold. A mob part way between stays down - unless the
+		// pool has drained entirely, which is how a floor of 70-99 gets back up: straight into the
+		// worst bracket, standing barely.
+		if(felt_pain >= PAIN_SHOCK_RECOVERY_THRESHOLD && temporary_pain)
+			return
+
+		parent.remove_status_effect(/datum/status_effect/incapacitating/pain_shock)
+		parent.remove_status_effect(/datum/status_effect/pain_crawl)
+		// Shock is a rung on the crit ladder now, so leaving it is a change of consciousness.
+		parent.update_stat()
 		return
 
 	if(in_shock)
@@ -395,6 +398,7 @@
 		parent.apply_status_effect(/datum/status_effect/pain_crawl)
 	else
 		parent.apply_status_effect(/datum/status_effect/incapacitating/pain_shock)
+	parent.update_stat()
 
 /// Fight or flight, once per mob. Massive trauma only.
 /datum/pain/proc/try_trigger_adrenaline()

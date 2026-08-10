@@ -662,6 +662,8 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/machinery/vitals_reader/advanced, 32)
 			defib_state.set_output("Damaged")
 		if(DEFIB_FAIL_FAILING_HEART, DEFIB_FAIL_NO_HEART)
 			defib_state.set_output("Heart Failure")
+		if(DEFIB_FAIL_NO_BLOOD)
+			defib_state.set_output("Exsanguinated")
 		if(DEFIB_FAIL_FAILING_BRAIN, DEFIB_FAIL_NO_BRAIN)
 			defib_state.set_output("Brain Failure")
 
