@@ -132,7 +132,6 @@
 		cell.parent_gun = null
 		QDEL_NULL(cell)
 	QDEL_LIST(attachments)
-		attachments = null
 	if(phase_emitter)
 		QDEL_NULL(phase_emitter)
 	STOP_PROCESSING(SSobj, src)
