@@ -54,7 +54,11 @@ These are basically advanced cells.
 	var/microfusion_readout = FALSE
 
 /obj/item/stock_parts/power_store/cell/microfusion/Destroy()
-	if(attachments.len)
+	if(isnull(loc))
+		attachments = null
+		parent_gun = null
+		return ..()
+	if(length(attachments))
 		for(var/obj/item/iterating_item as anything in attachments)
 			iterating_item.forceMove(get_turf(src))
 		attachments = null
