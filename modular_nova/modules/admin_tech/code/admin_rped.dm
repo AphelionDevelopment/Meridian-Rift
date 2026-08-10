@@ -172,12 +172,10 @@
 
 	atom_storage.attempt_insert(new stack_type(src, amount_required - found), user, TRUE)
 
-
 /// Spawn one item per unit still missing after counting what we already hold.
 /obj/item/storage/part_replacer/bluespace/admin/proc/restock_items(mob/living/user, item_type, amount_required)
 	var/found = count_stored(typesof(item_type), amount_required)
 	spawn_shortfall(user, item_type, amount_required - found)
-
 
 /// Stock parts are datums mapped onto physical objects, sometimes at a specific tier.
 /obj/item/storage/part_replacer/bluespace/admin/proc/restock_stock_part(mob/living/user, datum/stock_part/part_type, amount_required)
@@ -205,7 +203,6 @@
 
 	spawn_shortfall(user, spawn_type, amount_required - found)
 
-
 /// Count stored items whose type is in valid_types, stopping once we've seen enough.
 /obj/item/storage/part_replacer/bluespace/admin/proc/count_stored(list/valid_types, threshold)
 	var/found = 0
@@ -216,7 +213,6 @@
 		if(found >= threshold)
 			break
 	return found
-
 
 /// Insert `amount` freshly-spawned copies of atom_type. A non-positive amount inserts nothing.
 /obj/item/storage/part_replacer/bluespace/admin/proc/spawn_shortfall(mob/living/user, atom_type, amount)
