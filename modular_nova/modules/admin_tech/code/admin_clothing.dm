@@ -188,8 +188,10 @@
 	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "contacts"
 	inhand_icon_state = "trayson-"
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
-	worn_icon_state = "contacts"
+	// The parent type's update_icon_state() (code/modules/clothing/glasses/engine_goggles.dm) overwrites icon_state,
+	// inhand_icon_state and worn_icon_state to "trayson-[mode]" on every appearance update, so worn_icon has to be a
+	// file that actually has those states - admin_items.dmi already does, being shared with the ground/inhand icon.
+	worn_icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
 	base_icon_state = "trayson-"
 	flags_cover = GLASSESCOVERSEYES// dont ask me why were doing this we just are
 	flash_protect = FLASH_PROTECTION_WELDER//No need for the welding gas mask from before
