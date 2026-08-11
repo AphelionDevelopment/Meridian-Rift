@@ -20,7 +20,7 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	var/threshold = PAIN_BRACKET_MINOR_THRESHOLD
 	/// Colour the pain meter takes while here.
 	var/meter_colour = COLOR_WHITE
-	/// What being in this much pain does to a mob's mood. Null for brackets that are not worth complaining about.
+	/// Moodlet applied while here. Null for brackets with no moodlet.
 	var/datum/mood_event/mood_event
 	/// Multiplier on how long tasks take. 1 is unimpaired.
 	var/interaction_penalty = 1
@@ -34,11 +34,10 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	var/vocalise_chance = 0
 	/// Whether speech is impaired while here.
 	var/stutters = FALSE
-	/// Whether the pain meter pulses while here. The last rung of the design's colour ladder, which
-	/// ends on "flashing" because there is nothing past red to shift to.
+	/// Whether the pain meter pulses while here, as the last rung past red.
 	var/meter_flashes = FALSE
 
-/// No effect, just a reading. A minor bruise lives here.
+/// A reading only, with no effect.
 /datum/pain_bracket/minor
 	name = "minor pain"
 	threshold = PAIN_BRACKET_MINOR_THRESHOLD
@@ -52,7 +51,7 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	interaction_penalty = 1.1
 	vocalise_chance = 5
 
-/// Where pain becomes a problem: fumbling, shaking, the first stutter.
+/// Fumbled items and the first visible shaking.
 /datum/pain_bracket/moderate
 	name = "moderate pain"
 	threshold = PAIN_BRACKET_MODERATE_THRESHOLD
@@ -62,7 +61,7 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	drop_chance = 5
 	vocalise_chance = 10
 
-/// Begging for it to stop. Movement suffers and items start leaving your hands.
+/// Movement slows, speech breaks up and items start dropping.
 /datum/pain_bracket/severe
 	name = "severe pain"
 	threshold = PAIN_BRACKET_SEVERE_THRESHOLD
@@ -75,7 +74,7 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	vocalise_chance = 20
 	stutters = TRUE
 
-/// Barely standing. One more hit ends it.
+/// Barely standing, one spike short of shock.
 /datum/pain_bracket/agony
 	name = "agony"
 	threshold = PAIN_BRACKET_AGONY_THRESHOLD
@@ -89,17 +88,17 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	stutters = TRUE
 	meter_flashes = TRUE
 
-// One moodlet per bracket. All of them carry MOOD_EVENT_PAIN, so anything that stops a mob feeling
-// pain stops it souring their mood too - the same trait that blinds the meter and the doll.
+// One moodlet per bracket, all flagged MOOD_EVENT_PAIN so painkillers hide them alongside the meter
+// and the doll.
 /datum/mood_event/pain
 	event_flags = MOOD_EVENT_PAIN
 
 /datum/mood_event/pain/mild
-	description = "Something hurts, and it is not letting me forget it."
+	description = "Something hurts and I can't ignore it."
 	mood_change = -2
 
 /datum/mood_event/pain/moderate
-	description = "It hurts. I can think around it, but it takes work."
+	description = "It hurts. Thinking around it takes work."
 	mood_change = -5
 
 /datum/mood_event/pain/severe

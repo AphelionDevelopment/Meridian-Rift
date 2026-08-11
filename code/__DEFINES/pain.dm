@@ -11,8 +11,8 @@
 /// Pain contributed by an Extreme injury.
 #define PAIN_FACTOR_EXTREME 50
 
-/// Steps down the injury pain ladder, for injuries that have had something done about them.
-/// Field treatment does not fix an injury, but it takes the edge off - a splinted fracture is a tier quieter.
+/// Steps an injury's pain factor down one tier. Field treatment does not fix an injury, but a
+/// splinted fracture is a tier quieter than an untreated one.
 #define PAIN_FACTOR_TIER_BELOW(factor) ( \
 	(factor) > PAIN_FACTOR_SEVERE ? PAIN_FACTOR_SEVERE : \
 	(factor) > PAIN_FACTOR_MODERATE ? PAIN_FACTOR_MODERATE : \
@@ -26,36 +26,34 @@
 /// Most permanent pain a single limb is allowed to contribute to the floor.
 #define PAIN_CAP_LIMB 30
 
-/// Ceiling on the permanent floor once every capped bodypart is summed. No single part can reach it alone.
+/// Ceiling on the permanent floor once every capped bodypart is summed.
 #define PAIN_FLOOR_MAXIMUM 100
-/// Ceiling on the temporary pool. With the decay curve below, this is what bounds a stun to five seconds.
+/// Ceiling on the temporary pool. With the decay curve below, this bounds a stun to five seconds.
 #define PAIN_TEMPORARY_MAXIMUM 120
-/// Ceiling on total and felt pain. Both mob-facing values run 0 to this.
+/// Ceiling on felt pain.
 #define PAIN_MAXIMUM 100
 
-// Working through an injury feeds the meter, so pushing on has a price even when it works.
-/// Portion of an injury's pain factor spent as temporary pain each time it is used.
+/// Portion of an injury's pain factor spent as temporary pain each time the limb is used.
 #define PAIN_INJURY_USE_RATIO 0.5
-/// The same, for a use that goes badly enough to stop you mid-swing.
+/// The same, for a use that fails outright.
 #define PAIN_INJURY_USE_SPIKE_RATIO 1
 
 /// Portion of an attack's damage that lands as temporary pain, on top of whatever it wounds.
-/// Brute and burn only - suffocating and poisoning are the organs' business.
+/// Brute and burn only; oxygen and toxin damage go to the organs instead.
 #define PAIN_IMPACT_RATIO 0.5
 
 /// Temporary pain shed per second no matter how much is left.
 #define PAIN_TEMPORARY_DECAY_FLAT 2
-/// Portion of the remaining temporary pain shed per second. Drains fast while high, lingers once low.
+/// Portion of the remaining temporary pain shed per second.
 #define PAIN_TEMPORARY_DECAY_COEFFICIENT 0.1
 
-/// Felt pain at which the body checks out entirely.
+/// Felt pain at which a mob goes into shock.
 #define PAIN_SHOCK_THRESHOLD 100
 /// Felt pain a mob must fall back to before it leaves shock. Below the threshold so nobody yo-yos on the line.
 #define PAIN_SHOCK_RECOVERY_THRESHOLD 70
-/// Temporary pain on a mob already crawling that counts as a fresh hit, and puts them out again.
+/// Temporary pain on a crawling mob that counts as a fresh hit and blacks it out again.
 #define PAIN_SHOCK_BLACKOUT_MINIMUM 10
 
-// A failing heart cannot keep up with what is being done to the body it belongs to.
 /// How much more a hit hurts with a completely ruined heart. Scales with how ruined it is.
 #define PAIN_HEART_STRAIN_MULTIPLIER 0.5
 /// How much slower pain drains with a completely ruined heart. Scales the same way.
@@ -65,8 +63,7 @@
 #define PAIN_SURGERY_UNANAESTHETISED 20
 /// Temporary pain per unnumbed surgical step.
 #define PAIN_SURGERY_STEP_SPIKE 15
-/// Permanent pain of a limb that is no longer there. Extreme, per Appendix B - the limb's own cap of 30
-/// is what keeps losing one arm from being the whole of it, and losing all four from being survivable.
+/// Permanent pain of a missing limb. Extreme, but capped by the limb's own zone cap of 30.
 #define PAIN_MISSING_LIMB PAIN_FACTOR_EXTREME
 
 /// Key for the pain of being operated on while awake.
@@ -81,17 +78,16 @@
 #define PAIN_SOURCE_ZONE 1
 /// How much that source hurts.
 #define PAIN_SOURCE_AMOUNT 2
-/// When it stops hurting, or zero for sources that last until something removes them.
+/// When the source expires, or zero if it lasts until something removes it.
 #define PAIN_SOURCE_EXPIRY 3
 
-/// Mood category the current pain bracket's moodlet occupies. One at a time, like the brackets themselves.
+/// Mood category the current pain bracket's moodlet occupies.
 #define PAIN_MOOD_CATEGORY "pain"
 
 /// How often the current bracket rolls its intermittent effects.
 #define PAIN_EFFECT_ROLL_INTERVAL (4 SECONDS)
 
-// The top of the meter flashes rather than taking another colour, because there is no colour past red
-// and the design's ladder ends on "flashing". Done by pulsing the bar rather than with new art.
+// The top bracket pulses the meter's alpha, there being no colour past red.
 /// How faint the pain meter goes at the bottom of a flash.
 #define PAIN_METER_FLASH_ALPHA 90
 /// How long each half of a flash takes.
@@ -101,48 +97,47 @@
 #define PAIN_ADRENALINE_INJURY_TRIGGER PAIN_FACTOR_SEVERE
 /// Temporary pain from a single hit that is enough to trigger fight or flight.
 #define PAIN_ADRENALINE_SPIKE_TRIGGER 40
-/// How long fight or flight lasts. Long enough to shoot back or run, not to win a war.
+/// How long adrenaline lasts.
 #define PAIN_ADRENALINE_DURATION (30 SECONDS)
 /// Portion of total pain adrenaline hides while it lasts.
 #define PAIN_ADRENALINE_DAMPEN_RATIO 0.5
-/// How long the mob stumbles over its words once the adrenaline crashes.
+/// How long the mob stutters once the adrenaline crashes.
 #define PAIN_ADRENALINE_CRASH_STUTTER (10 SECONDS)
 
 /// Felt pain hidden by each painkiller. Only the strongest active one counts; they never stack.
 #define PAIN_DAMPEN_IBUPROFEN 10
 /// Weak, easy to overdose on.
 #define PAIN_DAMPEN_PARACETAMOL 15
-/// Being extremely drunk, with all the drawbacks of being extremely drunk.
+/// Heavy drunkenness.
 #define PAIN_DAMPEN_ALCOHOL 20
-/// How drunk "extremely drunk" actually is, before alcohol dulls anything.
+/// Drunkenness required before alcohol dampens anything.
 #define PAIN_DAMPEN_DRUNK_REQUIREMENT 60
-/// The workhorse. Fast, injectable, addictive.
+/// Injectable and addictive.
 #define PAIN_DAMPEN_MORPHINE 40
-/// Surgical grade. An overdose stops your breathing.
+/// Surgical grade. An overdose causes respiratory depression.
 #define PAIN_DAMPEN_FENTANYL 70
-/// Anaesthetic gas. You feel nothing at all, then you are asleep.
+/// Anaesthetic gas: complete numbness, then sleep.
 #define PAIN_DAMPEN_TOTAL 100
-/// How much of a surgical anaesthetic has to be in someone before it numbs them at all. Below this
-/// it does nothing for pain - an anaesthetic is a dose, not a sip, and total numbness is total.
+/// How much of a surgical anaesthetic is needed before it dampens anything. Below this it does
+/// nothing for pain at all, since total numbness is total.
 #define PAIN_DAMPEN_ANAESTHETIC_DOSE 15
 
-// Grades for the analgesic chems the design does not name individually. Anything that numbs without
-// a value here is read as total numbness, so a painkiller missing one is a painkiller that makes you
-// invincible.
+// Grades for analgesic chems the design does not name individually. Anything that numbs without a
+// value here reads as total numbness.
 /// A mild additive, or a painkiller that is mostly something else.
 #define PAIN_DAMPEN_WEAK 10
-/// A field painkiller: takes the edge off a bad injury without hiding it.
+/// A field painkiller.
 #define PAIN_DAMPEN_MODERATE 25
-/// Opioid grade. Enough to keep someone upright who should not be.
+/// Opioid grade.
 #define PAIN_DAMPEN_STRONG 40
 
 /// Lowest felt pain for each bracket. Effects for each live on the matching /datum/pain_bracket.
 #define PAIN_BRACKET_MINOR_THRESHOLD 0
 /// Task times start to stretch here.
 #define PAIN_BRACKET_MILD_THRESHOLD 10
-/// Where pain becomes a problem: fumbling, shaking, stuttering.
+/// Fumbling, shaking and stuttering start here.
 #define PAIN_BRACKET_MODERATE_THRESHOLD 30
 /// Screaming, frequent drops, falling over.
 #define PAIN_BRACKET_SEVERE_THRESHOLD 50
-/// Barely functional. One more hit ends it.
+/// Barely functional, one spike short of shock.
 #define PAIN_BRACKET_AGONY_THRESHOLD 70

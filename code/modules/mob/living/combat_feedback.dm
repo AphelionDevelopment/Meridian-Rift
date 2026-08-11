@@ -1,26 +1,25 @@
 /**
- * The feedback budget: one arbiter deciding what a fight is allowed to tell you.
+ * The feedback budget: one arbiter deciding what a fight is allowed to announce.
  *
- * Combat produces more announceable events than anybody can read - a burst of fire is five impacts,
- * three injuries, a plate cracking and an organ giving out inside half a second. Left alone each
- * phase adds its own message and the one that mattered scrolls away with the rest. So every combat
- * event asks here first, and within [COMBAT_FEEDBACK_WINDOW] only the biggest one speaks.
+ * Combat produces more announceable events than anybody can read, since a burst of fire is five
+ * impacts, three injuries, a plate cracking and an organ giving out inside half a second. Every
+ * combat event asks here first, and within [COMBAT_FEEDBACK_WINDOW] only the highest priority one
+ * is announced.
  *
- * The window is per mob, so a room full of people being shot still reads normally; it is one
- * person's feedback that is rationed, not the fight's.
+ * The window is per mob, so a room full of people being shot still reads normally.
  */
 
 /mob/living
-	/// Priority of whatever last won a feedback moment. Reset by the window expiring, not by time passing.
+	/// Priority of whatever last won a feedback moment. Only meaningful while the window is open.
 	var/last_feedback_priority = 0
-	/// How long the current winner holds the floor.
+	/// How long the current winner suppresses lesser events.
 	COOLDOWN_DECLARE(feedback_window)
 
 /**
  * Announces one combat event, if it is the biggest thing to have happened to this mob just now.
  *
- * Everything an event wants to do is passed in one call - message, sound and shake together - so
- * that losing the moment means the whole event goes quiet rather than half of it leaking through.
+ * Message, sound and shake are passed together, so losing the moment silences the whole event
+ * rather than half of it.
  *
  * Arguments:
  * * priority - One of the COMBAT_FEEDBACK_* defines, optionally plus a severity. Higher wins.
@@ -42,7 +41,7 @@
 	shake_strength = 0,
 	vision_distance = COMBAT_MESSAGE_RANGE,
 )
-	// A tie loses. Two hits of the same size in one moment are one moment's worth of noise.
+	// A tie loses, so two hits of the same size in one window announce once.
 	if(priority <= last_feedback_priority && !COOLDOWN_FINISHED(src, feedback_window))
 		return FALSE
 
@@ -65,13 +64,12 @@
 /**
  * Shakes the screen of whoever just took a hit, harder the further inside them it got.
  *
- * The design's "small shakes for NP hits, big for P hits". Routed through the arbiter so continuous
- * damage - burning, pressure, a shotgun's worth of pellets - shakes once rather than once per tick,
- * and so a hit that also broke something announces the break instead of juddering over it.
+ * Small shakes for stopped hits, larger ones the more damage got through. Routed through the
+ * arbiter so continuous damage shakes once rather than once per tick.
  *
  * Arguments:
- * * damage - How much got through. Ignored entirely for a hit a plate stopped.
- * * penetrated - Whether anything reached the body at all.
+ * * damage - How much got through. Ignored for a hit a plate stopped.
+ * * penetrated - Whether anything reached the body.
  */
 /mob/living/proc/shake_from_impact(damage, penetrated = TRUE)
 	if(!penetrated)

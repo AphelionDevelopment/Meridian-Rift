@@ -1,13 +1,12 @@
 /**
  * Finding the plate that stands between an attack and a bodypart.
  *
- * This is the mob-side half of phase 6. [/mob/living/proc/apply_damage] asks for a plate once per
- * attack that carries an armour flag, and if it gets one, that plate decides the hit instead of the
- * percentage model: everything up to its tolerance is stopped outright and the rest lands unarmoured.
+ * [/mob/living/proc/apply_damage] asks for a plate once per attack that carries an armour flag. If it
+ * gets one, that plate decides the hit instead of the percentage model: everything up to its
+ * tolerance is stopped outright and the rest lands unarmoured.
  *
- * Only carbons with clothing have plates. Simple mobs, basic mobs and anything hurt by fire, pressure,
- * explosions or poison never asks - those attacks carry no armour flag, which is exactly the design's
- * "environmental damage skips NP/P" without a second rule to maintain.
+ * Only carbons with clothing have plates. Fire, pressure, explosions and poison carry no armour flag
+ * and never ask, which is how environmental damage skips the plate model.
  */
 
 /**
@@ -37,9 +36,8 @@
 /**
  * The plate in one worn item, if it has one that covers this part and cares about this attack.
  *
- * A plate that is spent, or that is the wrong sort for the attack, is not a plate for this hit - the
- * carrier's own armour rating handles it the way it always did. That keeps a broken plate from being
- * better protection than a working one of the wrong type.
+ * A spent plate, or one of the wrong sort for the attack, is not a plate for this hit, and the
+ * carrier's own armour rating handles it as before.
  *
  * Arguments:
  * * carrier - The worn item that might hold a plate.

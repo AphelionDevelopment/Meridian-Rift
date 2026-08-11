@@ -21,7 +21,7 @@
 	var/felt_pain = 0
 	/// Felt pain the strongest active painkiller is hiding. Painkillers do not stack.
 	var/dampening = 0
-	/// Set when organ damage moves. Organs tick constantly, so their floor is rebuilt on the next process instead of per hit.
+	/// Set when organ damage changes. Organs tick constantly, so their floor is rebuilt on the next process rather than per hit.
 	var/floor_needs_recalculation = FALSE
 	/// Set when pain moved while the mob was in no state to take a health refresh. Retried next process.
 	var/health_update_deferred = FALSE
@@ -30,14 +30,13 @@
 	var/list/other_sources
 	/// How badly the heart is failing to keep up, 0 to 1. Hits hurt more and drain slower the higher it is.
 	var/heart_strain = 0
-	/// Whether a spike is currently holding the mob blacked out. Cached because the crit ladder reads
-	/// it on every updatehealth(), and scanning the status effect list that often is not free.
+	/// Whether a spike is currently holding the mob blacked out. Cached, as the crit ladder reads it on every updatehealth().
 	var/in_shock = FALSE
 	/// Whether the floor alone is currently pinning the mob down. Cached for the same reason.
 	var/crawling = FALSE
 	/// The bracket felt_pain currently falls into.
 	var/datum/pain_bracket/current_bracket
-	/// Whether this mob has already spent its one shot at fight or flight.
+	/// Whether this mob has already spent its adrenaline for this fight.
 	var/adrenaline_spent = FALSE
 	/// Movement penalty from the current bracket. Held so its slowdown can be retuned in place.
 	var/datum/movespeed_modifier/pain/movespeed_mod
@@ -76,7 +75,7 @@
 	current_bracket = null
 	return ..()
 
-/// Drops our reference to the mob when it is being deleted, so we never hold it past its life.
+/// Drops the reference to the parent mob when it is deleted.
 /datum/pain/proc/clear_parent_ref()
 	SIGNAL_HANDLER
 
@@ -104,34 +103,32 @@
 		recalculate_floor()
 
 	if(temporary_pain > 0)
-		// Fast while high and slower as it falls, so a maxed pool drains to the shock recovery
-		// threshold in under five seconds but the last of it lingers.
+		// Fast while high, slower as it falls, so a maxed pool drains to the shock recovery threshold
+		// in under five seconds.
 		var/decay = (PAIN_TEMPORARY_DECAY_FLAT + (temporary_pain * PAIN_TEMPORARY_DECAY_COEFFICIENT)) * seconds_per_tick
-		// A heart that cannot circulate cannot clear it either.
 		decay *= (1 - (heart_strain * PAIN_HEART_DECAY_BRAKE))
 		adjust_temporary_pain(-decay)
 
-	// Adrenaline is once per fight, and a mob with nothing left to feel is out of the fight.
+	// Adrenaline re-arms once the mob has no pain left at all.
 	if(adrenaline_spent && !total_pain && !parent.has_status_effect(/datum/status_effect/adrenaline))
 		adrenaline_spent = FALSE
 
-	// Pain that moved while the body was coming apart never got its refresh. Take it now.
+	// Deferred refresh from a pain change made while the chest was missing.
 	if(health_update_deferred && parent.get_bodypart(BODY_ZONE_CHEST))
 		health_update_deferred = FALSE
 		parent.updatehealth()
 
 	roll_bracket_effects()
 
-/// A new injury raises the floor, and waiting a tick to feel a broken arm is the delay this system exists to remove.
+/// Raises the floor as soon as an injury lands, rather than on the next process.
 /datum/pain/proc/on_wound_gained(datum/source, datum/wound/new_wound, obj/item/bodypart/limb)
 	SIGNAL_HANDLER
 
 	recalculate_floor()
-	// Massive trauma is what triggers fight or flight. Being rid of an injury is not trauma.
 	if(new_wound?.pain_factor >= PAIN_ADRENALINE_INJURY_TRIGGER)
 		try_trigger_adrenaline()
 
-/// Treating an injury has to take its pain with it. See New() for why this listens to the post signal.
+/// Drops an injury's pain when it is treated. See New() for why this listens to the post signal.
 /datum/pain/proc/on_wound_lost(datum/source, datum/wound/lost_wound, obj/item/bodypart/limb)
 	SIGNAL_HANDLER
 
@@ -141,28 +138,26 @@
 /datum/pain/proc/on_organs_changed(datum/source, obj/item/organ/changed_organ)
 	SIGNAL_HANDLER
 
-	// Deferred rather than immediate for two reasons. Every organ damages and heals itself on its own
-	// tick, so this fires constantly and organ pain climbs slowly enough that once per second is soon
-	// enough; and organs are pulled in bulk during a species change, where rebuilding the floor from a
-	// half-assembled body is how you get a runtime.
+	// Deferred for two reasons: every organ damages and heals on its own tick, so this fires constantly
+	// and once per second is frequent enough; and organs are pulled in bulk during a species change,
+	// where rebuilding the floor from a half-assembled body runtimes.
 	floor_needs_recalculation = TRUE
 
-/// A full heal takes the injuries with it, so the floor is rebuilt on the spot rather than a tick later.
+/// Rebuilds the floor immediately on a full heal, since it takes every injury with it.
 /datum/pain/proc/on_fully_healed(datum/source, heal_flags)
 	SIGNAL_HANDLER
 
 	adrenaline_spent = FALSE
 	recalculate_floor()
 
-/// Corpses feel nothing, so stop burning cycles on them until they are back up.
+/// Stops processing on death, and reapplies everything the controller had applied on revival.
 /datum/pain/proc/on_stat_changed(datum/source, new_stat, old_stat)
 	SIGNAL_HANDLER
 
 	if(old_stat == DEAD && new_stat != DEAD)
 		START_PROCESSING(SSpain, src)
-		// Death stripped everything this controller had applied and nothing else puts it back, so a
-		// mob that comes back still carrying its injuries has to be returned to the state it left in.
-		// Clearing the bracket is what forces its effects to reapply even if the band has not changed.
+		// Death stripped every effect this controller applied and nothing else puts them back.
+		// Clearing the bracket forces them to reapply even if the band has not changed.
 		current_bracket = null
 		update_pain()
 	else if(old_stat != DEAD && new_stat == DEAD)
@@ -177,7 +172,7 @@
  * Rebuilds the permanent floor from every wound and damaged organ the mob is carrying.
  *
  * Each zone is capped on its own before the total is summed, so no single bodypart can put someone
- * into shock. Combinations still can.
+ * into shock, but combinations can.
  */
 /datum/pain/proc/recalculate_floor()
 	if(QDELETED(parent))
@@ -188,19 +183,17 @@
 
 	for(var/obj/item/bodypart/part as anything in parent.bodyparts)
 		for(var/datum/wound/injury as anything in part.wounds)
-			// Not the injury's raw factor: a wrapped or splinted one hurts a tier less than it should.
+			// Not the raw factor: a wrapped or splinted injury counts a tier lower.
 			floor_by_zone[part.body_zone] += injury.get_pain_factor()
 
 	for(var/obj/item/organ/inner_organ as anything in parent.organs)
 		if(!inner_organ.pain_factor || !inner_organ.damage || !inner_organ.maxHealth)
 			continue
-		// A lightly bruised organ should not hurt as much as a failing one.
 		var/damage_ratio = min(inner_organ.damage / inner_organ.maxHealth, 1)
-		// Eyes and tongues live in precise zones. They hurt the head they sit in, not a zone of
-		// their own, or the head's cap would not be the head's cap.
+		// Eyes and tongues sit in precise zones. They count against the head's cap rather than one of their own.
 		floor_by_zone[deprecise_zone(inner_organ.zone)] += inner_organ.pain_factor * damage_ratio
 
-	// Everything that hurts without being an injury: an unnumbed surgery, a limb that is not there.
+	// Non-injury sources: unanaesthetised surgery, phantom limbs.
 	for(var/source_key in other_sources)
 		var/list/source = other_sources[source_key]
 		floor_by_zone[source[PAIN_SOURCE_ZONE]] += source[PAIN_SOURCE_AMOUNT]
@@ -212,7 +205,7 @@
 	pain_floor = min(round(new_floor, DAMAGE_PRECISION), PAIN_FLOOR_MAXIMUM)
 	update_pain()
 
-/// Works out how far behind the heart is. A failing one makes every hit land harder and hold longer.
+/// Recomputes heart strain. A failing heart makes hits land harder and decay slower.
 /datum/pain/proc/update_heart_strain()
 	var/obj/item/organ/heart/our_heart = parent.get_organ_slot(ORGAN_SLOT_HEART)
 	if(isnull(our_heart) || !our_heart.maxHealth)
@@ -220,16 +213,15 @@
 		return
 
 	heart_strain = clamp(our_heart.damage / our_heart.maxHealth, 0, 1)
-	// A heart that has stopped is not partly behind, it is entirely behind.
+	// A stopped heart is full strain regardless of its damage.
 	if(!our_heart.is_beating())
 		heart_strain = 1
 
 /**
  * Registers permanent pain that is not an injury.
  *
- * The floor is mostly wounds and ruined organs, but not everything that hurts is either: being cut
- * open while awake, or a limb that is not there and aches anyway. Sources are keyed so a caller can
- * take its own back off again without knowing about the others.
+ * Covers what hurts without being a wound or a damaged organ: unanaesthetised surgery, phantom
+ * limbs. Sources are keyed so a caller can remove its own without knowing about the others.
  *
  * Arguments:
  * * source_key - Unique string for the source, used to remove it again.
@@ -255,7 +247,7 @@
 	LAZYREMOVE(other_sources, source_key)
 	recalculate_floor()
 
-/// Drops any non-injury pain the mob has had long enough to stop feeling. Returns TRUE if anything went.
+/// Drops expired non-injury pain sources. Returns TRUE if any were removed.
 /datum/pain/proc/expire_pain_sources()
 	var/list/expired
 	for(var/source_key in other_sources)
@@ -272,8 +264,7 @@
 /**
  * Returns how close a bodypart zone is to its own pain cap, from 0 to 1, as the mob would feel it.
  *
- * Reads felt rather than total pain, so painkillers blind the mob's own readouts - you know how bad
- * it feels, not what you are actually carrying.
+ * Reads felt rather than total pain, so painkillers blind the mob's own readouts.
  *
  * Arguments:
  * * zone - One of the BODY_ZONE_* defines.
@@ -284,9 +275,8 @@
 		return 0
 
 	var/zone_pain = min(floor_by_zone[zone] || 0, zone_cap)
-	// The doll draws the floor, so what blinds it is how much of the floor a painkiller is hiding.
-	// Read against the total instead and the temporary pool would darken every part of the body at
-	// once, which is a stun showing up as injuries the mob does not have.
+	// The doll draws the floor, so it is blinded by how much of the floor a painkiller hides. Scaling
+	// against the total instead would let the temporary pool darken every zone at once.
 	if(pain_floor > 0)
 		zone_pain *= clamp((pain_floor - dampening) / pain_floor, 0, 1)
 
@@ -316,7 +306,7 @@
 	if(!amount)
 		return
 
-	// A struggling heart makes everything land harder. Draining is slowed separately, in process().
+	// A struggling heart makes hits land harder. Draining is slowed separately, in process().
 	if(amount > 0 && heart_strain)
 		amount *= (1 + (heart_strain * PAIN_HEART_STRAIN_MULTIPLIER))
 
@@ -337,31 +327,28 @@
 
 	var/strongest = 0
 	for(var/datum/reagent/held_reagent as anything in parent.reagents?.reagent_list)
-		// A surgical anaesthetic is not a field painkiller at a smaller dose - it is nothing at all
-		// until there is enough of it to put someone under. Zero for everything else, which is most
-		// of them: a painkiller works from the first unit.
+		// A surgical anaesthetic does nothing below a full dose. Zero for a normal painkiller, which
+		// works from the first unit.
 		if(held_reagent.volume < held_reagent.pain_dampening_minimum_volume)
 			continue
-		// A drug only numbs a body it works on. Appendix F's synthetics take their dampeners from
-		// robotics rather than from medbay, and morphine has nothing to say to a servo.
+		// A drug only numbs a biotype it works on: morphine does nothing for a synthetic, and the
+		// robotics feedback dampener nothing for a person.
 		if(!(parent.mob_biotypes & held_reagent.affected_biotype))
 			continue
 		strongest = max(strongest, held_reagent.pain_dampening)
 
-	// Not everything that numbs you is a chemical. Cocktails, augmented hearts and gene mods all hand
-	// out TRAIT_ANALGESIA, and anything holding it without a value here is read as complete numbness.
+	// Cocktails, augmented hearts and gene mods grant TRAIT_ANALGESIA too. Anything holding it without
+	// a value here reads as total numbness.
 	for(var/datum/status_effect/effect as anything in parent.status_effects)
 		strongest = max(strongest, effect.pain_dampening)
 
 	for(var/datum/mutation/mutation as anything in parent.dna?.mutations)
 		strongest = max(strongest, mutation.pain_dampening)
 
-	// Being extremely drunk numbs you too, with all the drawbacks of being extremely drunk.
 	var/datum/status_effect/inebriated/inebriation = parent.has_status_effect(/datum/status_effect/inebriated)
 	if(inebriation?.drunk_value >= PAIN_DAMPEN_DRUNK_REQUIREMENT)
 		strongest = max(strongest, PAIN_DAMPEN_ALCOHOL)
 
-	// Nothing numbs like not being able to feel at all.
 	if(has_total_analgesia())
 		strongest = PAIN_DAMPEN_TOTAL
 
@@ -374,10 +361,9 @@
 /**
  * Whether something with no dampening value of its own has numbed this mob completely.
  *
- * Painkillers grant TRAIT_ANALGESIA as well, but they carry their own value and are never total -
- * morphine is forty points, not immunity. So do the handful of cocktails, implants and gene mods that
- * grant it. Anything else holding the trait (the numb quirk, stasis, a trauma, admin chems) means the
- * mob genuinely cannot feel anything, which is the deliberate half of D3.
+ * Painkillers grant TRAIT_ANALGESIA as well, but carry their own value and are never total. So do
+ * the cocktails, implants and gene mods that grant it. Anything else holding the trait (the numb
+ * quirk, stasis, a trauma, admin chems) means the mob cannot feel anything at all.
  */
 /datum/pain/proc/has_total_analgesia()
 	if(!HAS_TRAIT(parent, TRAIT_ANALGESIA))
@@ -392,8 +378,7 @@
 		if(effect.pain_dampening)
 			graded_sources += TRAIT_STATUS_EFFECT(effect.id)
 
-	// Every mutation shares one trait source, so one graded mutation vouches for the lot. Nothing in
-	// the game hands out a graded one and hulk at the same time.
+	// Every mutation shares one trait source, so one graded mutation covers all of them.
 	for(var/datum/mutation/mutation as anything in parent.dna?.mutations)
 		if(mutation.pain_dampening)
 			graded_sources += GENETIC_MUTATION
@@ -405,22 +390,21 @@
 
 	return FALSE
 
-/// Recomputes the totals and the bracket. Everything that changes pain ends up here.
+/// Recomputes the totals, the bracket and the shock state. Everything that changes pain ends up here.
 /datum/pain/proc/update_pain()
 	var/old_felt_pain = felt_pain
 
-	// Deliberately uncapped: it is the floor plus the pool, and those carry their own caps. Clamping it
-	// to PAIN_MAXIMUM here would put it at the shock threshold, so subtracting any dampener at all left
-	// felt pain permanently short of shock - every painkiller in the game was immunity to being put
-	// down rather than a number of points of headroom. Only what the mob feels runs 0 to 100.
+	// Deliberately uncapped: the floor and the pool carry their own caps. Clamping the total to
+	// PAIN_MAXIMUM would put it at the shock threshold, leaving anyone on a painkiller permanently
+	// short of shock. Only felt pain runs 0 to 100.
 	total_pain = pain_floor + temporary_pain
 	felt_pain = clamp(total_pain - dampening, 0, PAIN_MAXIMUM)
 	update_bracket()
 	update_shock()
 
-	// The doll, the meter and the damage slowdown all read pain now, so pain moving has to run the
-	// same refresh that taking damage does rather than only redrawing. Not mid-limb-surgery though:
-	// updatehealth() reads the chest without checking for one, and losing a limb moves pain.
+	// The doll, the meter and the damage slowdown all read pain, so a change needs the same refresh
+	// taking damage does. Not while the chest is off: updatehealth() reads it without a null check,
+	// and losing a limb moves pain.
 	if(felt_pain != old_felt_pain)
 		if(parent.get_bodypart(BODY_ZONE_CHEST))
 			parent.updatehealth()
@@ -477,7 +461,7 @@
 		parent.remove_actionspeed_modifier(actionspeed_mod)
 		QDEL_NULL(actionspeed_mod)
 
-/// Rolls the current bracket's intermittent effects. Nothing here is guaranteed; that is the point.
+/// Rolls the current bracket's intermittent effects.
 /datum/pain/proc/roll_bracket_effects()
 	if(isnull(current_bracket) || QDELETED(parent) || parent.stat == DEAD)
 		return
@@ -486,20 +470,17 @@
 
 	COOLDOWN_START(src, effect_roll_cooldown, PAIN_EFFECT_ROLL_INTERVAL)
 
-	// Same brackets, same chances, different flavour: what an organic body does with pain is stutter
-	// and shake, and what a machine does with it is glitch its speaker and lose the servos. Appendix F
-	// asks for parity, not sameness.
+	// Synthetics run the same brackets and chances with different flavour: speaker distortion and
+	// servo tremors in place of stuttering and shaking.
 	var/is_synthetic = (parent.mob_biotypes & MOB_ROBOTIC)
 
 	if(current_bracket.stutters)
 		parent.adjust_stutter_up_to(PAIN_EFFECT_ROLL_INTERVAL, PAIN_EFFECT_ROLL_INTERVAL * 2)
 		if(is_synthetic)
-			// Speaker distortion on top of the glitching, which is the synthetic half of "constant stuttering".
 			parent.adjust_slurring_up_to(PAIN_EFFECT_ROLL_INTERVAL, PAIN_EFFECT_ROLL_INTERVAL * 2)
 
 	if(current_bracket.vocalise_chance && prob(current_bracket.vocalise_chance))
 		if(is_synthetic)
-			// Servo tremors. Synth tongues already carry their own scream, so the noise needs no special casing.
 			parent.adjust_jitter_up_to(PAIN_EFFECT_ROLL_INTERVAL, PAIN_EFFECT_ROLL_INTERVAL * 2)
 		parent.emote(felt_pain >= PAIN_BRACKET_SEVERE_THRESHOLD ? "scream" : "whimper")
 
@@ -522,7 +503,7 @@
  * Puts the mob into, or takes it out of, pain shock.
  *
  * Which shock applies depends on what is holding the mob at the cap. A temporary spike blacks them
- * out briefly; a floor that high leaves nothing to drain, so they crawl until they are treated.
+ * out briefly; a floor that high has nothing to drain, so they crawl until they are treated.
  */
 /datum/pain/proc/update_shock()
 	if(QDELETED(parent) || parent.stat == DEAD)
@@ -531,22 +512,21 @@
 	var/was_blacked_out = in_shock
 	var/was_crawling = crawling
 
-	// A floor at the cap has nothing left to drain, so it crawls. Only treatment or a painkiller
-	// lifts that; waiting it out is not on the table.
+	// A floor at the cap has nothing to drain, so only treatment or a painkiller lifts it.
 	var/should_crawl = (pain_floor - dampening) >= PAIN_SHOCK_THRESHOLD
 
 	var/should_black_out = FALSE
 	if(felt_pain >= PAIN_SHOCK_THRESHOLD)
-		// Anything at the cap that is not purely the floor is a blackout - including a fresh hit on
-		// someone already crawling, which is what puts a crawler back down mid-drag.
+		// Anything at the cap that is not purely the floor blacks out, including a fresh hit on
+		// someone already crawling.
 		should_black_out = !should_crawl || (temporary_pain >= PAIN_SHOCK_BLACKOUT_MINIMUM)
 	else if(was_blacked_out)
 		// Down at the cap, up at the recovery threshold, so nobody yo-yos on the line. A floor of
-		// 70-99 can never reach that threshold, so it rises the moment its pool is gone instead.
+		// 70-99 never reaches that threshold, so it rises once its pool is gone instead.
 		should_black_out = (felt_pain >= PAIN_SHOCK_RECOVERY_THRESHOLD) && temporary_pain > 0
 
-	// Written before the early return, so anything that strips a shock behind our back - a full heal,
-	// an admin - is reconciled on the next pain change rather than leaving the ladder lying.
+	// Written before the early return, so a shock stripped elsewhere (a full heal, an admin) is
+	// reconciled on the next pain change.
 	in_shock = should_black_out
 	crawling = should_crawl
 
@@ -565,18 +545,18 @@
 		else
 			parent.remove_status_effect(/datum/status_effect/pain_crawl)
 
-	// Shock is a rung on the crit ladder now, so moving between these is a change of consciousness.
+	// Shock is a rung on the crit ladder.
 	parent.update_stat()
-	// The crawl keeps its hands where every other soft crit does not, and set_stat only recomputes
-	// that on a change of rung - so a mob already soft critting for another reason needs a resync.
+	// The crawl keeps its hands where other soft crits do not, and set_stat only recomputes that on a
+	// change of rung, so a mob already soft critting for another reason needs a resync.
 	if(should_crawl != was_crawling)
 		parent.update_stat_traits()
 
-/// Fight or flight, once per mob. Massive trauma only.
+/// Triggers adrenaline, once per fight, on massive trauma only.
 /datum/pain/proc/try_trigger_adrenaline()
 	if(adrenaline_spent || QDELETED(parent) || parent.stat == DEAD)
 		return
-	// Machines feel everything else, but they do not do fight or flight.
+	// Synthetics get no adrenaline.
 	if(parent.mob_biotypes & MOB_ROBOTIC)
 		return
 
@@ -617,15 +597,15 @@
 /**
  * Marks this mob's permanent floor as out of date, to be rebuilt on the next process.
  *
- * For the things that change how much an injury hurts without adding or removing one - a wrap going
- * on or coming off. Deferred rather than immediate because those arrive one per wound on the limb,
- * and a treated limb is worth exactly one rebuild.
+ * For anything that changes how much an injury hurts without adding or removing one, such as a wrap
+ * going on or coming off. Deferred because those arrive one per wound on the limb, and a treated
+ * limb is worth one rebuild.
  */
 /mob/living/carbon/proc/mark_pain_dirty()
 	if(pain_controller)
 		pain_controller.floor_needs_recalculation = TRUE
 
-/// Convenience accessor so callers do not have to null-check the controller themselves.
+/// Felt pain, or zero for a mob with no pain controller.
 /mob/living/proc/get_felt_pain()
 	return 0
 

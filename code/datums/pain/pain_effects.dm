@@ -13,7 +13,6 @@
  *
  * Applied when a mob is pinned at the pain cap. Blacks the mob out entirely, and is removed the
  * moment felt pain drops back under PAIN_SHOCK_RECOVERY_THRESHOLD, so nobody yo-yos on the line.
- * Phase 1 keeps this trait-only - it deliberately does not touch stat, which is Phase 4's job.
  */
 /datum/status_effect/incapacitating/pain_shock
 	id = "pain_shock"
@@ -30,10 +29,9 @@
 	if(!.)
 		return .
 
-	// STAMINA as the source, which is what stamcrit used and what the rest of the tree still reads to
-	// answer "is this mob down from exhaustion" - IsParalyzed(), tackles, less-lethal embeds. Pain
-	// shock is that state now, so it has to answer to the same source. The crawl keeps one of its own,
-	// since the two can be applied at once and each has to be removable without the other.
+	// STAMINA as the source, since that is what stamcrit used and what IsParalyzed(), tackles and
+	// less-lethal embeds still read. The crawl keeps a source of its own, as the two can be applied at
+	// once and each has to be removable without the other.
 	owner.add_traits(list(TRAIT_INCAPACITATED, TRAIT_IMMOBILIZED, TRAIT_FLOORED, TRAIT_HANDS_BLOCKED), STAMINA)
 	owner.visible_message(
 		span_warning("[owner] collapses, overwhelmed!"),
@@ -51,8 +49,7 @@
  *
  * Applied when the mob's permanent floor alone pins it at the cap. Unlike a spike blackout there is
  * nothing to drain, so this lasts until treatment or a painkiller lowers felt pain. The mob can
- * crawl, drag itself and reach its own pockets - crawling is the whole point of the state - but it
- * cannot stand or fight.
+ * crawl, drag itself and reach its own pockets, but cannot stand or fight.
  */
 /datum/status_effect/pain_crawl
 	id = "pain_crawl"
@@ -82,7 +79,7 @@
  * Adrenaline.
  *
  * Massive trauma triggers fight or flight once per fight. Halves felt pain long enough to shoot back
- * or run, then hands all of it back at once. It delays pain shock, it never cancels it.
+ * or run, then hands all of it back at once. Delays pain shock, never cancels it.
  */
 /datum/status_effect/adrenaline
 	id = "adrenaline"
@@ -99,11 +96,9 @@
 	if(isnull(carbon_owner.pain_controller))
 		return FALSE
 
-	// Snapshotted at the moment it fires rather than tracked live. Halving whatever the mob happens to
-	// be carrying at any instant would put felt pain permanently at half of a total that is itself
-	// capped at the shock threshold, so shock could never be reached at all - which is cancelling it,
-	// not delaying it. A fixed dampener is headroom instead: it hides what you were already carrying,
-	// and everything that lands afterwards is felt at full price and can still put you down.
+	// Snapshotted when it fires rather than tracked live. Halving the total continuously would hold
+	// felt pain permanently below the shock threshold, which cancels shock rather than delaying it. A
+	// fixed dampener hides what the mob was already carrying and leaves later hits felt in full.
 	pain_dampening = carbon_owner.pain_controller.total_pain * PAIN_ADRENALINE_DAMPEN_RATIO
 
 	to_chat(owner, span_userdanger("Your heart slams and the pain washes out of you!"))
@@ -112,7 +107,7 @@
 
 /datum/status_effect/adrenaline/on_remove()
 	var/mob/living/carbon/carbon_owner = owner
-	// The crash: everything it was holding back lands at once, plus a moment of being unable to cope.
+	// The crash: everything it held back lands at once, with a brief stutter on top.
 	pain_dampening = 0
 	carbon_owner.pain_controller?.update_dampening()
 	carbon_owner.adjust_stutter(PAIN_ADRENALINE_CRASH_STUTTER)

@@ -1,14 +1,13 @@
 /**
  * Stamina, for anything with a pain controller, is temporary pain.
  *
- * Every stamina source in the game - batons, disablers, exhaustion, tackles, sprinting - spends
- * itself on the pain pool instead of a bar of its own. The ~550 existing stamina call sites keep
- * working through these three procs, so there is exactly one way to be put down and one number that
- * decides it. The pool carries its own decay curve and its own shock, so neither the stamina
- * regeneration timer nor the stamina crit ladder survive the conversion - both hang off
- * received_stamina_damage(), which these overrides never reach and which bails on a controller anyway.
+ * Every stamina source (batons, disablers, exhaustion, tackles, sprinting) spends itself on the pain
+ * pool instead of a bar of its own, so the existing stamina call sites keep working through these
+ * three procs. The pool carries its own decay curve and its own shock, so neither the stamina
+ * regeneration timer nor stamcrit survive the conversion: both hang off received_stamina_damage(),
+ * which these overrides never reach and which bails on a controller anyway.
  *
- * Mobs without a controller - simple and basic mobs - keep plain stamina.
+ * Simple and basic mobs have no controller and keep plain stamina.
  */
 
 /mob/living/carbon/get_stamina_loss()
@@ -43,8 +42,8 @@
 /**
  * Redraws the pain meter in the slot the stamina bar used to hold.
  *
- * Reads felt pain, so a painkiller blinds this readout exactly like it blinds the health doll. The
- * meter shows how bad it feels through the bracket colour and how full the bar is - never a number.
+ * Reads felt pain, so a painkiller blinds this readout as it does the health doll. The bracket
+ * colour and the fill state are the only readings; there is no number.
  */
 /mob/living/carbon/proc/update_pain_hud()
 	if(!client || !hud_used)
@@ -54,7 +53,6 @@
 	if(isnull(meter))
 		return
 
-	// The bar measures pain now, and its tooltip should say so.
 	meter.name = "pain"
 
 	if(stat == DEAD)
@@ -65,7 +63,6 @@
 	var/felt = get_felt_pain()
 	var/datum/pain_bracket/bracket = pain_controller?.current_bracket
 	meter.color = bracket?.meter_colour
-	// The top of the colour ladder, and the one rung that is a behaviour rather than a colour.
 	meter.set_flashing(!!bracket?.meter_flashes)
 
 	if(felt >= PAIN_SHOCK_THRESHOLD)
@@ -79,16 +76,14 @@
 	meter.icon_state = "stamina_[clamp(ceil(felt / (PAIN_MAXIMUM * 0.2)), 1, 5)]"
 
 /atom/movable/screen/stamina
-	/// Whether the meter is currently pulsing. Held so a redraw does not restart the animation and
-	/// leave it stuttering every time the bar moves a state.
+	/// Whether the meter is currently pulsing. Held so a redraw does not restart the animation.
 	var/flashing = FALSE
 
 /**
  * Starts or stops the pain meter pulsing.
  *
- * Pulses alpha rather than colour, because the bracket owns the colour and repaints it on every
- * redraw - an animation on the same variable would fight with that. No new art either way: there are
- * no pain icon states, and a bar that fades in and out reads as flashing regardless of what is on it.
+ * Pulses alpha rather than colour: the bracket owns the colour and repaints it on every redraw, so
+ * an animation on the same variable would fight with it.
  *
  * Arguments:
  * * new_flashing - Whether the meter should be pulsing.

@@ -1,19 +1,17 @@
 /**
- * An armour plate: the thing that decides whether a hit gets inside you.
+ * An armour plate.
  *
- * A plate does not reduce damage by a percentage. It has a tolerance, it stops everything up to that
- * tolerance outright, and everything past it arrives as though nothing were worn - there is no
- * penetration stat to beat, only damage. Stopping hits is what wears a plate out, so protection is a
- * consumable rather than a permanent property of a costume.
+ * A plate does not reduce damage by a percentage. It has a tolerance, stops everything up to that
+ * tolerance outright, and lets everything past it through as though nothing were worn. There is no
+ * penetration stat to beat, only damage. Stopping hits is what wears a plate out.
  *
- * Fitted into an armour suit or a helmet, one apiece. The carrier decides which zones are covered and
- * the plate decides how much a hit to one of them has to carry to matter, which is why wide coverage
- * protects more of you and strips faster.
+ * Fitted into an armour suit or a helmet, one apiece. The carrier decides which zones are covered
+ * and the plate decides how much a hit to one of them has to carry to matter, so wide coverage
+ * protects more and strips faster.
  */
 /obj/item/armor_plate
 	name = "armour plate"
-	desc = "A plate of composite armour, shaped to drop into a carrier. It stops what it can stop and \
-		nothing else, and every hit it takes is one it will not take again."
+	desc = "A plate of composite armour, shaped to drop into a carrier. Every hit it stops wears it down."
 	icon = 'icons/obj/clothing/modsuit/mod_construction.dmi'
 	icon_state = "security-plating"
 	inhand_icon_state = "armor"
@@ -26,13 +24,13 @@
 	attack_verb_continuous = list("bashes", "slams", "whacks")
 	attack_verb_simple = list("bash", "slam", "whack")
 	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 4)
-	/// Sets both how much damage a hit has to carry to get past this plate and how much it can absorb.
+	/// Sets both this plate's per-hit tolerance and its total durability.
 	var/level = 1
-	/// Punishment left before the plate stops working. Drained by what it stops, never by what it lets past.
+	/// Durability left before the plate stops working. Drained by what it stops, never by what it lets past.
 	var/durability
-	/// Armour flags this plate answers. It does nothing whatsoever about anything not in here.
+	/// Armour flags this plate answers. It does nothing about anything not listed here.
 	var/list/stops_flags
-	/// What a hit this plate stops leaves on the body underneath: impacts bruise, beams burn.
+	/// Wounding type a stopped hit leaves on the body underneath.
 	var/nonpenetrating_wound_type = WOUND_BLUNT
 
 /obj/item/armor_plate/Initialize(mapload)
@@ -41,7 +39,7 @@
 	durability = get_maximum_durability()
 
 /obj/item/armor_plate/Destroy()
-	// Plates live inside their carrier, so the carrier is what has to let go of us.
+	// Plates live inside their carrier, so the carrier has to drop its reference.
 	var/obj/item/clothing/carrier = loc
 	if(istype(carrier) && carrier.fitted_plate == src)
 		carrier.fitted_plate = null
@@ -51,20 +49,19 @@
 /obj/item/armor_plate/proc/get_tolerance()
 	return level * PLATE_TOLERANCE_PER_LEVEL
 
-/// Punishment this plate absorbs over its lifetime.
+/// Total damage this plate absorbs over its lifetime.
 /obj/item/armor_plate/proc/get_maximum_durability()
 	return level * PLATE_DURABILITY_PER_LEVEL
 
-/// Whether this plate still stops anything. A spent one is dead weight until it is replaced.
+/// Whether this plate still stops anything.
 /obj/item/armor_plate/proc/is_working()
 	return durability > 0
 
 /**
  * Whether this plate has any opinion about an attack.
  *
- * A plate is ballistic or ablative and never both, so the wrong sort of attack simply does not meet
- * it - the carrier's own armour rating handles that hit as it always did. Choosing a plate is
- * choosing what you are willing to be vulnerable to.
+ * A plate is ballistic or ablative and never both, so the wrong sort of attack does not meet it at
+ * all and the carrier's own armour rating handles that hit as before.
  *
  * Arguments:
  * * armour_flag - One of the armour flags, e.g. [BULLET] or [LASER].
@@ -75,10 +72,9 @@
 /**
  * Takes a hit on behalf of whoever is wearing this plate, and reports how much of it never landed.
  *
- * Everything up to the plate's tolerance is stopped. That damage is gone - it does not reach the
- * bodypart, it cannot wound past Major severity, and it can never overflow onto an organ, which is
- * the whole of "you cannot die through a working plate". What it does instead is hurt, mark the body
- * underneath, and wear the plate down by exactly as much as it stopped.
+ * Everything up to the plate's tolerance is stopped: that damage never reaches the bodypart, cannot
+ * wound past Major severity and cannot overflow onto an organ. It spikes pain, marks the body
+ * underneath, and wears the plate down by as much as it stopped.
  *
  * Arguments:
  * * victim - Who is wearing this plate.
@@ -96,16 +92,15 @@
 	if(stopped <= 0)
 		return 0
 
-	// A round that fills the plate's headroom hurts a great deal more than one it barely notices.
+	// A round that fills the plate's headroom hurts far more than one well under it.
 	var/proximity = PLATE_PAIN_PROXIMITY_FLOOR + ((1 - PLATE_PAIN_PROXIMITY_FLOOR) * (stopped / get_tolerance()))
 	victim.add_temporary_pain(stopped * PLATE_PAIN_RATIO * proximity)
-	// Small shake for a hit that never got inside, per the design's NP/P split. wear_down() outranks
-	// this on the rounds where the plate itself gives, which is the moment worth having.
+	// Small shake for a hit that never got inside. wear_down() outranks it when the plate gives.
 	victim.shake_from_impact(stopped, penetrated = FALSE)
 
 	var/obj/item/bodypart/hit_part = isbodypart(def_zone) ? def_zone : victim.get_bodypart(check_zone(def_zone))
-	// Whatever the weapon was, the plate is what met the body: a knife the plate caught leaves a
-	// bruise rather than a cut. Flagged as stopped, so the injury tree keeps it under the bleeding tiers.
+	// The plate is what met the body, so a caught knife leaves a bruise rather than a cut. Flagged as
+	// stopped, which keeps the injury tree under the bleeding tiers.
 	hit_part?.painless_wound_roll(
 		wounding_type = nonpenetrating_wound_type,
 		wounding_dmg = stopped * PLATE_WOUND_RATIO,
@@ -121,8 +116,8 @@
 /**
  * Spends this plate's durability on what it just stopped, and says so when that changes something.
  *
- * Feedback is on state changes rather than on hits, per the design's feedback budget - a plate that
- * announced every round it caught would drown out the round that got through.
+ * Feedback fires on state changes rather than on hits, so a plate catching rounds does not drown out
+ * the round that gets through.
  *
  * Arguments:
  * * amount - Punishment absorbed.
@@ -163,10 +158,10 @@
 /obj/item/armor_plate/examine(mob/user)
 	. = ..()
 	. += span_notice("It stops up to <b>[get_tolerance()]</b> damage from any one hit. Anything heavier goes straight through.")
-	. += span_notice("It only answers [english_list(stops_flags, and_text = " and ")] damage. Anything else may as well not have met it.")
+	. += span_notice("It only stops [english_list(stops_flags, and_text = " and ")] damage.")
 	. += describe_plate_wear()
 
-/// One line on how much fight this plate has left in it, for its own examine and its carrier's.
+/// One line of wear description, for this plate's examine and its carrier's.
 /obj/item/armor_plate/proc/describe_plate_wear()
 	if(!is_working())
 		return span_boldwarning("It is shattered through, and will not stop anything.")
@@ -181,43 +176,34 @@
 		else
 			return span_boldwarning("It is barely holding together.")
 
-/**
- * Ballistic plates: everything that arrives as a physical impact.
- *
- * They have no answer for beam weapons whatsoever, which is the trade the design asks a wearer to make.
- */
+/// Ballistic plates stop physical impacts and have no answer at all for beam weapons.
 /obj/item/armor_plate/ballistic
 	name = "ballistic plate"
-	desc = "A layered ceramic plate for a carrier. Catches bullets, fists and shrapnel. A laser will \
-		go through it as if it were not there."
+	desc = "A layered ceramic plate for a carrier. Catches bullets, fists and shrapnel. Lasers pass \
+		straight through it."
 	icon_state = "security-plating"
 	stops_flags = list(MELEE, BULLET, BOMB)
 	nonpenetrating_wound_type = WOUND_BLUNT
 
 /obj/item/armor_plate/ballistic/reinforced
 	name = "reinforced ballistic plate"
-	desc = "A thicker ceramic plate for a carrier, heavy enough to be worth the weight. Catches \
-		bullets, fists and shrapnel, and has nothing to say about lasers."
+	desc = "A thicker ceramic plate for a carrier. Catches bullets, fists and shrapnel, and does \
+		nothing about lasers."
 	level = 2
 	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 6, /datum/material/alloy/plasteel = SHEET_MATERIAL_AMOUNT * 2)
 
 /obj/item/armor_plate/ballistic/composite
 	name = "composite ballistic plate"
-	desc = "A plasteel-backed composite plate, the heaviest thing that will still drop into a standard \
-		carrier. Stops most of what a gun can do. Stops no part of what a laser can."
+	desc = "A plasteel-backed composite plate, the heaviest that will drop into a standard carrier. \
+		Stops most of what a gun can do, and no part of what a laser can."
 	level = 3
 	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 8, /datum/material/alloy/plasteel = SHEET_MATERIAL_AMOUNT * 4, /datum/material/titanium = SHEET_MATERIAL_AMOUNT * 2)
 
-/**
- * Ablative plates: the beam half of the same trade.
- *
- * A hit they stop cooks the plate instead of the wearer, so what gets through them burns rather than
- * bruises.
- */
+/// Ablative plates stop beam weapons, and what they stop burns the plate rather than the wearer.
 /obj/item/armor_plate/ablative
 	name = "ablative plate"
 	desc = "A reflective sheet backed with sacrificial foam, shaped for a carrier. It boils away \
-		instead of you. It will not slow a bullet down in the slightest."
+		instead of the wearer. It will not slow a bullet."
 	icon_state = "engineering-plating"
 	stops_flags = list(LASER, ENERGY)
 	nonpenetrating_wound_type = WOUND_BURN
@@ -225,22 +211,21 @@
 /obj/item/armor_plate/ablative/reinforced
 	name = "reinforced ablative plate"
 	desc = "A thicker ablative sheet for a carrier, with enough foam behind it to soak a sustained \
-		burst. Bullets pass through it without noticing."
+		burst. Bullets pass straight through it."
 	level = 2
 	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 4, /datum/material/silver = SHEET_MATERIAL_AMOUNT * 2)
 
 /obj/item/armor_plate/ablative/composite
 	name = "composite ablative plate"
 	desc = "A mirrored composite plate over a deep ablative block, the heaviest a standard carrier \
-		will take. It will shrug off a sustained beam. It will not shrug off a knife."
+		will take. It shrugs off a sustained beam, but not a knife."
 	level = 3
 	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 6, /datum/material/silver = SHEET_MATERIAL_AMOUNT * 4, /datum/material/titanium = SHEET_MATERIAL_AMOUNT * 2)
 
 /obj/item/clothing
-	/// The plate fitted into this carrier, if it takes one. One apiece: the carrier decides coverage,
-	/// the plate decides tolerance. See [/obj/item/armor_plate].
+	/// The plate fitted into this carrier, if it takes one. See [/obj/item/armor_plate].
 	var/obj/item/armor_plate/fitted_plate
-	/// Whether a plate can be fitted into this at all. Armour and helmets take one; a jumpsuit does not.
+	/// Whether a plate can be fitted into this. Armour and helmets take one, a jumpsuit does not.
 	var/accepts_armor_plates = FALSE
 
 /obj/item/clothing/suit/armor
@@ -261,8 +246,7 @@
 /**
  * Fits a plate into this carrier, or pries the fitted one back out with a crowbar.
  *
- * Called from [/obj/item/clothing/item_interaction] before anything else it does, since a plate and a
- * roll of cloth are never the same interaction.
+ * Called from [/obj/item/clothing/item_interaction] before anything else it does.
  *
  * Arguments:
  * * user - Who is doing the fitting.
@@ -307,12 +291,7 @@
 		fitted_plate.describe_plate_wear(),
 	)
 
-/**
- * A case for spare plates, since a plate does not go in a backpack.
- *
- * Armour is worn, carried or cased; this is the third one. Bulky enough that carrying spares costs
- * you a hand, which is the point.
- */
+/// A case for spare plates, which are too bulky for a backpack. Carrying one costs a hand.
 /obj/item/storage/plate_case
 	name = "plate case"
 	desc = "A hard case for spare armour plates. Nothing else will fit, and it will not fit in a bag."
@@ -331,7 +310,7 @@
 	atom_storage.max_specific_storage = WEIGHT_CLASS_BULKY
 	atom_storage.set_holdable(list(/obj/item/armor_plate))
 
-/// A case that arrives with spares in it, for cargo and lockers.
+/// A case that arrives filled, for cargo and lockers.
 /obj/item/storage/plate_case/ballistic
 	name = "ballistic plate case"
 

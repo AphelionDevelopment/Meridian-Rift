@@ -1,13 +1,11 @@
 /**
  * Bruising.
  *
- * The injury that everything blunt leaves behind, and the only thing a hit that armour stopped is
- * allowed to leave. Bruises are never lethal and never bleed: they hurt, they make a limb worse at
- * its job, and they fade on their own given time and rest. Anything that needs a surgeon is a
- * fracture or a laceration, not this.
+ * The injury blunt trauma leaves, and the only injury a hit that armour stopped may leave. Bruises
+ * are never lethal and never bleed. They hurt, they make a limb worse at its job, and they fade on
+ * their own given rest.
  *
- * Unlike the rest of the tree this applies to the chest and head as well as limbs, because there is
- * no part of a person that cannot be bruised.
+ * Unlike the rest of the tree this applies to the chest and head as well as limbs.
  */
 /datum/wound/bruise
 	name = "Bruise"
@@ -16,16 +14,14 @@
 	wound_flags = ACCEPTS_GAUZE
 	processes = TRUE
 	can_scar = FALSE
-	// Never lethal, per Appendix A. A contusion is the worst a bruise gets, and it is still a bruise -
-	// it must not be the injury that opens a head up to being killed through.
+	// Never lethal, so a bruise must never be the injury that opens a part up to overflow.
 	allows_overflow = FALSE
-	// Nothing in a medkit treats a bruise. Rest does, and a splint makes rest work faster.
 
 	/// How many process ticks of rest this bruise needs before it fades.
 	var/regen_ticks_needed
 	/// How far along it currently is.
 	var/regen_ticks_current = 0
-	/// Temporary pain for putting weight on this the moment it is used for something.
+	/// Temporary pain spiked each time the limb is used.
 	var/use_pain
 
 /datum/wound/bruise/set_victim(new_victim)
@@ -40,7 +36,7 @@
 /datum/wound/bruise/handle_process(seconds_per_tick, times_fired)
 	. = ..()
 
-	// Bruises fade on their own. Staying off the limb, or off your feet entirely, is the whole cure.
+	// Bruises fade on their own, faster while lying down or splinted.
 	regen_ticks_current += 1
 	if(victim.body_position == LYING_DOWN)
 		regen_ticks_current += 1
@@ -52,12 +48,11 @@
 	to_chat(victim, span_green("The bruising on your [limb.plaintext_zone] has faded."))
 	remove_wound()
 
-/// Working through a bruise costs you something. Punching with a bruised arm is a spike of pain, not a penalty on paper.
+/// Spikes pain when the bruised limb is used to punch something.
 /datum/wound/bruise/proc/on_hurt_hand_used(mob/living/user, atom/target, proximity)
 	SIGNAL_HANDLER
 
-	// This signal fires ahead of every unarmed click, throwing a punch or not, so the swing has to be
-	// confirmed as one before it costs anything - hugging someone is not working through an injury.
+	// Fires ahead of every unarmed click, so the swing has to be confirmed as an attack first.
 	if(!proximity || !victim.combat_mode || victim.get_active_hand() != limb || !ismob(target))
 		return
 
@@ -70,21 +65,21 @@
 /datum/wound_pregen_data/bruise
 	abstract = TRUE
 
-	// Anything blunt enough to leave one, which includes bullets and blades that failed to get through.
+	// Includes bullets and blades that failed to get through.
 	required_wounding_type = WOUND_BRUTE
 	required_limb_biostate = BIO_FLESH
 
 	wound_series = WOUND_SERIES_FLESH_BRUISE
 
-	// Bruises never beat a more specific injury to the punch - their thresholds sit at or above the
-	// tier they compete with, so they are an alternative at that tier rather than a replacement for it.
+	// Thresholds sit at or above the tier they compete with, so a bruise is an alternative at that
+	// tier rather than a replacement for a more specific injury.
 	weight = 30
 
-/// Minor: fades on its own, and that is the whole of it.
+/// Minor: fades on its own.
 /datum/wound/bruise/moderate
 	name = "Minor Bruise"
 	desc = "Patient's flesh is bruised, with minor swelling and discolouration."
-	treat_text = "Rest. Ice, if the patient insists."
+	treat_text = "Rest, with a cold pack if available."
 	treat_text_short = "Rest."
 	simple_treat_text = "<b>Rest</b>. It will fade on its own."
 	homemade_treat_text = "A cold pack and staying off it."
@@ -102,7 +97,7 @@
 	wound_path_to_generate = /datum/wound/bruise/moderate
 	threshold_minimum = 20
 
-/// Major: deep bruising. It hurts to use and it hurts more the more you use it.
+/// Major: deep bruising that hurts to use.
 /datum/wound/bruise/severe
 	name = "Deep Bruise"
 	desc = "Patient's flesh is deeply bruised, with significant swelling and pain on use."
@@ -128,13 +123,13 @@
 	wound_path_to_generate = /datum/wound/bruise/severe
 	threshold_minimum = 60
 
-/// Critical: contused to the point of being half useless. Slow to heal, and never the thing that kills you.
+/// Critical: contused to the point of a weakened grip and a limp. Slow to heal, never lethal.
 /datum/wound/bruise/critical
 	name = "Severe Contusion"
 	desc = "Patient's flesh is contused throughout, with heavy swelling, weakened grip and pain on any use."
-	treat_text = "Immobilisation and prolonged rest. There is nothing to operate on; it simply takes time."
+	treat_text = "Immobilisation and prolonged rest. There is nothing to operate on."
 	treat_text_short = "Immobilise and wait."
-	simple_treat_text = "<b>Splint</b> it and <b>rest</b>. There is no quick fix - it heals slowly."
+	simple_treat_text = "<b>Splint</b> it and <b>rest</b>. It heals slowly."
 	homemade_treat_text = "Keep it still, keep it cold, and do not use it."
 	examine_desc = "is swollen, purpled and hangs oddly"
 	occur_text = "swells violently, purpling as it goes"
