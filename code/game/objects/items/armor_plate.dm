@@ -12,6 +12,8 @@
 /obj/item/armor_plate
 	name = "armour plate"
 	desc = "A plate of composite armour, shaped to drop into a carrier. Every hit it stops wears it down."
+	// What a plate is made to stop is what makes it one, so the base has nothing to stop and is never spawned.
+	abstract_type = /obj/item/armor_plate
 	icon = 'icons/obj/clothing/modsuit/mod_construction.dmi'
 	icon_state = "security-plating"
 	inhand_icon_state = "armor"
