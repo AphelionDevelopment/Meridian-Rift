@@ -102,3 +102,36 @@
 
 #undef NANITE_SLURRY_ORGANIC_PURGE_RATE
 #undef NANITE_SLURRY_ORGANIC_VOMIT_CHANCE
+
+// NOVA EDIT ADDITION START - COMBAT_PAIN
+/**
+ * Feedback dampener: the synthetic half of Appendix D.
+ *
+ * A machine feels its body through a damage feedback bus rather than through nerves, so what numbs it
+ * is a robotics job rather than a medbay one - morphine has nothing to say to a servo. Same numbers as
+ * the organic workhorse it stands in for, because parity is a design requirement: anything that cannot
+ * be put down by pain cannot be stopped at all.
+ */
+/datum/reagent/medicine/feedback_dampener
+	name = "Feedback Dampener"
+	description = "A robotics-grade suspension that damps a synthetic's damage feedback bus. Numbs what \
+		the chassis is reporting without repairing any of it, and clouds the diagnostics along with it."
+	color = "#4C6E8C"
+	taste_description = "cold static"
+	metabolization_rate = 0.4 * REAGENTS_METABOLISM
+	overdose_threshold = 25
+	ph = 8.4
+	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	process_flags = REAGENT_SYNTHETIC
+	affected_bodytype = BODYTYPE_ROBOTIC
+	affected_biotype = MOB_ROBOTIC
+	pain_dampening = PAIN_DAMPEN_MORPHINE
+
+/datum/reagent/medicine/feedback_dampener/overdose_process(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)
+	. = ..()
+	// Damping the bus far enough stops it carrying anything useful either, and the chassis starts
+	// acting on readings that are no longer arriving.
+	affected_mob.adjust_jitter_up_to(2 SECONDS * seconds_per_tick, 20 SECONDS)
+	if(affected_mob.adjust_organ_loss(ORGAN_SLOT_BRAIN, 0.5 * metabolization_ratio * seconds_per_tick, required_organ_flag = ORGAN_ROBOTIC))
+		return UPDATE_MOB_HEALTH
+// NOVA EDIT ADDITION END - COMBAT_PAIN

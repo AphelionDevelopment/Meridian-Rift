@@ -65,6 +65,8 @@
 	var/felt = get_felt_pain()
 	var/datum/pain_bracket/bracket = pain_controller?.current_bracket
 	meter.color = bracket?.meter_colour
+	// The top of the colour ladder, and the one rung that is a behaviour rather than a colour.
+	meter.set_flashing(!!bracket?.meter_flashes)
 
 	if(felt >= PAIN_SHOCK_THRESHOLD)
 		meter.icon_state = "stamina_crit"
@@ -75,3 +77,30 @@
 		return
 
 	meter.icon_state = "stamina_[clamp(ceil(felt / (PAIN_MAXIMUM * 0.2)), 1, 5)]"
+
+/atom/movable/screen/stamina
+	/// Whether the meter is currently pulsing. Held so a redraw does not restart the animation and
+	/// leave it stuttering every time the bar moves a state.
+	var/flashing = FALSE
+
+/**
+ * Starts or stops the pain meter pulsing.
+ *
+ * Pulses alpha rather than colour, because the bracket owns the colour and repaints it on every
+ * redraw - an animation on the same variable would fight with that. No new art either way: there are
+ * no pain icon states, and a bar that fades in and out reads as flashing regardless of what is on it.
+ *
+ * Arguments:
+ * * new_flashing - Whether the meter should be pulsing.
+ */
+/atom/movable/screen/stamina/proc/set_flashing(new_flashing)
+	if(flashing == new_flashing)
+		return
+
+	flashing = new_flashing
+	if(!flashing)
+		animate(src, alpha = 255, time = 0, flags = ANIMATION_END_NOW)
+		return
+
+	animate(src, alpha = PAIN_METER_FLASH_ALPHA, time = PAIN_METER_FLASH_INTERVAL, loop = -1)
+	animate(alpha = 255, time = PAIN_METER_FLASH_INTERVAL)

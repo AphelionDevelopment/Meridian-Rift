@@ -34,6 +34,9 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	var/vocalise_chance = 0
 	/// Whether speech is impaired while here.
 	var/stutters = FALSE
+	/// Whether the pain meter pulses while here. The last rung of the design's colour ladder, which
+	/// ends on "flashing" because there is nothing past red to shift to.
+	var/meter_flashes = FALSE
 
 /// No effect, just a reading. A minor bruise lives here.
 /datum/pain_bracket/minor
@@ -84,6 +87,7 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	fall_chance = 15
 	vocalise_chance = 35
 	stutters = TRUE
+	meter_flashes = TRUE
 
 // One moodlet per bracket. All of them carry MOOD_EVENT_PAIN, so anything that stops a mob feeling
 // pain stops it souring their mood too - the same trait that blinds the meter and the doll.

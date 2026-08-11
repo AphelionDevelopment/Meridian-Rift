@@ -1,3 +1,8 @@
+/// Metabolism cycles of fentanyl before the patient starts enjoying it.
+#define FENTANYL_MOOD_CYCLES 4
+/// Metabolism cycles of fentanyl before it puts the patient under.
+#define FENTANYL_SEDATION_CYCLES 18
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -1990,7 +1995,7 @@
 	var/static/list/opiates_to_clear = list(
 		/datum/reagent/medicine/morphine,
 		/datum/reagent/impedrezene,
-		/datum/reagent/toxin/fentanyl,
+		/datum/reagent/medicine/fentanyl,
 		/datum/reagent/drug/krokodil,
 		/datum/reagent/inverse/krokodil,
 	)
@@ -2045,3 +2050,44 @@
 	// bleeding but its only effect is to uncap how much of a hit counts towards the next injury, so it
 	// would make a mild painkiller roughly double how fast its taker collects critical wounds.
 	metabolized_traits = list(TRAIT_BLOOD_FOUNTAIN)
+
+/**
+ * Fentanyl: the surgical analgesic.
+ *
+ * Appendix D's strongest painkiller, and the one that was filed as a poison. It lived under /toxin
+ * dealing brain damage and toxloss on every tick, which is not what a surgical analgesic does to a
+ * patient - it is what a murder chemical does. Recategorised here with those removed, keeping the
+ * sedation and the addiction, and gaining the drawback the design actually names: enough of it stops
+ * you breathing. Every use of it as a knockout drug still works, because it is still a knockout drug.
+ */
+/datum/reagent/medicine/fentanyl
+	name = "Fentanyl"
+	description = "A surgical-grade opioid analgesic. Numbs almost anything, sedates heavily, and is \
+		viciously addictive. Too much of it will stop the patient breathing."
+	color = "#64916E"
+	metabolization_rate = 0.5 * REAGENTS_METABOLISM
+	creation_purity = REAGENT_STANDARD_PURITY
+	purity = REAGENT_STANDARD_PURITY
+	overdose_threshold = 15
+	ph = 9
+	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	randomized_spawns = REAGENT_SPAWN_ALL_RANDOM_SPAWNS
+	addiction_types = list(/datum/addiction/opioids = 25)
+	metabolized_traits = list(TRAIT_ANALGESIA)
+	pain_dampening = PAIN_DAMPEN_FENTANYL
+
+/datum/reagent/medicine/fentanyl/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)
+	. = ..()
+	if(current_cycle > FENTANYL_MOOD_CYCLES)
+		affected_mob.add_mood_event("smacked out", /datum/mood_event/narcotic_heavy, name)
+	if(current_cycle > FENTANYL_SEDATION_CYCLES)
+		affected_mob.Sleeping(40 * metabolization_ratio * normalise_creation_purity() * seconds_per_tick)
+
+/datum/reagent/medicine/fentanyl/overdose_process(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)
+	. = ..()
+	// Respiratory depression, which is what actually kills people who take too much of this. It routes
+	// into the brain through oxyloss like every other way of not breathing does.
+	affected_mob.losebreath += 1 * metabolization_ratio * seconds_per_tick
+
+#undef FENTANYL_MOOD_CYCLES
+#undef FENTANYL_SEDATION_CYCLES

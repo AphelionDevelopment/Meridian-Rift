@@ -39,7 +39,7 @@
 		/datum/borer_evolution/diveworm/health_per_level/t2,
 	)
 	var/static/list/added_chemicals = list(
-		/datum/reagent/toxin/fentanyl,
+		/datum/reagent/medicine/fentanyl,
 		/datum/reagent/toxin/staminatoxin,
 		/datum/reagent/toxin/mutetoxin,
 		/datum/reagent/toxin/mutagen,

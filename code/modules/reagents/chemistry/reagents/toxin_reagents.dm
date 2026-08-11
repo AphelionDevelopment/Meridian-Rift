@@ -870,35 +870,6 @@
 	affected_mob.update_transform(RESIZE_DEFAULT_SIZE/current_size)
 	current_size = RESIZE_DEFAULT_SIZE
 
-/datum/reagent/toxin/fentanyl
-	name = "Fentanyl"
-	description = "Inhibits brain function and causes toxin damage before eventually knocking out the patient."
-	color = "#64916E"
-	metabolization_rate = 0.5 * REAGENTS_METABOLISM
-	creation_purity = REAGENT_STANDARD_PURITY
-	purity = REAGENT_STANDARD_PURITY
-	toxpwr = 0
-	ph = 9
-	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
-	randomized_spawns = REAGENT_SPAWN_ALL_RANDOM_SPAWNS
-	addiction_types = list(/datum/addiction/opioids = 25)
-	// Surgical grade analgesia. It still sits under /toxin because that is where it already lived -
-	// recategorising it as medicine is a separate change with its own chemistry fallout.
-	pain_dampening = PAIN_DAMPEN_FENTANYL
-
-/datum/reagent/toxin/fentanyl/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)
-	. = ..()
-	var/need_mob_update
-	need_mob_update = affected_mob.adjust_organ_loss(ORGAN_SLOT_BRAIN, 3 * metabolization_ratio * normalise_creation_purity() * seconds_per_tick, 150)
-	if(affected_mob.toxloss <= 60)
-		need_mob_update += affected_mob.adjust_tox_loss(1 * metabolization_ratio * normalise_creation_purity() * seconds_per_tick, updating_health = FALSE, required_biotype = affected_biotype)
-	if(current_cycle > 4)
-		affected_mob.add_mood_event("smacked out", /datum/mood_event/narcotic_heavy, name)
-	if(current_cycle > 18)
-		affected_mob.Sleeping(40 * metabolization_ratio * normalise_creation_purity() * seconds_per_tick)
-	if(need_mob_update)
-		return UPDATE_MOB_HEALTH
-
 /datum/reagent/toxin/cyanide
 	name = "Cyanide"
 	description = "An infamous poison known for its use in assassination. Causes small amounts of toxin damage with a small chance of oxygen damage or a stun."

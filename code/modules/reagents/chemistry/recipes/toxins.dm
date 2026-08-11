@@ -19,26 +19,6 @@
 	reaction_flags = REACTION_PH_VOL_CONSTANT
 	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_DAMAGING | REACTION_TAG_CHEMICAL | REACTION_TAG_BRUTE | REACTION_TAG_TOXIN
 
-/datum/chemical_reaction/fentanyl
-	results = list(/datum/reagent/toxin/fentanyl = 1)
-	required_reagents = list(/datum/reagent/drug/space_drugs = 1)
-	mix_message = "The mixture turns cloudy, then becomes clear again."
-	is_cold_recipe = FALSE
-	required_temp = 674
-	optimal_temp = 774
-	overheat_temp = 874
-	optimal_ph_min = 7
-	optimal_ph_max = 11
-	determin_ph_range = 3
-	temp_exponent_factor = 0.7
-	ph_exponent_factor = 10
-	thermic_constant = 50
-	H_ion_release = 3
-	rate_up_lim = 5
-	purity_min = 0.5
-	reaction_flags = REACTION_PH_VOL_CONSTANT
-	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_DAMAGING | REACTION_TAG_ORGAN | REACTION_TAG_TOXIN
-
 /datum/chemical_reaction/cyanide
 	results = list(/datum/reagent/toxin/cyanide = 3)
 	required_reagents = list(/datum/reagent/fuel/oil = 1, /datum/reagent/ammonia = 1, /datum/reagent/oxygen = 1)
@@ -328,7 +308,7 @@
 
 /datum/chemical_reaction/rotatium
 	results = list(/datum/reagent/toxin/rotatium = 3)
-	required_reagents = list(/datum/reagent/toxin/mindbreaker = 1, /datum/reagent/teslium = 1, /datum/reagent/toxin/fentanyl = 1)
+	required_reagents = list(/datum/reagent/toxin/mindbreaker = 1, /datum/reagent/teslium = 1, /datum/reagent/medicine/fentanyl = 1)
 	mix_message = span_danger("After sparks, fire, and the smell of mindbreaker, the mix is constantly spinning with no stop in sight.")
 	is_cold_recipe = FALSE
 	required_temp = 100

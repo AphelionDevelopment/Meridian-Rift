@@ -13,6 +13,13 @@
 	required_reagents = list(/datum/reagent/foaming_agent = 1, /datum/reagent/gold = 1, /datum/reagent/iron = 1)
 	mix_message = "The mixture becomes a metallic slurry."
 
+// NOVA EDIT ADDITION START - COMBAT_PAIN
+/datum/chemical_reaction/feedback_dampener
+	results = list(/datum/reagent/medicine/feedback_dampener = 3)
+	required_reagents = list(/datum/reagent/medicine/system_cleaner = 1, /datum/reagent/silicon = 1, /datum/reagent/space_cleaner = 1)
+	mix_message = "The mixture thins out and goes flat and grey."
+// NOVA EDIT ADDITION END - COMBAT_PAIN
+
 
 /datum/chemical_reaction/medicine/taste_suppressor
 	results = list(/datum/reagent/medicine/taste_suppressor = 3)

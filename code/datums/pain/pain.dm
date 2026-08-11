@@ -342,6 +342,10 @@
 		// of them: a painkiller works from the first unit.
 		if(held_reagent.volume < held_reagent.pain_dampening_minimum_volume)
 			continue
+		// A drug only numbs a body it works on. Appendix F's synthetics take their dampeners from
+		// robotics rather than from medbay, and morphine has nothing to say to a servo.
+		if(!(parent.mob_biotypes & held_reagent.affected_biotype))
+			continue
 		strongest = max(strongest, held_reagent.pain_dampening)
 
 	// Not everything that numbs you is a chemical. Cocktails, augmented hearts and gene mods all hand
@@ -482,10 +486,21 @@
 
 	COOLDOWN_START(src, effect_roll_cooldown, PAIN_EFFECT_ROLL_INTERVAL)
 
+	// Same brackets, same chances, different flavour: what an organic body does with pain is stutter
+	// and shake, and what a machine does with it is glitch its speaker and lose the servos. Appendix F
+	// asks for parity, not sameness.
+	var/is_synthetic = (parent.mob_biotypes & MOB_ROBOTIC)
+
 	if(current_bracket.stutters)
 		parent.adjust_stutter_up_to(PAIN_EFFECT_ROLL_INTERVAL, PAIN_EFFECT_ROLL_INTERVAL * 2)
+		if(is_synthetic)
+			// Speaker distortion on top of the glitching, which is the synthetic half of "constant stuttering".
+			parent.adjust_slurring_up_to(PAIN_EFFECT_ROLL_INTERVAL, PAIN_EFFECT_ROLL_INTERVAL * 2)
 
 	if(current_bracket.vocalise_chance && prob(current_bracket.vocalise_chance))
+		if(is_synthetic)
+			// Servo tremors. Synth tongues already carry their own scream, so the noise needs no special casing.
+			parent.adjust_jitter_up_to(PAIN_EFFECT_ROLL_INTERVAL, PAIN_EFFECT_ROLL_INTERVAL * 2)
 		parent.emote(felt_pain >= PAIN_BRACKET_SEVERE_THRESHOLD ? "scream" : "whimper")
 
 	if(current_bracket.drop_chance && prob(current_bracket.drop_chance))

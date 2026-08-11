@@ -454,3 +454,24 @@
 	results = list(/datum/reagent/medicine/ibuprofen = 3)
 	required_reagents = list(/datum/reagent/acetone = 1, /datum/reagent/consumable/ethanol = 1, /datum/reagent/oxygen = 1)
 	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_HEALING | REACTION_TAG_OTHER
+
+// Moved here from the toxin recipes with the reagent itself: it is an analgesic, not a poison.
+/datum/chemical_reaction/fentanyl
+	results = list(/datum/reagent/medicine/fentanyl = 1)
+	required_reagents = list(/datum/reagent/drug/space_drugs = 1)
+	mix_message = "The mixture turns cloudy, then becomes clear again."
+	is_cold_recipe = FALSE
+	required_temp = 674
+	optimal_temp = 774
+	overheat_temp = 874
+	optimal_ph_min = 7
+	optimal_ph_max = 11
+	determin_ph_range = 3
+	temp_exponent_factor = 0.7
+	ph_exponent_factor = 10
+	thermic_constant = 50
+	H_ion_release = 3
+	rate_up_lim = 5
+	purity_min = 0.5
+	reaction_flags = REACTION_PH_VOL_CONSTANT
+	reaction_tags = REACTION_TAG_EASY | REACTION_TAG_HEALING | REACTION_TAG_OTHER

@@ -90,6 +90,13 @@
 /// How often the current bracket rolls its intermittent effects.
 #define PAIN_EFFECT_ROLL_INTERVAL (4 SECONDS)
 
+// The top of the meter flashes rather than taking another colour, because there is no colour past red
+// and the design's ladder ends on "flashing". Done by pulsing the bar rather than with new art.
+/// How faint the pain meter goes at the bottom of a flash.
+#define PAIN_METER_FLASH_ALPHA 90
+/// How long each half of a flash takes.
+#define PAIN_METER_FLASH_INTERVAL (0.4 SECONDS)
+
 /// Permanent pain from one injury that is enough to trigger fight or flight.
 #define PAIN_ADRENALINE_INJURY_TRIGGER PAIN_FACTOR_SEVERE
 /// Temporary pain from a single hit that is enough to trigger fight or flight.

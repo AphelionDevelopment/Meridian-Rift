@@ -157,6 +157,7 @@
 #include "combat_pistol_whip.dm"
 #include "combat_overflow.dm"
 #include "combat_pain.dm"
+#include "combat_plates.dm"
 #include "combat_stamina.dm"
 #include "combat_welder.dm"
 #include "component_tests.dm"

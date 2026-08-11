@@ -38,7 +38,7 @@
 	)
 #define HACKED_PEACE_REAGENTS list(\
 		/datum/reagent/toxin/cyanide,\
-		/datum/reagent/toxin/fentanyl,\
+		/datum/reagent/medicine/fentanyl,\
 		/datum/reagent/toxin/sodium_thiopental,\
 		/datum/reagent/toxin/staminatoxin,\
 		/datum/reagent/toxin/sulfonal,\

@@ -36,27 +36,6 @@
 	var/species_mod = (100 - dna.species.damage_modifier) / 100
 	return ..() * species_mod
 
-/mob/living/carbon/human/apply_damage(
-	damage = 0,
-	damagetype = BRUTE,
-	def_zone = null,
-	blocked = 0,
-	forced = FALSE,
-	spread_damage = FALSE,
-	wound_bonus = 0,
-	exposed_wound_bonus = 0,
-	sharpness = NONE,
-	attack_direction = null,
-	attacking_item,
-	wound_clothing = TRUE,
-	armour_flag = null,
-)
-
-	// Add relevant DR modifiers into blocked value to pass to parent
-	blocked += physiology?.damage_resistance
-	blocked += dna?.species?.damage_modifier
-	return ..()
-
 /mob/living/carbon/human/get_incoming_damage_modifier(
 	damage = 0,
 	damagetype = BRUTE,
@@ -66,6 +45,13 @@
 	attacking_item,
 )
 	var/final_mod = ..()
+
+	// A species' hide and an augment's bracing, which used to be folded into blocked alongside worn
+	// armour. They are not armour - nobody takes them off - and phase 6 needs blocked to mean worn
+	// armour and nothing else, so that an armour plate can take its place for a hit without also
+	// deleting whatever the body underneath is naturally made of. Negatives still amplify, as before.
+	final_mod *= (100 - (physiology?.damage_resistance || 0)) / 100
+	final_mod *= (100 - (dna?.species?.damage_modifier || 0)) / 100
 
 	switch(damagetype)
 		if(BRUTE)

@@ -189,7 +189,7 @@
 /obj/item/reagent_containers/applicator/patch/fent
 	name = "unmarked patch"
 	desc = "An unmarked, unlabeled transdermal patch for you to wear!"
-	list_reagents = list(/datum/reagent/toxin/fentanyl = 2)
+	list_reagents = list(/datum/reagent/medicine/fentanyl = 2)
 
 /obj/item/reagent_containers/applicator/patch/synthflesh
 	name = "synthflesh patch"

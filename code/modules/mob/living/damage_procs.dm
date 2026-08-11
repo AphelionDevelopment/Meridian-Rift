@@ -46,14 +46,19 @@
 	if(stopping_plate)
 		damage_amount -= stopping_plate.take_impact(src, damage, def_zone, wound_bonus, attack_direction, attacking_item, wound_clothing)
 	if(!forced)
-		damage_amount *= ((100 - blocked) / 100)
+		// A plate that answered this attack is the whole of the armour story for it. Everything up to
+		// its tolerance was stopped outright and what got past is penetrating by definition, so it
+		// arrives as though nothing were worn - damage is the only penetration stat there is. Worn
+		// armour still decides every attack no plate answered: the wrong sort, a spent one, an
+		// uncovered zone, or no plate at all. See phase 6, D6.
+		if(!stopping_plate)
+			damage_amount *= ((100 - blocked) / 100)
 		damage_amount *= get_incoming_damage_modifier(damage_amount, damagetype, def_zone, sharpness, attack_direction, attacking_item)
 	if(damage_amount <= 0)
 		return 0
 
-	// Whatever a plate did not stop got through it, so it is penetrating by definition and the
-	// percentage that stood in for plate headroom until now does not get a second say. Attacks that
-	// never met a plate still go by the stand-in, which is all there is for them.
+	// Same rule for the injury roll: what a plate let through is penetrating and the percentage does
+	// not get a second say either.
 	var/wound_blocked = stopping_plate ? 0 : blocked
 
 	SEND_SIGNAL(src, COMSIG_MOB_APPLY_DAMAGE, damage_amount, damagetype, def_zone, blocked, wound_bonus, exposed_wound_bonus, sharpness, attack_direction, attacking_item, wound_clothing)
