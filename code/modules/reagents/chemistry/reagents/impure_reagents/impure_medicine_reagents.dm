@@ -980,8 +980,8 @@ Basically, we fill the time between now and 2s from now with hands based off the
 	. = ..()
 	if(is_simian(affected_mob))
 		affected_mob.gain_trauma(/datum/brain_trauma/special/primal_instincts, TRAUMA_RESILIENCE_ABSOLUTE)
-		// The metabolization source, so the pain controller can tell this is a drug with a value rather
-		// than something that has switched the nerves off entirely.
+		// The metabolization source, so the pain controller can tell this is a graded drug rather than
+		// total numbness.
 		affected_mob.add_traits(list(TRAIT_STUNIMMUNE, TRAIT_SLEEPIMMUNE, TRAIT_ANALGESIA, TRAIT_STIMULATED), METABOLIZATION_TRAIT(type))
 		if(jungle_arts)
 			return

@@ -1,13 +1,12 @@
-/// Drives a bodypart to a Critical injury, which is what "maxed" means for overflow.
+/// Drives a bodypart to a Critical injury, which is what "maxed" means to overflow.
 /datum/unit_test/proc/max_out_injuries(mob/living/carbon/human/victim, obj/item/bodypart/part)
 	part.force_wound_upwards(/datum/wound/slash/flesh/critical)
 	return part.is_injury_capacity_maxed()
 
 /**
- * A monster hit can ruin a part. The kill starts on the hit after it, never inside the same one.
+ * A single hit can ruin a part. The kill starts on the hit after it, never inside the same one.
  *
- * This is the rule that stops overflow being an instakill, so it gets asserted on its own before
- * anything else about overflow is worth testing.
+ * This is the rule that stops overflow being an instakill, so it is asserted on its own.
  */
 /datum/unit_test/overflow_never_within_a_hit/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
@@ -38,9 +37,9 @@
 	TEST_ASSERT(second_victim.get_organ_loss(ORGAN_SLOT_HEART) > 0, "A hit on a ruined chest left the heart untouched")
 
 /**
- * Once a part's injuries stack up, what is inside it starts taking hits — not only the one organ that
- * part's overflow aims at. Which organ is random for now, so this asserts that something other than
- * the head's own overflow target eventually gets hurt.
+ * Once a part's injuries stack up, what is inside it starts taking hits, not only that part's own
+ * overflow target. Which organ is random for now, so this asserts that something other than the
+ * head's overflow target eventually gets hurt.
  */
 /datum/unit_test/overflow_reaches_other_organs/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
@@ -60,8 +59,8 @@
 /**
  * A bruise is never lethal, however bad it gets.
  *
- * Capacity is read off the injury track, so a Critical anything would open a part up to being killed
- * through it. Appendix A rules the worst bruise there is out of that, and it says so on the datum.
+ * Capacity is read off the injury track, so any Critical injury would open a part up to being killed
+ * through it. Appendix A excludes bruises, via allows_overflow on the datum.
  */
 /datum/unit_test/overflow_ignores_bruises/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
@@ -71,11 +70,11 @@
 	TEST_ASSERT(head.get_wound_type(/datum/wound/bruise/critical), "Failed to give the patient the contusion this test is about")
 	TEST_ASSERT(!head.is_injury_capacity_maxed(), "A contusion is still only a bruise, and should not max a bodypart's injury capacity")
 
-	// Anything that is not ruled out still counts, or the flag would just be a way of turning overflow off.
+	// Anything not excluded still counts, or the flag would be a way of turning overflow off.
 	head.force_wound_upwards(/datum/wound/slash/flesh/critical)
 	TEST_ASSERT(head.is_injury_capacity_maxed(), "A critical laceration should still max a bodypart's injury capacity")
 
-/// Nobody is executed through a working plate. Break the armour or strip the helmet first.
+/// Nobody can be killed through a working plate; the armour has to be broken first.
 /datum/unit_test/overflow_needs_penetration/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 	var/obj/item/bodypart/head = victim.get_bodypart(BODY_ZONE_HEAD)
@@ -94,9 +93,9 @@
 	var/obj/item/organ/brain = victim.get_organ_slot(ORGAN_SLOT_BRAIN)
 	TEST_ASSERT(max_out_injuries(victim, head), "Failed to give the patient the critical head injury this test is about")
 
-	// Deliberately a count rather than one huge hit: the doc's whole point is that confirming a kill
-	// costs most of a magazine. Kept small enough per hit that the total brute stays under the
-	// separate tissue-damage limit on defibrillation, so the assertion below is about the brain alone.
+	// A count rather than one huge hit, since confirming a kill is meant to cost most of a magazine.
+	// Kept small enough per hit that the total brute stays under the separate tissue-damage limit on
+	// defibrillation, so the assertion below is about the brain alone.
 	var/hits = 0
 	while(victim.get_organ_loss(ORGAN_SLOT_BRAIN) < brain.maxHealth && hits < 20)
 		victim.apply_damage(20, BRUTE, head, sharpness = SHARP_EDGED)
@@ -112,10 +111,10 @@
 		"An overflow kill should need the brain repaired before a defibrillator means anything")
 
 /**
- * The hole phase 4 left open on purpose: nothing died of accumulated burn any more.
+ * The gap phase 4 left open: nothing died of accumulated burn any more.
  *
- * Overflow is the way back, and burning arrives as a great many small ticks rather than as hits, so
- * it has to work at that size or a body can burn indefinitely with a working heart in it.
+ * Overflow is the route back, and burning arrives as many small ticks rather than as hits, so it has
+ * to work at that size or a body can burn indefinitely with a working heart in it.
  */
 /datum/unit_test/overflow_closes_the_burn_hole/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
@@ -132,9 +131,8 @@
 		"Burning never reached the heart of a patient whose chest was already ruined - nothing would burn to death")
 
 /**
- * The artery is defined by its pain column rather than its severity: Light, where everything else
- * this lethal is Severe or Extreme. That gap is the whole injury - you bleed out while being treated
- * for whatever hurts more - so it is what gets asserted.
+ * The artery is defined by its pain factor rather than its severity: Light, where everything else
+ * this lethal is Severe or Extreme. That gap is what gets asserted.
  */
 /datum/unit_test/artery_is_the_killer_you_dont_feel/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
@@ -147,11 +145,11 @@
 
 	TEST_ASSERT_EQUAL(severed.severity, WOUND_SEVERITY_CRITICAL, "A severed artery should be a critical injury")
 	TEST_ASSERT_EQUAL(severed.pain_factor, PAIN_FACTOR_LIGHT, \
-		"A severed artery should barely hurt despite being critical - that is the entire point of it")
+		"A severed artery should carry Light pain despite being a critical injury")
 	TEST_ASSERT_EQUAL(pain.pain_floor, PAIN_FACTOR_LIGHT, "The pain floor should carry only what the artery costs")
 	TEST_ASSERT(severed.blood_flow > 0, "A severed artery should be bleeding")
 
-	// A tourniquet buys time. It does not close the vessel - that is a surgeon's job.
+	// A tourniquet buys time. Closing the vessel is a surgeon's job.
 	var/bleed_rate_before = leg.cached_bleed_rate
 	TEST_ASSERT(bleed_rate_before > 0, "The limb should be bleeding with a severed artery in it")
 
@@ -161,7 +159,7 @@
 	TEST_ASSERT(leg.get_wound_type(/datum/wound/slash/flesh/artery), \
 		"A tourniquet should only slow the artery, never close it")
 
-/// A finisher is for someone who has already stopped being able to stop it. Anyone still upright is not that.
+/// A finisher needs a target that can no longer prevent it. Anyone still upright can.
 /datum/unit_test/finisher_needs_a_helpless_target/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 	var/mob/living/carbon/human/killer = allocate(/mob/living/carbon/human/consistent)
@@ -177,7 +175,7 @@
 	victim.Paralyze(10 SECONDS)
 	TEST_ASSERT(victim.is_at_mercy(), "A paralysed human should be at the attacker's mercy")
 
-/// Restraint tools cannot execute. That is the whole difference between arresting someone and killing them.
+/// Restraint tools cannot finish anyone off, whatever their force.
 /datum/unit_test/finisher_needs_a_lethal_weapon/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 	var/mob/living/carbon/human/killer = allocate(/mob/living/carbon/human/consistent)
@@ -195,8 +193,8 @@
  * An artery is not what takes a limb off.
  *
  * Appendix B's dismemberment rule is a Critical fracture or laceration plus a high-damage penetrating
- * hit. An artery is Critical too, but the limb around it is structurally intact - counting it would
- * amputate people instead of letting them bleed, which is the one thing this injury exists to do.
+ * hit. An artery is Critical too, but the limb around it is structurally intact, so counting it would
+ * amputate the patient instead of letting them bleed.
  */
 /datum/unit_test/artery_does_not_take_the_limb/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)

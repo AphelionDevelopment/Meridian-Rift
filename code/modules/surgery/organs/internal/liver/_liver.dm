@@ -1,6 +1,6 @@
 #define LIVER_DEFAULT_TOX_TOLERANCE 3 //amount of toxins the liver can filter out
 #define LIVER_DEFAULT_TOX_RESISTANCE 1 //lower values lower how harmful toxins are to the liver
-#define LIVER_FAILURE_STAGE_SECONDS 60 //amount of seconds before liver failure reaches a new stage
+#define LIVER_FAILURE_STAGE_SECONDS 60 //amount of seconds before liver failure reaches a new stage // APHELION EDIT CHANGE - Liver failure has to stay lethal now that toxloss alone does not kill - ORIGINAL: #define LIVER_FAILURE_STAGE_SECONDS 180 //amount of seconds before liver failure reaches a new stage // NOVA EDIT CHANGE - Original: 60
 
 /obj/item/organ/liver
 	name = "liver"

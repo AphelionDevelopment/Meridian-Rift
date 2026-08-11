@@ -7,7 +7,7 @@
  *
  * Built on the flesh cut, so it inherits the bleeding, grasping and cauterising machinery, but sits
  * in a series of its own: an artery is carried alongside the wound that opened it rather than
- * instead of it. It never clots and gauze does nothing for it. A tourniquet buys time.
+ * instead of it. It never clots and gauze does nothing for it; a tourniquet buys time.
  */
 /datum/wound/slash/flesh/artery
 	name = "Severed Artery"
@@ -38,7 +38,7 @@
 
 	// Nothing to tick: no clotting to apply and no gauze benefit to grant.
 	processes = FALSE
-	// Gauze is deliberately absent, but pressure by hand still helps.
+	// No ACCEPTS_GAUZE, but pressure by hand still helps.
 	wound_flags = CAN_BE_GRASPED
 	base_treat_time = 5 SECONDS
 	threshold_penalty = 20
@@ -71,7 +71,7 @@
 	viable_zones = list(BODY_ZONE_L_ARM, BODY_ZONE_R_ARM, BODY_ZONE_L_LEG, BODY_ZONE_R_LEG)
 
 	// At or above the critical tier of both series it competes with, so it is an alternative at the
-	// top tier picked by weight rather than a replacement for them.
+	// top tier, picked by weight, rather than a replacement for them.
 	threshold_minimum = 100
 	weight = 15
 

@@ -1,5 +1,4 @@
-/// Field treatment counts. A wrapped or splinted injury is a tier quieter than an untreated one,
-/// which is what lets a medic put someone back on their feet without a surgeon.
+/// Field treatment counts: a wrapped or splinted injury is a tier quieter than an untreated one.
 /datum/unit_test/pain_treatment/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
 	var/obj/item/bodypart/arm = patient.get_bodypart(BODY_ZONE_R_ARM)
@@ -20,7 +19,7 @@
 	TEST_ASSERT_EQUAL(compound.get_pain_factor(), PAIN_FACTOR_EXTREME, "A splint should not quiet a compound fracture")
 
 /// The floor is a cached sum, so everything that changes what an injury costs has to invalidate it.
-/// Treating one especially: a floor that keeps counting a healed wound is a crawl nobody can lift.
+/// Treating one especially: a floor still counting a healed wound is a crawl nobody can lift.
 /datum/unit_test/pain_floor_tracks_treatment/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
 	var/datum/pain/pain = patient.pain_controller
@@ -31,7 +30,7 @@
 	TEST_ASSERT_EQUAL(pain.pain_floor, PAIN_FACTOR_SEVERE, "A fresh fracture should put its pain factor onto the floor")
 
 	// Wrapping a limb changes what its injuries cost without adding or removing one, so it only marks
-	// the floor stale rather than rebuilding on the spot. Both halves of that are worth asserting.
+	// the floor stale rather than rebuilding on the spot.
 	var/obj/item/stack/medical/wrap/gauze/wrap = allocate(/obj/item/stack/medical/wrap/gauze)
 	arm.apply_item(wrap, LIMB_ITEM_GAUZE)
 	TEST_ASSERT(pain.floor_needs_recalculation, "Wrapping a limb should mark the floor for a rebuild")
@@ -42,7 +41,7 @@
 	fracture.remove_wound()
 	TEST_ASSERT_EQUAL(pain.pain_floor, 0, "Treating the injury did not take its pain off the floor with it")
 
-/// Fresh hits always black you out again: shoot a crawler and they go limp, stir, then drag on.
+/// A fresh hit blacks a crawler out again without clearing the floor holding them down.
 /datum/unit_test/pain_crawler_blackout/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 	var/datum/pain/pain = victim.pain_controller
@@ -53,7 +52,7 @@
 	victim.add_pain_source("test_arm", PAIN_CAP_LIMB, BODY_ZONE_R_ARM)
 
 	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/pain_crawl), "A floor at the cap should leave the mob crawling")
-	TEST_ASSERT(!victim.has_status_effect(/datum/status_effect/incapacitating/pain_shock), "A floor at the cap should not black the mob out - there is nothing to drain")
+	TEST_ASSERT(!victim.has_status_effect(/datum/status_effect/incapacitating/pain_shock), "A floor at the cap should not black the mob out, as there is nothing to drain")
 
 	victim.add_temporary_pain(PAIN_SHOCK_BLACKOUT_MINIMUM)
 	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/incapacitating/pain_shock), "A fresh hit on a crawler should black them out again")
@@ -63,12 +62,12 @@
 	TEST_ASSERT(!victim.has_status_effect(/datum/status_effect/incapacitating/pain_shock), "The blackout should lift once the fresh pain has drained")
 	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/pain_crawl), "Draining the pool should not stand a mob up whose floor is still at the cap")
 
-	// Treating the source is the only way out of the crawl.
+	// Lowering the floor is the only way out of the crawl.
 	victim.remove_pain_source("test_chest")
 	TEST_ASSERT(!victim.has_status_effect(/datum/status_effect/pain_crawl), "Lowering the floor should let the mob off the ground")
 
-/// The crawl is a soft crit you can still use your hands in. Dragging yourself to your own pockets is
-/// the only way out of a floor at the cap, so anything that takes the crawler's hands is a soft lock.
+/// The crawl is a soft crit that leaves the hands usable. Reaching your own pockets is the only way
+/// out of a floor at the cap, so taking the crawler's hands is a soft lock.
 /datum/unit_test/pain_crawl_keeps_hands/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 
@@ -81,7 +80,7 @@
 	TEST_ASSERT(!HAS_TRAIT(victim, TRAIT_HANDS_BLOCKED), "A crawler cannot reach their own injector with their hands blocked")
 	TEST_ASSERT(!HAS_TRAIT(victim, TRAIT_INCAPACITATED), "A crawler cannot treat themselves while incapacitated")
 
-	// The exception is only the crawl's: every other soft crit is as helpless as it ever was.
+	// The exception belongs to the crawl alone; every other soft crit is as helpless as before.
 	victim.remove_pain_source("test_chest")
 	victim.remove_pain_source("test_arm")
 	victim.set_blood_volume(BLOOD_VOLUME_BAD - 1)
@@ -93,8 +92,8 @@
  * Being put down by pain must not cost you air.
  *
  * The breath loop reads the crit ladder, and pain owns two rungs of it now. If the rung alone stopped
- * a mob breathing then every stun would feed oxyloss, and phase 4 routes oxyloss into brain damage -
- * so stunlocking someone would quietly become a way of killing them.
+ * a mob breathing then every stun would feed oxyloss, which phase 4 routes into brain damage, making
+ * stunlocking a way of killing someone.
  */
 /datum/unit_test/pain_does_not_suffocate/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
@@ -118,9 +117,9 @@
 /**
  * Everything that hands out TRAIT_ANALGESIA has to carry a dampening value.
  *
- * Without one the controller reads the trait as total numbness, and per the design doc anything that
- * cannot feel pain cannot be stopped by it - no shock, no crawl, and no finisher. Painkillers are
- * graded; so are the cocktails, implants and gene mods that grant the same trait.
+ * Without one the controller reads the trait as total numbness, which means no shock, no crawl and no
+ * finisher. Painkillers are graded, and so are the cocktails, implants and gene mods that grant the
+ * same trait.
  */
 /datum/unit_test/pain_graded_analgesia/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
@@ -134,11 +133,11 @@
 	patient.apply_status_effect(/datum/status_effect/rev_resilience)
 	pain.update_dampening()
 	TEST_ASSERT(HAS_TRAIT(patient, TRAIT_ANALGESIA), "The cocktail this test is about did not grant analgesia")
-	TEST_ASSERT_EQUAL(pain.dampening, PAIN_DAMPEN_ALCOHOL, "A cocktail should dampen pain by its own value, not switch it off entirely")
+	TEST_ASSERT_EQUAL(pain.dampening, PAIN_DAMPEN_ALCOHOL, "A cocktail should dampen pain by its own value rather than numbing entirely")
 	TEST_ASSERT_EQUAL(pain.felt_pain, PAIN_SHOCK_THRESHOLD - PAIN_DAMPEN_ALCOHOL, "A graded painkiller hid more pain than it is worth")
 
-/// Appendix B puts Extreme pain on a missing limb. The loss wound cannot carry it - the limb it was
-/// applied to is gone by the time the floor is rebuilt - so the empty socket has to.
+/// Appendix B puts Extreme pain on a missing limb. The loss wound cannot carry it, since the limb it
+/// was applied to is gone by the time the floor is rebuilt, so the empty socket does.
 /datum/unit_test/pain_missing_limb/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 	var/datum/pain/pain = victim.pain_controller
@@ -152,8 +151,8 @@
  * Adrenaline delays pain shock. It never cancels it.
  *
  * The dampener is snapshotted when fight or flight fires rather than tracked against the mob's
- * current total, because total pain is capped at the shock threshold itself - halving it live would
- * hold felt pain at half the cap forever and make shock unreachable for the whole thirty seconds.
+ * current total: halving it live would hold felt pain at half the cap and make shock unreachable for
+ * the whole thirty seconds.
  */
 /datum/unit_test/pain_adrenaline_delays_shock/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
@@ -170,15 +169,14 @@
 	// Everything that lands afterwards is felt at full price, so the meter can still fill.
 	victim.add_temporary_pain(PAIN_TEMPORARY_MAXIMUM)
 	pain.update_dampening()
-	TEST_ASSERT_EQUAL(pain.felt_pain, PAIN_SHOCK_THRESHOLD, "Adrenaline cancelled pain shock outright - it is only allowed to delay it")
+	TEST_ASSERT_EQUAL(pain.felt_pain, PAIN_SHOCK_THRESHOLD, "Adrenaline cancelled pain shock instead of delaying it")
 	TEST_ASSERT(pain.in_shock, "A mob past the cap on adrenaline should still black out")
 
 /**
- * A surgical anaesthetic is a dose, not a sip.
+ * A surgical anaesthetic needs a full dose, not a sip.
  *
- * Total numbness is total - no shock, no crawl, no finisher - so anything carrying it has to be
- * gated on enough of it being present to actually put someone under, or it is the cheapest and most
- * complete stun immunity in the game.
+ * Total numbness means no shock, no crawl and no finisher, so anything carrying it has to be gated on
+ * enough being present to put someone under, or it is the cheapest stun immunity in the game.
  */
 /datum/unit_test/pain_anaesthetic_needs_a_dose/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
@@ -189,7 +187,7 @@
 
 	patient.reagents.add_reagent(/datum/reagent/nitrous_oxide, PAIN_DAMPEN_ANAESTHETIC_DOSE - 1)
 	pain.update_dampening()
-	TEST_ASSERT_EQUAL(pain.dampening, 0, "A sip of anaesthetic numbed the patient - it is not a field painkiller")
+	TEST_ASSERT_EQUAL(pain.dampening, 0, "A sip of anaesthetic numbed the patient")
 
 	patient.reagents.add_reagent(/datum/reagent/nitrous_oxide, 1)
 	pain.update_dampening()

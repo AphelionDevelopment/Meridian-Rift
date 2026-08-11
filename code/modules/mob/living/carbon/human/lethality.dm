@@ -8,9 +8,9 @@
  */
 
 /mob/living/carbon/human/update_stat_from_condition()
-	// Death is the brain's, the blood's and the heart's business, and each kills where it lives, so
-	// this decides consciousness only. It runs on every updatehealth(), so the pain rungs come off the
-	// controller's cached state rather than a scan of the status effect list.
+	// Death is handled by the brain, the blood and the heart, each where it lives, so this decides
+	// consciousness only. It runs on every updatehealth(), so the pain rungs come off the controller's
+	// cached state rather than a scan of the status effect list.
 	var/datum/pain/pain = pain_controller
 	if((pain?.in_shock || circulation_stopped()) && !HAS_TRAIT(src, TRAIT_NOHARDCRIT))
 		set_stat(HARD_CRIT)
@@ -40,10 +40,10 @@
 /**
  * Whether this body has anything moving oxygen around it any more.
  *
- * Deliberately not [/mob/living/carbon/proc/undergoing_cardiac_arrest], which only answers whether
- * the organic heart attack mechanic is running. That proc is FALSE for a robotic heart and for
- * anything carrying TRAIT_STABLEHEART, so reading arrest alone leaves an augmented chest unkillable:
- * the cybernetic heart sits at ORGAN_FAILING and reports itself beating forever.
+ * Not [/mob/living/carbon/proc/undergoing_cardiac_arrest], which only answers whether the organic
+ * heart attack mechanic is running. That proc is FALSE for a robotic heart and for anything carrying
+ * TRAIT_STABLEHEART, so reading arrest alone leaves an augmented chest unkillable: the cybernetic
+ * heart sits at ORGAN_FAILING and reports itself beating forever.
  */
 /mob/living/carbon/human/proc/circulation_stopped()
 	if(undergoing_cardiac_arrest())
@@ -69,7 +69,7 @@
 	return FALSE
 
 /mob/living/carbon/human/is_dying()
-	// Pain is deliberately absent: succumb reads this, and a stun must not be the same as a kill.
+	// Pain is excluded: succumb reads this, and a stun must not be the same as a kill.
 	if(circulation_stopped())
 		return TRUE
 	if(get_oxy_loss() >= OXYLOSS_BRAIN_DAMAGE_THRESHOLD)
@@ -85,8 +85,8 @@
  * health with a stopped heart is dying. Returns the worst of the three, since triage wants the thing
  * about to kill the patient rather than an average.
  *
- * Says nothing about pain, so a painkilled patient still reads as critical, and nothing about brute
- * or burn, which the analyser lists in full underneath.
+ * Ignores pain, so a painkilled patient still reads as critical, and brute and burn, which the
+ * analyser lists in full underneath.
  */
 /mob/living/carbon/human/get_vitals_ratio()
 	var/obj/item/organ/our_brain = get_organ_slot(ORGAN_SLOT_BRAIN)
@@ -120,7 +120,7 @@
  *
  * Ordinary violence leaves cognitive damage, not death; overflow, finishers and suffocation are the
  * routes past it. Read off the brain rather than assumed, since not every brain gives out at the
- * standard threshold and a surplus one goes at half of it.
+ * standard threshold: a surplus one goes at half of it.
  */
 /mob/living/proc/get_brain_damage_combat_cap()
 	return BRAIN_DAMAGE_COMBAT_MAXIMUM

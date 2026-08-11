@@ -7,7 +7,7 @@
  *
  * Fitted into an armour suit or a helmet, one apiece. The carrier decides which zones are covered
  * and the plate decides how much a hit to one of them has to carry to matter, so wide coverage
- * protects more and strips faster.
+ * protects more and wears out faster.
  */
 /obj/item/armor_plate
 	name = "armour plate"
@@ -120,7 +120,7 @@
  * the round that gets through.
  *
  * Arguments:
- * * amount - Punishment absorbed.
+ * * amount - Damage absorbed.
  * * wearer - Who to tell, if anyone.
  */
 /obj/item/armor_plate/proc/wear_down(amount, mob/living/wearer)
@@ -176,7 +176,7 @@
 		else
 			return span_boldwarning("It is barely holding together.")
 
-/// Ballistic plates stop physical impacts and have no answer at all for beam weapons.
+/// Ballistic plates stop physical impacts and do nothing about beam weapons.
 /obj/item/armor_plate/ballistic
 	name = "ballistic plate"
 	desc = "A layered ceramic plate for a carrier. Catches bullets, fists and shrapnel. Lasers pass \

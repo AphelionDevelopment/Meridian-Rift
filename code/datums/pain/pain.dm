@@ -55,7 +55,7 @@
 	START_PROCESSING(SSpain, src)
 
 	RegisterSignal(parent, COMSIG_CARBON_GAIN_WOUND, PROC_REF(on_wound_gained))
-	// Deliberately the post signal. COMSIG_CARBON_LOSE_WOUND fires while the wound is still on the
+	// The post signal, not COMSIG_CARBON_LOSE_WOUND: that one fires while the wound is still on the
 	// limb, so a floor rebuilt from it would count the injury that was just treated.
 	RegisterSignal(parent, COMSIG_CARBON_POST_LOSE_WOUND, PROC_REF(on_wound_lost))
 	RegisterSignal(parent, COMSIG_CARBON_ORGAN_DAMAGED, PROC_REF(on_organs_changed))
@@ -331,8 +331,7 @@
 		// works from the first unit.
 		if(held_reagent.volume < held_reagent.pain_dampening_minimum_volume)
 			continue
-		// A drug only numbs a biotype it works on: morphine does nothing for a synthetic, and the
-		// robotics feedback dampener nothing for a person.
+		// A drug only numbs a biotype it works on: morphine does nothing for a synthetic.
 		if(!(parent.mob_biotypes & held_reagent.affected_biotype))
 			continue
 		strongest = max(strongest, held_reagent.pain_dampening)
@@ -394,9 +393,8 @@
 /datum/pain/proc/update_pain()
 	var/old_felt_pain = felt_pain
 
-	// Deliberately uncapped: the floor and the pool carry their own caps. Clamping the total to
-	// PAIN_MAXIMUM would put it at the shock threshold, leaving anyone on a painkiller permanently
-	// short of shock. Only felt pain runs 0 to 100.
+	// Uncapped: the floor and the pool carry their own caps. Clamping the total to PAIN_MAXIMUM would
+	// put it at the shock threshold, leaving anyone on a painkiller permanently short of shock.
 	total_pain = pain_floor + temporary_pain
 	felt_pain = clamp(total_pain - dampening, 0, PAIN_MAXIMUM)
 	update_bracket()
@@ -521,8 +519,8 @@
 		// someone already crawling.
 		should_black_out = !should_crawl || (temporary_pain >= PAIN_SHOCK_BLACKOUT_MINIMUM)
 	else if(was_blacked_out)
-		// Down at the cap, up at the recovery threshold, so nobody yo-yos on the line. A floor of
-		// 70-99 never reaches that threshold, so it rises once its pool is gone instead.
+		// Down at the cap, up at the recovery threshold. A floor of 70-99 never reaches that
+		// threshold, so it rises once its pool is gone instead.
 		should_black_out = (felt_pain >= PAIN_SHOCK_RECOVERY_THRESHOLD) && temporary_pain > 0
 
 	// Written before the early return, so a shock stripped elsewhere (a full heal, an admin) is

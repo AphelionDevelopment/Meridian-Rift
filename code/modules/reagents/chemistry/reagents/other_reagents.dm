@@ -1677,9 +1677,8 @@
 	ph = 5.8
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
 	randomized_spawns = REAGENT_SPAWN_ALL_RANDOM_SPAWNS
-	// An anaesthetic proper: you feel nothing at all, right up until you are asleep. Gated on a real
-	// dose, because at a sip it is not a cheap painkiller - it is nothing. Anaesthesia is a table, a
-	// mask and being put under; it must not double as the most complete stun immunity in the game.
+	// A proper anaesthetic: total numbness, then sleep. Gated on a full dose, since below one it does
+	// nothing at all - otherwise a sip would be the cheapest complete stun immunity in the game.
 	pain_dampening = PAIN_DAMPEN_TOTAL
 	pain_dampening_minimum_volume = PAIN_DAMPEN_ANAESTHETIC_DOSE
 

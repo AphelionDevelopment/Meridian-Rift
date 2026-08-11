@@ -46,7 +46,7 @@
  *
  * Stamina is temporary pain now, and so is the impact of anything that lands, so the baton's stun
  * charge and the bruising from the stick itself end up in the same number. The charge only lands on
- * the first swing - the second is on cooldown - while every swing that connects leaves its impact.
+ * the first swing, the second being on cooldown, while every swing that connects leaves its impact.
  *
  * Arguments:
  * * hits - How many swings have connected.

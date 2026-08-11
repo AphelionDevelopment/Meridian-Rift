@@ -19,8 +19,8 @@
  * time as damage accumulates, and that fully_heal clears them.
  *
  * Injuries are deterministic: damage piles up on the bodypart and crossing a threshold causes an
- * injury of that tier, every time. Which flavour of injury lands at that tier is still random - a
- * bruise rather than a fracture - so this asserts the tier, not the typepath.
+ * injury of that tier, every time. Which wound datum lands at that tier is still random, so this
+ * asserts the tier rather than the typepath.
  */
 /datum/unit_test/test_human_base/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
@@ -44,8 +44,8 @@
 
 		for(var/datum/wound/reference as anything in reference_series[i])
 			var/datum/wound_pregen_data/pregen_data = GLOB.all_wound_pregen_data[reference]
-			// Damage stays at the minimum so the limb survives all three tiers; the bonus is what puts
-			// the injury score on this tier's threshold.
+			// Damage stays at the minimum so the limb survives all three tiers; the bonus puts the
+			// injury score on this tier's threshold.
 			if(dam_types[i] == BRUTE)
 				tested_part.receive_damage(WOUND_MINIMUM_DAMAGE, 0, wound_bonus = pregen_data.threshold_minimum, sharpness = sharps[i])
 			else
@@ -59,8 +59,7 @@
 		victim.fully_heal(ADMIN_HEAL_ALL) // should clear all wounds between types
 		TEST_ASSERT_EQUAL(length(victim.all_wounds), 0, "fully_heal left wounds behind")
 
-/// Identical damage to an identical part has to produce an identical injury tier. This is the whole
-/// point of deterministic injuries, so it gets its own test.
+/// Identical damage to an identical part has to produce an identical injury tier.
 /datum/unit_test/wound_determinism/Run()
 	var/list/severities = list()
 
@@ -78,8 +77,7 @@
 		TEST_ASSERT_EQUAL(severity, severities[1], "The same three cuts produced different injury tiers across runs: [json_encode(severities)]")
 
 /// A hit armour mostly stopped bruises and cracks bone. It never opens anyone up and never reaches
-/// the worst tier, no matter how many of them land - that is the helmeted head worked example, and
-/// the stand-in for plate headroom until plates exist.
+/// the worst tier, however many land. This is the helmeted head worked example.
 /datum/unit_test/wound_nonpenetrating/Run()
 	var/mob/living/carbon/human/armoured = allocate(/mob/living/carbon/human/consistent)
 	var/obj/item/bodypart/tested_part = armoured.get_bodypart(BODY_ZONE_R_ARM)
@@ -98,8 +96,7 @@
 
 /// A weapon armour brings under the minimum hit size still has to injure eventually. While the injury
 /// track was gated on how big a hit was rather than on the part's running total, a light weapon against
-/// a vest did nothing at all forever - no injuries, so no injury capacity, so no overflow, so no way to
-/// kill or even wound the target however long you kept swinging.
+/// a vest did nothing indefinitely: no injuries, so no injury capacity, so no overflow.
 /datum/unit_test/wound_light_hits_accumulate/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 	var/obj/item/bodypart/tested_part = victim.get_bodypart(BODY_ZONE_CHEST)
@@ -110,7 +107,7 @@
 	TEST_ASSERT(tested_part.get_wounding_damage(WOUND_BLUNT) > 0, \
 		"Hits under the minimum damage never reached the part's running injury total")
 	TEST_ASSERT(length(victim.all_wounds), \
-		"Thirty light hits to the chest left no injury at all - nothing this weapon does could ever matter")
+		"Thirty light hits to the chest left no injury at all")
 
 /// This test is used for making sure species with bones but no flesh (skeletons, plasmamen) can only suffer BONE_WOUNDS, and nothing tagged with FLESH_WOUND (it's possible to require both)
 /datum/unit_test/test_human_bone/Run()

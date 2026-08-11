@@ -89,8 +89,8 @@
 	if(lungs?.organ_flags & ORGAN_FAILING)
 		losebreath++
 	else if(!get_organ_slot(ORGAN_SLOT_BREATHING_TUBE))
-		// The crit rung alone is not enough any more - pain owns two of them now, and a mob put down by
-		// pain has nothing wrong with its lungs. See [/mob/living/proc/can_recover_breath].
+		// The crit rung alone is not enough any more: pain owns two of them, and a mob put down by pain
+		// has nothing wrong with its lungs. See [/mob/living/proc/can_recover_breath].
 		if((stat == HARD_CRIT && !can_recover_breath()) || pulledby?.grab_state >= GRAB_KILL)
 			losebreath++  //You can't breath at all when in critical or when being choked, so you're going to miss a breath
 

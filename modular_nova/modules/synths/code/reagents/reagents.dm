@@ -107,10 +107,9 @@
 /**
  * Feedback dampener: the synthetic half of Appendix D.
  *
- * A machine feels its body through a damage feedback bus rather than through nerves, so what numbs it
- * is a robotics job rather than a medbay one - morphine has nothing to say to a servo. Same numbers as
- * the organic workhorse it stands in for, because parity is a design requirement: anything that cannot
- * be put down by pain cannot be stopped at all.
+ * A machine feels its body through a damage feedback bus rather than through nerves, so numbing one is
+ * a robotics job rather than a medbay one; morphine does nothing for a servo. Carries morphine's
+ * numbers, since Appendix F makes parity a design requirement.
  */
 /datum/reagent/medicine/feedback_dampener
 	name = "Feedback Dampener"
@@ -129,8 +128,8 @@
 
 /datum/reagent/medicine/feedback_dampener/overdose_process(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)
 	. = ..()
-	// Damping the bus far enough stops it carrying anything useful either, and the chassis starts
-	// acting on readings that are no longer arriving.
+	// Damping the bus far enough stops it carrying anything useful, so the chassis acts on readings
+	// that are no longer arriving.
 	affected_mob.adjust_jitter_up_to(2 SECONDS * seconds_per_tick, 20 SECONDS)
 	if(affected_mob.adjust_organ_loss(ORGAN_SLOT_BRAIN, 0.5 * metabolization_ratio * seconds_per_tick, required_organ_flag = ORGAN_ROBOTIC))
 		return UPDATE_MOB_HEALTH

@@ -14,8 +14,8 @@
 #define OXYLOSS_PASSOUT_THRESHOLD 50
 
 // Suffocation and poison kill through the organs they ruin rather than through a damage total, so
-// each has a point past which it starts costing you something you cannot simply walk off.
-/// Oxyloss past this starves the brain, and a starved brain is how suffocation, drowning and cardiac arrest kill.
+// each has a point past which it starts destroying one.
+/// Oxyloss past this starves the brain, which is how suffocation, drowning and cardiac arrest kill.
 #define OXYLOSS_BRAIN_DAMAGE_THRESHOLD 60
 /// Brain damage per second while suffocating past that threshold. Roughly two minutes from held breath to brain death.
 #define OXYLOSS_BRAIN_DAMAGE_RATE 1.5
@@ -23,7 +23,7 @@
 #define TOXLOSS_LIVER_DAMAGE_THRESHOLD 40
 /// Liver damage per second while poisoned past that threshold.
 #define TOXLOSS_LIVER_DAMAGE_RATE 0.5
-/// Toxloss past this is no longer something the liver can be blamed for, and starts killing the brain.
+/// Toxloss past this starts killing the brain as well as the liver.
 #define TOXLOSS_BRAIN_DAMAGE_THRESHOLD 100
 /// Brain damage per second while poisoned that badly.
 #define TOXLOSS_BRAIN_DAMAGE_RATE 1
@@ -346,8 +346,8 @@
 #define BRAIN_DAMAGE_ASYNC_BLINKING 60
 #define BRAIN_DAMAGE_SEVERE 100
 #define BRAIN_DAMAGE_DEATH 200
-/// The most brain damage a hit is allowed to leave. Beating someone's head in makes them stupid, not dead;
-/// crossing the line is what finishers and overflow are for.
+/// The most brain damage a hit is allowed to leave. Ordinary violence causes cognitive damage, not
+/// death; finishers and overflow are the routes past this.
 #define BRAIN_DAMAGE_COMBAT_MAXIMUM (BRAIN_DAMAGE_DEATH - 1)
 
 #define BRAIN_TRAUMA_MILD /datum/brain_trauma/mild
@@ -683,7 +683,7 @@
 //NOVA EDIT ADDITION START
 #define DEFIB_FAIL_DNR (1<<12)
 //NOVA EDIT ADDITION END
-/// A heart with nothing to pump is a heart that will not restart. Transfuse first.
+/// A heart with nothing to pump will not restart. Transfuse first.
 #define DEFIB_FAIL_NO_BLOOD (1<<13)
 
 /// How much blood a patient needs in them before a defibrillator has anything to work with.

@@ -4,8 +4,8 @@
 
 /datum/unit_test/stamcrit/Run()
 	var/mob/living/carbon/human/consistent/tider = allocate(__IMPLIED_TYPE__)
-	// Applied in baton sized helpings: a single hit big enough to trigger adrenaline would halve
-	// what the mob feels and hold shock off, which is its whole job.
+	// Applied in baton sized helpings: a single hit big enough to trigger adrenaline would halve what
+	// the mob feels and hold shock off.
 	var/stamina_per_hit = PAIN_ADRENALINE_SPIKE_TRIGGER - 10
 	var/hits_to_shock = ceil(PAIN_SHOCK_THRESHOLD / stamina_per_hit)
 

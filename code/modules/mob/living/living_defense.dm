@@ -2,11 +2,10 @@
 /mob/living/proc/run_armor_check(def_zone = null, attack_flag = MELEE, absorb_text = null, soften_text = null, armour_penetration, penetrated_text, silent=FALSE, weak_against_armour = FALSE)
 	SEND_SIGNAL(src, COMSIG_MOB_RUN_ARMOR) //NOVA EDIT ADDITION
 
-	// Damage is penetration now, and there is no stat left to beat: a hit is either inside a plate's
-	// tolerance or it is not, and how hard it hits is the only thing that decides which. So the stat
-	// stops applying to people here rather than being deleted - all of its references still resolve
-	// and it still means what it always meant to atoms, which never left the percentage model.
-	// See phase 6, C6, and Appendix G on gating rather than deleting.
+	// Damage is penetration now: a hit is either inside a plate's tolerance or it is not, and only how
+	// hard it hits decides which. The stat is gated off here rather than deleted, so all of its
+	// references still resolve and it still applies to atoms, which keep the percentage model.
+	// See phase 6, C6, and Appendix G.
 	armour_penetration = 0
 
 	var/our_armor = getarmor(def_zone, attack_flag)
@@ -486,9 +485,9 @@
 		exposed_wound_bonus = user.exposed_wound_bonus,
 		sharpness = user.sharpness,
 		attack_direction = get_dir(user, src),
-		// D5's answer: a claw meets a plate exactly like a fist or a bullet does. Whether a xeno slash
-		// is penetrating is decided by how hard it lands against the plate's tolerance, and natural
-		// weapons carry no penetration value of their own because nothing does - see C6.
+		// D5: a claw meets a plate exactly like a fist or a bullet does. Whether a xeno slash is
+		// penetrating is decided by how hard it lands against the plate's tolerance, and natural
+		// weapons carry no penetration value of their own. See C6.
 		armour_flag = MELEE,
 	)
 	log_combat(user, src, "attacked")

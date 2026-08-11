@@ -160,8 +160,8 @@
 	var/tox_loss = target.get_tox_loss()
 	var/fire_loss = target.get_fire_loss()
 	var/brute_loss = target.get_brute_loss()
-	// Vital function, not health: the headline reads what is keeping the patient alive, and the damage
-	// totals it used to report are listed in full below it anyway.
+	// Vital function, not health: the headline reads what is keeping the patient alive. The damage
+	// totals it used to report are listed in full below it.
 	var/mob_status = (IS_DEAD_OR_FAKING(target) ? span_alert("<b>Deceased</b>") : "<b>[round(target.get_vitals_ratio(), 0.01) * 100]% vital function</b>")
 
 	if(HAS_TRAIT(target, TRAIT_FAKEDEATH) && target.stat != DEAD)

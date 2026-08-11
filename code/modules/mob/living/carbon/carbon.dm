@@ -10,8 +10,8 @@
 	ADD_TRAIT(src, TRAIT_CAN_HOLD_ITEMS, INNATE_TRAIT) // Carbons are assumed to be innately capable of having arms, we check their arms count instead
 	ADD_TRAIT(src, TRAIT_CAN_THROW_ITEMS, INNATE_TRAIT) // same here
 	breathing_loop = new(src, _direct = TRUE)
-	// Anything with bodyparts, organs and wounds can be hurt, and anything that can be hurt can be
-	// put down by it - monkeys and xenos included, or they would simply be immune to stuns.
+	// Anything with bodyparts, organs and wounds can be hurt, and can be put down by it. Monkeys and
+	// xenos included, or they would be immune to stuns.
 	pain_controller = new /datum/pain(src)
 
 /mob/living/carbon/Destroy()
@@ -711,10 +711,10 @@
  * Moves this mob up or down the consciousness ladder to match what is currently wrong with it.
  *
  * Split out of update_stat() because what counts as "wrong" differs by mob: a health bar for
- * anything that runs on one, and the state of the organs keeping you alive for anything that does
+ * anything that runs on one, and the state of the organs keeping it alive for anything that does
  * not. See the combat overhaul plan, phase 0.
  *
- * Returns TRUE if the mob died, in which case the caller should stop - a corpse has no HUD to update.
+ * Returns TRUE if the mob died, in which case the caller should stop; a corpse has no HUD to update.
  */
 /mob/living/carbon/proc/update_stat_from_condition()
 	if(health <= HEALTH_THRESHOLD_DEAD && !HAS_TRAIT(src, TRAIT_NODEATH))
@@ -860,7 +860,7 @@
 	if (brain_status)
 		return brain_status
 
-	// A restarted heart still needs something to pump. Whoever bled out gets a transfusion first.
+	// A restarted heart still needs something to pump, so an exsanguinated patient needs a transfusion first.
 	if (CAN_HAVE_BLOOD(src) && get_blood_volume() < DEFIB_MINIMUM_BLOOD)
 		return DEFIB_FAIL_NO_BLOOD
 

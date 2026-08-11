@@ -1238,8 +1238,8 @@ GLOBAL_LIST_EMPTY(features_by_species)
 
 		// Part by part rather than as spread damage. Spread damage is dealt with CANT_WOUND and is
 		// dropped outright once a part is full, so routed that way fire could neither cook a limb nor
-		// reach what was inside it - and burning to death is meant to happen through injuries and
-		// organs now that the burn total kills nobody. See the combat overhaul plan, C46.
+		// reach what was inside it. Burning to death runs on injuries and organs now that the burn
+		// total kills nobody. See the combat overhaul plan, C46.
 		humi.burn_all_over(burn_damage)
 
 	// For cold damage, we cap at the threshold if you're dead

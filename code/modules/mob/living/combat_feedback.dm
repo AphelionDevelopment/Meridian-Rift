@@ -1,12 +1,9 @@
 /**
- * The feedback budget: one arbiter deciding what a fight is allowed to announce.
+ * The feedback budget: one arbiter for what a fight is allowed to announce.
  *
- * Combat produces more announceable events than anybody can read, since a burst of fire is five
- * impacts, three injuries, a plate cracking and an organ giving out inside half a second. Every
- * combat event asks here first, and within [COMBAT_FEEDBACK_WINDOW] only the highest priority one
- * is announced.
- *
- * The window is per mob, so a room full of people being shot still reads normally.
+ * A burst of fire is several impacts, several injuries, a plate cracking and an organ giving out
+ * inside half a second. Every combat event asks here first, and within [COMBAT_FEEDBACK_WINDOW]
+ * only the highest priority one is announced. The window is per mob.
  */
 
 /mob/living
@@ -62,7 +59,7 @@
 	return TRUE
 
 /**
- * Shakes the screen of whoever just took a hit, harder the further inside them it got.
+ * Shakes the screen of whoever took a hit, scaled by how much damage got through.
  *
  * Small shakes for stopped hits, larger ones the more damage got through. Routed through the
  * arbiter so continuous damage shakes once rather than once per tick.

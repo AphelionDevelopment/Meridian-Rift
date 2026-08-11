@@ -2031,7 +2031,7 @@
 
 /datum/reagent/medicine/paracetamol/overdose_process(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)
 	. = ..()
-	// The liver is what gives out first, and it is what kills people who take too many.
+	// The liver is what gives out first.
 	if(affected_mob.adjust_organ_loss(ORGAN_SLOT_LIVER, 2 * metabolization_ratio * seconds_per_tick))
 		return UPDATE_MOB_HEALTH
 
@@ -2045,20 +2045,18 @@
 	ph = 6.6
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
 	pain_dampening = PAIN_DAMPEN_IBUPROFEN
-	// An anticoagulant, which is what "thins the blood" means mechanically: open wounds run faster and
-	// will not clot while it is in you. Deliberately not TRAIT_BLOODY_MESS - that name suggests
-	// bleeding but its only effect is to uncap how much of a hit counts towards the next injury, so it
-	// would make a mild painkiller roughly double how fast its taker collects critical wounds.
+	// An anticoagulant: open wounds run faster and will not clot while it is metabolising. Not
+	// TRAIT_BLOODY_MESS, whose only effect is to uncap how much of a hit counts towards the next
+	// injury, which would roughly double how fast a mild painkiller's taker collects critical wounds.
 	metabolized_traits = list(TRAIT_BLOOD_FOUNTAIN)
 
 /**
  * Fentanyl: the surgical analgesic.
  *
- * Appendix D's strongest painkiller, and the one that was filed as a poison. It lived under /toxin
- * dealing brain damage and toxloss on every tick, which is not what a surgical analgesic does to a
- * patient - it is what a murder chemical does. Recategorised here with those removed, keeping the
- * sedation and the addiction, and gaining the drawback the design actually names: enough of it stops
- * you breathing. Every use of it as a knockout drug still works, because it is still a knockout drug.
+ * Appendix D's strongest painkiller, previously filed as a poison. It lived under /toxin dealing
+ * brain damage and toxloss on every tick. Recategorised here with those removed, keeping the
+ * sedation and the addiction, and gaining the drawback the design names: enough of it stops the
+ * patient breathing. It remains a knockout drug, so every existing use of it still works.
  */
 /datum/reagent/medicine/fentanyl
 	name = "Fentanyl"
@@ -2085,8 +2083,8 @@
 
 /datum/reagent/medicine/fentanyl/overdose_process(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)
 	. = ..()
-	// Respiratory depression, which is what actually kills people who take too much of this. It routes
-	// into the brain through oxyloss like every other way of not breathing does.
+	// Respiratory depression, which routes into the brain through oxyloss like every other way of not
+	// breathing.
 	affected_mob.losebreath += 1 * metabolization_ratio * seconds_per_tick
 
 #undef FENTANYL_MOOD_CYCLES

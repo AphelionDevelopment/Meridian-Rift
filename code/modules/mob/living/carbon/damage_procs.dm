@@ -47,9 +47,9 @@
 	var/final_mod = ..()
 
 	// A species' hide and an augment's bracing, which used to be folded into blocked alongside worn
-	// armour. They are not armour - nobody takes them off - and phase 6 needs blocked to mean worn
-	// armour and nothing else, so that an armour plate can take its place for a hit without also
-	// deleting whatever the body underneath is naturally made of. Negatives still amplify, as before.
+	// armour. Phase 6 needs blocked to mean worn armour and nothing else, so that a plate can replace
+	// it for a hit without also removing whatever the body underneath is made of. They are intrinsic
+	// and belong with the other intrinsic multipliers. Negatives still amplify, as before.
 	final_mod *= (100 - (physiology?.damage_resistance || 0)) / 100
 	final_mod *= (100 - (dna?.species?.damage_modifier || 0)) / 100
 
@@ -340,8 +340,8 @@
  *
  * What [/mob/living/carbon/proc/take_overall_damage] would do, minus the two things that make it
  * useless for fire: it deals its damage with CANT_WOUND, and it drops damage entirely once a part is
- * full. Fire cooking a body until it is dead runs on injuries and on what overflow takes from the
- * organs behind them, so it cannot go through either.
+ * full. Burning to death runs on injuries and on what overflow takes from the organs behind them, so
+ * it can go through neither.
  *
  * Arguments:
  * * burn - Burn damage to share out across the parts.

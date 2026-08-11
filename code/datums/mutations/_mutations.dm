@@ -96,8 +96,8 @@
 	/// List of traits that are added or removed by the mutation with GENETIC_TRAIT source.
 	var/list/mutation_traits
 	/// How much felt pain this mutation hides. Set it on anything whose mutation_traits include
-	/// TRAIT_ANALGESIA, or the pain controller reads that trait as total numbness. Left at zero for
-	/// hulk, deliberately - see D3 of the combat overhaul plan.
+	/// TRAIT_ANALGESIA, or the pain controller reads that trait as total numbness. Zero for hulk,
+	/// per D3 of the combat overhaul plan.
 	var/pain_dampening = 0
 	/// if TRUE admins get alerted when someone force-injects someone else with this mutation
 	var/warn_admins_on_inject = FALSE

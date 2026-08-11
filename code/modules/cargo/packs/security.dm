@@ -28,7 +28,7 @@
 /datum/supply_pack/security/ballistic_plates
 	name = "Ballistic Plate Crate"
 	desc = "A case of three reinforced ballistic plates, for fitting into armour carriers and helmets. \
-		Stops what a gun does, until it stops doing it. Has no answer at all for energy weapons."
+		Stops bullets until it wears through. Does nothing about energy weapons."
 	cost = CARGO_CRATE_VALUE * 8
 	access_view = ACCESS_SECURITY
 	contains = list(/obj/item/storage/plate_case/ballistic)

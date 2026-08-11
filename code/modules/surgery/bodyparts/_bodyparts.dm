@@ -150,7 +150,7 @@
 
 	/// Damage this part has taken of each wounding type, as an assoc list of (WOUND_* -> damage).
 	/// Injuries are threshold crossings on these totals rather than rolls, so the same beating always
-	/// produces the same injury. Treating the part walks them back down.
+	/// produces the same injury tier. Treating the part walks them back down.
 	var/list/wounding_accumulation
 
 	/// This number is added to the effective wound armor on this body part (as long as it isn't managled externally or internally), higher numbers mean more defense, negative means easier to wound
@@ -309,8 +309,8 @@
 	owner = null
 
 	// Not QDEL_LIST_ASSOC_VAL: applied items take themselves back off the limb as they are deleted, so
-	// the last one empties the lazylist to null and the macro's closing Cut() has nothing to call.
-	// Taking the list off the limb first means their removal has nothing left to race with.
+	// the last one empties the lazylist to null and the macro's closing Cut() runtimes. Taking the
+	// list off the limb first means their removal has nothing to race with.
 	var/list/obj/item/items_to_clear = applied_items
 	applied_items = null
 	for(var/category in items_to_clear)
@@ -720,9 +720,9 @@
  * sharpness - Flag on whether the attack is edged or pointy
  * attack_direction - The direction the bodypart is attacked from, used to send blood flying in the opposite direction.
  * damage_source - The source of damage, typically a weapon.
- * wound_blocked - The armour percentage the injury roll should treat this hit as having been stopped by.
+ * wound_blocked - The armour percentage the injury check should treat this hit as having been stopped by.
  * Defaults to blocked, and exists because apply_damage() has already spent blocked on the damage by
- * the time it gets here - it hands the percentage over separately rather than mitigating twice.
+ * the time it gets here, so it hands the percentage over separately rather than mitigating twice.
  */
 /obj/item/bodypart/proc/receive_damage(brute = 0, burn = 0, blocked = 0, updating_health = TRUE, forced = FALSE, required_bodytype = null, wound_bonus = 0, exposed_wound_bonus = 0, sharpness = NONE, attack_direction = null, damage_source, wound_clothing = TRUE, wound_blocked = null)
 	SHOULD_CALL_PARENT(TRUE)
@@ -796,15 +796,14 @@
 				wounding_type = WOUND_BLUNT
 
 		// A hit armour mostly stopped does not take a limb off, however mangled that limb already is.
-		// Break the armour first - see [/obj/item/bodypart/proc/check_wounding], which gates the other
-		// dismemberment path the same way.
+		// See [/obj/item/bodypart/proc/check_wounding], which gates the other dismemberment path the
+		// same way.
 		var/can_take_the_limb = (wound_blocked < WOUND_NONPENETRATING_BLOCK)
 		// A part whose injuries were already maxed has nothing left to absorb this with, so it goes to
-		// whatever the part was protecting. Asked before this hit's own injuries land, which is what
-		// keeps the blow that ruins a part from also being the blow that kills through it.
+		// whatever the part was protecting. Asked before this hit's own injuries land, so the blow that
+		// ruins a part is never also the blow that kills through it.
 		if(can_take_the_limb && wound_bonus != CANT_WOUND && is_injury_capacity_maxed())
-			// Injuries stacked up means what is inside the part starts taking hits too, not just the
-			// one thing this part's overflow aims at.
+			// A maxed part means what is inside it takes hits too, not only this part's overflow target.
 			damage_random_organ(wounding_dmg, damage_source)
 			if(apply_overflow(wounding_dmg, wounding_type, attack_direction, damage_source))
 				return
@@ -827,9 +826,9 @@
 		//NOVA EDIT ADDITION END - MEDICAL
 
 		// now we have our wounding_type and are ready to carry on with wounds and dealing the actual damage.
-		// Everything that lands feeds the part's running injury total, however small it is. Gating entry on a
-		// minimum hit size is what let a weapon that armour brought under that size beat someone indefinitely
-		// without ever injuring them, and left fire unable to reach an organ it is meant to be able to cook.
+		// Everything that lands feeds the part's running injury total, however small. Gating entry on a
+		// minimum hit size let a weapon that armour brought under that size beat someone indefinitely
+		// without ever injuring them, and left fire unable to reach the organs behind a part.
 		// How often that total is examined is check_wounding()'s business.
 		if(wounding_dmg > 0 && wound_bonus != CANT_WOUND)
 			check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, attack_direction, damage_source = damage_source, wound_clothing = wound_clothing, blocked = wound_blocked)

@@ -125,7 +125,7 @@
 			if(!HAS_TRAIT(victim, TRAIT_ANALGESIA))
 				to_chat(victim, span_danger("The fracture in your [limb.plaintext_zone] shoots with pain as you strike [target]!"))
 			victim.apply_damage(rand(1, 5), BRUTE, limb, wound_bonus = CANT_WOUND, wound_clothing = FALSE)
-			// Working through a fracture is what feeds the meter. Pushing on costs you something.
+			// Working through a fracture feeds the pain meter.
 			victim.add_temporary_pain(pain_factor * PAIN_INJURY_USE_RATIO)
 		else
 			victim.visible_message(span_danger("[victim] weakly strikes [target] with [victim.p_their()] broken [limb.plaintext_zone], recoiling from pain!"), \
@@ -423,7 +423,7 @@
 
 	severity = WOUND_SEVERITY_CRITICAL
 	pain_factor = PAIN_FACTOR_EXTREME
-	// A splint on a compound fracture stops it getting worse in transit. It does not make it hurt less.
+	// A splint on a compound fracture stops it getting worse in transit; it does not quiet it.
 	pain_eased_by_treatment = FALSE
 	interaction_efficiency_penalty = 2.5
 	limp_slowdown = 7

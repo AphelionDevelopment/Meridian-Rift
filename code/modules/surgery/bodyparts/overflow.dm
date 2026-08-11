@@ -3,7 +3,7 @@
  *
  * Injuries are how a part absorbs punishment. Once it carries the worst injury there is, further
  * damage goes to whatever the part was protecting: the brain behind a ruined head, the heart behind
- * a ruined chest, the limb itself for a limb.
+ * a ruined chest, and for a limb, the limb itself.
  */
 
 /obj/item/bodypart
@@ -36,10 +36,10 @@
 /**
  * Whether this bodypart has nothing left to give.
  *
- * Reads the injury track rather than the damage total. Heads and chests cap at 250 damage, which is
- * several magazines, while the injury that ruins one is two or three solid hits, so a damage total
- * would put overflow far out of reach of the intended pacing. A Critical injury is the worst state a
- * part can be in, barring the injuries flagged never lethal.
+ * Reads the injury track rather than the damage total. Heads and chests cap at 250 damage, several
+ * magazines, while the injury that ruins one is two or three solid hits, so a damage total would put
+ * overflow out of reach of the intended pacing. A Critical injury is the worst state a part can be
+ * in, barring the injuries flagged never lethal.
  */
 /obj/item/bodypart/proc/is_injury_capacity_maxed()
 	for(var/datum/wound/injury as anything in wounds)
@@ -51,8 +51,8 @@
  * Damages one organ inside this bodypart, chosen at random.
  *
  * Once a part's injuries have stacked up, what is inside it starts taking hits too and can be
- * destroyed outright. This is what puts eyes, ears, tongues, lungs, livers and stomachs on the
- * receiving end of a fight rather than only the part's own overflow target.
+ * destroyed outright, so eyes, ears, tongues, lungs, livers and stomachs are on the receiving end of
+ * a fight as well as the part's own overflow target.
  *
  * Which organ a hit finds is random, as neither design document gives a rule for it. The zone's own
  * overflow target is in the pool with the rest.
@@ -86,7 +86,7 @@
  *
  * Only called for a penetrating hit on a part that was already maxed before this hit landed, so one
  * shot can never both ruin a part and kill through it. The part still takes its damage as normal;
- * this is what the hit does on top.
+ * this is on top of that.
  *
  * Limbs have nothing inside worth targeting, so a limb's overflow is the limb coming off.
  *
@@ -138,8 +138,8 @@
 	owner.adjust_organ_loss(ORGAN_SLOT_HEART, overflow)
 	log_overflow(owner, damage_source, plaintext_zone, "heart", overflow)
 
-	// Failing and beating are separate states here, so a ruined heart does not stop on its own. Arrest
-	// is what makes chest overflow lethal, via the oxygen the brain stops getting.
+	// Failing and beating are separate states here, so a ruined heart does not stop on its own.
+	// Arrest is what makes chest overflow lethal, via the oxygen the brain stops getting.
 	if((inner_heart.organ_flags & ORGAN_FAILING) && !owner.undergoing_cardiac_arrest())
 		owner.set_heartattack(TRUE)
 

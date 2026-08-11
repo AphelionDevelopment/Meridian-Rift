@@ -41,10 +41,9 @@
  *
  * This attack's damage is added to what this part has already taken of the same wounding type, and
  * that running total, modified by the factors in [/obj/item/bodypart/proc/check_woundings_mods],
- * is compared against every wound's threshold. There is no roll: crossing a threshold means the
- * injury, every time. What is still random is which injury you get out of the ones you qualify for -
- * a torn muscle rather than a fracture - which is what [/datum/wound_pregen_data/proc/get_weight]
- * decides.
+ * is compared against every wound's threshold. There is no roll: crossing a threshold applies the
+ * injury, every time. Which of the qualifying wounds lands is still random, decided by
+ * [/datum/wound_pregen_data/proc/get_weight].
  *
  * Arguments:
  * * woundtype- Either WOUND_BLUNT, WOUND_SLASH, WOUND_PIERCE, or WOUND_BURN based on the attack type.
@@ -85,31 +84,30 @@
 		damage *= 1.5
 
 	// Wound armour is spent on the hit it stopped, before that hit joins the running total. Applied to
-	// the total afterwards it would rescale every hit the part had ever taken the moment the victim put
-	// a vest on or took one off, and the same beating would stop producing the same injury.
+	// the total afterwards it would rescale every hit the part had ever taken the moment the victim
+	// put a vest on or took one off.
 	var/armor_ablation = get_wound_armor(woundtype, damage, wound_clothing)
 	if(armor_ablation)
 		damage = max(damage * ((100 - armor_ablation) / 100), 0)
 
 	var/accumulated_damage = accumulate_wounding_damage(woundtype, damage)
 
-	// Comparing a part against every wound in the game is not free, and continuous damage - fire,
-	// pressure, acid - arrives in fractions of a point many times a second. So a hit large enough to
+	// Comparing a part against every wound in the game is not free, and continuous damage (fire,
+	// pressure, acid) arrives in fractions of a point many times a second. So a hit large enough to
 	// injure on its own is always examined, and anything smaller is examined as the running total
-	// passes each WOUND_MINIMUM_DAMAGE mark. The damage is banked either way: what a small hit can
-	// never do is nothing.
+	// passes each WOUND_MINIMUM_DAMAGE mark. The damage is banked either way.
 	if(damage < WOUND_MINIMUM_DAMAGE && floor(accumulated_damage / WOUND_MINIMUM_DAMAGE) == floor((accumulated_damage - damage) / WOUND_MINIMUM_DAMAGE))
 		return
 
 	var/injury_roll = check_woundings_mods(woundtype, accumulated_damage, wound_bonus, exposed_wound_bonus, armor_ablation)
 	var/list/series_wounding_mods = check_series_wounding_mods()
 
-	// A hit armour mostly stopped bruises and burns. It does not open arteries, and it does not take
-	// limbs off - you have to get through the armour first.
+	// A hit armour mostly stopped bruises and burns. It does not open arteries and it does not take
+	// limbs off; the armour has to be broken first.
 	var/non_penetrating = (blocked >= WOUND_NONPENETRATING_BLOCK)
 
-	// Losing a limb outright is not decided here. It is a limb's overflow - the thing that happens to a
-	// part with no worse injury left to take - and lives in [/obj/item/bodypart/proc/apply_overflow].
+	// Losing a limb outright is not decided here. It is a limb's overflow, and lives in
+	// [/obj/item/bodypart/proc/apply_overflow].
 
 	var/list/datum/wound/possible_wounds = list()
 	for (var/datum/wound/wound_type as anything in GLOB.all_wound_pregen_data)
@@ -162,9 +160,8 @@
 /**
  * Adds damage to this part's running total for a wounding type, and returns the new total.
  *
- * This total is what injuries are decided on, so it is the memory that makes the fourth hit worse
- * than the first. It is not the part's damage: healing the part walks it back down, but nothing else
- * does.
+ * This total is what injuries are decided on, so it is what makes the fourth hit worse than the
+ * first. It is not the part's damage: healing the part walks it back down, but nothing else does.
  *
  * Arguments:
  * * wounding_type - One of the WOUND_* wounding types.
@@ -182,9 +179,9 @@
 /**
  * Walks this part's injury totals back down as it is treated.
  *
- * Without this a limb that was healed to full would still be one scratch away from the injury it was
- * about to receive, forever. Brute healing relieves all three brute wounding types, since there is
- * no way to tell which of them the healing was meant for.
+ * Without this a limb healed to full would still be one scratch away from the injury it was about to
+ * receive. Brute healing relieves all three brute wounding types, since there is no way to tell
+ * which of them the healing was meant for.
  *
  * Arguments:
  * * brute - Brute damage healed.
@@ -205,8 +202,8 @@
  * Clears this part's injury totals outright, rather than walking them down by damage healed.
  *
  * A part cannot hold more damage than its cap but can keep accumulating past it, so healing one back
- * to pristine still leaves it carrying whatever was dealt on top - one scratch from the injury it was
- * about to get, permanently. Anything that puts the limb back to new has to clear that too.
+ * to pristine still leaves it carrying whatever was dealt on top. Anything that puts the limb back
+ * to new has to clear that too.
  *
  * Arguments:
  * * brute - Clear the three brute wounding types.
@@ -299,9 +296,9 @@
  * How much wound armour stands between an attack and this bodypart, as a percentage, wearing down whatever it goes through.
  *
  * Split out of [/obj/item/bodypart/proc/check_woundings_mods] because armour is a property of the hit
- * rather than of the part's running injury total: spending it on the total would rescale every hit the
- * part had ever taken whenever the victim changed clothes, and determinism is the whole point of the
- * accumulator. Negative values are possible and amplify the hit, exactly as they used to.
+ * rather than of the part's running injury total: spending it on the total would rescale every hit
+ * the part had ever taken whenever the victim changed clothes. Negative values are possible and
+ * amplify the hit, as before.
  *
  * Arguments:
  * * wounding_type - One of the WOUND_* wounding types, deciding what the clothing takes.

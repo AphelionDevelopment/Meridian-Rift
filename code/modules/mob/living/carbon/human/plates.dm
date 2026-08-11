@@ -6,7 +6,7 @@
  * tolerance is stopped outright and the rest lands unarmoured.
  *
  * Only carbons with clothing have plates. Fire, pressure, explosions and poison carry no armour flag
- * and never ask, which is how environmental damage skips the plate model.
+ * and never ask, so environmental damage skips the plate model.
  */
 
 /**
@@ -36,7 +36,7 @@
 /**
  * The plate in one worn item, if it has one that covers this part and cares about this attack.
  *
- * A spent plate, or one of the wrong sort for the attack, is not a plate for this hit, and the
+ * A spent plate, or one of the wrong sort for the attack, does not count for this hit, and the
  * carrier's own armour rating handles it as before.
  *
  * Arguments:

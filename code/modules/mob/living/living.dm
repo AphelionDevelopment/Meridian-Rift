@@ -1095,10 +1095,9 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 /**
  * Whether this mob is actually on its way out, as opposed to merely on the floor.
  *
- * Only used to decide whether giving up is on the table. Anything that runs on a health bar is dying
- * whenever it is in crit, which is what this returns; mobs whose death comes from their organs answer
- * for themselves, because pain puts people down without killing them and you cannot give up on a
- * fight you are not actually losing.
+ * Only used to decide whether succumbing is available. Anything that runs on a health bar is dying
+ * whenever it is in crit, which is what this returns. Mobs whose death comes from their organs
+ * override it, since pain puts them down without killing them.
  */
 /mob/living/proc/is_dying()
 	return TRUE
@@ -1107,10 +1106,10 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
  * Whether this mob's body is in good enough shape to breathe normally and clear an oxygen debt.
  *
  * Was a plain health check everywhere it is used, which stopped meaning anything for humans once
- * damage totals stopped deciding death. Pain puts people on the floor with their lungs in perfect
- * order, so a crit that is only pain must not take the airway with it - otherwise being stunned
- * suffocates you, slowly, through the brain damage phase 4 routes oxyloss into. Anything still
- * running on a health bar keeps the old reading.
+ * damage totals stopped deciding death. Pain puts people on the floor with working lungs, so a crit
+ * that is only pain must not take the airway with it, or stunlocking a mob would suffocate it
+ * through the brain damage phase 4 routes oxyloss into. Anything still running on a health bar keeps
+ * the old reading.
  */
 /mob/living/proc/can_recover_breath()
 	return health >= crit_threshold
@@ -1118,10 +1117,10 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 /**
  * How much margin this mob has left before it dies, from 0 to 1.
  *
- * The one number every triage instrument reads - medical HUD glasses, the health analyser's headline,
- * the mob's own health bar. Anything that still dies of its damage totals answers with them, which is
- * what this returns. Humans stopped dying of them in phase 4, so they answer with the three things
- * that do keep a person alive instead; see [/mob/living/carbon/human/proc/get_vitals_ratio].
+ * Read by every triage instrument: medical HUD glasses, the health analyser's headline, the mob's own
+ * health bar. Anything that still dies of its damage totals answers with them, which is what this
+ * returns. Humans stopped dying of them in phase 4 and answer with the three things that keep a
+ * person alive instead; see [/mob/living/carbon/human/proc/get_vitals_ratio].
  */
 /mob/living/proc/get_vitals_ratio()
 	return maxHealth ? clamp(health / maxHealth, 0, 1) : 0
@@ -1129,8 +1128,8 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 /**
  * Where this mob sits on the health HUD's ladder, as a percentage.
  *
- * May be negative: the bottom of the ladder is the emergency band, and what counts as an emergency is
- * the mob's own business. See [/proc/RoundHealth], which renders it.
+ * May be negative: the bottom of the ladder is the emergency band, and each mob decides what counts
+ * as an emergency. See [/proc/RoundHealth], which renders it.
  */
 /mob/living/proc/get_health_hud_percent()
 	var/maxi_health = maxHealth
@@ -1148,7 +1147,7 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 /**
  * Whether this mob's damage totals alone put it past bringing back.
  *
- * Split out of [/mob/living/proc/can_be_revived] because the totals only mean this for mobs that
+ * Split out of [/mob/living/proc/can_be_revived] because the totals only decide this for mobs that
  * still die of them. Anything on a health bar keeps the old floor.
  */
 /mob/living/proc/is_damaged_beyond_revival()
@@ -2598,7 +2597,7 @@ GLOBAL_LIST_EMPTY(fire_appearances)
  * Applies the traits that come with the mob's current stat, and strips the ones that do not.
  *
  * Split out of set_stat() because the stat does not decide the trait set on its own: the pain crawl
- * is a soft crit you can still use your hands in, so a mob can change which traits its rung grants
+ * is a soft crit that leaves the hands usable, so a mob can change which traits its rung grants
  * without changing rung.
  */
 /mob/living/proc/update_stat_traits()
@@ -2621,8 +2620,8 @@ GLOBAL_LIST_EMPTY(fire_appearances)
 				TRAIT_FLOORED,
 				TRAIT_FORCE_WHISPER,
 			)
-			// Dragging yourself to your own pockets is the only way out of the pain crawl, so unlike
-			// every other soft crit it cannot take your hands away. See the pain shock table.
+			// Reaching your own pockets is the only way out of the pain crawl, so unlike every other
+			// soft crit it leaves the hands usable. See the pain shock table.
 			if(!has_status_effect(/datum/status_effect/pain_crawl))
 				added_traits.Add(
 					TRAIT_HANDS_BLOCKED,

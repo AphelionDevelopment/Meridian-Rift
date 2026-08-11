@@ -1,5 +1,5 @@
 /// Damage totals do not kill any more. The brain, the heart and the blood do, and everything else
-/// kills by ruining one of them. This walks each rung of that contract.
+/// kills by ruining one of them. This walks each rung of that contract in turn.
 /datum/unit_test/death_contract
 	priority = TEST_LONGER
 
@@ -26,10 +26,10 @@
 /**
  * A ruined heart has to be lethal whatever the heart is made of.
  *
- * undergoing_cardiac_arrest() is FALSE for a robotic heart - one cannot have a heart attack - and for
+ * undergoing_cardiac_arrest() is FALSE for a robotic heart, which cannot have a heart attack, and for
  * anything carrying TRAIT_STABLEHEART. Both used to die of the damage totals this phase stopped
- * consulting, so reading arrest alone left an augmented chest with no death condition at all: the
- * cybernetic heart sat at ORGAN_FAILING reporting itself as beating, and its owner walked it off.
+ * consulting, so reading arrest alone left an augmented chest with no death condition: the cybernetic
+ * heart sat at ORGAN_FAILING reporting itself as beating.
  */
 /datum/unit_test/death_contract_robotic_heart/Run()
 	var/mob/living/carbon/human/augmented = allocate(/mob/living/carbon/human/consistent)
@@ -41,7 +41,7 @@
 	implant.set_organ_damage(implant.maxHealth)
 	TEST_ASSERT(implant.organ_flags & ORGAN_FAILING, "Failed to ruin the cybernetic heart this test is about")
 	TEST_ASSERT(!augmented.can_heartattack(), "A robotic heart should still be exempt from the organic heart attack mechanic")
-	TEST_ASSERT(augmented.circulation_stopped(), "A ruined cybernetic heart is a stopped pump, and has to read as one")
+	TEST_ASSERT(augmented.circulation_stopped(), "A ruined cybernetic heart should read as stopped circulation")
 
 	augmented.updatehealth()
 	TEST_ASSERT_EQUAL(augmented.stat, HARD_CRIT, "A stopped pump should put its owner in hard crit whatever it is made of")
@@ -53,10 +53,10 @@
 /**
  * Someone left burning has to eventually die of it.
  *
- * Fire is the case the death contract is hardest on: the burn total kills nobody now, so burning to
+ * Fire is the hardest case for the death contract: the burn total kills nobody now, so burning to
  * death has to happen through injuries and through what overflow takes from the organs behind them.
- * Routed as spread damage it did neither - spread damage is dealt with CANT_WOUND and is dropped
- * outright once a part is full - which left a burning body maxed out, unconscious and immortal.
+ * Routed as spread damage it did neither, since spread damage is dealt with CANT_WOUND and is dropped
+ * outright once a part is full, which left a burning body maxed out, unconscious and unkillable.
  */
 /datum/unit_test/death_by_fire
 	priority = TEST_LONGER
@@ -64,9 +64,8 @@
 /datum/unit_test/death_by_fire/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 
-	// Somebody standing in a fire rather than one that burns itself out, which is the case that has to
-	// be lethal. Two hundred ticks is well over the ~110 it takes; the margin is for species and
-	// physiology modifiers, not for a slower route.
+	// Somebody standing in a fire rather than one that burns itself out. Two hundred ticks is well over
+	// the ~110 it takes; the margin covers species and physiology modifiers.
 	for(var/tick in 1 to 200)
 		if(victim.stat == DEAD)
 			break

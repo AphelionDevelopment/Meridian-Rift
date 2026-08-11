@@ -110,9 +110,8 @@
 		phantom_owner.clear_mood_event("embedded")
 
 	if(!special)
-		// A limb that is not there still hurts, and keeps hurting until something is put back in its
-		// place. Neither a limb being swapped for another one nor a limb being deleted off a mob is
-		// that - species changes and teardown both come through here, and neither leaves a gap.
+		// An empty socket hurts until something fills it. A limb being swapped for another or deleted
+		// off a mob leaves no gap, and species changes and teardown both come through here.
 		if(!QDELING(src))
 			phantom_owner.add_pain_source(PAIN_SOURCE_MISSING_LIMB(body_zone), PAIN_MISSING_LIMB, body_zone)
 
@@ -299,7 +298,7 @@
 			new_limb_owner.clear_mood_event("dismembered_[body_zone]")
 			new_limb_owner.add_mood_event("phantom_pain_[body_zone]", /datum/mood_event/reattachment, src)
 
-	// Something is filling the gap again, so the ache of it being empty stops.
+	// The socket is filled again.
 	new_limb_owner.remove_pain_source(PAIN_SOURCE_MISSING_LIMB(body_zone))
 
 	for(var/datum/scar/scar as anything in scars)

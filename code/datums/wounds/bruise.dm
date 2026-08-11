@@ -5,7 +5,7 @@
  * are never lethal and never bleed. They hurt, they make a limb worse at its job, and they fade on
  * their own given rest.
  *
- * Unlike the rest of the tree this applies to the chest and head as well as limbs.
+ * Unlike the rest of the tree, this applies to the chest and head as well as limbs.
  */
 /datum/wound/bruise
 	name = "Bruise"
@@ -123,7 +123,7 @@
 	wound_path_to_generate = /datum/wound/bruise/severe
 	threshold_minimum = 60
 
-/// Critical: contused to the point of a weakened grip and a limp. Slow to heal, never lethal.
+/// Critical: contused to the point of a weakened grip and a limp. Slow to heal.
 /datum/wound/bruise/critical
 	name = "Severe Contusion"
 	desc = "Patient's flesh is contused throughout, with heavy swelling, weakened grip and pain on any use."

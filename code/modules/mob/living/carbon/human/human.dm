@@ -761,8 +761,8 @@
 	if(!client || !hud_used)
 		return
 	// The bar reads what is keeping the mob alive rather than a damage total, which stopped deciding
-	// anything in phase 4 - the doll beside it already shows what being hurt feels like. Callers with a
-	// figure of their own, like hallucinations and screwy HUDs, are left alone.
+	// anything in phase 4. Callers with a figure of their own, like hallucinations and screwy HUDs,
+	// are left alone.
 	if(isnull(shown_health_amount))
 		shown_health_amount = get_vitals_ratio() * maxHealth
 	// Updates the health bar, also sends signal

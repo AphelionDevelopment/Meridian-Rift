@@ -1,13 +1,13 @@
 /**
  * Finishers.
  *
- * The deliberate route to a kill, where overflow is the accidental one. Every condition has to hold
- * at once: the target is at the attacker's mercy, adjacent, aimed at the head, and the weapon is
- * lethal. A wind-up on top of that gives everyone watching time to see it.
+ * The intentional route to a kill; overflow is the incidental one. Every condition has to hold at
+ * once: the target is at the attacker's mercy, adjacent, aimed at the head, and the weapon is
+ * lethal. The wind-up on top of that gives onlookers time to intervene.
  */
 
 /**
- * Whether this mob has stopped being able to do anything about what happens to it.
+ * Whether this mob can no longer do anything about what happens to it.
  *
  * Pain shock and the pain crawl are rungs on the crit ladder, so the stat check covers them along
  * with arrest and bloodloss. The rest covers being helpless while stat still reads STABLE: knocked
@@ -28,7 +28,7 @@
 /**
  * Whether this item is capable of finishing someone off.
  *
- * One deliberate killing blow, so the weapon has to be able to deliver one. Anything that only deals
+ * A single killing blow, so the weapon has to be able to deliver one. Anything that only deals
  * stamina is a restraint tool.
  */
 /obj/item/proc/is_lethal_enough_to_finish()
@@ -53,10 +53,9 @@
 /**
  * Runs the conditions for a finisher and, if they all hold, performs one.
  *
- * Called from a point blank gun and from a right-clicked melee weapon, deliberately not from the
- * ordinary swing: hooked there it took over every combat-mode blow aimed at the head of anyone
- * cuffed, grabbed or on the floor. Returns TRUE if the finisher took the click, whether or not it
- * ran to completion.
+ * Called from a point blank gun and from a right-clicked melee weapon, not from the ordinary swing:
+ * hooked there it took over every combat-mode blow aimed at the head of anyone cuffed, grabbed or
+ * on the floor. Returns TRUE if the finisher took the click, whether or not it ran to completion.
  *
  * Arguments:
  * * user - Whoever is doing this.
@@ -77,7 +76,7 @@
 	visible_message(
 		span_userdanger("[user] lines [weapon] up with [src]'s head!"),
 		span_userdanger("[user] lines [weapon] up with your head!"),
-		span_hear("You hear something being readied, deliberately."),
+		span_hear("You hear something being readied."),
 	)
 	playsound(src, 'sound/effects/wounds/crack2.ogg', 100, TRUE, extrarange = FINISHER_WINDUP_HEARING_RANGE)
 
@@ -110,7 +109,7 @@
 /**
  * The killing blow itself.
  *
- * The fast way across the brain's death threshold, where overflow is the slow one. The corpse is as
+ * The fast way across the brain's death threshold; overflow is the slow one. The corpse is as
  * recoverable as any other brain death: repair the brain, then defibrillate.
  *
  * Arguments:

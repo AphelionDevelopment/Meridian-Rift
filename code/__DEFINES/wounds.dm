@@ -1,16 +1,15 @@
 // ~wound damage/threshold defines
 // Injuries are not rolled for. Every bodypart keeps a running total of the damage it has taken of
 // each wounding type, and a wound applies the moment that total crosses its threshold. Identical
-// damage to an identical part produces an identical injury every time; the only thing left to chance
-// is which flavour of injury you get at that tier. See [/obj/item/bodypart/proc/check_wounding].
-/// any damage from a single hit over this is ignored, unless the target has the frail quirk. This is what stops one huge hit from walking a limb up several tiers at once. Does not apply if the mob has TRAIT_BLOODY_MESS.
+// damage to an identical part produces an identical injury tier every time; only which wound datum
+// lands at that tier is random. See [/obj/item/bodypart/proc/check_wounding].
+/// any damage from a single hit over this is ignored, unless the target has the frail quirk, so one huge hit cannot walk a limb up several tiers at once. Does not apply if the mob has TRAIT_BLOODY_MESS.
 /// This is further affected by TRAIT_EASILY_WOUNDED increasing the max considered damage (before applying the exponent) by 50%, and TRAIT_HARDLY_WOUNDED reducing it by 50%.
 #define WOUND_MAX_CONSIDERED_DAMAGE 25
 /// How much new damage a bodypart has to have taken before its injuries are worked out again.
-/// Every hit feeds the running total no matter how small - a hit under this is not free, it is the
-/// next one's problem - but the expensive part, comparing that total against every wound in the game,
-/// only happens as it passes each of these marks. Anything big enough to injure on its own is always
-/// examined immediately.
+/// Every hit feeds the running total no matter how small, but the expensive part - comparing that
+/// total against every wound in the game - only happens as it passes each of these marks. A hit big
+/// enough to injure on its own is always examined immediately.
 #define WOUND_MINIMUM_DAMAGE 5
 /// an attack must do this much damage after armor in order to be eliigible to dismember a suitably mushed bodypart
 #define DISMEMBER_MINIMUM_DAMAGE 10
@@ -18,9 +17,8 @@
 #define CANT_WOUND -100
 
 /// A hit that armour stopped at least this much of counts as non-penetrating: it bruises and burns, but never opens anyone up.
-/// A stand-in for plate headroom until plates exist - see the combat overhaul plan, phase 6.
 #define WOUND_NONPENETRATING_BLOCK 50
-/// The worst injury a non-penetrating hit is allowed to cause. You do not bleed out through a working plate.
+/// The worst injury a non-penetrating hit is allowed to cause. Nobody bleeds out through a working plate.
 #define WOUND_NONPENETRATING_MAX_SEVERITY WOUND_SEVERITY_SEVERE
 
 /// If there are multiple possible and valid wounds for the same type and severity, weight will be used to pick among them. See _wound_pregen_data.dm for more details
@@ -112,9 +110,9 @@ GLOBAL_LIST_INIT(bio_state_anatomy, list(
 #define WOUND_SERIES_FLESH_SLASH_BLEED "wound_series_flesh_slash_bled"
 /// T1-T3 Basic blunt wounds. T1 requires jointed, but 2-3 require bone. From: bone.dm
 #define WOUND_SERIES_BONE_BLUNT_BASIC "wound_series_bone_blunt_basic"
-/// T1-T3 Bruising. Requires flesh, applies anywhere, and is what a stopped hit leaves behind. From: bruise.dm
+/// T1-T3 Bruising. Requires flesh, applies to any zone, and is what a stopped hit leaves behind. From: bruise.dm
 #define WOUND_SERIES_FLESH_BRUISE "wound_series_flesh_bruise"
-/// A severed artery. Its own series because it is something you have as well as the cut that opened it. From: artery.dm
+/// A severed artery. Its own series, since it is carried alongside the cut that opened it. From: artery.dm
 #define WOUND_SERIES_FLESH_ARTERY "wound_series_flesh_artery"
 /// T1-T3 Basic burn wounds. Requires flesh. From: burns.dm
 #define WOUND_SERIES_FLESH_BURN_BASIC "wound_series_flesh_burn_basic"

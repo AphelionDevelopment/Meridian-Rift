@@ -1,6 +1,6 @@
 // Combat pain system.
-// Damage causes injuries, pain causes incapacitation. Injuries set a permanent floor, impacts stack
-// a temporary pool on top of it, and painkillers only change how much of the total the brain notices.
+// Injuries set a permanent floor, impacts stack a temporary pool on top of it, and painkillers
+// reduce only how much of the total the mob feels.
 
 /// Pain contributed by a Light injury.
 #define PAIN_FACTOR_LIGHT 5
@@ -11,8 +11,8 @@
 /// Pain contributed by an Extreme injury.
 #define PAIN_FACTOR_EXTREME 50
 
-/// Steps an injury's pain factor down one tier. Field treatment does not fix an injury, but a
-/// splinted fracture is a tier quieter than an untreated one.
+/// Steps an injury's pain factor down one tier. Field treatment does not remove an injury, but a
+/// splinted fracture counts a tier lower.
 #define PAIN_FACTOR_TIER_BELOW(factor) ( \
 	(factor) > PAIN_FACTOR_SEVERE ? PAIN_FACTOR_SEVERE : \
 	(factor) > PAIN_FACTOR_MODERATE ? PAIN_FACTOR_MODERATE : \
@@ -49,7 +49,7 @@
 
 /// Felt pain at which a mob goes into shock.
 #define PAIN_SHOCK_THRESHOLD 100
-/// Felt pain a mob must fall back to before it leaves shock. Below the threshold so nobody yo-yos on the line.
+/// Felt pain a mob must fall back to before it leaves shock. Below the shock threshold, so it does not oscillate on the line.
 #define PAIN_SHOCK_RECOVERY_THRESHOLD 70
 /// Temporary pain on a crawling mob that counts as a fresh hit and blacks it out again.
 #define PAIN_SHOCK_BLACKOUT_MINIMUM 10
@@ -87,7 +87,7 @@
 /// How often the current bracket rolls its intermittent effects.
 #define PAIN_EFFECT_ROLL_INTERVAL (4 SECONDS)
 
-// The top bracket pulses the meter's alpha, there being no colour past red.
+// The top bracket pulses the meter's alpha, as there is no colour past red.
 /// How faint the pain meter goes at the bottom of a flash.
 #define PAIN_METER_FLASH_ALPHA 90
 /// How long each half of a flash takes.
@@ -119,7 +119,7 @@
 /// Anaesthetic gas: complete numbness, then sleep.
 #define PAIN_DAMPEN_TOTAL 100
 /// How much of a surgical anaesthetic is needed before it dampens anything. Below this it does
-/// nothing for pain at all, since total numbness is total.
+/// nothing at all.
 #define PAIN_DAMPEN_ANAESTHETIC_DOSE 15
 
 // Grades for analgesic chems the design does not name individually. Anything that numbs without a

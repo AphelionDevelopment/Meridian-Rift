@@ -56,8 +56,8 @@
 
 	if(dealt_damage)
 		message += " | Damage: [dealt_damage]"
-		// The score is what the injury was decided on: this part's accumulated damage of this type,
-		// after armour and every other modifier. It says how close the next tier is.
+		// The score the injury was decided on: this part's accumulated damage of this type, after
+		// armour and every other modifier.
 		if(base_roll)
 			message += " (injury score [round(base_roll, 0.1)])"
 
@@ -71,8 +71,8 @@
 
 /**
  * log_overflow() is for damage that ran out of bodypart to go into and landed on what the part was
- * protecting instead. It is one of exactly two ways combat is allowed to kill, so it gets a category
- * of its own alongside the attack log it also writes to.
+ * protecting instead. One of the two ways combat can kill, so it gets a category of its own
+ * alongside the attack log it also writes to.
  *
  * Arguments:
  * * victim - Whoever it happened to
@@ -90,8 +90,8 @@
 	victim.log_message(message, LOG_ATTACK, color = "red")
 
 /**
- * log_finisher() is for an execution: a deliberate killing blow on someone who had already stopped
- * being able to stop it. The other of the two ways combat kills, and the one worth reading first.
+ * log_finisher() is for an execution: a killing blow on a target that could no longer prevent it.
+ * The other of the two ways combat kills.
  *
  * Arguments:
  * * victim - Whoever was finished off

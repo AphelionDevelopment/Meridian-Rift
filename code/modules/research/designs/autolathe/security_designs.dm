@@ -274,8 +274,8 @@
 	)
 	departmental_flags = DEPARTMENT_BITFLAG_SECURITY
 
-// Armour plates. Supply is the balance knob on the whole plate model, so the cheap ones are printable
-// and anything heavier comes off a shuttle.
+// Armour plates. Supply is the balance knob, so only the level 1 plates are printable; anything
+// heavier comes from cargo.
 /datum/design/armor_plate_ballistic
 	name = "Ballistic Plate"
 	id = "armor_plate_ballistic"

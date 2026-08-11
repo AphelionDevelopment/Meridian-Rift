@@ -68,8 +68,8 @@
 	var/pain_eased_by_treatment = TRUE
 
 	/// Whether carrying this injury at Critical means the bodypart has nothing left to absorb a hit with.
-	/// FALSE for the injuries the design calls never lethal: a bruise as bad as a bruise gets is still
-	/// only a bruise, and nobody should be killed through one. See [/obj/item/bodypart/proc/is_injury_capacity_maxed].
+	/// FALSE for the injuries the design calls never lethal, such as bruising.
+	/// See [/obj/item/bodypart/proc/is_injury_capacity_maxed].
 	var/allows_overflow = TRUE
 	/// The bodypart we're parented to. Not guaranteed to be non-null, especially after/during removal or if we haven't been applied
 	var/obj/item/bodypart/limb = null
@@ -243,7 +243,7 @@
 			vis_dist = DEFAULT_MESSAGE_RANGE
 
 		// Through the feedback arbiter, carrying our severity, so a burst that breaks three things
-		// announces the worst of them rather than all three. See [/mob/living/proc/combat_feedback].
+		// announces the worst of them. See [/mob/living/proc/combat_feedback].
 		if(victim.combat_feedback(
 			COMBAT_FEEDBACK_INJURY + severity,
 			message = msg,
@@ -496,7 +496,7 @@
 
 	start_limping_if_we_should()
 	// A wrapped injury hurts a tier less than a bare one, so the floor is stale the moment gauze goes
-	// on or comes off - which is one of the things that lands here. See [/datum/wound/proc/get_pain_factor].
+	// on or comes off, which is one of the things that lands here. See [/datum/wound/proc/get_pain_factor].
 	victim?.mark_pain_dirty()
 
 /// Additional beneficial effects when the wound is gained, in case you want to give a temporary boost to allow the victim to try an escape or last stand
@@ -797,9 +797,9 @@
 /**
  * How much permanent pain this injury is currently costing its owner.
  *
- * Field treatment counts. A splinted fracture or a bandaged cut is a tier quieter than an untreated
- * one, which is what lets a medic put someone back on their feet without a surgeon - the injury is
- * still there, and the moment the gauze comes off it hurts exactly as much as it did.
+ * Field treatment counts: a splinted fracture or a bandaged cut is a tier quieter than an untreated
+ * one, so a medic can put someone back on their feet without a surgeon. The injury itself is
+ * unchanged, and hurts in full again once the gauze comes off.
  */
 /datum/wound/proc/get_pain_factor()
 	if(!pain_factor || !pain_eased_by_treatment || isnull(limb))

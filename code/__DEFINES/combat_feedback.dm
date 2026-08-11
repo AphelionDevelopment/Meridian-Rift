@@ -1,9 +1,8 @@
 // Combat feedback budget.
 //
-// A fight produces far more announceable events than a player can read, and announcing each one
-// turns a firefight into a wall of text. Feedback is arbitrated instead: within a short window only
-// the highest priority event announces, and a bigger event arriving mid-window takes the window off
-// a smaller one. See [/mob/living/proc/combat_feedback].
+// A fight produces more announceable events than a player can read. Feedback is arbitrated: within
+// a short window only the highest priority event announces, and a bigger event arriving mid-window
+// takes the window off a smaller one. See [/mob/living/proc/combat_feedback].
 
 /// How long one announced event suppresses smaller ones.
 #define COMBAT_FEEDBACK_WINDOW (1 SECONDS)
@@ -17,7 +16,7 @@
 #define COMBAT_FEEDBACK_STATE 30
 /// Damage reaching an organ through a maxed bodypart.
 #define COMBAT_FEEDBACK_OVERFLOW 40
-/// Someone being finished off. Outranks everything else.
+/// Someone being finished off.
 #define COMBAT_FEEDBACK_EXECUTION 50
 
 // Screen shake, scaled by whether the hit got inside. Both are soft caps; see [/proc/shake_camera].

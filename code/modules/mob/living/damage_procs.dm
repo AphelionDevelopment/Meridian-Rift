@@ -40,16 +40,15 @@
 )
 	SHOULD_CALL_PARENT(TRUE)
 	var/damage_amount = damage
-	// Plates are the armour model for mob combat. One stops everything up to its tolerance outright,
-	// which is damage that never lands at all - see [/obj/item/armor_plate/proc/take_impact].
+	// Plates are the armour model for mob combat. One stops everything up to its tolerance outright.
+	// See [/obj/item/armor_plate/proc/take_impact].
 	var/obj/item/armor_plate/stopping_plate = (armour_flag && !forced) ? get_covering_plate(damagetype, armour_flag, def_zone) : null
 	if(stopping_plate)
 		damage_amount -= stopping_plate.take_impact(src, damage, def_zone, wound_bonus, attack_direction, attacking_item, wound_clothing)
 	if(!forced)
-		// A plate that answered this attack is the whole of the armour story for it. Everything up to
-		// its tolerance was stopped outright and what got past is penetrating by definition, so it
-		// arrives as though nothing were worn - damage is the only penetration stat there is. Worn
-		// armour still decides every attack no plate answered: the wrong sort, a spent one, an
+		// A plate that answered this attack replaces the percentage for it: everything up to its
+		// tolerance was stopped outright, and what got past arrives as though nothing were worn. Worn
+		// armour still decides every attack no plate answered - the wrong sort, a spent one, an
 		// uncovered zone, or no plate at all. See phase 6, D6.
 		if(!stopping_plate)
 			damage_amount *= ((100 - blocked) / 100)
@@ -57,8 +56,8 @@
 	if(damage_amount <= 0)
 		return 0
 
-	// Same rule for the injury roll: what a plate let through is penetrating and the percentage does
-	// not get a second say either.
+	// Same rule for the injury check: what a plate let through is penetrating, and the percentage does
+	// not get a second say.
 	var/wound_blocked = stopping_plate ? 0 : blocked
 
 	SEND_SIGNAL(src, COMSIG_MOB_APPLY_DAMAGE, damage_amount, damagetype, def_zone, blocked, wound_bonus, exposed_wound_bonus, sharpness, attack_direction, attacking_item, wound_clothing)
@@ -114,16 +113,15 @@
 		if(STAMINA)
 			damage_dealt = -1 * adjust_stamina_loss(damage_amount, forced = forced)
 		if(BRAIN)
-			// Violence stops just short of brain death. Crossing that line is what finishers and
-			// overflow are for, and suffocation gets there on its own.
+			// Violence stops just short of brain death. Finishers, overflow and suffocation are the
+			// only routes past it.
 			damage_dealt = -1 * adjust_organ_loss(ORGAN_SLOT_BRAIN, damage_amount, get_brain_damage_combat_cap())
 
 	// Being hit hurts whether or not it wounds. This is only what got through; what a plate stopped
 	// spiked the meter on its way in, scaled by how close to the plate's tolerance it landed.
 	if(damagetype == BRUTE || damagetype == BURN)
 		add_temporary_pain(damage_amount * PAIN_IMPACT_RATIO)
-		// A hit that got inside shakes you in proportion to how far in it got. Arbitrated, so a burst
-		// of fire is one moment rather than five, and anything worth saying outranks it.
+		// Shake scaled by how much got through, arbitrated so a burst of fire is one moment.
 		shake_from_impact(damage_amount)
 
 	SEND_SIGNAL(src, COMSIG_MOB_AFTER_APPLY_DAMAGE, damage_dealt, damagetype, def_zone, blocked, wound_bonus, exposed_wound_bonus, sharpness, attack_direction, attacking_item, wound_clothing)

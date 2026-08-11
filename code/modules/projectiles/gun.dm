@@ -421,8 +421,8 @@
 	if(check_botched(user, target))
 		return NONE
 
-	// A loaded gun held against a helpless target's head is an execution rather than a shot. See
-	// [/mob/living/carbon/human/proc/try_finisher] for the rest of the conditions.
+	// A loaded gun held point blank against a helpless target's head is a finisher rather than a shot.
+	// See [/mob/living/carbon/human/proc/try_finisher] for the rest of the conditions.
 	if(flag)
 		var/mob/living/carbon/human/finishable = target
 		if(istype(finishable) && finishable.try_finisher(user, src))

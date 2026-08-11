@@ -1040,7 +1040,7 @@ GLOBAL_DATUM_INIT(operations, /datum/operation_holder, new)
 		return
 	if(HAS_TRAIT(target, TRAIT_ANALGESIA) || drunken_patient && prob(drunken_ignorance_probability))
 		to_chat(target, span_notice("You feel a dull, numb sensation as your body is surgically operated on."))
-		// Numbed patients stop carrying the surgery around with them the moment the drugs land.
+		// A numbed patient stops carrying the surgery as soon as the drugs land.
 		target.remove_pain_source(PAIN_SOURCE_SURGERY)
 		return
 	to_chat(target, span_userdanger(pain_message))
