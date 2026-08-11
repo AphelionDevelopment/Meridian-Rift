@@ -6,11 +6,11 @@ MODULE ID: admin_tech
 
 ### Description:
 
-Add Nova specific admin outfits, tools, debug items, and other quality of life considerations
-This module aims to migrate admin 'god-hand the world is changing magically around you' into the in-character sphere by providing nearly every concievable solution to problems that a staffer might encounter in the course of preparing for events or resolving problems with a body instead of tools like buildmode.
+Add Nova-specific admin outfits, tools, debug items, and other quality of life considerations
+This module aims to migrate admin 'god-hand the world is changing magically around you' into the in-character sphere by providing nearly every conceivable solution to problems that a staffer might encounter in the course of preparing for events or resolving problems with a body instead of tools like buildmode.
 
-'Bluespace' items are a baseline admin tool, identified usually by /admin as the breakpoint in it's path.
-'Subspace' items are meant to be the 'badmin' variant of the above, with additional extras tacked ontop of the Bluespace parent items. Some items only exist in this variant state.
+'Bluespace' items are a baseline admin tool, usually identified by /admin as the breakpoint in its path.
+'Subspace' items are meant to be the 'badmin' variant of the above, with additional extras tacked on top of the Bluespace parent items. Some items only exist in this variant state.
 You should be really careful giving these items to players without supervision.
 
 Subspace refers to Telecommunications, or general data. If we consider a blackhole to be the ultimate medium for storage of information, then 'subspace' is the layer of data and information.
@@ -21,23 +21,26 @@ Links in with icspawning module from skyrat era, integrates some of its content 
 
 ### TG Code Changes and Modular Additions:
 
-code\datums\elements\strippable.dm - Adds NOSTRIP trait to /datum/strippable_item/proc/try_unequip
-code\modules\mob\living\carbon\examine.dm - Adds TRAIT_ADMIN_STEALTH which provides a unique obscuration flavor while blocking examines.
-code\_\_HELPERS\pronouns.dm - TRAIT_ADMIN_STEALTH
-code\game\atoms_movable.dm - can_see_target helper addition
-code_onclick\click.dm - TRAIT_ADMIN_REACHABLE early-return in IsReachableBy
-code\game\machinery_machinery.dm - TRAIT_ADMIN_REACHABLE early-return in interact gating
-code\_\_DEFINES\inventory.dm - ITEM_SLOT_ADMIN define
-code\_\_DEFINES\machines.dm - ADMIN_TECHWEB define
-icons\map_icons\items\encryptionkey.dmi - Justification: Auto-Sprited, cant stop it
-icons\map_icons\items\pda.dmi - Justification: Auto-Sprited, cant stop it
-code\datums\storage\storage.dm - Replaces /datum/storage/proc/orient_storage() with one including a widescreen check for oversized storages, and paired var screen_max_columns_widescreen on master /datum/storage
-modular_nova\modules\cellguns\code\cellguns.dm - Updated for quality of life and stuff needed for admin and other cellgun types
-code\modules\tgui\states.dm - Modular edit to fix ui opening at distance with the subspace headset, thank you again internetizen
+code/datums/elements/strippable.dm - Adds NOSTRIP trait to /datum/strippable_item/proc/try_unequip
+code/modules/mob/living/carbon/examine.dm - Adds TRAIT_ADMIN_STEALTH which provides a unique obscuration flavor while blocking examines.
+code/__HELPERS/pronouns.dm - TRAIT_ADMIN_STEALTH
+code/game/atoms_movable.dm - can_see_target helper addition
+code/_onclick/click.dm - TRAIT_ADMIN_REACHABLE early-return in IsReachableBy
+code/game/machinery/_machinery.dm - TRAIT_ADMIN_REACHABLE early-return in interact gating
+code/__DEFINES/inventory.dm - ITEM_SLOT_ADMIN define
+code/__DEFINES/machines.dm - ADMIN_TECHWEB define
+icons/map_icons/items/encryptionkey.dmi - Justification: Auto-Sprited, cant stop it
+icons/map_icons/items/pda.dmi - Justification: Auto-Sprited, cant stop it
+code/datums/storage/storage.dm - Replaces /datum/storage/proc/orient_storage() with one including a widescreen check for oversized storages, and paired var screen_max_columns_widescreen on master /datum/storage
+modular_nova/modules/cellguns/code/cellguns.dm - Updated for quality of life and stuff needed for admin and other cellgun types
+code/modules/tgui/states.dm - Modular edit to fix ui opening at distance with the subspace headset, thank you again internetizen
+modular_nova/master_files/code/modules/surgery/surgery_tools.dm - Nulls worn_icon on the surgical tools that had it set as a bad string, surfaced by admin MOD themes exposing every item to the suit_storage_icons unit test
+modular_nova/master_files/code/modules/power/lighting/light_items.dm - Same worn_icon fix, for light tubes and bulbs
+modular_nova/master_files/code/game/objects/items/plushes.dm - Same worn_icon fix, for the carp/Ratvar/Nar'Sie plushies
 
 ### Defines:
 
-ADMIN_OBJ_FLAGS - code\_\_DEFINES\~nova_defines/obj_flags.dm - code\_\_DEFINES\~nova_defines_globalvars\bitfields.dm
+ADMIN_OBJ_FLAGS - code/__DEFINES/~nova_defines/obj_flags.dm - code/__DEFINES/~nova_defines/_globalvars/bitfields.dm
 
 These are three separate defines because they target three separate bitfields whose bits overlap - do not merge them back into one:
 ADMIN_OBJ_FLAGS goes on obj_flags, ADMIN_OBJ_FLAGS_NOVA goes on obj_flags_nova, ADMIN_CLOTHING_FLAGS goes on clothing_flags (set with |= in Initialize so the parent type's own flags survive).
@@ -57,12 +60,12 @@ Adding a printable means adding a `/datum/design/admin` subtype in admin_techweb
 
 TRAIT_NOSTRIP - Prevents item removal by Strip Menu
 TRAIT_ADMIN_STEALTH - Provides identity masking similar to the UNKNOWN_APPEARANCE trait, but special inspect texts
-TRAIT_ADMIN_REACHABLE - Provides early TRUE returns on IsReachableBy in code_onclick\click.dm and can_perform_action code\modules\mob\living\living.dm. Also provides additions to code\game\machinery_machinery.dm
-TRAIT_SHOW_ALL_WIRES - Adds another method of showing the global wire legend without having to hold an abductor multi tool / be a borg / be holding a copy of the blueprints modular_nova\master_files\code\datums\wires_wires.dm
+TRAIT_ADMIN_REACHABLE - Provides early TRUE returns on IsReachableBy in code/_onclick/click.dm and can_perform_action code/modules/mob/living/living.dm. Also provides additions to code/game/machinery/_machinery.dm
+TRAIT_SHOW_ALL_WIRES - Adds another method of showing the global wire legend without having to hold an abductor multi-tool / be a borg / be holding a copy of the blueprints modular_nova/master_files/code/datums/wires/_wires.dm
 
 ### Included files:
 
-modular_nova/master_files/code/datums/wires/\_wires.dm - TRAIT_SHOW_ALL_WIRES hook
+modular_nova/master_files/code/datums/wires/_wires.dm - TRAIT_SHOW_ALL_WIRES hook
 modular_nova/master_files/code/game/objects/objs.dm - admin obj support
 modular_nova/master_files/code/modules/research/techweb/techweb_types.dm - ADMIN_TECHWEB node registration
 modular_nova/modules/customization/modules/mob/living/carbon/human/MOD_sprite_accessories/mod_themes.dm - admin MOD theme support
@@ -77,7 +80,7 @@ modular_nova/master_files/code/modules/client/preferences.dm - preferred_spawn_m
 code/modules/client/preferences_savefile.dm - Saves/loads preferred_spawn_methods and preferred_spawn_outfits used inside the icspawning menu
 code/modules/mob/living/living.dm - TRAIT_ADMIN_REACHABLE early-return in can_perform_action
 code/modules/tgui/states.dm - Grants UI_INTERACTIVE to clients with TRAIT_ADMIN_REACHABLE, allowing admin UI interaction at range with stuff like machines
-\_maps/nova/capsules/tiny_fan_capsule.dmm - simple reference capsule, places a tiny fan with super reinforced flooring
+_maps/nova/capsules/tiny_fan_capsule.dmm - simple reference capsule, places a tiny fan with super reinforced flooring
 tgstation.dme - registers new/moved files
 
 ### Credits:
@@ -117,4 +120,4 @@ handheld fabricator
 
 ### Useful-ish Breadcrumbs
 
-code\_\_DEFINES\admin.dm
+code/__DEFINES/admin.dm
