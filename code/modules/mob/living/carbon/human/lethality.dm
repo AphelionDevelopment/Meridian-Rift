@@ -88,6 +88,48 @@
 	return is_bled_out()
 
 /**
+ * How much margin this body has left, read off the three things that keep it alive.
+ *
+ * The damage totals stopped answering this in phase 4 - a man with a maxed chest and a working heart
+ * is in no danger at all, and a man at full health with a stopped one is dying - so every instrument
+ * that used to read them reads this instead. The worst of the three, because triage is about the thing
+ * about to kill the patient rather than an average of their problems.
+ *
+ * Deliberately says nothing about pain: a triage instrument must not inherit the patient's painkillers,
+ * and Appendix D's doped fighter with a severed artery is exactly the case a medic has to be able to
+ * see. Brute and burn are just as deliberately absent - the analyser lists those in full underneath,
+ * and a ruined limb is not an emergency any more.
+ */
+/mob/living/carbon/human/get_vitals_ratio()
+	// Nothing in the skull, or a pump that has given out, and there is no margin left to report.
+	var/obj/item/organ/our_brain = get_organ_slot(ORGAN_SLOT_BRAIN)
+	if(isnull(our_brain) || circulation_stopped())
+		return 0
+
+	var/margin = 1
+	if(our_brain.maxHealth)
+		margin = min(margin, 1 - (our_brain.damage / our_brain.maxHealth))
+
+	var/obj/item/organ/heart/our_heart = get_organ_slot(ORGAN_SLOT_HEART)
+	if(our_heart?.maxHealth)
+		margin = min(margin, 1 - (our_heart.damage / our_heart.maxHealth))
+
+	// Raw volume rather than the modified figure: this runs on every updatehealth() and the modifiers
+	// walk the whole reagent list. Saline buying someone a few percent is not what triage is looking at.
+	if(CAN_HAVE_BLOOD(src))
+		margin = min(margin, (blood_volume - BLOOD_VOLUME_SURVIVE) / (BLOOD_VOLUME_NORMAL - BLOOD_VOLUME_SURVIVE))
+
+	return clamp(margin, 0, 1)
+
+/mob/living/carbon/human/get_health_hud_percent()
+	var/margin = get_vitals_ratio()
+	// The ladder's bottom half is where a doctor is meant to drop what they are doing, so it is reserved
+	// for a body with something actually giving out rather than for a full damage bar.
+	if(is_dying())
+		return -100 * (1 - margin)
+	return 100 * margin
+
+/**
  * The most brain damage ordinary violence is allowed to leave.
  *
  * Beating someone's head in makes them stupid, not dead. Crossing the line is what overflow and

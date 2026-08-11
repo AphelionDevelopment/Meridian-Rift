@@ -810,11 +810,10 @@
 				return
 		if (can_take_the_limb && ((exterior_ready_to_dismember && interior_ready_to_dismember) || dismemberable_by_total_damage()) && try_dismember(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus))
 			return
-		// now we have our wounding_type and are ready to carry on with wounds and dealing the actual damage
+		//NOVA EDIT ADDITION - MEDICAL
+		//This makes it so the more damaged bodyparts are, the more likely they are to get wounds
+		//However, this bonus isn't applied when the object doesn't pass the initial wound threshold, nor is it when it already has enough wounding dmg
 		if(wounding_dmg >= WOUND_MINIMUM_DAMAGE && wound_bonus != CANT_WOUND)
-			//NOVA EDIT ADDITION - MEDICAL
-			//This makes it so the more damaged bodyparts are, the more likely they are to get wounds
-			//However, this bonus isn't applied when the object doesn't pass the initial wound threshold, nor is it when it already has enough wounding dmg
 			if(wounding_dmg < DAMAGED_BODYPART_BONUS_WOUNDING_BONUS)
 				var/damaged_percent = (brute_dam + burn_dam) / max_damage
 				if(damaged_percent > DAMAGED_BODYPART_BONUS_WOUNDING_THRESHOLD)
@@ -825,7 +824,14 @@
 			if(istype(current_gauze, /obj/item/stack/medical/wrap/gauze))
 				var/obj/item/stack/medical/wrap/gauze/our_gauze = current_gauze
 				our_gauze.get_hit(src)
-			//NOVA EDIT ADDITION END - MEDICAL
+		//NOVA EDIT ADDITION END - MEDICAL
+
+		// now we have our wounding_type and are ready to carry on with wounds and dealing the actual damage.
+		// Everything that lands feeds the part's running injury total, however small it is. Gating entry on a
+		// minimum hit size is what let a weapon that armour brought under that size beat someone indefinitely
+		// without ever injuring them, and left fire unable to reach an organ it is meant to be able to cook.
+		// How often that total is examined is check_wounding()'s business.
+		if(wounding_dmg > 0 && wound_bonus != CANT_WOUND)
 			check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, attack_direction, damage_source = damage_source, wound_clothing = wound_clothing, blocked = wound_blocked)
 
 	for(var/datum/wound/iter_wound as anything in wounds)

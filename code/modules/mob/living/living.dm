@@ -1115,6 +1115,29 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 /mob/living/proc/can_recover_breath()
 	return health >= crit_threshold
 
+/**
+ * How much margin this mob has left before it dies, from 0 to 1.
+ *
+ * The one number every triage instrument reads - medical HUD glasses, the health analyser's headline,
+ * the mob's own health bar. Anything that still dies of its damage totals answers with them, which is
+ * what this returns. Humans stopped dying of them in phase 4, so they answer with the three things
+ * that do keep a person alive instead; see [/mob/living/carbon/human/proc/get_vitals_ratio].
+ */
+/mob/living/proc/get_vitals_ratio()
+	return maxHealth ? clamp(health / maxHealth, 0, 1) : 0
+
+/**
+ * Where this mob sits on the health HUD's ladder, as a percentage.
+ *
+ * May be negative: the bottom of the ladder is the emergency band, and what counts as an emergency is
+ * the mob's own business. See [/proc/RoundHealth], which renders it.
+ */
+/mob/living/proc/get_health_hud_percent()
+	var/maxi_health = maxHealth
+	if(iscarbon(src) && health < 0)
+		maxi_health = 100 //so crit shows up right for aliens and other high-health carbon mobs; noncarbons don't have crit.
+	return (health / maxi_health) * 100
+
 /// Checks if we are actually able to ressuscitate this mob.
 /// (We don't want to revive then to have them instantly die again)
 /mob/living/proc/can_be_revived()

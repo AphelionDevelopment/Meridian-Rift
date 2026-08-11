@@ -3,7 +3,7 @@
 /obj/item/bodypart/proc/painless_wound_roll(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, sharpness=NONE, wound_clothing, blocked = 0)
 	SHOULD_CALL_PARENT(TRUE)
 
-	if(!owner || wounding_dmg <= WOUND_MINIMUM_DAMAGE || wound_bonus == CANT_WOUND || HAS_TRAIT(owner, TRAIT_GODMODE))
+	if(!owner || wounding_dmg <= 0 || wound_bonus == CANT_WOUND || HAS_TRAIT(owner, TRAIT_GODMODE))
 		return
 
 	var/easy_dismember = HAS_TRAIT(owner, TRAIT_EASYDISMEMBER) // if we have easydismember, we don't reduce damage when redirecting damage to different types (slashing weapons on mangled/skinless limbs attack at 100% instead of 50%)
@@ -92,6 +92,15 @@
 		damage = max(damage * ((100 - armor_ablation) / 100), 0)
 
 	var/accumulated_damage = accumulate_wounding_damage(woundtype, damage)
+
+	// Comparing a part against every wound in the game is not free, and continuous damage - fire,
+	// pressure, acid - arrives in fractions of a point many times a second. So a hit large enough to
+	// injure on its own is always examined, and anything smaller is examined as the running total
+	// passes each WOUND_MINIMUM_DAMAGE mark. The damage is banked either way: what a small hit can
+	// never do is nothing.
+	if(damage < WOUND_MINIMUM_DAMAGE && floor(accumulated_damage / WOUND_MINIMUM_DAMAGE) == floor((accumulated_damage - damage) / WOUND_MINIMUM_DAMAGE))
+		return
+
 	var/injury_roll = check_woundings_mods(woundtype, accumulated_damage, wound_bonus, exposed_wound_bonus, armor_ablation)
 	var/list/series_wounding_mods = check_series_wounding_mods()
 

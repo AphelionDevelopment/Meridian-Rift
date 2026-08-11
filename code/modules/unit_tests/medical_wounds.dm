@@ -96,6 +96,22 @@
 
 	TEST_ASSERT(armoured.get_bodypart(BODY_ZONE_R_ARM), "A hit armour stopped half of took the limb off")
 
+/// A weapon armour brings under the minimum hit size still has to injure eventually. While the injury
+/// track was gated on how big a hit was rather than on the part's running total, a light weapon against
+/// a vest did nothing at all forever - no injuries, so no injury capacity, so no overflow, so no way to
+/// kill or even wound the target however long you kept swinging.
+/datum/unit_test/wound_light_hits_accumulate/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/bodypart/tested_part = victim.get_bodypart(BODY_ZONE_CHEST)
+
+	for(var/hit in 1 to 30)
+		victim.apply_damage(WOUND_MINIMUM_DAMAGE / 2, BRUTE, tested_part)
+
+	TEST_ASSERT(tested_part.get_wounding_damage(WOUND_BLUNT) > 0, \
+		"Hits under the minimum damage never reached the part's running injury total")
+	TEST_ASSERT(length(victim.all_wounds), \
+		"Thirty light hits to the chest left no injury at all - nothing this weapon does could ever matter")
+
 /// This test is used for making sure species with bones but no flesh (skeletons, plasmamen) can only suffer BONE_WOUNDS, and nothing tagged with FLESH_WOUND (it's possible to require both)
 /datum/unit_test/test_human_bone/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)

@@ -6,7 +6,11 @@
 /// any damage from a single hit over this is ignored, unless the target has the frail quirk. This is what stops one huge hit from walking a limb up several tiers at once. Does not apply if the mob has TRAIT_BLOODY_MESS.
 /// This is further affected by TRAIT_EASILY_WOUNDED increasing the max considered damage (before applying the exponent) by 50%, and TRAIT_HARDLY_WOUNDED reducing it by 50%.
 #define WOUND_MAX_CONSIDERED_DAMAGE 25
-/// an attack must do this much damage after armor in order to roll for being a wound (so pressure damage/being on fire doesn't proc it)
+/// How much new damage a bodypart has to have taken before its injuries are worked out again.
+/// Every hit feeds the running total no matter how small - a hit under this is not free, it is the
+/// next one's problem - but the expensive part, comparing that total against every wound in the game,
+/// only happens as it passes each of these marks. Anything big enough to injure on its own is always
+/// examined immediately.
 #define WOUND_MINIMUM_DAMAGE 5
 /// an attack must do this much damage after armor in order to be eliigible to dismember a suitably mushed bodypart
 #define DISMEMBER_MINIMUM_DAMAGE 10
