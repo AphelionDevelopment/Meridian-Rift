@@ -565,15 +565,27 @@
 		cure_blind(EYES_COVERED)
 		clear_fullscreen("tint", 0 SECONDS)
 
+/**
+ * The reading the crit fullscreen overlays are drawn from.
+ *
+ * Health, for anything that still gives out when its damage totals run out. Mobs whose death comes
+ * from somewhere else override this, so the screen greys out when the body is actually failing
+ * rather than when a damage total crosses a line. See [/mob/living/proc/get_health_hud_percent],
+ * which splits the same way and whose negative half is exactly the band these overlays cover.
+ */
+/mob/living/carbon/proc/get_crit_overlay_reading()
+	return health
+
 //this handles hud updates
 /mob/living/carbon/update_damage_hud()
 
 	if(!client)
 		return
 
-	if(health <= crit_threshold && !HAS_TRAIT(src, TRAIT_NOCRITOVERLAY))
+	var/crit_reading = get_crit_overlay_reading()
+	if(crit_reading <= crit_threshold && !HAS_TRAIT(src, TRAIT_NOCRITOVERLAY))
 		var/severity = 0
-		switch(health)
+		switch(crit_reading)
 			if(-20 to -10)
 				severity = 1
 			if(-30 to -20)
@@ -596,7 +608,7 @@
 				severity = 10
 		if(stat != HARD_CRIT)
 			var/visionseverity = 4
-			switch(health)
+			switch(crit_reading)
 				if(-8 to -4)
 					visionseverity = 5
 				if(-12 to -8)
@@ -688,12 +700,27 @@
 
 /mob/living/carbon/set_health(new_value)
 	. = ..()
-	if(CONFIG_GET(flag/near_death_experience))
-		if(. > HEALTH_THRESHOLD_NEARDEATH)
-			if(health <= HEALTH_THRESHOLD_NEARDEATH && !HAS_TRAIT(src, TRAIT_NODEATH))
-				ADD_TRAIT(src, TRAIT_SIXTHSENSE, "near-death")
-		else if(health > HEALTH_THRESHOLD_NEARDEATH)
-			REMOVE_TRAIT(src, TRAIT_SIXTHSENSE, "near-death")
+	update_near_death_sense()
+
+/**
+ * Grants or takes back the sixth sense of someone close enough to death to hear the other side.
+ *
+ * Reads the health HUD ladder rather than the health value, so a body whose vitals are giving out at
+ * full health qualifies and a battered one with a working heart does not. On the negative half of
+ * that ladder a percentage and a health value are the same number, so anything still running on a
+ * health bar reads exactly as it did.
+ *
+ * Absolute rather than a comparison against the previous health, since what puts a mob down here no
+ * longer has to move health at all. Both trait macros are idempotent, so re-evaluating is free.
+ */
+/mob/living/carbon/proc/update_near_death_sense()
+	if(!CONFIG_GET(flag/near_death_experience))
+		return
+
+	if(get_health_hud_percent() <= HEALTH_THRESHOLD_NEARDEATH && !HAS_TRAIT(src, TRAIT_NODEATH))
+		ADD_TRAIT(src, TRAIT_SIXTHSENSE, "near-death")
+	else
+		REMOVE_TRAIT(src, TRAIT_SIXTHSENSE, "near-death")
 
 
 /mob/living/carbon/update_stat()

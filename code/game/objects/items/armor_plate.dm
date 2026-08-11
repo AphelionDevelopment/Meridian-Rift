@@ -300,7 +300,7 @@
 	desc = "A hard case for spare armour plates. Nothing else will fit, and it will not fit in a bag."
 	icon = 'icons/obj/storage/case.dmi'
 	icon_state = "secbox"
-	inhand_icon_state = "secbox"
+	inhand_icon_state = "lockbox"
 	lefthand_file = 'icons/mob/inhands/equipment/briefcase_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/equipment/briefcase_righthand.dmi'
 	w_class = WEIGHT_CLASS_BULKY

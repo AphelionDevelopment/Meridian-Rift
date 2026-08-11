@@ -115,6 +115,11 @@
 		return -100 * (1 - margin)
 	return 100 * margin
 
+/mob/living/carbon/human/get_crit_overlay_reading()
+	// The same ladder the HUD reads. Pain is excluded from it deliberately, so a stun greys nobody
+	// out: the overlays are for a body on its way out, and pain shock has its own status effect.
+	return get_health_hud_percent()
+
 /**
  * The most brain damage ordinary violence is allowed to leave.
  *
