@@ -861,7 +861,8 @@
 		return brain_status
 
 	// A restarted heart still needs something to pump, so an exsanguinated patient needs a transfusion first.
-	if (CAN_HAVE_BLOOD(src) && get_blood_volume() < DEFIB_MINIMUM_BLOOD)
+	// Read directly rather than through get_blood_volume(), which is not pure enough for this proc.
+	if (CAN_HAVE_BLOOD(src) && blood_volume < DEFIB_MINIMUM_BLOOD)
 		return DEFIB_FAIL_NO_BLOOD
 
 	return DEFIB_POSSIBLE

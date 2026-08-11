@@ -72,9 +72,6 @@
 	if(!penetrated)
 		return combat_feedback(COMBAT_FEEDBACK_IMPACT, shake_strength = COMBAT_SHAKE_NONPENETRATING)
 
-	var/strength = LERP(
-		COMBAT_SHAKE_PENETRATING_MIN,
-		COMBAT_SHAKE_PENETRATING_MAX,
-		min(damage / COMBAT_SHAKE_FULL_STRENGTH_DAMAGE, 1)
-	)
+	var/severity = min(damage / COMBAT_SHAKE_FULL_STRENGTH_DAMAGE, 1)
+	var/strength = LERP(COMBAT_SHAKE_PENETRATING_MIN, COMBAT_SHAKE_PENETRATING_MAX, severity)
 	return combat_feedback(COMBAT_FEEDBACK_IMPACT, shake_strength = strength)
