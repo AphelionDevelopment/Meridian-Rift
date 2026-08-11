@@ -121,7 +121,9 @@
 	moth_snack.clothing = WEAKREF(src)
 
 /obj/item/clothing/item_interaction(mob/living/user, obj/item/weapon, list/modifiers)
-	. = NONE
+	. = fit_armor_plate(user, weapon)
+	if(. != NONE)
+		return .
 	if(!istype(weapon, repairable_by))
 		return
 
@@ -234,6 +236,7 @@
 /obj/item/clothing/Destroy()
 	user_vars_remembered = null //Oh god somebody put REFERENCES in here? not to worry, we'll clean it up
 	QDEL_NULL(moth_snack)
+	QDEL_NULL(fitted_plate)
 	return ..()
 
 /obj/item/clothing/dropped(mob/living/user)
@@ -326,6 +329,7 @@
 
 /obj/item/clothing/examine(mob/user)
 	. = ..()
+	. += describe_fitted_plate()
 	if(damaged_clothes == CLOTHING_SHREDDED)
 		. += span_warning("<b>[p_Theyre()] completely shredded and require[p_s()] mending before [p_they()] can be worn again!</b>")
 		return

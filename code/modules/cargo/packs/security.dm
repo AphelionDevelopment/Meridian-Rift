@@ -25,6 +25,36 @@
 	contains = list(/obj/item/clothing/suit/armor/vest = 3)
 	crate_name = "armor crate"
 
+/datum/supply_pack/security/ballistic_plates
+	name = "Ballistic Plate Crate"
+	desc = "A case of three reinforced ballistic plates, for fitting into armour carriers and helmets. \
+		Stops what a gun does, until it stops doing it. Has no answer at all for energy weapons."
+	cost = CARGO_CRATE_VALUE * 8
+	access_view = ACCESS_SECURITY
+	contains = list(/obj/item/storage/plate_case/ballistic)
+	crate_name = "ballistic plate crate"
+
+/datum/supply_pack/security/ablative_plates
+	name = "Ablative Plate Crate"
+	desc = "A case of three reinforced ablative plates, for fitting into armour carriers and helmets. \
+		Boils away instead of the wearer. Bullets go through it as though it were not there."
+	cost = CARGO_CRATE_VALUE * 8
+	access_view = ACCESS_SECURITY
+	contains = list(/obj/item/storage/plate_case/ablative)
+	crate_name = "ablative plate crate"
+
+/datum/supply_pack/security/composite_plates
+	name = "Composite Plate Crate"
+	desc = "Two composite plates, one of each sort, and nothing else. The heaviest armour that will \
+		still drop into a standard carrier."
+	cost = CARGO_CRATE_VALUE * 15
+	access_view = ACCESS_ARMORY
+	contains = list(
+		/obj/item/armor_plate/ballistic/composite,
+		/obj/item/armor_plate/ablative/composite,
+	)
+	crate_name = "composite plate crate"
+
 /datum/supply_pack/security/modsuit_plating
 	name = "Security MOD plating"
 	desc = "A single security MOD suit plating"

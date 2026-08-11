@@ -11,6 +11,7 @@
 	attack_direction = null,
 	attacking_item,
 	wound_clothing = TRUE,
+	armour_flag = null,
 )
 	// Spread damage should always have def zone be null
 	if(spread_damage)
@@ -48,6 +49,7 @@
 	attack_direction = null,
 	attacking_item,
 	wound_clothing = TRUE,
+	armour_flag = null,
 )
 
 	// Add relevant DR modifiers into blocked value to pass to parent

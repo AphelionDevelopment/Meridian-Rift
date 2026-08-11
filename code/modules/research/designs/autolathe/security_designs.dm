@@ -273,3 +273,41 @@
 		RND_CATEGORY_CONSTRUCTION + RND_SUBCATEGORY_CONSTRUCTION_MOUNTS
 	)
 	departmental_flags = DEPARTMENT_BITFLAG_SECURITY
+
+// Armour plates. Supply is the balance knob on the whole plate model, so the cheap ones are printable
+// and anything heavier comes off a shuttle.
+/datum/design/armor_plate_ballistic
+	name = "Ballistic Plate"
+	id = "armor_plate_ballistic"
+	build_type = AUTOLATHE | PROTOLATHE
+	materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 4)
+	build_path = /obj/item/armor_plate/ballistic
+	category = list(
+		RND_CATEGORY_INITIAL,
+		RND_CATEGORY_EQUIPMENT + RND_SUBCATEGORY_EQUIPMENT_SECURITY,
+	)
+	departmental_flags = DEPARTMENT_BITFLAG_SECURITY
+
+/datum/design/armor_plate_ablative
+	name = "Ablative Plate"
+	id = "armor_plate_ablative"
+	build_type = AUTOLATHE | PROTOLATHE
+	materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 2, /datum/material/silver = SHEET_MATERIAL_AMOUNT)
+	build_path = /obj/item/armor_plate/ablative
+	category = list(
+		RND_CATEGORY_INITIAL,
+		RND_CATEGORY_EQUIPMENT + RND_SUBCATEGORY_EQUIPMENT_SECURITY,
+	)
+	departmental_flags = DEPARTMENT_BITFLAG_SECURITY
+
+/datum/design/plate_case
+	name = "Plate Case"
+	id = "plate_case"
+	build_type = AUTOLATHE | PROTOLATHE
+	materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 2)
+	build_path = /obj/item/storage/plate_case
+	category = list(
+		RND_CATEGORY_INITIAL,
+		RND_CATEGORY_EQUIPMENT + RND_SUBCATEGORY_EQUIPMENT_SECURITY,
+	)
+	departmental_flags = DEPARTMENT_BITFLAG_SECURITY

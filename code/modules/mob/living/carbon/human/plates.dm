@@ -1,0 +1,57 @@
+/**
+ * Finding the plate that stands between an attack and a bodypart.
+ *
+ * This is the mob-side half of phase 6. [/mob/living/proc/apply_damage] asks for a plate once per
+ * attack that carries an armour flag, and if it gets one, that plate decides the hit instead of the
+ * percentage model: everything up to its tolerance is stopped outright and the rest lands unarmoured.
+ *
+ * Only carbons with clothing have plates. Simple mobs, basic mobs and anything hurt by fire, pressure,
+ * explosions or poison never asks - those attacks carry no armour flag, which is exactly the design's
+ * "environmental damage skips NP/P" without a second rule to maintain.
+ */
+
+/**
+ * The working plate covering a bodypart against this sort of attack, if there is one.
+ *
+ * Arguments:
+ * * damagetype - One of the damage types. Only [BRUTE] and [BURN] meet a plate.
+ * * armour_flag - The attack's armour flag, e.g. [BULLET] or [LASER].
+ * * def_zone - Bodypart or zone the attack landed on.
+ */
+/mob/living/proc/get_covering_plate(damagetype, armour_flag, def_zone)
+	return null
+
+/mob/living/carbon/human/get_covering_plate(damagetype, armour_flag, def_zone)
+	if(damagetype != BRUTE && damagetype != BURN)
+		return null
+	if(isnull(def_zone))
+		return null
+
+	var/obj/item/bodypart/hit_part = isbodypart(def_zone) ? def_zone : get_bodypart(check_zone(def_zone))
+	if(isnull(hit_part))
+		return null
+
+	// Helmet before suit, since the only zone both could claim is a head the suit has a hood over.
+	return get_plate_from(head, hit_part, armour_flag) || get_plate_from(wear_suit, hit_part, armour_flag)
+
+/**
+ * The plate in one worn item, if it has one that covers this part and cares about this attack.
+ *
+ * A plate that is spent, or that is the wrong sort for the attack, is not a plate for this hit - the
+ * carrier's own armour rating handles it the way it always did. That keeps a broken plate from being
+ * better protection than a working one of the wrong type.
+ *
+ * Arguments:
+ * * carrier - The worn item that might hold a plate.
+ * * hit_part - The bodypart the attack landed on.
+ * * armour_flag - The attack's armour flag.
+ */
+/mob/living/carbon/human/proc/get_plate_from(obj/item/clothing/carrier, obj/item/bodypart/hit_part, armour_flag)
+	RETURN_TYPE(/obj/item/armor_plate)
+
+	var/obj/item/armor_plate/fitted = carrier?.fitted_plate
+	if(isnull(fitted) || !fitted.is_working() || !fitted.stops_attack(armour_flag))
+		return null
+	if(!(carrier.body_parts_covered & hit_part.body_part))
+		return null
+	return fitted

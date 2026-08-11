@@ -17,6 +17,9 @@
  * * attack_direction - Direction of the attack from the attacker to [src].
  * * attacking_item - Item that is attacking [src].
  * * wound_clothing - If this should cause damage to clothing.
+ * * armour_flag - The attack's armour flag, if it is the sort of attack an armour plate can meet.
+ * Passing one is what opts an attack into the non-penetrating / penetrating split; leaving it null
+ * keeps the percentage model, which is what atoms, environmental damage and simple mobs still use.
  *
  * Returns the amount of damage dealt.
  */
@@ -33,14 +36,25 @@
 	attack_direction = null,
 	attacking_item,
 	wound_clothing = TRUE,
+	armour_flag = null,
 )
 	SHOULD_CALL_PARENT(TRUE)
 	var/damage_amount = damage
+	// Plates are the armour model for mob combat. One stops everything up to its tolerance outright,
+	// which is damage that never lands at all - see [/obj/item/armor_plate/proc/take_impact].
+	var/obj/item/armor_plate/stopping_plate = (armour_flag && !forced) ? get_covering_plate(damagetype, armour_flag, def_zone) : null
+	if(stopping_plate)
+		damage_amount -= stopping_plate.take_impact(src, damage, def_zone, wound_bonus, attack_direction, attacking_item, wound_clothing)
 	if(!forced)
 		damage_amount *= ((100 - blocked) / 100)
 		damage_amount *= get_incoming_damage_modifier(damage_amount, damagetype, def_zone, sharpness, attack_direction, attacking_item)
 	if(damage_amount <= 0)
 		return 0
+
+	// Whatever a plate did not stop got through it, so it is penetrating by definition and the
+	// percentage that stood in for plate headroom until now does not get a second say. Attacks that
+	// never met a plate still go by the stand-in, which is all there is for them.
+	var/wound_blocked = stopping_plate ? 0 : blocked
 
 	SEND_SIGNAL(src, COMSIG_MOB_APPLY_DAMAGE, damage_amount, damagetype, def_zone, blocked, wound_bonus, exposed_wound_bonus, sharpness, attack_direction, attacking_item, wound_clothing)
 
@@ -60,7 +74,7 @@
 					attack_direction = attack_direction,
 					damage_source = attacking_item,
 					wound_clothing = wound_clothing,
-					wound_blocked = blocked,
+					wound_blocked = wound_blocked,
 				))
 					update_damage_overlays()
 				damage_dealt = actual_hit.get_damage() - delta // Unfortunately bodypart receive_damage doesn't return damage dealt so we do it manually
@@ -81,7 +95,7 @@
 					attack_direction = attack_direction,
 					damage_source = attacking_item,
 					wound_clothing = wound_clothing,
-					wound_blocked = blocked,
+					wound_blocked = wound_blocked,
 				))
 					update_damage_overlays()
 				damage_dealt = actual_hit.get_damage() - delta // See above
@@ -99,10 +113,8 @@
 			// overflow are for, and suffocation gets there on its own.
 			damage_dealt = -1 * adjust_organ_loss(ORGAN_SLOT_BRAIN, damage_amount, get_brain_damage_combat_cap())
 
-	// Being hit hurts whether or not it wounds. This reads what armour, species and physiology let
-	// through rather than what the attack set out to deal, so plate is worth wearing for the thing
-	// that decides fights. Phase 6 replaces the scalar with plate headroom, at which point a barely
-	// stopped round can spike harder than a comfortably stopped one.
+	// Being hit hurts whether or not it wounds. This is only what got through; what a plate stopped
+	// spiked the meter on its way in, scaled by how close to the plate's tolerance it landed.
 	if(damagetype == BRUTE || damagetype == BURN)
 		add_temporary_pain(damage_amount * PAIN_IMPACT_RATIO)
 

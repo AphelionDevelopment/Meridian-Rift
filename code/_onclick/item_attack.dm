@@ -370,6 +370,7 @@
 		sharpness = attacking_item.get_sharpness(),
 		attack_direction = get_dir(user, src),
 		attacking_item = attacking_item,
+		armour_flag = MELEE,
 	)
 
 	attack_effects(damage_done, targeting, armor_block, attacking_item, user)
