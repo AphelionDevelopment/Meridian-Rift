@@ -66,6 +66,11 @@
 	/// Whether field treatment on this limb - gauze, a splint - quiets this injury by a tier.
 	/// TRUE for anything a bandage can do something about, FALSE for injuries that need a surgeon regardless.
 	var/pain_eased_by_treatment = TRUE
+
+	/// Whether carrying this injury at Critical means the bodypart has nothing left to absorb a hit with.
+	/// FALSE for the injuries the design calls never lethal: a bruise as bad as a bruise gets is still
+	/// only a bruise, and nobody should be killed through one. See [/obj/item/bodypart/proc/is_injury_capacity_maxed].
+	var/allows_overflow = TRUE
 	/// The bodypart we're parented to. Not guaranteed to be non-null, especially after/during removal or if we haven't been applied
 	var/obj/item/bodypart/limb = null
 

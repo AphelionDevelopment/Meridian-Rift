@@ -336,6 +336,14 @@
 	for(var/datum/reagent/held_reagent as anything in parent.reagents?.reagent_list)
 		strongest = max(strongest, held_reagent.pain_dampening)
 
+	// Not everything that numbs you is a chemical. Cocktails, augmented hearts and gene mods all hand
+	// out TRAIT_ANALGESIA, and anything holding it without a value here is read as complete numbness.
+	for(var/datum/status_effect/effect as anything in parent.status_effects)
+		strongest = max(strongest, effect.pain_dampening)
+
+	for(var/datum/mutation/mutation as anything in parent.dna?.mutations)
+		strongest = max(strongest, mutation.pain_dampening)
+
 	// Being extremely drunk numbs you too, with all the drawbacks of being extremely drunk.
 	var/datum/status_effect/inebriated/inebriation = parent.has_status_effect(/datum/status_effect/inebriated)
 	if(inebriation?.drunk_value >= PAIN_DAMPEN_DRUNK_REQUIREMENT)
@@ -356,23 +364,35 @@
 	update_pain()
 
 /**
- * Whether something other than a painkiller has numbed this mob completely.
+ * Whether something with no dampening value of its own has numbed this mob completely.
  *
- * Painkillers grant TRAIT_ANALGESIA as well, but they carry their own dampening value and are never
- * total - morphine is forty points, not immunity. Anything else holding the trait (the numb quirk,
- * stasis, a trauma, admin chems) means the mob genuinely cannot feel anything.
+ * Painkillers grant TRAIT_ANALGESIA as well, but they carry their own value and are never total -
+ * morphine is forty points, not immunity. So do the handful of cocktails, implants and gene mods that
+ * grant it. Anything else holding the trait (the numb quirk, stasis, a trauma, admin chems) means the
+ * mob genuinely cannot feel anything, which is the deliberate half of D3.
  */
 /datum/pain/proc/has_total_analgesia()
 	if(!HAS_TRAIT(parent, TRAIT_ANALGESIA))
 		return FALSE
 
-	var/list/painkiller_sources = list()
+	var/list/graded_sources = list()
 	for(var/datum/reagent/held_reagent as anything in parent.reagents?.reagent_list)
 		if(held_reagent.pain_dampening)
-			painkiller_sources += METABOLIZATION_TRAIT(held_reagent.type)
+			graded_sources += METABOLIZATION_TRAIT(held_reagent.type)
+
+	for(var/datum/status_effect/effect as anything in parent.status_effects)
+		if(effect.pain_dampening)
+			graded_sources += TRAIT_STATUS_EFFECT(effect.id)
+
+	// Every mutation shares one trait source, so one graded mutation vouches for the lot. Nothing in
+	// the game hands out a graded one and hulk at the same time.
+	for(var/datum/mutation/mutation as anything in parent.dna?.mutations)
+		if(mutation.pain_dampening)
+			graded_sources += GENETIC_MUTATION
+			break
 
 	for(var/source in GET_TRAIT_SOURCES(parent, TRAIT_ANALGESIA))
-		if(!(source in painkiller_sources))
+		if(!(source in graded_sources))
 			return TRUE
 
 	return FALSE

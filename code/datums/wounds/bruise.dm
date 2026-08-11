@@ -16,6 +16,9 @@
 	wound_flags = ACCEPTS_GAUZE
 	processes = TRUE
 	can_scar = FALSE
+	// Never lethal, per Appendix A. A contusion is the worst a bruise gets, and it is still a bruise -
+	// it must not be the injury that opens a head up to being killed through.
+	allows_overflow = FALSE
 	// Nothing in a medkit treats a bruise. Rest does, and a splint makes rest work faster.
 
 	/// How many process ticks of rest this bruise needs before it fades.

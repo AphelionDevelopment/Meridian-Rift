@@ -699,6 +699,8 @@
 	difficulty = 24
 	synchronizer_coeff = 1
 	mutation_traits = list(TRAIT_NOSOFTCRIT, TRAIT_ANALGESIA)
+	/// Pushing on past normal endurance, not feeling nothing at all.
+	pain_dampening = PAIN_DAMPEN_MODERATE
 
 /datum/mutation/inexorable/on_acquiring(mob/living/carbon/human/acquirer)
 	. = ..()

@@ -308,8 +308,14 @@
 
 	owner = null
 
-	if(LAZYLEN(applied_items))
-		QDEL_LIST_ASSOC_VAL(applied_items)
+	// Not QDEL_LIST_ASSOC_VAL: applied items take themselves back off the limb as they are deleted, so
+	// the last one empties the lazylist to null and the macro's closing Cut() has nothing to call.
+	// Taking the list off the limb first means their removal has nothing left to race with.
+	var/list/obj/item/items_to_clear = applied_items
+	applied_items = null
+	for(var/category in items_to_clear)
+		qdel(items_to_clear[category])
+
 	QDEL_LAZYLIST(scars)
 
 	// Overlays and textures may be owned by something else like a status effect,

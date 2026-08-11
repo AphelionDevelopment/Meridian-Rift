@@ -13,7 +13,7 @@
 	// This runs on every updatehealth(), so the pain rungs are read off the controller's cached state
 	// rather than by scanning the status effect list twice.
 	var/datum/pain/pain = pain_controller
-	if((pain?.in_shock || undergoing_cardiac_arrest()) && !HAS_TRAIT(src, TRAIT_NOHARDCRIT))
+	if((pain?.in_shock || circulation_stopped()) && !HAS_TRAIT(src, TRAIT_NOHARDCRIT))
 		set_stat(HARD_CRIT)
 		return FALSE
 
@@ -38,10 +38,40 @@
 		return FALSE
 	return get_blood_volume(apply_modifiers = TRUE) < BLOOD_VOLUME_BAD
 
+/**
+ * Whether this body has anything moving oxygen around it any more.
+ *
+ * Deliberately not [/mob/living/carbon/proc/undergoing_cardiac_arrest], which answers the narrower
+ * question of whether tg's organic heart attack mechanic is running. That proc is FALSE for a robotic
+ * heart, because a robotic heart cannot have a heart attack, and FALSE for anything carrying
+ * TRAIT_STABLEHEART. Both of those used to die of the damage totals phase 4 stopped consulting, so
+ * reading arrest alone leaves an augmented chest immortal: the cybernetic heart sits at ORGAN_FAILING,
+ * reports itself as beating forever, and nothing else in the contract can kill through a chest.
+ *
+ * A pump that has been ruined has stopped, whatever it is made of.
+ */
+/mob/living/carbon/human/proc/circulation_stopped()
+	if(undergoing_cardiac_arrest())
+		return TRUE
+
+	var/obj/item/organ/heart/our_heart = get_organ_slot(ORGAN_SLOT_HEART)
+	// Nothing in the chest to have stopped. A body that needs one and has none is arrest already.
+	if(isnull(our_heart))
+		return FALSE
+
+	return !our_heart.is_beating() || (our_heart.organ_flags & ORGAN_FAILING)
+
+/mob/living/carbon/human/can_recover_breath()
+	// Circulation, and only circulation. Not health, which stopped deciding anything; not the crit rung,
+	// because a batoned target is unconscious with working lungs and a crawler's problem is their leg;
+	// and deliberately not the oxyloss threshold [is_dying] reads, or one bad lungful of vacuum would
+	// put a mob permanently past the point of breathing it back off.
+	return !circulation_stopped() && !is_bled_out()
+
 /mob/living/carbon/human/is_dying()
 	// Being in agony is not the same as bleeding out. Someone put down by pain has everything to play
 	// for, and letting them give up would make a stun the same thing as a kill.
-	if(undergoing_cardiac_arrest())
+	if(circulation_stopped())
 		return TRUE
 	if(get_oxy_loss() >= OXYLOSS_BRAIN_DAMAGE_THRESHOLD)
 		return TRUE

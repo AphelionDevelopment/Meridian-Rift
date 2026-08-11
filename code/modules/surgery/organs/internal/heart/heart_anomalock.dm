@@ -206,6 +206,8 @@
 	alert_type = /atom/movable/screen/alert/status_effect/anomalock_active
 	show_duration = TRUE
 	processing_speed = STATUS_EFFECT_PRIORITY
+	/// Opioid grade, not immunity. Do or die still has to leave dying on the table.
+	pain_dampening = PAIN_DAMPEN_STRONG
 
 /datum/status_effect/voltaic_overdrive/tick(seconds_between_ticks)
 	. = ..()

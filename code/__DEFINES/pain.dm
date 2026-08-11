@@ -65,15 +65,16 @@
 #define PAIN_SURGERY_UNANAESTHETISED 20
 /// Temporary pain per unnumbed surgical step.
 #define PAIN_SURGERY_STEP_SPIKE 15
-/// Permanent pain of a limb that is no longer there, and hurts anyway.
-#define PAIN_PHANTOM_LIMB 10
+/// Permanent pain of a limb that is no longer there. Extreme, per Appendix B - the limb's own cap of 30
+/// is what keeps losing one arm from being the whole of it, and losing all four from being survivable.
+#define PAIN_MISSING_LIMB PAIN_FACTOR_EXTREME
 
 /// Key for the pain of being operated on while awake.
 #define PAIN_SOURCE_SURGERY "surgery"
 /// How long the memory of an unnumbed surgical step keeps hurting, refreshed by each new one.
 #define PAIN_SURGERY_MEMORY_DURATION (2 MINUTES)
-/// Key for the ache of a limb that is not there, one per zone.
-#define PAIN_SOURCE_PHANTOM_LIMB(zone) "phantom_[zone]"
+/// Key for the pain of a limb that is not there, one per zone.
+#define PAIN_SOURCE_MISSING_LIMB(zone) "missing_[zone]"
 
 // Layout of an entry in /datum/pain/var/other_sources.
 /// The bodypart zone a non-injury pain source is felt in.

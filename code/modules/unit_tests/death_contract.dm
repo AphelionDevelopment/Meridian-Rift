@@ -23,6 +23,33 @@
 	dying_brain.on_life(seconds_per_tick = 2)
 	TEST_ASSERT_EQUAL(victim.stat, DEAD, "A brain past its death threshold did not kill its owner")
 
+/**
+ * A ruined heart has to be lethal whatever the heart is made of.
+ *
+ * undergoing_cardiac_arrest() is FALSE for a robotic heart - one cannot have a heart attack - and for
+ * anything carrying TRAIT_STABLEHEART. Both used to die of the damage totals this phase stopped
+ * consulting, so reading arrest alone left an augmented chest with no death condition at all: the
+ * cybernetic heart sat at ORGAN_FAILING reporting itself as beating, and its owner walked it off.
+ */
+/datum/unit_test/death_contract_robotic_heart/Run()
+	var/mob/living/carbon/human/augmented = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/organ/heart/cybernetic/implant = allocate(/obj/item/organ/heart/cybernetic)
+	implant.Insert(augmented, special = TRUE, movement_flags = DELETE_IF_REPLACED)
+
+	TEST_ASSERT(!augmented.circulation_stopped(), "A working cybernetic heart should still be circulating")
+
+	implant.set_organ_damage(implant.maxHealth)
+	TEST_ASSERT(implant.organ_flags & ORGAN_FAILING, "Failed to ruin the cybernetic heart this test is about")
+	TEST_ASSERT(!augmented.can_heartattack(), "A robotic heart should still be exempt from the organic heart attack mechanic")
+	TEST_ASSERT(augmented.circulation_stopped(), "A ruined cybernetic heart is a stopped pump, and has to read as one")
+
+	augmented.updatehealth()
+	TEST_ASSERT_EQUAL(augmented.stat, HARD_CRIT, "A stopped pump should put its owner in hard crit whatever it is made of")
+
+	// The kill itself is the same slow route as an organic arrest: no circulation, then oxyloss, then brain.
+	augmented.handle_heart(seconds_per_tick = 2)
+	TEST_ASSERT(augmented.get_oxy_loss() > 0, "A ruined cybernetic heart never started starving its owner of oxygen")
+
 /// A defibrillator needs something to circulate, so an exsanguinated patient has to be transfused first.
 /datum/unit_test/defib_needs_blood/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)

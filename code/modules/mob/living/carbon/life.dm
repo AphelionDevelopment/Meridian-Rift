@@ -89,10 +89,12 @@
 	if(lungs?.organ_flags & ORGAN_FAILING)
 		losebreath++
 	else if(!get_organ_slot(ORGAN_SLOT_BREATHING_TUBE))
-		if(stat == HARD_CRIT || pulledby?.grab_state >= GRAB_KILL)
+		// The crit rung alone is not enough any more - pain owns two of them now, and a mob put down by
+		// pain has nothing wrong with its lungs. See [/mob/living/proc/can_recover_breath].
+		if((stat == HARD_CRIT && !can_recover_breath()) || pulledby?.grab_state >= GRAB_KILL)
 			losebreath++  //You can't breath at all when in critical or when being choked, so you're going to miss a breath
 
-		else if(stat == SOFT_CRIT)
+		else if(stat == SOFT_CRIT && !can_recover_breath())
 			losebreath += 0.25 //You're having trouble breathing in soft crit, so you'll miss a breath one in four times
 
 	//Suffocate
@@ -259,7 +261,7 @@
 		// The mob can breathe anyways. What are you? Some bottom-feeding, scum-sucking algae eater?
 		failed_last_breath = FALSE
 		// Vacuum-adapted lungs regenerate oxyloss even when breathing nothing.
-		if(health >= crit_threshold)
+		if(can_recover_breath())
 			adjust_oxy_loss(-5)
 	else
 		// Can't breathe! Lungs are missing, and/or breath is empty.
@@ -293,7 +295,7 @@
 			// Inhale O2.
 			oxygen_used = breath_moles[/datum/gas/oxygen]
 			// Heal mob if not in crit.
-			if(health >= crit_threshold)
+			if(can_recover_breath())
 				adjust_oxy_loss(-5)
 	// Exhale equivalent amount of CO2.
 	if(o2_pp)
@@ -443,8 +445,8 @@
 	// Give them a chance to notice something is wrong.
 	if(prob(20))
 		emote("gasp")
-	// Mob is at critical health, check if they can be damaged further.
-	if(health < crit_threshold)
+	// Mob is failing badly enough to be spared further damage, if anything is sparing it.
+	if(!can_recover_breath())
 		// Mob is immune to damage at critical health.
 		if(HAS_TRAIT(src, TRAIT_NOCRITDAMAGE))
 			return
@@ -457,7 +459,7 @@
 		adjust_oxy_loss(min(5 * ratio, 3))
 		return true_pp * ratio / 6
 	// Zero pressure.
-	if(health >= crit_threshold)
+	if(can_recover_breath())
 		adjust_oxy_loss(3)
 	else
 		adjust_oxy_loss(1)

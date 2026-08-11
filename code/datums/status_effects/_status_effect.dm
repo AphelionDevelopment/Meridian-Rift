@@ -19,6 +19,10 @@
 	var/status_type = STATUS_EFFECT_UNIQUE
 	/// If TRUE, we call [proc/on_remove] when owner is deleted. Otherwise, we call [proc/be_replaced].
 	var/on_remove_on_mob_delete = FALSE
+	/// How much felt pain this effect hides while it is up. Set it on anything that grants
+	/// TRAIT_ANALGESIA: without a value the pain controller reads the trait as total numbness, and
+	/// something that cannot feel pain cannot be stopped by it. See [/datum/pain/proc/update_dampening].
+	var/pain_dampening = 0
 	/// The typepath to the alert thrown by the status effect when created.
 	/// Status effect "name"s and "description"s are shown to the owner here.
 	var/alert_type = /atom/movable/screen/alert/status_effect

@@ -114,7 +114,7 @@
 		// place. Neither a limb being swapped for another one nor a limb being deleted off a mob is
 		// that - species changes and teardown both come through here, and neither leaves a gap.
 		if(!QDELING(src))
-			phantom_owner.add_pain_source(PAIN_SOURCE_PHANTOM_LIMB(body_zone), PAIN_PHANTOM_LIMB, body_zone)
+			phantom_owner.add_pain_source(PAIN_SOURCE_MISSING_LIMB(body_zone), PAIN_MISSING_LIMB, body_zone)
 
 		if(phantom_owner.dna)
 			for(var/datum/mutation/mutation as anything in phantom_owner.dna.mutations) //some mutations require having specific limbs to be kept.
@@ -300,7 +300,7 @@
 			new_limb_owner.add_mood_event("phantom_pain_[body_zone]", /datum/mood_event/reattachment, src)
 
 	// Something is filling the gap again, so the ache of it being empty stops.
-	new_limb_owner.remove_pain_source(PAIN_SOURCE_PHANTOM_LIMB(body_zone))
+	new_limb_owner.remove_pain_source(PAIN_SOURCE_MISSING_LIMB(body_zone))
 
 	for(var/datum/scar/scar as anything in scars)
 		if(scar in new_limb_owner.all_scars) // prevent double scars from happening for whatever reason

@@ -34,11 +34,12 @@
  * Deliberately reads the injury track rather than the damage total. Heads and chests cap at 250
  * damage, which is several magazines, while the injury that ruins one is two or three solid hits -
  * so damage totals would put overflow far out of reach of the pacing the design asks for. A Critical
- * injury is the worst state a part can be in, and that is what "maxed" means.
+ * injury is the worst state a part can be in, and that is what "maxed" means - except for the
+ * injuries the design calls never lethal, which say so themselves.
  */
 /obj/item/bodypart/proc/is_injury_capacity_maxed()
 	for(var/datum/wound/injury as anything in wounds)
-		if(injury.severity >= WOUND_SEVERITY_CRITICAL)
+		if(injury.severity >= WOUND_SEVERITY_CRITICAL && injury.allows_overflow)
 			return TRUE
 	return FALSE
 

@@ -57,6 +57,24 @@
 	TEST_ASSERT(collateral > 0, \
 		"Twenty hits on a ruined head never touched an eye, an ear or a tongue - organs in a stacked part should take hits")
 
+/**
+ * A bruise is never lethal, however bad it gets.
+ *
+ * Capacity is read off the injury track, so a Critical anything would open a part up to being killed
+ * through it. Appendix A rules the worst bruise there is out of that, and it says so on the datum.
+ */
+/datum/unit_test/overflow_ignores_bruises/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/bodypart/head = victim.get_bodypart(BODY_ZONE_HEAD)
+
+	head.force_wound_upwards(/datum/wound/bruise/critical)
+	TEST_ASSERT(head.get_wound_type(/datum/wound/bruise/critical), "Failed to give the patient the contusion this test is about")
+	TEST_ASSERT(!head.is_injury_capacity_maxed(), "A contusion is still only a bruise, and should not max a bodypart's injury capacity")
+
+	// Anything that is not ruled out still counts, or the flag would just be a way of turning overflow off.
+	head.force_wound_upwards(/datum/wound/slash/flesh/critical)
+	TEST_ASSERT(head.is_injury_capacity_maxed(), "A critical laceration should still max a bodypart's injury capacity")
+
 /// Nobody is executed through a working plate. Break the armour or strip the helmet first.
 /datum/unit_test/overflow_needs_penetration/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)

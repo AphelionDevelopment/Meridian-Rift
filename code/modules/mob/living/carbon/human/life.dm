@@ -287,7 +287,9 @@
 /mob/living/carbon/human/proc/handle_heart(seconds_per_tick)
 	var/we_breath = !HAS_TRAIT_FROM(src, TRAIT_NOBREATH, SPECIES_TRAIT)
 
-	if(!undergoing_cardiac_arrest())
+	// Not just arrest: a ruined robotic heart never gets to have one, and death by damage total is no
+	// longer there to catch it. See [/mob/living/carbon/human/proc/circulation_stopped].
+	if(!circulation_stopped())
 		return
 
 	if(we_breath)

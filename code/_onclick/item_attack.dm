@@ -239,12 +239,6 @@
 		to_chat(user, span_warning("You don't want to harm other living beings!"))
 		return FALSE
 
-	// Standing over a helpless target with something lethal, aimed at the head, is an execution rather
-	// than another swing. See [/mob/living/carbon/human/proc/try_finisher] for the rest of the conditions.
-	var/mob/living/carbon/human/finishable = target_mob
-	if(istype(finishable) && finishable.try_finisher(user, src))
-		return TRUE
-
 	if(!LAZYACCESS(attack_modifiers, SILENCE_HITSOUND))
 		if(!final_force && !HAS_TRAIT(src, TRAIT_CUSTOM_TAP_SOUND))
 			playsound(src, 'sound/items/weapons/tap.ogg', get_clamped_volume(), TRUE, -1)

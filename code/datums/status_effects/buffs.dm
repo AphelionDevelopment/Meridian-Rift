@@ -724,6 +724,8 @@
 	duration = 5 SECONDS //gets refreshed by metabolism
 	status_type = STATUS_EFFECT_REFRESH
 	alert_type = null
+	/// It is a cocktail. It numbs you like one, and it does not make anybody unstoppable.
+	pain_dampening = PAIN_DAMPEN_ALCOHOL
 
 /datum/status_effect/rev_resilience/on_apply()
 	to_chat(owner, span_warning("You feel your revolutionary spirit surging! You feel like nothing the oppressors could throw at you could wound your pride!"))

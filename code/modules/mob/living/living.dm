@@ -1103,6 +1103,18 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 /mob/living/proc/is_dying()
 	return TRUE
 
+/**
+ * Whether this mob's body is in good enough shape to breathe normally and clear an oxygen debt.
+ *
+ * Was a plain health check everywhere it is used, which stopped meaning anything for humans once
+ * damage totals stopped deciding death. Pain puts people on the floor with their lungs in perfect
+ * order, so a crit that is only pain must not take the airway with it - otherwise being stunned
+ * suffocates you, slowly, through the brain damage phase 4 routes oxyloss into. Anything still
+ * running on a health bar keeps the old reading.
+ */
+/mob/living/proc/can_recover_breath()
+	return health >= crit_threshold
+
 /// Checks if we are actually able to ressuscitate this mob.
 /// (We don't want to revive then to have them instantly die again)
 /mob/living/proc/can_be_revived()

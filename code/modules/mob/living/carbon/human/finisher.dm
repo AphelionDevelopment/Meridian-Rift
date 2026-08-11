@@ -59,9 +59,10 @@
 /**
  * Runs the conditions for a finisher and, if they all hold, performs one.
  *
- * Called from the melee attack chain and from a point blank gun, which are the two ways of being on
- * top of someone with something lethal. Returns TRUE if the finisher took the click, whether or not
- * it ran to completion - an interrupted execution still spent the attempt.
+ * Called from a point blank gun. Deliberately not from the melee attack chain: hooked there it took
+ * over every combat-mode swing aimed at the head of anyone cuffed, grabbed or on the floor, so you
+ * could no longer simply hit someone. Returns TRUE if the finisher took the click, whether or not it
+ * ran to completion - an interrupted execution still spent the attempt.
  *
  * Arguments:
  * * user - Whoever is doing this.

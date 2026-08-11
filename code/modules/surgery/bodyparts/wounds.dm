@@ -84,8 +84,15 @@
 	if(HAS_TRAIT(owner, TRAIT_EASYBLEED) && owner.can_bleed() && ((woundtype == WOUND_PIERCE) || (woundtype == WOUND_SLASH)))
 		damage *= 1.5
 
+	// Wound armour is spent on the hit it stopped, before that hit joins the running total. Applied to
+	// the total afterwards it would rescale every hit the part had ever taken the moment the victim put
+	// a vest on or took one off, and the same beating would stop producing the same injury.
+	var/armor_ablation = get_wound_armor(woundtype, damage, wound_clothing)
+	if(armor_ablation)
+		damage = max(damage * ((100 - armor_ablation) / 100), 0)
+
 	var/accumulated_damage = accumulate_wounding_damage(woundtype, damage)
-	var/injury_roll = check_woundings_mods(woundtype, accumulated_damage, damage, wound_bonus, exposed_wound_bonus, wound_clothing)
+	var/injury_roll = check_woundings_mods(woundtype, accumulated_damage, wound_bonus, exposed_wound_bonus, armor_ablation)
 	var/list/series_wounding_mods = check_series_wounding_mods()
 
 	// A hit armour mostly stopped bruises and burns. It does not open arteries, and it does not take
@@ -280,23 +287,22 @@
 	return return_value_if_no_wound
 
 /**
- * check_wounding_mods() is where we handle the various modifiers of a wound roll
+ * How much wound armour stands between an attack and this bodypart, as a percentage, wearing down whatever it goes through.
  *
- * A short list of things we consider: any armor a human target may be wearing, and if they have no wound armor on the limb, and add the plain wound_bonus if there is any value to add
- * We also flick through all of the wounds we currently have on this limb and add their threshold penalties, so that having lots of bad wounds makes you more liable to get hurt worse
- * We add the inherent wound_resistance variable the bodypart has (heads and chests are slightly harder to wound) as an armor bonus unless the limb is mangled, and a small wound bonus if the limb is already disabled
- * Once we have everything, we then check if we have acquired any armor. If so, reduce our value by the percentage value of that armour. If not, we add our exposed_wound_bonus as a final bonus to our roll.
+ * Split out of [/obj/item/bodypart/proc/check_woundings_mods] because armour is a property of the hit
+ * rather than of the part's running injury total: spending it on the total would rescale every hit the
+ * part had ever taken whenever the victim changed clothes, and determinism is the whole point of the
+ * accumulator. Negative values are possible and amplify the hit, exactly as they used to.
  *
  * Arguments:
- * * It's the same ones on [/obj/item/bodypart/proc/receive_damage] except injury_roll, which is fed to this proc.
+ * * wounding_type - One of the WOUND_* wounding types, deciding what the clothing takes.
+ * * damage - This hit's wounding damage, for wearing the clothing down.
+ * * wound_clothing - If this should damage clothing.
  */
-/obj/item/bodypart/proc/check_woundings_mods(wounding_type, injury_roll, damage, wound_bonus, exposed_wound_bonus, wound_clothing)
-	SHOULD_CALL_PARENT(TRUE)
-
+/obj/item/bodypart/proc/get_wound_armor(wounding_type, damage, wound_clothing)
 	var/armor_ablation = 0
-	var/injury_mod = injury_roll
 
-	if(owner && ishuman(owner))
+	if(ishuman(owner))
 		var/mob/living/carbon/human/human_owner = owner
 		var/list/clothing = human_owner.get_clothing_on_part(src)
 		for(var/obj/item/clothing/clothes as anything in clothing)
@@ -309,21 +315,39 @@
 				else if(wounding_type == WOUND_BURN)
 					clothes.take_damage_zone(body_zone, damage, BURN)
 
-	injury_mod += wound_bonus
+	// Heads and chests are inherently harder to wound, until something has already opened them up.
+	if(!mangled_state)
+		armor_ablation += wound_resistance
+
+	return armor_ablation
+
+/**
+ * check_wounding_mods() is where we handle the various modifiers of an injury score
+ *
+ * We flick through all of the wounds we currently have on this limb and add their threshold penalties, so that having lots of bad wounds makes you more liable to get hurt worse
+ * We add the plain wound_bonus if there is any value to add, and a small bonus if the limb is already disabled
+ * Armour itself was already spent on the hit, in [/obj/item/bodypart/proc/get_wound_armor] - all that is left of it here is that a covered limb does not get the bonus for being bare.
+ *
+ * Arguments:
+ * * wounding_type - One of the WOUND_* wounding types.
+ * * injury_roll - The part's accumulated wounding damage of that type, which everything here biases.
+ * * wound_bonus - The wound_bonus of the attack.
+ * * exposed_wound_bonus - The exposed_wound_bonus of the attack, applied only if nothing was covering the part.
+ * * armor_ablation - What [/obj/item/bodypart/proc/get_wound_armor] returned for this hit.
+ */
+/obj/item/bodypart/proc/check_woundings_mods(wounding_type, injury_roll, wound_bonus, exposed_wound_bonus, armor_ablation = 0)
+	SHOULD_CALL_PARENT(TRUE)
+
+	var/injury_mod = injury_roll + wound_bonus
 
 	for(var/datum/wound/wound as anything in wounds)
 		injury_mod += wound.threshold_penalty
-
-	if(!mangled_state)
-		armor_ablation += wound_resistance
 
 	if(get_damage() >= max_damage)
 		injury_mod += disabled_wound_penalty
 
 	if(!armor_ablation)
 		injury_mod += exposed_wound_bonus
-	else
-		injury_mod *= ((100 - armor_ablation) /100)
 
 	return injury_mod
 

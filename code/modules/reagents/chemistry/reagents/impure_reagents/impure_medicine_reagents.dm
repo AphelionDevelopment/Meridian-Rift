@@ -972,6 +972,7 @@ Basically, we fill the time between now and 2s from now with hands based off the
 	ph = 14
 	metabolization_rate = 0.5 * REAGENTS_METABOLISM
 	tox_damage = 0
+	pain_dampening = PAIN_DAMPEN_STRONG
 	/// The martial art we teach (to monkies)
 	var/datum/martial_art/jungle_arts/jungle_arts
 
@@ -979,7 +980,9 @@ Basically, we fill the time between now and 2s from now with hands based off the
 	. = ..()
 	if(is_simian(affected_mob))
 		affected_mob.gain_trauma(/datum/brain_trauma/special/primal_instincts, TRAUMA_RESILIENCE_ABSOLUTE)
-		affected_mob.add_traits(list(TRAIT_STUNIMMUNE, TRAIT_SLEEPIMMUNE, TRAIT_ANALGESIA, TRAIT_STIMULATED), type)
+		// The metabolization source, so the pain controller can tell this is a drug with a value rather
+		// than something that has switched the nerves off entirely.
+		affected_mob.add_traits(list(TRAIT_STUNIMMUNE, TRAIT_SLEEPIMMUNE, TRAIT_ANALGESIA, TRAIT_STIMULATED), METABOLIZATION_TRAIT(type))
 		if(jungle_arts)
 			return
 		jungle_arts = new(src)
@@ -989,7 +992,7 @@ Basically, we fill the time between now and 2s from now with hands based off the
 /datum/reagent/inverse/bath_salts/on_mob_end_metabolize(mob/living/carbon/affected_mob)
 	. = ..()
 	QDEL_NULL(jungle_arts)
-	affected_mob.remove_traits(list(TRAIT_STUNIMMUNE, TRAIT_SLEEPIMMUNE, TRAIT_ANALGESIA, TRAIT_STIMULATED), type)
+	affected_mob.remove_traits(list(TRAIT_STUNIMMUNE, TRAIT_SLEEPIMMUNE, TRAIT_ANALGESIA, TRAIT_STIMULATED), METABOLIZATION_TRAIT(type))
 	affected_mob.Sleeping(30 SECONDS)
 	if(is_simian(affected_mob))
 		affected_mob.cure_trauma_type(/datum/brain_trauma/special/primal_instincts, resilience = TRAUMA_RESILIENCE_ABSOLUTE)
