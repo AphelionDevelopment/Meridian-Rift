@@ -43,6 +43,42 @@
 	return FALSE
 
 /**
+ * Damages one organ inside this bodypart, chosen at random.
+ *
+ * Appendix B's other rule: once a part's injuries have stacked up, what is inside it starts taking
+ * hits too, and can be destroyed outright. This is what puts eyes, ears, tongues, lungs, livers and
+ * stomachs on the receiving end of a fight rather than only the part's own overflow target.
+ *
+ * **Which** organ a hit finds is random, deliberately and for now. Neither design document gives a
+ * rule for it, and a random pick spreads the consequences across the zone without inventing an aiming
+ * model nobody asked for. The zone's own overflow target is in the pool like everything else.
+ *
+ * Assumes the part has an owner - receive_damage()'s owner branch is the only caller.
+ *
+ * Arguments:
+ * * damage - Wounding damage of the hit that overflowed.
+ * * damage_source - What did it, for the logs.
+ */
+/obj/item/bodypart/proc/damage_random_organ(damage, damage_source)
+	var/list/obj/item/organ/candidates = list()
+	for(var/obj/item/organ/inner_organ as anything in owner.organs)
+		// Eyes and tongues live in precise zones, and they are inside this part all the same.
+		if(inner_organ.slot && deprecise_zone(inner_organ.zone) == body_zone)
+			candidates += inner_organ
+
+	if(!length(candidates))
+		return
+
+	var/obj/item/organ/unlucky = pick(candidates)
+	var/was_failing = (unlucky.organ_flags & ORGAN_FAILING)
+	owner.adjust_organ_loss(unlucky.slot, damage * OVERFLOW_ORGAN_DAMAGE_RATIO)
+
+	// Only the moment an organ gives out earns a line. Every hit on the way there is in the attack log
+	// already, and the execution log is meant to stay readable.
+	if(!was_failing && (unlucky.organ_flags & ORGAN_FAILING))
+		log_overflow(owner, damage_source, plaintext_zone, "[unlucky.name] destroyed", damage)
+
+/**
  * Converts a hit onto whatever this bodypart was protecting.
  *
  * Only ever called for a penetrating hit on a part that was already maxed *before* this hit landed,

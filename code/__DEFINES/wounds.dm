@@ -112,6 +112,8 @@ GLOBAL_LIST_INIT(bio_state_anatomy, list(
 #define WOUND_SERIES_BONE_BLUNT_BASIC "wound_series_bone_blunt_basic"
 /// T1-T3 Bruising. Requires flesh, applies anywhere, and is what a stopped hit leaves behind. From: bruise.dm
 #define WOUND_SERIES_FLESH_BRUISE "wound_series_flesh_bruise"
+/// A severed artery. Its own series because it is something you have as well as the cut that opened it. From: artery.dm
+#define WOUND_SERIES_FLESH_ARTERY "wound_series_flesh_artery"
 /// T1-T3 Basic burn wounds. Requires flesh. From: burns.dm
 #define WOUND_SERIES_FLESH_BURN_BASIC "wound_series_flesh_burn_basic"
 /// T1-T3 Bleeding puncture wounds. Requires flesh. Can cause bleeding, but doesn't require it. From: pierce.dm
@@ -212,6 +214,7 @@ GLOBAL_LIST_INIT(wounding_types_to_series, list(
 	WOUND_SLASH = list(
 		WOUND_SERIES_FLESH_SLASH_BLEED,
 		WOUND_SERIES_FLESH_BRUISE,
+		WOUND_SERIES_FLESH_ARTERY,
 		WOUND_SERIES_MUSCLE_DAMAGE, // NOVA EDIT ADDITION - MUSCLE WOUNDS
 		WOUND_SERIES_WIRE_SLASH_ELECTRICAL_DAMAGE, // NOVA EDIT ADDITION - SYNTH WOUNDS
 
@@ -223,6 +226,7 @@ GLOBAL_LIST_INIT(wounding_types_to_series, list(
 	WOUND_PIERCE = list(
 		WOUND_SERIES_FLESH_PUNCTURE_BLEED,
 		WOUND_SERIES_FLESH_BRUISE,
+		WOUND_SERIES_FLESH_ARTERY,
 		WOUND_SERIES_MUSCLE_DAMAGE, // NOVA EDIT ADDITION - MUSCLE WOUNDS
 		WOUND_SERIES_WIRE_PIERCE_ELECTRICAL_DAMAGE, // NOVA EDIT ADDITION - SYNTH WOUNDS
 	),

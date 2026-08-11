@@ -9,6 +9,11 @@
 /// Portion of an overflowing hit that lands on what the bodypart was protecting.
 /// The pacing knob for the whole phase - see Appendix E of the combat overhaul plan.
 #define OVERFLOW_DAMAGE_RATIO 1.5
+/// Portion of an overflowing hit that lands on some other organ inside the same part, on top of
+/// whatever the part's own overflow target takes. Appendix B's "organs are targeted once a part's
+/// injuries stack up" - lighter than the kill route, because ruining an eye is not the same as a kill.
+#define OVERFLOW_ORGAN_DAMAGE_RATIO 0.5
+
 /// A limb only comes off to a hit of at least this size - the design's "high-damage P hit".
 /// There is deliberately no equivalent floor for heads and chests: what reaches the organ is a
 /// proportion of the hit, so a graze is a graze, and sustained burning has to be able to cook a heart.

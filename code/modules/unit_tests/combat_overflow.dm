@@ -37,6 +37,26 @@
 	second_victim.apply_damage(30, BRUTE, chest, sharpness = SHARP_EDGED)
 	TEST_ASSERT(second_victim.get_organ_loss(ORGAN_SLOT_HEART) > 0, "A hit on a ruined chest left the heart untouched")
 
+/**
+ * Once a part's injuries stack up, what is inside it starts taking hits — not only the one organ that
+ * part's overflow aims at. Which organ is random for now, so this asserts that something other than
+ * the head's own overflow target eventually gets hurt.
+ */
+/datum/unit_test/overflow_reaches_other_organs/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/bodypart/head = victim.get_bodypart(BODY_ZONE_HEAD)
+	TEST_ASSERT(max_out_injuries(victim, head), "Failed to give the patient the critical head injury this test is about")
+
+	// Enough hits that a random pick across the head's organs is not going to miss all of them.
+	for(var/hit in 1 to 20)
+		victim.apply_damage(10, BRUTE, head, sharpness = SHARP_EDGED)
+
+	var/collateral = victim.get_organ_loss(ORGAN_SLOT_EYES) \
+		+ victim.get_organ_loss(ORGAN_SLOT_EARS) \
+		+ victim.get_organ_loss(ORGAN_SLOT_TONGUE)
+	TEST_ASSERT(collateral > 0, \
+		"Twenty hits on a ruined head never touched an eye, an ear or a tongue - organs in a stacked part should take hits")
+
 /// Nobody is executed through a working plate. Break the armour or strip the helmet first.
 /datum/unit_test/overflow_needs_penetration/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
@@ -92,6 +112,36 @@
 
 	TEST_ASSERT(victim.get_organ_loss(ORGAN_SLOT_HEART) > 0, \
 		"Burning never reached the heart of a patient whose chest was already ruined - nothing would burn to death")
+
+/**
+ * The artery is defined by its pain column rather than its severity: Light, where everything else
+ * this lethal is Severe or Extreme. That gap is the whole injury - you bleed out while being treated
+ * for whatever hurts more - so it is what gets asserted.
+ */
+/datum/unit_test/artery_is_the_killer_you_dont_feel/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+	var/datum/pain/pain = victim.pain_controller
+	var/obj/item/bodypart/leg = victim.get_bodypart(BODY_ZONE_L_LEG)
+
+	leg.force_wound_upwards(/datum/wound/slash/flesh/artery)
+	var/datum/wound/severed = leg.get_wound_type(/datum/wound/slash/flesh/artery)
+	TEST_ASSERT(severed, "Failed to give the patient the severed artery this test is about")
+
+	TEST_ASSERT_EQUAL(severed.severity, WOUND_SEVERITY_CRITICAL, "A severed artery should be a critical injury")
+	TEST_ASSERT_EQUAL(severed.pain_factor, PAIN_FACTOR_LIGHT, \
+		"A severed artery should barely hurt despite being critical - that is the entire point of it")
+	TEST_ASSERT_EQUAL(pain.pain_floor, PAIN_FACTOR_LIGHT, "The pain floor should carry only what the artery costs")
+	TEST_ASSERT(severed.blood_flow > 0, "A severed artery should be bleeding")
+
+	// A tourniquet buys time. It does not close the vessel - that is a surgeon's job.
+	var/bleed_rate_before = leg.cached_bleed_rate
+	TEST_ASSERT(bleed_rate_before > 0, "The limb should be bleeding with a severed artery in it")
+
+	var/obj/item/tourniquet/clamp = allocate(/obj/item/tourniquet)
+	leg.apply_item(clamp, LIMB_ITEM_TOURNIQUET)
+	TEST_ASSERT(leg.cached_bleed_rate < bleed_rate_before, "A tourniquet should slow the bleeding from an artery")
+	TEST_ASSERT(leg.get_wound_type(/datum/wound/slash/flesh/artery), \
+		"A tourniquet should only slow the artery, never close it")
 
 /// A finisher is for someone who has already stopped being able to stop it. Anyone still upright is not that.
 /datum/unit_test/finisher_needs_a_helpless_target/Run()
