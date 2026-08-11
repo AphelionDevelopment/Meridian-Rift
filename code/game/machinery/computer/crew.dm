@@ -306,7 +306,7 @@ GLOBAL_DATUM_INIT(crewmonitor, /datum/crewmonitor, new)
 				"toxdam" = round(tracked_living_mob.get_tox_loss(), 1),
 				"burndam" = round(tracked_living_mob.get_fire_loss(), 1),
 				"brutedam" = round(tracked_living_mob.get_brute_loss(), 1),
-				"health" = round(tracked_living_mob.health, 1),
+				"health" = round(tracked_living_mob.get_health_hud_percent(), 1),
 			)
 
 		// Location

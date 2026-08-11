@@ -98,7 +98,7 @@ GLOBAL_DATUM_INIT(orbit_menu, /datum/orbit_menu, new)
 		if(isnull(mob_poi.mind))
 			if(isliving(mob_poi))
 				var/mob/living/npc = mob_poi
-				serialized["health"] = FLOOR((npc.health / npc.maxHealth * 100), 1)
+				serialized["health"] = FLOOR(npc.get_health_hud_percent(), 1)
 
 			npcs += list(serialized)
 			continue
@@ -212,7 +212,7 @@ GLOBAL_DATUM_INIT(orbit_menu, /datum/orbit_menu, new)
 /datum/orbit_menu/proc/get_living_data(mob/living/player) as /list
 	var/list/serialized = list()
 
-	serialized["health"] = FLOOR((player.health / player.maxHealth * 100), 1)
+	serialized["health"] = FLOOR(player.get_health_hud_percent(), 1)
 	if(issilicon(player))
 		serialized["job"] = player.job
 		serialized["icon"] = "borg"

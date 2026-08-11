@@ -495,7 +495,7 @@
 	if(iscyborg(mob) || islarva(mob))
 		divided_health = (mob.health + mob.maxHealth) / (mob.maxHealth * 2)
 	else if(iscarbon(mob) || isAI(mob) || isbrain(mob))
-		divided_health = abs(HEALTH_THRESHOLD_DEAD - mob.health) / abs(HEALTH_THRESHOLD_DEAD - mob.maxHealth)
+		divided_health = (mob.get_health_hud_percent() + 100) / 200
 	return divided_health * 100
 
 /**

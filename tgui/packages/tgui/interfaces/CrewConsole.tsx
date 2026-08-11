@@ -26,7 +26,7 @@ const SORT_OPTIONS = [
     name: 'Job',
     sort: (a: CrewSensor, b: CrewSensor) => {
       return a.ijob - b.ijob;
-    }
+    },
   },
   {
     name: 'Name',
@@ -34,7 +34,7 @@ const SORT_OPTIONS = [
       if (a.name > b.name) return 1;
       if (a.name < b.name) return -1;
       return 0;
-    }
+    },
   },
   {
     name: 'Area',
@@ -44,7 +44,7 @@ const SORT_OPTIONS = [
       if (a.area > b.area) return 1;
       if (a.area < b.area) return -1;
       return 0;
-    }
+    },
   },
   {
     name: 'Vitals',
@@ -59,8 +59,8 @@ const SORT_OPTIONS = [
       if (a.health > b.health) return 1;
 
       return 0;
-    }
-  }
+    },
+  },
 ];
 
 const jobToColor = (jobId: number) => {
@@ -85,7 +85,8 @@ const jobToColor = (jobId: number) => {
   if (jobId >= 60 && jobId < 200) {
     return COLORS.department.service;
   }
-  if (jobId >= 200 && jobId < 240) { // NOVA EDIT CHANGE - ORIGINAL: jobID < if (jobId >= 200 && jobId < 230)
+  if (jobId >= 200 && jobId < 240) {
+    // NOVA EDIT CHANGE - ORIGINAL: jobID < if (jobId >= 200 && jobId < 230)
     return COLORS.department.centcom;
   }
   // NOVA EDIT ADDITION START
@@ -106,15 +107,9 @@ const statToIcon = (life_status: number) => {
   return 'heartbeat';
 };
 
-const healthToAttribute = (
-  oxy: number,
-  tox: number,
-  burn: number,
-  brute: number,
-  attributeList: string[],
-) => {
-  const healthSum = oxy + tox + burn + brute;
-  const level = Math.min(Math.max(Math.ceil(healthSum / 25), 0), 5);
+const healthToAttribute = (health: number, attributeList: string[]) => {
+  const level =
+    health <= 0 ? 5 : Math.min(Math.max(Math.ceil((100 - health) / 20), 0), 5);
   return attributeList[level];
 };
 
@@ -179,17 +174,21 @@ const CrewTable = () => {
 
   const nameSearch = createSearch(searchQuery, (crew: CrewSensor) => crew.name);
 
-  const sorted = sensors.filter(nameSearch).sort((a, b) =>
-    sortAsc
-      ? SORT_OPTIONS[indexOfSortingOption].sort(a, b)
-      : SORT_OPTIONS[indexOfSortingOption].sort(b, a)
-  );
+  const sorted = sensors
+    .filter(nameSearch)
+    .sort((a, b) =>
+      sortAsc
+        ? SORT_OPTIONS[indexOfSortingOption].sort(a, b)
+        : SORT_OPTIONS[indexOfSortingOption].sort(b, a),
+    );
 
   return (
     <Section
       title={
         <>
-          <Button onClick={cycleSortBy}>{SORT_OPTIONS[indexOfSortingOption].name}</Button>
+          <Button onClick={cycleSortBy}>
+            {SORT_OPTIONS[indexOfSortingOption].name}
+          </Button>
           <Button onClick={() => setSortAsc(!sortAsc)}>
             <Icon
               style={{ marginLeft: '2px' }}
@@ -245,9 +244,10 @@ const CrewTableEntry = (props: CrewTableEntryProps) => {
     toxdam,
     burndam,
     brutedam,
+    health,
     area,
     is_robot, // NOVA EDIT ADDITION
-    can_track // NOVA EDIT ADDITION
+    can_track, // NOVA EDIT ADDITION
   } = sensor_data;
 
   return (
@@ -256,22 +256,16 @@ const CrewTableEntry = (props: CrewTableEntryProps) => {
         {name}
         {assignment !== undefined ? ` (${assignment})` : ''}
       </Table.Cell>
-      { /* NOVA EDIT ADDITION START */}
+      {/* NOVA EDIT ADDITION START */}
       <Table.Cell collapsing textAlign="center">
         {is_robot ? <Icon name="wrench" color="#B7410E" size={1} /> : ''}
       </Table.Cell>
-      { /* NOVA EDIT ADDITION END */}
+      {/* NOVA EDIT ADDITION END */}
       <Table.Cell collapsing textAlign="center">
         {oxydam !== undefined ? (
           <Icon
             name={statToIcon(life_status)}
-            color={healthToAttribute(
-              oxydam,
-              toxdam,
-              burndam,
-              brutedam,
-              HEALTH_COLOR_BY_LEVEL,
-            )}
+            color={healthToAttribute(health, HEALTH_COLOR_BY_LEVEL)}
             size={1}
           />
         ) : life_status !== STAT_DEAD ? (
