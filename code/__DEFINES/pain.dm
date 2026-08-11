@@ -115,6 +115,9 @@
 #define PAIN_DAMPEN_FENTANYL 70
 /// Anaesthetic gas. You feel nothing at all, then you are asleep.
 #define PAIN_DAMPEN_TOTAL 100
+/// How much of a surgical anaesthetic has to be in someone before it numbs them at all. Below this
+/// it does nothing for pain - an anaesthetic is a dose, not a sip, and total numbness is total.
+#define PAIN_DAMPEN_ANAESTHETIC_DOSE 15
 
 // Grades for the analgesic chems the design does not name individually. Anything that numbs without
 // a value here is read as total numbness, so a painkiller missing one is a painkiller that makes you

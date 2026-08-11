@@ -284,8 +284,11 @@
 		return 0
 
 	var/zone_pain = min(floor_by_zone[zone] || 0, zone_cap)
-	if(total_pain > 0)
-		zone_pain *= (felt_pain / total_pain)
+	// The doll draws the floor, so what blinds it is how much of the floor a painkiller is hiding.
+	// Read against the total instead and the temporary pool would darken every part of the body at
+	// once, which is a stun showing up as injuries the mob does not have.
+	if(pain_floor > 0)
+		zone_pain *= clamp((pain_floor - dampening) / pain_floor, 0, 1)
 
 	return clamp(zone_pain / zone_cap, 0, 1)
 
@@ -334,6 +337,11 @@
 
 	var/strongest = 0
 	for(var/datum/reagent/held_reagent as anything in parent.reagents?.reagent_list)
+		// A surgical anaesthetic is not a field painkiller at a smaller dose - it is nothing at all
+		// until there is enough of it to put someone under. Zero for everything else, which is most
+		// of them: a painkiller works from the first unit.
+		if(held_reagent.volume < held_reagent.pain_dampening_minimum_volume)
+			continue
 		strongest = max(strongest, held_reagent.pain_dampening)
 
 	// Not everything that numbs you is a chemical. Cocktails, augmented hearts and gene mods all hand
@@ -352,10 +360,6 @@
 	// Nothing numbs like not being able to feel at all.
 	if(has_total_analgesia())
 		strongest = PAIN_DAMPEN_TOTAL
-
-	// Adrenaline is not a painkiller, it just hides half of whatever is left on top of one.
-	if(parent.has_status_effect(/datum/status_effect/adrenaline))
-		strongest = max(strongest, total_pain * PAIN_ADRENALINE_DAMPEN_RATIO)
 
 	if(dampening == strongest)
 		return
@@ -401,7 +405,11 @@
 /datum/pain/proc/update_pain()
 	var/old_felt_pain = felt_pain
 
-	total_pain = min(pain_floor + temporary_pain, PAIN_MAXIMUM)
+	// Deliberately uncapped: it is the floor plus the pool, and those carry their own caps. Clamping it
+	// to PAIN_MAXIMUM here would put it at the shock threshold, so subtracting any dampener at all left
+	// felt pain permanently short of shock - every painkiller in the game was immunity to being put
+	// down rather than a number of points of headroom. Only what the mob feels runs 0 to 100.
+	total_pain = pain_floor + temporary_pain
 	felt_pain = clamp(total_pain - dampening, 0, PAIN_MAXIMUM)
 	update_bracket()
 	update_shock()

@@ -242,8 +242,15 @@
 			msg = "<b>[msg]</b>"
 			vis_dist = DEFAULT_MESSAGE_RANGE
 
-		victim.visible_message(msg, span_userdanger("Your [limb.plaintext_zone] [occur_text]!"), vision_distance = vis_dist)
-		if(sound_effect)
+		// Through the feedback arbiter, carrying our severity, so a burst that breaks three things
+		// announces the worst of them rather than all three. See [/mob/living/proc/combat_feedback].
+		if(victim.combat_feedback(
+			COMBAT_FEEDBACK_INJURY + severity,
+			message = msg,
+			self_message = span_userdanger("Your [limb.plaintext_zone] [occur_text]!"),
+			shake_strength = LERP(COMBAT_SHAKE_PENETRATING_MIN, COMBAT_SHAKE_PENETRATING_MAX, severity / WOUND_SEVERITY_LOSS),
+			vision_distance = vis_dist,
+		) && sound_effect)
 			playsound(limb.owner, sound_effect, sound_volume + (20 * severity), TRUE, falloff_exponent = SOUND_FALLOFF_EXPONENT + 2,  ignore_walls = FALSE, falloff_distance = 0)
 
 	wound_injury(old_wound, attack_direction = attack_direction)

@@ -59,10 +59,11 @@
 /**
  * Runs the conditions for a finisher and, if they all hold, performs one.
  *
- * Called from a point blank gun. Deliberately not from the melee attack chain: hooked there it took
- * over every combat-mode swing aimed at the head of anyone cuffed, grabbed or on the floor, so you
- * could no longer simply hit someone. Returns TRUE if the finisher took the click, whether or not it
- * ran to completion - an interrupted execution still spent the attempt.
+ * Called from a point blank gun, and from a right-clicked melee weapon. Deliberately not from the
+ * ordinary swing: hooked there it took over every combat-mode blow aimed at the head of anyone
+ * cuffed, grabbed or on the floor, so you could no longer simply hit someone. Returns TRUE if the
+ * finisher took the click, whether or not it ran to completion - an interrupted execution still
+ * spent the attempt.
  *
  * Arguments:
  * * user - Whoever is doing this.
@@ -107,6 +108,15 @@
 	finish_off(user, weapon)
 	return TRUE
 
+/mob/living/carbon/human/attackby_secondary(obj/item/weapon, mob/living/user, list/modifiers, list/attack_modifiers)
+	// Right click is what separates finishing someone from hitting them, since every other condition
+	// a finisher wants is also true of an ordinary swing at a downed target's head. A gun already has
+	// its point blank route and does not need a second one.
+	if(!isgun(weapon) && try_finisher(user, weapon))
+		return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
+
+	return ..()
+
 /**
  * The killing blow itself.
  *
@@ -121,10 +131,12 @@
 /mob/living/carbon/human/proc/finish_off(mob/living/user, obj/item/weapon)
 	var/obj/item/organ/inner_brain = get_organ_slot(ORGAN_SLOT_BRAIN)
 
-	visible_message(
-		span_bolddanger("[user] finishes [src] off with [weapon]!"),
-		span_userdanger("[user] finishes you off with [weapon]!"),
-		span_hear("You hear a wet, final crunch."),
+	combat_feedback(
+		COMBAT_FEEDBACK_EXECUTION,
+		message = span_bolddanger("[user] finishes [src] off with [weapon]!"),
+		self_message = span_userdanger("[user] finishes you off with [weapon]!"),
+		shake_strength = COMBAT_SHAKE_PENETRATING_MAX,
+		vision_distance = DEFAULT_MESSAGE_RANGE,
 	)
 	playsound(src, 'sound/effects/wounds/crackandbleed.ogg', 100, TRUE, extrarange = FINISHER_WINDUP_HEARING_RANGE)
 

@@ -147,3 +147,50 @@
 	victim.get_bodypart(BODY_ZONE_R_ARM).dismember()
 	TEST_ASSERT(isnull(victim.get_bodypart(BODY_ZONE_R_ARM)), "Failed to take the arm this test is about")
 	TEST_ASSERT_EQUAL(pain.pain_floor, PAIN_CAP_LIMB, "Losing an arm should cost that limb's entire share of the pain floor")
+
+/**
+ * Adrenaline delays pain shock. It never cancels it.
+ *
+ * The dampener is snapshotted when fight or flight fires rather than tracked against the mob's
+ * current total, because total pain is capped at the shock threshold itself - halving it live would
+ * hold felt pain at half the cap forever and make shock unreachable for the whole thirty seconds.
+ */
+/datum/unit_test/pain_adrenaline_delays_shock/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+	var/datum/pain/pain = victim.pain_controller
+	TEST_ASSERT(pain, "The test subject has no pain controller")
+
+	// One huge hit: enough to trigger fight or flight, not enough to reach the cap on its own.
+	victim.add_temporary_pain(PAIN_ADRENALINE_SPIKE_TRIGGER)
+	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/adrenaline), "A massive spike should trigger adrenaline")
+	pain.update_dampening()
+	TEST_ASSERT(pain.dampening > 0, "Adrenaline should be hiding some of what the mob is already carrying")
+	TEST_ASSERT(pain.felt_pain < PAIN_SHOCK_THRESHOLD, "Adrenaline should keep a survivable spike survivable")
+
+	// Everything that lands afterwards is felt at full price, so the meter can still fill.
+	victim.add_temporary_pain(PAIN_TEMPORARY_MAXIMUM)
+	pain.update_dampening()
+	TEST_ASSERT_EQUAL(pain.felt_pain, PAIN_SHOCK_THRESHOLD, "Adrenaline cancelled pain shock outright - it is only allowed to delay it")
+	TEST_ASSERT(pain.in_shock, "A mob past the cap on adrenaline should still black out")
+
+/**
+ * A surgical anaesthetic is a dose, not a sip.
+ *
+ * Total numbness is total - no shock, no crawl, no finisher - so anything carrying it has to be
+ * gated on enough of it being present to actually put someone under, or it is the cheapest and most
+ * complete stun immunity in the game.
+ */
+/datum/unit_test/pain_anaesthetic_needs_a_dose/Run()
+	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
+	var/datum/pain/pain = patient.pain_controller
+	TEST_ASSERT(pain, "The test subject has no pain controller")
+
+	patient.add_pain_source("test_chest", PAIN_CAP_CHEST, BODY_ZONE_CHEST)
+
+	patient.reagents.add_reagent(/datum/reagent/nitrous_oxide, PAIN_DAMPEN_ANAESTHETIC_DOSE - 1)
+	pain.update_dampening()
+	TEST_ASSERT_EQUAL(pain.dampening, 0, "A sip of anaesthetic numbed the patient - it is not a field painkiller")
+
+	patient.reagents.add_reagent(/datum/reagent/nitrous_oxide, 1)
+	pain.update_dampening()
+	TEST_ASSERT_EQUAL(pain.dampening, PAIN_DAMPEN_TOTAL, "A full dose of anaesthetic should numb the patient completely")

@@ -30,7 +30,11 @@
 	if(!.)
 		return .
 
-	owner.add_traits(list(TRAIT_INCAPACITATED, TRAIT_IMMOBILIZED, TRAIT_FLOORED, TRAIT_HANDS_BLOCKED), TRAIT_STATUS_EFFECT(id))
+	// STAMINA as the source, which is what stamcrit used and what the rest of the tree still reads to
+	// answer "is this mob down from exhaustion" - IsParalyzed(), tackles, less-lethal embeds. Pain
+	// shock is that state now, so it has to answer to the same source. The crawl keeps one of its own,
+	// since the two can be applied at once and each has to be removable without the other.
+	owner.add_traits(list(TRAIT_INCAPACITATED, TRAIT_IMMOBILIZED, TRAIT_FLOORED, TRAIT_HANDS_BLOCKED), STAMINA)
 	owner.visible_message(
 		span_warning("[owner] collapses, overwhelmed!"),
 		span_userdanger("The pain is too much. Everything goes black."),
@@ -38,7 +42,7 @@
 	return .
 
 /datum/status_effect/incapacitating/pain_shock/on_remove()
-	owner.remove_traits(list(TRAIT_INCAPACITATED, TRAIT_IMMOBILIZED, TRAIT_FLOORED, TRAIT_HANDS_BLOCKED), TRAIT_STATUS_EFFECT(id))
+	owner.remove_traits(list(TRAIT_INCAPACITATED, TRAIT_IMMOBILIZED, TRAIT_FLOORED, TRAIT_HANDS_BLOCKED), STAMINA)
 	to_chat(owner, span_warning("You come to, wrecked."))
 	return ..()
 
@@ -95,6 +99,13 @@
 	if(isnull(carbon_owner.pain_controller))
 		return FALSE
 
+	// Snapshotted at the moment it fires rather than tracked live. Halving whatever the mob happens to
+	// be carrying at any instant would put felt pain permanently at half of a total that is itself
+	// capped at the shock threshold, so shock could never be reached at all - which is cancelling it,
+	// not delaying it. A fixed dampener is headroom instead: it hides what you were already carrying,
+	// and everything that lands afterwards is felt at full price and can still put you down.
+	pain_dampening = carbon_owner.pain_controller.total_pain * PAIN_ADRENALINE_DAMPEN_RATIO
+
 	to_chat(owner, span_userdanger("Your heart slams and the pain washes out of you!"))
 	carbon_owner.pain_controller.update_dampening()
 	return TRUE
@@ -102,6 +113,7 @@
 /datum/status_effect/adrenaline/on_remove()
 	var/mob/living/carbon/carbon_owner = owner
 	// The crash: everything it was holding back lands at once, plus a moment of being unable to cope.
+	pain_dampening = 0
 	carbon_owner.pain_controller?.update_dampening()
 	carbon_owner.adjust_stutter(PAIN_ADRENALINE_CRASH_STUTTER)
 	to_chat(owner, span_userdanger("The adrenaline drains away, and everything hurts at once."))

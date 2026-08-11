@@ -68,6 +68,14 @@
 	// put a mob permanently past the point of breathing it back off.
 	return !circulation_stopped() && !is_bled_out()
 
+/mob/living/carbon/human/is_damaged_beyond_revival()
+	// Never, on damage alone. Brute and burn stopped killing in phase 4 and nothing caps their totals
+	// short of the bodyparts' own limits, so an ordinary combat corpse now sits hundreds of points
+	// under the old floor - a maxed head and chest are more than all of it by themselves. Leaving the
+	// check in place would have made most kills permanent, which is exactly what the design forbids.
+	// What can and cannot come back is the organs' business, in [/mob/living/carbon/proc/can_defib].
+	return FALSE
+
 /mob/living/carbon/human/is_dying()
 	// Being in agony is not the same as bleeding out. Someone put down by pain has everything to play
 	// for, and letting them give up would make a stun the same thing as a kill.

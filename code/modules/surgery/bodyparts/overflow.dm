@@ -14,19 +14,26 @@
 /**
  * Tells the owner their body is being ruined from the inside, at most once every few seconds.
  *
- * Overflow happens per hit, and a hit can be a bullet or one tick of standing in a fire, so this is
- * rate limited rather than trusting the source to be reasonable about it.
+ * Overflow happens per hit, and a hit can be a bullet or one tick of standing in a fire, so this
+ * carries a cooldown of its own on top of the feedback budget - the budget stops it drowning out a
+ * bigger event, and the cooldown stops it repeating for as long as the fire burns.
  *
  * Arguments:
  * * message - What the owner feels.
+ * * onlooker_message - What everyone else sees. Overflow is meant to be legible from outside.
  */
-/obj/item/bodypart/proc/announce_overflow(message)
+/obj/item/bodypart/proc/announce_overflow(message, onlooker_message)
 	if(!COOLDOWN_FINISHED(src, overflow_feedback_cooldown))
 		return
 
 	COOLDOWN_START(src, overflow_feedback_cooldown, OVERFLOW_FEEDBACK_COOLDOWN)
-	to_chat(owner, span_userdanger(message))
-	playsound(owner, 'sound/effects/wounds/crackandbleed.ogg', 60, TRUE)
+	owner.combat_feedback(
+		COMBAT_FEEDBACK_OVERFLOW,
+		message = span_bolddanger(onlooker_message),
+		self_message = span_userdanger(message),
+		sound = 'sound/effects/wounds/crackandbleed.ogg',
+		shake_strength = COMBAT_SHAKE_PENETRATING_MAX,
+	)
 
 /**
  * Whether this bodypart has nothing left to give.
@@ -126,7 +133,7 @@
 	owner.adjust_organ_loss(ORGAN_SLOT_BRAIN, overflow)
 	log_overflow(owner, damage_source, plaintext_zone, "brain", overflow)
 
-	announce_overflow("Something gives way inside your skull!")
+	announce_overflow("Something gives way inside your skull!", "Something gives way inside [owner]'s skull!")
 	return FALSE
 
 /obj/item/bodypart/chest/apply_overflow(damage, wounding_type, attack_direction, damage_source)
@@ -144,5 +151,5 @@
 	if((inner_heart.organ_flags & ORGAN_FAILING) && !owner.undergoing_cardiac_arrest())
 		owner.set_heartattack(TRUE)
 
-	announce_overflow("Something tears deep in your chest!")
+	announce_overflow("Something tears deep in your chest!", "Something tears deep in [owner]'s chest!")
 	return FALSE

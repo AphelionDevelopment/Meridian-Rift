@@ -99,6 +99,9 @@
 	// A round that fills the plate's headroom hurts a great deal more than one it barely notices.
 	var/proximity = PLATE_PAIN_PROXIMITY_FLOOR + ((1 - PLATE_PAIN_PROXIMITY_FLOOR) * (stopped / get_tolerance()))
 	victim.add_temporary_pain(stopped * PLATE_PAIN_RATIO * proximity)
+	// Small shake for a hit that never got inside, per the design's NP/P split. wear_down() outranks
+	// this on the rounds where the plate itself gives, which is the moment worth having.
+	victim.shake_from_impact(stopped, penetrated = FALSE)
 
 	var/obj/item/bodypart/hit_part = isbodypart(def_zone) ? def_zone : victim.get_bodypart(check_zone(def_zone))
 	// Whatever the weapon was, the plate is what met the body: a knife the plate caught leaves a
@@ -131,19 +134,30 @@
 	durability = max(durability - amount, 0)
 	var/now_at = durability / maximum
 
+	if(isnull(wearer))
+		return
+
 	if(!durability)
-		wearer?.visible_message(
-			span_danger("The [name] [wearer] is wearing shatters!"),
-			span_userdanger("The [name] you are wearing shatters!"),
-			vision_distance = COMBAT_MESSAGE_RANGE,
+		wearer.combat_feedback(
+			COMBAT_FEEDBACK_STATE,
+			message = span_danger("The [name] [wearer] is wearing shatters!"),
+			self_message = span_userdanger("The [name] you are wearing shatters!"),
+			sound = 'sound/effects/glass/glassbr3.ogg',
+			sound_volume = 70,
+			shake_strength = COMBAT_SHAKE_PENETRATING_MIN,
 		)
-		playsound(wearer || src, 'sound/effects/glass/glassbr3.ogg', 70, TRUE)
 		return
 
 	for(var/band in list(PLATE_WEAR_SCUFFED, PLATE_WEAR_CRACKED, PLATE_WEAR_FAILING))
 		if(was_at > band && now_at <= band)
-			to_chat(wearer, span_warning("Something gives in the [name] you are wearing."))
-			playsound(wearer || src, 'sound/effects/wounds/crack1.ogg', 50, TRUE)
+			wearer.combat_feedback(
+				COMBAT_FEEDBACK_STATE,
+				message = span_warning("Something gives in the [name] [wearer] is wearing."),
+				self_message = span_warning("Something gives in the [name] you are wearing."),
+				sound = 'sound/effects/wounds/crack1.ogg',
+				sound_volume = 50,
+				shake_strength = COMBAT_SHAKE_NONPENETRATING,
+			)
 			return
 
 /obj/item/armor_plate/examine(mob/user)

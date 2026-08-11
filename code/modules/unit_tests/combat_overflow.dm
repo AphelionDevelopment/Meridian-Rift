@@ -190,3 +190,21 @@
 
 	TEST_ASSERT(!baton.is_lethal_enough_to_finish(), "A stun baton should not count as a lethal weapon")
 	TEST_ASSERT(!victim.try_finisher(killer, baton), "A finisher was allowed with a stun baton")
+
+/**
+ * An artery is not what takes a limb off.
+ *
+ * Appendix B's dismemberment rule is a Critical fracture or laceration plus a high-damage penetrating
+ * hit. An artery is Critical too, but the limb around it is structurally intact - counting it would
+ * amputate people instead of letting them bleed, which is the one thing this injury exists to do.
+ */
+/datum/unit_test/artery_does_not_take_the_limb/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/bodypart/leg = victim.get_bodypart(BODY_ZONE_L_LEG)
+
+	leg.force_wound_upwards(/datum/wound/slash/flesh/artery)
+	TEST_ASSERT(leg.get_wound_type(/datum/wound/slash/flesh/artery), "Failed to give the patient the severed artery this test is about")
+	TEST_ASSERT(!leg.is_injury_capacity_maxed(), "A severed artery should not count as a limb having nothing left to give")
+
+	victim.apply_damage(60, BRUTE, leg, sharpness = SHARP_EDGED)
+	TEST_ASSERT(victim.get_bodypart(BODY_ZONE_L_LEG), "A solid hit on a leg with a severed artery took the leg off")

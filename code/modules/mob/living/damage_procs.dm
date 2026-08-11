@@ -117,6 +117,9 @@
 	// spiked the meter on its way in, scaled by how close to the plate's tolerance it landed.
 	if(damagetype == BRUTE || damagetype == BURN)
 		add_temporary_pain(damage_amount * PAIN_IMPACT_RATIO)
+		// A hit that got inside shakes you in proportion to how far in it got. Arbitrated, so a burst
+		// of fire is one moment rather than five, and anything worth saying outranks it.
+		shake_from_impact(damage_amount)
 
 	SEND_SIGNAL(src, COMSIG_MOB_AFTER_APPLY_DAMAGE, damage_dealt, damagetype, def_zone, blocked, wound_bonus, exposed_wound_bonus, sharpness, attack_direction, attacking_item, wound_clothing)
 	return damage_dealt

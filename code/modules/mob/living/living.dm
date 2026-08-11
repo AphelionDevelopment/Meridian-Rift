@@ -1120,9 +1120,16 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 /mob/living/proc/can_be_revived()
 	if(HAS_TRAIT(src, TRAIT_NODEATH))
 		return TRUE
-	if(health > HEALTH_THRESHOLD_DEAD)
-		return TRUE
-	return FALSE
+	return !is_damaged_beyond_revival()
+
+/**
+ * Whether this mob's damage totals alone put it past bringing back.
+ *
+ * Split out of [/mob/living/proc/can_be_revived] because the totals only mean this for mobs that
+ * still die of them. Anything on a health bar keeps the old floor.
+ */
+/mob/living/proc/is_damaged_beyond_revival()
+	return health <= HEALTH_THRESHOLD_DEAD
 
 /mob/living/proc/update_damage_overlays()
 	return

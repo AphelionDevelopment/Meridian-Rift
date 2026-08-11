@@ -2040,4 +2040,8 @@
 	ph = 6.6
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
 	pain_dampening = PAIN_DAMPEN_IBUPROFEN
-	metabolized_traits = list(TRAIT_BLOODY_MESS)
+	// An anticoagulant, which is what "thins the blood" means mechanically: open wounds run faster and
+	// will not clot while it is in you. Deliberately not TRAIT_BLOODY_MESS - that name suggests
+	// bleeding but its only effect is to uncap how much of a hit counts towards the next injury, so it
+	// would make a mild painkiller roughly double how fast its taker collects critical wounds.
+	metabolized_traits = list(TRAIT_BLOOD_FOUNTAIN)

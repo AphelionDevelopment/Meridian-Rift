@@ -30,6 +30,11 @@
 	// Light, and that is the whole design of this injury. Set here rather than derived from severity,
 	// which is exactly why pain_factor is per datum.
 	pain_factor = PAIN_FACTOR_LIGHT
+	// A limb comes off to "a Critical fracture or laceration plus a high-damage P hit", per Appendix B.
+	// An artery is neither: the limb is structurally intact and the vessel inside it is not, which is
+	// the entire point of the injury. Counting it would take limbs off far sooner than the design's
+	// rule does and would replace bleeding out - the thing this wound exists to do - with amputation.
+	allows_overflow = FALSE
 
 	// Heavier than a critical cut, and unlike one it neither clots nor worsens - it simply does not stop.
 	initial_flow = 4.5

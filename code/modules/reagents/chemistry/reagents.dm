@@ -37,6 +37,10 @@
 	/// How much felt pain this reagent hides while metabolising. Painkillers never stack, so only
 	/// the strongest active one counts. Zero for anything that is not an analgesic.
 	var/pain_dampening = 0
+	/// How much of this reagent has to be present before [pain_dampening] counts for anything. Zero
+	/// for a painkiller, which works from the first unit; a real dose for a surgical anaesthetic,
+	/// which is not a field drug and must not be usable as one.
+	var/pain_dampening_minimum_volume = 0
 	/// You fucked up and this is now triggering its overdose effects, purge that shit quick.
 	var/overdosed = FALSE
 	///if false stops metab in liverless mobs
