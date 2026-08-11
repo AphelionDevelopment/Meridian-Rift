@@ -14,8 +14,6 @@
 #define WOUND_MINIMUM_DAMAGE 5
 /// an attack must do this much damage after armor in order to be eliigible to dismember a suitably mushed bodypart
 #define DISMEMBER_MINIMUM_DAMAGE 10
-/// If a part's accumulated wounding damage (including mods) passes this while the part is already ruined, it comes off.
-#define WOUND_DISMEMBER_OUTRIGHT_THRESH 150
 /// set wound_bonus on an item or attack to this to disable checking wounding for the attack
 #define CANT_WOUND -100
 
