@@ -207,6 +207,7 @@
 	desc = "A reflective sheet backed with sacrificial foam, shaped for a carrier. It boils away \
 		instead of the wearer. It will not slow a bullet."
 	icon_state = "engineering-plating"
+	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 2, /datum/material/silver = SHEET_MATERIAL_AMOUNT)
 	stops_flags = list(LASER, ENERGY)
 	nonpenetrating_wound_type = WOUND_BURN
 
@@ -305,6 +306,7 @@
 	w_class = WEIGHT_CLASS_BULKY
 	throw_speed = 2
 	throw_range = 4
+	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 2)
 
 /obj/item/storage/plate_case/Initialize(mapload)
 	. = ..()

@@ -18,6 +18,9 @@
 		"sec_Islug",
 		"sec_rshot",
 		"s12g_br",
+		"armor_plate_ballistic",
+		"armor_plate_ablative",
+		"plate_case",
 	)
 
 /datum/techweb_node/sec_equip
