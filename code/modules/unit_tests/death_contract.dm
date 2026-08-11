@@ -50,6 +50,36 @@
 	augmented.handle_heart(seconds_per_tick = 2)
 	TEST_ASSERT(augmented.get_oxy_loss() > 0, "A ruined cybernetic heart never started starving its owner of oxygen")
 
+/**
+ * Someone left burning has to eventually die of it.
+ *
+ * Fire is the case the death contract is hardest on: the burn total kills nobody now, so burning to
+ * death has to happen through injuries and through what overflow takes from the organs behind them.
+ * Routed as spread damage it did neither - spread damage is dealt with CANT_WOUND and is dropped
+ * outright once a part is full - which left a burning body maxed out, unconscious and immortal.
+ */
+/datum/unit_test/death_by_fire
+	priority = TEST_LONGER
+
+/datum/unit_test/death_by_fire/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+
+	// Somebody standing in a fire rather than one that burns itself out, which is the case that has to
+	// be lethal. Two hundred ticks is well over the ~110 it takes; the margin is for species and
+	// physiology modifiers, not for a slower route.
+	for(var/tick in 1 to 200)
+		if(victim.stat == DEAD)
+			break
+		victim.adjust_fire_stacks(2)
+		victim.ignite_mob()
+		var/datum/status_effect/fire_handler/fire_stacks/blaze = victim.has_status_effect(/datum/status_effect/fire_handler/fire_stacks)
+		blaze?.deal_damage(2)
+		victim.Life(seconds_per_tick = 2)
+
+	TEST_ASSERT_EQUAL(victim.stat, DEAD, "Burning alive never killed the patient: \
+		[round(victim.get_fire_loss())] burn damage, [length(victim.all_wounds)] injuries, \
+		[round(victim.get_organ_loss(ORGAN_SLOT_HEART))] heart and [round(victim.get_organ_loss(ORGAN_SLOT_BRAIN))] brain damage")
+
 /// A defibrillator needs something to circulate, so an exsanguinated patient has to be transfused first.
 /datum/unit_test/defib_needs_blood/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)

@@ -335,6 +335,26 @@
 	if(update)
 		update_damage_overlays()
 
+/**
+ * Burns every bodypart at once, as real hits that injure.
+ *
+ * What [/mob/living/carbon/proc/take_overall_damage] would do, minus the two things that make it
+ * useless for fire: it deals its damage with CANT_WOUND, and it drops damage entirely once a part is
+ * full. Fire cooking a body until it is dead runs on injuries and on what overflow takes from the
+ * organs behind them, so it cannot go through either.
+ *
+ * Arguments:
+ * * burn - Burn damage to share out across the parts.
+ */
+/mob/living/carbon/proc/burn_all_over(burn)
+	var/list/obj/item/bodypart/parts = get_bodyparts()
+	if(!length(parts))
+		return
+
+	var/burn_per_part = burn / length(parts)
+	for(var/obj/item/bodypart/part as anything in parts)
+		apply_damage(burn_per_part, BURN, def_zone = part, wound_clothing = FALSE)
+
 /mob/living/carbon/take_overall_damage(brute = 0, burn = 0, stamina = 0, updating_health = TRUE, forced = FALSE, required_bodytype)
 	. = FALSE
 	if(!forced && HAS_TRAIT(src, TRAIT_GODMODE))
