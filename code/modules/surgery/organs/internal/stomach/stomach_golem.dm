@@ -30,7 +30,7 @@
 	return BLOCK_EAT_ATTEMPT
 
 /// Golem stomach cannot process nutriment except from minerals
-/obj/item/organ/stomach/golem/on_life(delta_time)
+/obj/item/organ/stomach/golem/on_life(seconds_per_tick)
 	for(var/datum/reagent/consumable/food in reagents.reagent_list)
 		if (istype(food, /datum/reagent/consumable/nutriment/mineral))
 			continue

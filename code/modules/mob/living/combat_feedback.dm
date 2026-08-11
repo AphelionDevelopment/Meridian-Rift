@@ -75,6 +75,6 @@
 	var/strength = LERP(
 		COMBAT_SHAKE_PENETRATING_MIN,
 		COMBAT_SHAKE_PENETRATING_MAX,
-		min(damage / COMBAT_SHAKE_FULL_STRENGTH_DAMAGE, 1),
+		min(damage / COMBAT_SHAKE_FULL_STRENGTH_DAMAGE, 1)
 	)
 	return combat_feedback(COMBAT_FEEDBACK_IMPACT, shake_strength = strength)
