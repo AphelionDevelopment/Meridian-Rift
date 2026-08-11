@@ -1,6 +1,6 @@
 #define LIVER_DEFAULT_TOX_TOLERANCE 3 //amount of toxins the liver can filter out
 #define LIVER_DEFAULT_TOX_RESISTANCE 1 //lower values lower how harmful toxins are to the liver
-#define LIVER_FAILURE_STAGE_SECONDS 180 //amount of seconds before liver failure reaches a new stage // NOVA EDIT CHANGE - Original: 60
+#define LIVER_FAILURE_STAGE_SECONDS 60 //amount of seconds before liver failure reaches a new stage
 
 /obj/item/organ/liver
 	name = "liver"
@@ -172,16 +172,16 @@
 	switch(failure_time)
 		//After 60 seconds we begin to feel the effects
 		if(1 * LIVER_FAILURE_STAGE_SECONDS to 2 * LIVER_FAILURE_STAGE_SECONDS - 1)
-			owner.adjust_tox_loss(0.2 * seconds_per_tick,forced = TRUE)
+			owner.adjust_tox_loss(0.5 * seconds_per_tick,forced = TRUE)
 			owner.adjust_disgust(0.1 * seconds_per_tick)
 
 		if(2 * LIVER_FAILURE_STAGE_SECONDS to 3 * LIVER_FAILURE_STAGE_SECONDS - 1)
-			owner.adjust_tox_loss(0.4 * seconds_per_tick,forced = TRUE)
+			owner.adjust_tox_loss(0.8 * seconds_per_tick,forced = TRUE)
 			owner.adjust_drowsiness(0.5 SECONDS * seconds_per_tick)
 			owner.adjust_disgust(0.3 * seconds_per_tick)
 
 		if(3 * LIVER_FAILURE_STAGE_SECONDS to 4 * LIVER_FAILURE_STAGE_SECONDS - 1)
-			owner.adjust_tox_loss(0.6 * seconds_per_tick,forced = TRUE)
+			owner.adjust_tox_loss(1.2 * seconds_per_tick,forced = TRUE)
 			owner.adjust_organ_loss(pick(ORGAN_SLOT_HEART,ORGAN_SLOT_LUNGS,ORGAN_SLOT_STOMACH,ORGAN_SLOT_EYES,ORGAN_SLOT_EARS),0.2 * seconds_per_tick)
 			owner.adjust_drowsiness(1 SECONDS * seconds_per_tick)
 			owner.adjust_disgust(0.6 * seconds_per_tick)
@@ -190,7 +190,7 @@
 				owner.emote("drool")
 
 		if(4 * LIVER_FAILURE_STAGE_SECONDS to INFINITY)
-			owner.adjust_tox_loss(0.8 * seconds_per_tick,forced = TRUE)
+			owner.adjust_tox_loss(1.5 * seconds_per_tick,forced = TRUE)
 			owner.adjust_organ_loss(pick(ORGAN_SLOT_HEART,ORGAN_SLOT_LUNGS,ORGAN_SLOT_STOMACH,ORGAN_SLOT_EYES,ORGAN_SLOT_EARS),0.5 * seconds_per_tick)
 			owner.adjust_drowsiness(1.6 SECONDS * seconds_per_tick)
 			owner.adjust_disgust(1.2 * seconds_per_tick)
