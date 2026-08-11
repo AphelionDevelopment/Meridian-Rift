@@ -1442,7 +1442,7 @@
 
 /datum/reagent/consumable/ethanol/hearty_punch/on_mob_life(mob/living/carbon/drinker, seconds_per_tick, metabolization_ratio)
 	. = ..()
-	if(drinker.health <= 0)
+	if(drinker.stat >= SOFT_CRIT)
 		var/need_mob_update
 		need_mob_update = drinker.adjust_brute_loss(-3.75 * metabolization_ratio * seconds_per_tick, updating_health = FALSE, required_bodytype = affected_bodytype)
 		need_mob_update += drinker.adjust_fire_loss(-3.75 * metabolization_ratio * seconds_per_tick, updating_health = FALSE, required_bodytype = affected_bodytype)
@@ -1751,7 +1751,7 @@
 /datum/reagent/consumable/ethanol/bastion_bourbon/on_mob_metabolize(mob/living/drinker)
 	. = ..()
 	var/heal_points = 10
-	if(drinker.health <= 0)
+	if(drinker.stat >= SOFT_CRIT)
 		heal_points = 20 //heal more if we're in softcrit
 	var/need_mob_update
 	var/heal_amt = min(volume, heal_points) //only heals 1 point of damage per unit on add, for balance reasons

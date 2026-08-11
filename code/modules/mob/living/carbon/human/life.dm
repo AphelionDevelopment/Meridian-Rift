@@ -47,7 +47,7 @@
 	// Suffocation and poison, turned into the organ damage that actually kills
 	handle_organ_lethality(seconds_per_tick)
 	// Crit damage but specifically for people who don't get suffocate while in crit so they can actually die eventually
-	if(HAS_TRAIT(src, TRAIT_NOBREATH) && (health < crit_threshold) && !HAS_TRAIT(src, TRAIT_NOCRITDAMAGE))
+	if(HAS_TRAIT(src, TRAIT_NOBREATH) && (stat >= SOFT_CRIT && stat != DEAD) && !HAS_TRAIT(src, TRAIT_NOCRITDAMAGE))
 		adjust_brute_loss(0.5 * seconds_per_tick)
 	return stat != DEAD
 

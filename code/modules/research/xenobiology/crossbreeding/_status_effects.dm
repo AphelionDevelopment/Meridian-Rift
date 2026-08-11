@@ -1037,7 +1037,7 @@
 
 /datum/status_effect/stabilized/lightpink/tick(seconds_between_ticks)
 	for(var/mob/living/carbon/human/H in range(1, get_turf(owner)))
-		if(H != owner && H.stat != DEAD && H.health <= 0 && !H.reagents.has_reagent(/datum/reagent/medicine/epinephrine))
+		if(H != owner && H.stat != DEAD && H.stat >= SOFT_CRIT && !H.reagents.has_reagent(/datum/reagent/medicine/epinephrine))
 			to_chat(owner, "[linked_extract] pulses in sync with [H]'s heartbeat, trying to keep [H.p_them()] alive.")
 			H.reagents.add_reagent(/datum/reagent/medicine/epinephrine,5)
 	return ..()
@@ -1098,7 +1098,7 @@
 	colour = SLIME_TYPE_RAINBOW
 
 /datum/status_effect/stabilized/rainbow/tick(seconds_between_ticks)
-	if(owner.health <= 0)
+	if(owner.stat >= SOFT_CRIT)
 		var/obj/item/slimecross/stabilized/rainbow/X = linked_extract
 		if(istype(X))
 			if(X.regencore)
