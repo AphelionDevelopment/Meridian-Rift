@@ -1,6 +1,6 @@
 /// Allows us to roll for and apply a wound without actually dealing damage. Used for aggregate wounding power with pellet clouds
-/// blocked is the armour percentage the cloud was stopped by, which decides whether it can wound properly. See [/obj/item/bodypart/proc/check_wounding].
-/obj/item/bodypart/proc/painless_wound_roll(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, sharpness=NONE, wound_clothing, blocked = 0)
+/// nonpenetrating is set by a plate that stopped this outright, and limits what it is allowed to cause. See [/obj/item/bodypart/proc/check_wounding].
+/obj/item/bodypart/proc/painless_wound_roll(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, sharpness=NONE, wound_clothing, nonpenetrating = FALSE)
 	SHOULD_CALL_PARENT(TRUE)
 
 	if(!owner || wounding_dmg <= 0 || wound_bonus == CANT_WOUND || HAS_TRAIT(owner, TRAIT_GODMODE))
@@ -31,10 +31,10 @@
 			if(wounding_type == WOUND_PIERCE && !easy_dismember)
 				wounding_dmg *= 0.75 // piercing weapons pass along 75% of their wounding damage to the bone since it's more concentrated
 			wounding_type = WOUND_BLUNT
-		// As in receive_damage: armour that stopped most of the cloud stops it taking the limb.
-		if (blocked < WOUND_NONPENETRATING_BLOCK && ((exterior_ready_to_dismember && interior_ready_to_dismember) || dismemberable_by_total_damage(mangled_state)) && try_dismember(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus))
+		// Nothing a plate stopped takes a limb off.
+		if (!nonpenetrating && ((exterior_ready_to_dismember && interior_ready_to_dismember) || dismemberable_by_total_damage(mangled_state)) && try_dismember(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus))
 			return
-	return check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, wound_clothing = wound_clothing, blocked = blocked)
+	return check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, wound_clothing = wound_clothing, nonpenetrating = nonpenetrating)
 
 /**
  * check_wounding() is where we handle selecting and applying a wound if we meet the criteria
@@ -51,9 +51,9 @@
  * * wound_bonus- The wound_bonus of an attack, which biases which tier it lands on
  * * exposed_wound_bonus- The exposed_wound_bonus of an attack
  * * wound_clothing- If this should damage clothing.
- * * blocked- How much of the attack armour stopped, as a percentage. A mostly stopped hit cannot cause the worst injuries.
+ * * nonpenetrating- Whether a plate stopped this hit outright. Such a hit cannot cause the worst injuries. Worn percentage armour does not set this; it reduces damage instead.
  */
-/obj/item/bodypart/proc/check_wounding(woundtype, damage, wound_bonus, exposed_wound_bonus, attack_direction, damage_source, wound_clothing, blocked = 0)
+/obj/item/bodypart/proc/check_wounding(woundtype, damage, wound_bonus, exposed_wound_bonus, attack_direction, damage_source, wound_clothing, nonpenetrating = FALSE)
 	SHOULD_CALL_PARENT(TRUE)
 	RETURN_TYPE(/datum/wound)
 
@@ -102,9 +102,8 @@
 	var/injury_roll = check_woundings_mods(woundtype, accumulated_damage, wound_bonus, exposed_wound_bonus, armor_ablation)
 	var/list/series_wounding_mods = check_series_wounding_mods()
 
-	// A hit armour mostly stopped bruises and burns. It does not open arteries and it does not take
-	// limbs off; the armour has to be broken first.
-	var/non_penetrating = (blocked >= WOUND_NONPENETRATING_BLOCK)
+	// A hit a plate stopped bruises and burns. It does not open arteries and it does not take limbs
+	// off; the plate has to be broken first.
 
 	// Losing a limb outright is not decided here. It is a limb's overflow, and lives in
 	// [/obj/item/bodypart/proc/apply_overflow].
@@ -115,7 +114,7 @@
 		if (!pregen_data.compete_for_wounding)
 			continue
 
-		if (non_penetrating && (initial(wound_type.severity) > WOUND_NONPENETRATING_MAX_SEVERITY || pregen_data.bleeds))
+		if (nonpenetrating && (initial(wound_type.severity) > WOUND_NONPENETRATING_MAX_SEVERITY || pregen_data.bleeds))
 			continue
 
 		var/specific_injury_roll = (injury_roll + series_wounding_mods[pregen_data.wound_series])

@@ -59,10 +59,6 @@
 	if(damage_amount <= 0)
 		return 0
 
-	// Same rule for the injury check: what a plate let through is penetrating, and the percentage does
-	// not get a second say.
-	var/wound_blocked = stopping_plate ? 0 : blocked
-
 	SEND_SIGNAL(src, COMSIG_MOB_APPLY_DAMAGE, damage_amount, damagetype, def_zone, blocked, wound_bonus, exposed_wound_bonus, sharpness, attack_direction, attacking_item, wound_clothing)
 
 	var/damage_dealt = 0
@@ -81,7 +77,6 @@
 					attack_direction = attack_direction,
 					damage_source = attacking_item,
 					wound_clothing = wound_clothing,
-					wound_blocked = wound_blocked,
 				))
 					update_damage_overlays()
 				damage_dealt = actual_hit.get_damage() - delta // Unfortunately bodypart receive_damage doesn't return damage dealt so we do it manually
@@ -102,7 +97,6 @@
 					attack_direction = attack_direction,
 					damage_source = attacking_item,
 					wound_clothing = wound_clothing,
-					wound_blocked = wound_blocked,
 				))
 					update_damage_overlays()
 				damage_dealt = actual_hit.get_damage() - delta // See above

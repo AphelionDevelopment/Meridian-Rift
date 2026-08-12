@@ -76,23 +76,43 @@
 	for(var/severity in severities)
 		TEST_ASSERT_EQUAL(severity, severities[1], "The same three cuts produced different injury tiers across runs: [json_encode(severities)]")
 
-/// A hit armour mostly stopped bruises and cracks bone. It never opens anyone up and never reaches
-/// the worst tier, however many land. This is the helmeted head worked example.
+/// A hit a plate stopped bruises and cracks bone. It never opens anyone up and never reaches the
+/// worst tier, however many land. This is the helmeted head worked example.
 /datum/unit_test/wound_nonpenetrating/Run()
 	var/mob/living/carbon/human/armoured = allocate(/mob/living/carbon/human/consistent)
 	var/obj/item/bodypart/tested_part = armoured.get_bodypart(BODY_ZONE_R_ARM)
 
-	// Enough edged damage to have opened a bare arm several times over.
+	// Enough edged damage to have opened a bare arm several times over, all of it flagged as stopped.
+	// Driven through the injury track directly rather than through a plate, so this stays a test of
+	// what a stopped hit is allowed to cause rather than of any plate's tolerance.
 	for(var/hit in 1 to 8)
-		armoured.apply_damage(WOUND_MAX_CONSIDERED_DAMAGE, BRUTE, tested_part, blocked = WOUND_NONPENETRATING_BLOCK, sharpness = SHARP_EDGED)
+		tested_part.painless_wound_roll(WOUND_SLASH, WOUND_MAX_CONSIDERED_DAMAGE, 0, 0, SHARP_EDGED, nonpenetrating = TRUE)
 
 	TEST_ASSERT(length(armoured.all_wounds), "A stopped hit should still bruise and break bone, but eight of them left no injury at all")
 	for(var/datum/wound/carried as anything in armoured.all_wounds)
 		var/datum/wound_pregen_data/pregen_data = GLOB.all_wound_pregen_data[carried.type]
-		TEST_ASSERT(!pregen_data.bleeds, "A hit armour stopped half of opened the patient up: [carried]")
-		TEST_ASSERT(carried.severity <= WOUND_NONPENETRATING_MAX_SEVERITY, "A hit armour stopped half of caused [carried], past the non-penetrating severity cap")
+		TEST_ASSERT(!pregen_data.bleeds, "A hit a plate stopped opened the patient up: [carried]")
+		TEST_ASSERT(carried.severity <= WOUND_NONPENETRATING_MAX_SEVERITY, "A hit a plate stopped caused [carried], past the non-penetrating severity cap")
 
-	TEST_ASSERT(armoured.get_bodypart(BODY_ZONE_R_ARM), "A hit armour stopped half of took the limb off")
+	TEST_ASSERT(armoured.get_bodypart(BODY_ZONE_R_ARM), "A hit a plate stopped took the limb off")
+
+/**
+ * Worn percentage armour is damage reduction, not a wall.
+ *
+ * NP/P was stubbed off `blocked` before plates existed, which made any rating at or above 50% total
+ * immunity to the worst injuries: a laser on a captain's carapace piled up burn damage forever and
+ * never reached a Catastrophic Burn. Percentage armour now only reduces the damage that feeds the
+ * injury track.
+ */
+/datum/unit_test/wound_percentage_armour_is_not_a_plate/Run()
+	var/mob/living/carbon/human/armoured = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/bodypart/tested_part = armoured.get_bodypart(BODY_ZONE_CHEST)
+
+	for(var/hit in 1 to 20)
+		armoured.apply_damage(WOUND_MAX_CONSIDERED_DAMAGE, BURN, tested_part, blocked = 50)
+
+	TEST_ASSERT(get_worst_wound_severity(armoured) >= WOUND_SEVERITY_CRITICAL, \
+		"Twenty lasers through half armour never reached the worst injury tier - percentage armour should slow injuries down, not cap them")
 
 /// A weapon armour brings under the minimum hit size still has to injure eventually. While the injury
 /// track was gated on how big a hit was rather than on the part's running total, a light weapon against

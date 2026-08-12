@@ -116,7 +116,7 @@
 		wound_bonus = wound_bonus,
 		exposed_wound_bonus = 0,
 		wound_clothing = wound_clothing,
-		blocked = WOUND_NONPENETRATING_BLOCK,
+		nonpenetrating = TRUE,
 	)
 
 	wear_down(stopped, victim)

@@ -720,19 +720,15 @@
  * sharpness - Flag on whether the attack is edged or pointy
  * attack_direction - The direction the bodypart is attacked from, used to send blood flying in the opposite direction.
  * damage_source - The source of damage, typically a weapon.
- * wound_blocked - The armour percentage the injury check should treat this hit as having been stopped by.
- * Defaults to blocked, and exists because apply_damage() has already spent blocked on the damage by
- * the time it gets here, so it hands the percentage over separately rather than mitigating twice.
+ *
+ * Everything that arrives here penetrated: a plate stops what it stops before this, in
+ * [/obj/item/armor_plate/proc/take_impact], and worn percentage armour is damage reduction rather
+ * than a wall. So there is no non-penetrating case to handle in this proc.
  */
-/obj/item/bodypart/proc/receive_damage(brute = 0, burn = 0, blocked = 0, updating_health = TRUE, forced = FALSE, required_bodytype = null, wound_bonus = 0, exposed_wound_bonus = 0, sharpness = NONE, attack_direction = null, damage_source, wound_clothing = TRUE, wound_blocked = null)
+/obj/item/bodypart/proc/receive_damage(brute = 0, burn = 0, blocked = 0, updating_health = TRUE, forced = FALSE, required_bodytype = null, wound_bonus = 0, exposed_wound_bonus = 0, sharpness = NONE, attack_direction = null, damage_source, wound_clothing = TRUE)
 	SHOULD_CALL_PARENT(TRUE)
 
 	var/hit_percent = forced ? 1 : (100-blocked)/100
-	if(isnull(wound_blocked))
-		wound_blocked = blocked
-	// Damage applied directly went around armour entirely, so there is nothing for it to have stopped.
-	if(forced)
-		wound_blocked = 0
 	if((!brute && !burn) || hit_percent <= 0)
 		return FALSE
 	if (!forced)
@@ -795,19 +791,15 @@
 					wounding_dmg *= 0.75 // piercing weapons pass along 75% of their wounding damage to the bone since it's more concentrated
 				wounding_type = WOUND_BLUNT
 
-		// A hit armour mostly stopped does not take a limb off, however mangled that limb already is.
-		// See [/obj/item/bodypart/proc/check_wounding], which gates the other dismemberment path the
-		// same way.
-		var/can_take_the_limb = (wound_blocked < WOUND_NONPENETRATING_BLOCK)
 		// A part whose injuries were already maxed has nothing left to absorb this with, so it goes to
 		// whatever the part was protecting. Asked before this hit's own injuries land, so the blow that
 		// ruins a part is never also the blow that kills through it.
-		if(can_take_the_limb && wound_bonus != CANT_WOUND && is_injury_capacity_maxed())
+		if(wound_bonus != CANT_WOUND && is_injury_capacity_maxed())
 			// A maxed part means what is inside it takes hits too, not only this part's overflow target.
 			damage_random_organ(wounding_dmg, damage_source)
 			if(apply_overflow(wounding_dmg, wounding_type, attack_direction, damage_source))
 				return
-		if (can_take_the_limb && ((exterior_ready_to_dismember && interior_ready_to_dismember) || dismemberable_by_total_damage()) && try_dismember(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus))
+		if (((exterior_ready_to_dismember && interior_ready_to_dismember) || dismemberable_by_total_damage()) && try_dismember(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus))
 			return
 		//NOVA EDIT ADDITION - MEDICAL
 		//This makes it so the more damaged bodyparts are, the more likely they are to get wounds
@@ -831,7 +823,7 @@
 		// without ever injuring them, and left fire unable to reach the organs behind a part.
 		// How often that total is examined is check_wounding()'s business.
 		if(wounding_dmg > 0 && wound_bonus != CANT_WOUND)
-			check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, attack_direction, damage_source = damage_source, wound_clothing = wound_clothing, blocked = wound_blocked)
+			check_wounding(wounding_type, wounding_dmg, wound_bonus, exposed_wound_bonus, attack_direction, damage_source = damage_source, wound_clothing = wound_clothing)
 
 	for(var/datum/wound/iter_wound as anything in wounds)
 		iter_wound.receive_damage(wounding_type, wounding_dmg, wound_bonus, attack_direction, damage_source)

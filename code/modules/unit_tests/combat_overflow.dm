@@ -96,14 +96,34 @@
 /// Nobody can be killed through a working plate; the armour has to be broken first.
 /datum/unit_test/overflow_needs_penetration/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
-	var/obj/item/bodypart/head = victim.get_bodypart(BODY_ZONE_HEAD)
-	TEST_ASSERT(max_out_injuries(victim, head), "Failed to give the patient the critical head injury this test is about")
+	var/obj/item/armor_plate/plate = plate_up(victim)
+	var/obj/item/bodypart/chest = victim.get_bodypart(BODY_ZONE_CHEST)
+	TEST_ASSERT(max_out_injuries(victim, chest), "Failed to give the patient the critical chest injury this test is about")
 
+	// Inside the plate's tolerance, so every one of these is stopped outright.
 	for(var/hit in 1 to 5)
-		victim.apply_damage(30, BRUTE, head, blocked = WOUND_NONPENETRATING_BLOCK, sharpness = SHARP_EDGED)
+		victim.apply_damage(plate.get_tolerance(), BRUTE, chest, sharpness = SHARP_EDGED, armour_flag = MELEE)
 
-	TEST_ASSERT_EQUAL(victim.get_organ_loss(ORGAN_SLOT_BRAIN), 0, \
-		"Hits that armour stopped overflowed into the brain - a working plate cannot be killed through")
+	TEST_ASSERT(plate.is_working(), "The plate this test is about broke partway through")
+	TEST_ASSERT_EQUAL(victim.get_organ_loss(ORGAN_SLOT_HEART), 0, \
+		"Hits a plate stopped overflowed into the heart - a working plate cannot be killed through")
+
+/**
+ * Worn percentage armour slows overflow down; it does not switch it off.
+ *
+ * NP/P was stubbed off `blocked` before plates existed, so any rating at or above 50% made a zone
+ * permanently unkillable: the captain's carapace sat exactly on that line and lasers to the chest
+ * piled up burn forever without ever reaching the heart. Only a plate is non-penetrating now.
+ */
+/datum/unit_test/overflow_ignores_percentage_armour/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/bodypart/chest = victim.get_bodypart(BODY_ZONE_CHEST)
+	TEST_ASSERT(max_out_injuries(victim, chest), "Failed to give the patient the critical chest injury this test is about")
+
+	victim.apply_damage(30, BRUTE, chest, blocked = 50, sharpness = SHARP_EDGED)
+
+	TEST_ASSERT(victim.get_organ_loss(ORGAN_SLOT_HEART) > 0, \
+		"A hit through half armour left the heart untouched - percentage armour is damage reduction, not a plate")
 
 /// Enough overflow into a head kills, and the corpse is as recoverable as any other brain death.
 /datum/unit_test/overflow_eventually_kills/Run()

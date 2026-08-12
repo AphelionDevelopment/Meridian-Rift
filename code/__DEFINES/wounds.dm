@@ -16,9 +16,9 @@
 /// set wound_bonus on an item or attack to this to disable checking wounding for the attack
 #define CANT_WOUND -100
 
-/// A hit that armour stopped at least this much of counts as non-penetrating: it bruises and burns, but never opens anyone up.
-#define WOUND_NONPENETRATING_BLOCK 50
 /// The worst injury a non-penetrating hit is allowed to cause. Nobody bleeds out through a working plate.
+/// Non-penetrating means an armour plate stopped the hit outright - worn percentage armour reduces
+/// damage instead, and what it lets through is penetrating like any other hit.
 #define WOUND_NONPENETRATING_MAX_SEVERITY WOUND_SEVERITY_SEVERE
 
 /// If there are multiple possible and valid wounds for the same type and severity, weight will be used to pick among them. See _wound_pregen_data.dm for more details
