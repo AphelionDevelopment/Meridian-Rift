@@ -51,8 +51,8 @@
 #define PAIN_SHOCK_THRESHOLD 100
 /// Felt pain a mob must fall back to before it leaves shock. Below the shock threshold, so it does not oscillate on the line.
 #define PAIN_SHOCK_RECOVERY_THRESHOLD 70
-/// Temporary pain on a crawling mob that counts as a fresh hit and blacks it out again.
-#define PAIN_SHOCK_BLACKOUT_MINIMUM 10
+/// Absolute longest one uninterrupted pain blackout may last.
+#define PAIN_SHOCK_MAXIMUM_DURATION (5 SECONDS)
 
 /// How much more a hit hurts with a completely ruined heart. Scales with how ruined it is.
 #define PAIN_HEART_STRAIN_MULTIPLIER 0.5
@@ -122,8 +122,8 @@
 /// nothing at all.
 #define PAIN_DAMPEN_ANAESTHETIC_DOSE 15
 
-// Grades for analgesic chems the design does not name individually. Anything that numbs without a
-// value here reads as total numbness.
+// Grades for analgesic chems the design does not name individually. An ungraded analgesia trait uses
+// the strong value too: traits may damp pain, but the combat contract grants none total immunity.
 /// A mild additive, or a painkiller that is mostly something else.
 #define PAIN_DAMPEN_WEAK 10
 /// A field painkiller.

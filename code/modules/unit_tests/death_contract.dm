@@ -112,3 +112,13 @@
 
 	patient.blood_volume = BLOOD_VOLUME_NORMAL
 	TEST_ASSERT_EQUAL(patient.can_defib(), DEFIB_POSSIBLE, "Transfusing the patient did not make them defibrillatable again")
+
+/// Damage totals are not part of the revival contract; repaired organs and enough blood are.
+/datum/unit_test/defib_ignores_tissue_damage/Run()
+	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
+	patient.adjust_brute_loss(MAX_REVIVE_BRUTE_DAMAGE + 50, forced = TRUE)
+	patient.adjust_fire_loss(MAX_REVIVE_FIRE_DAMAGE + 50, forced = TRUE)
+	patient.death()
+
+	TEST_ASSERT_EQUAL(patient.can_defib(), DEFIB_POSSIBLE, \
+		"Legacy brute or burn totals prevented defibrillation despite a working heart, brain and enough blood")

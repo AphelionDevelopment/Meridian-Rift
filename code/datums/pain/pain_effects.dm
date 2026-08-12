@@ -64,6 +64,7 @@
 
 	// Floored but not hands-blocked: reaching your own pockets for an injector is the way out.
 	owner.add_traits(list(TRAIT_FLOORED, TRAIT_PACIFISM), TRAIT_STATUS_EFFECT(id))
+	RegisterSignal(owner, COMSIG_MOB_CLICKON, PROC_REF(restrict_interaction))
 	owner.visible_message(
 		span_warning("[owner] goes down, barely conscious!"),
 		span_userdanger("You can't stand. All you can do is drag yourself."),
@@ -71,9 +72,23 @@
 	return TRUE
 
 /datum/status_effect/pain_crawl/on_remove()
+	UnregisterSignal(owner, COMSIG_MOB_CLICKON)
 	owner.remove_traits(list(TRAIT_FLOORED, TRAIT_PACIFISM), TRAIT_STATUS_EFFECT(id))
 	to_chat(owner, span_notice("You can get up again."))
 	return ..()
+
+/// Keeps a crawler's usable hands to self-help: their own body, clothing, pockets and held items.
+/datum/status_effect/pain_crawl/proc/restrict_interaction(datum/source, atom/target, list/modifiers)
+	SIGNAL_HANDLER
+
+	// Looking is not an action, and must remain available for situational awareness.
+	if(LAZYACCESS(modifiers, SHIFT_CLICK))
+		return NONE
+	if(target == owner || target in owner.get_all_contents())
+		return NONE
+
+	to_chat(owner, span_warning("You can only manage your own gear and injuries through the pain."))
+	return COMSIG_MOB_CANCEL_CLICKON
 
 /**
  * Adrenaline.
@@ -96,20 +111,14 @@
 	if(isnull(carbon_owner.pain_controller))
 		return FALSE
 
-	// Snapshotted when it fires rather than tracked live. Halving the total continuously would hold
-	// felt pain permanently below the shock threshold, which cancels shock rather than delaying it. A
-	// fixed dampener hides what the mob was already carrying and leaves later hits felt in full.
-	pain_dampening = carbon_owner.pain_controller.total_pain * PAIN_ADRENALINE_DAMPEN_RATIO
-
 	to_chat(owner, span_userdanger("Your heart slams and the pain washes out of you!"))
-	carbon_owner.pain_controller.update_dampening()
+	carbon_owner.pain_controller.update_pain(adrenaline_override = TRUE)
 	return TRUE
 
 /datum/status_effect/adrenaline/on_remove()
 	var/mob/living/carbon/carbon_owner = owner
 	// The crash: everything it held back lands at once, with a brief stutter on top.
-	pain_dampening = 0
-	carbon_owner.pain_controller?.update_dampening()
+	carbon_owner.pain_controller?.update_pain(adrenaline_override = FALSE)
 	carbon_owner.adjust_stutter(PAIN_ADRENALINE_CRASH_STUTTER)
 	to_chat(owner, span_userdanger("The adrenaline drains away, and everything hurts at once."))
 	return ..()

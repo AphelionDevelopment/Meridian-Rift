@@ -44,9 +44,14 @@
 	TEST_ASSERT(victim.get_covering_plate(BRUTE, BULLET, chest), "A ballistic plate should answer a bullet")
 	TEST_ASSERT(isnull(victim.get_covering_plate(BURN, LASER, chest)), "A ballistic plate should have no answer for a laser")
 
-	// The wrong sort counts as unplated, so the carrier's own rating decides it as before.
+	// The wrong sort stops nothing, and the ballistic carrier cannot become ablative by fallback.
 	var/burned = victim.apply_damage(30, BURN, chest, blocked = 50, wound_bonus = CANT_WOUND, armour_flag = LASER)
-	TEST_ASSERT_EQUAL(burned, 15, "A laser on a ballistic plate should fall back to the carrier's own armour")
+	TEST_ASSERT_EQUAL(burned, 30, "A laser on a ballistic plate should land as an unarmoured hit")
+
+	var/obj/item/armor_plate/spent = victim.get_covering_plate(BRUTE, BULLET, chest)
+	spent.durability = 0
+	var/shot = victim.apply_damage(30, BRUTE, chest, blocked = 50, wound_bonus = CANT_WOUND, armour_flag = BULLET)
+	TEST_ASSERT_EQUAL(shot, 30, "A spent plate should let the entire hit penetrate")
 
 /**
  * There is no penetration stat. C6.

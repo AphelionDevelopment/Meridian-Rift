@@ -43,6 +43,12 @@
 	// Plates are the armour model for mob combat. One stops everything up to its tolerance outright.
 	// See [/obj/item/armor_plate/proc/take_impact].
 	var/obj/item/armor_plate/stopping_plate = (armour_flag && !forced) ? get_covering_plate(damagetype, armour_flag, def_zone) : null
+	var/plate_owns_hit = stopping_plate || (
+		armour_flag \
+		&& !forced \
+		&& (damagetype == BRUTE || damagetype == BURN) \
+		&& has_fitted_plate_covering(def_zone)
+	)
 	if(stopping_plate)
 		damage_amount -= stopping_plate.take_impact(src, damage, def_zone, wound_bonus, attack_direction, attacking_item, wound_clothing)
 	// What the attack put into this body, before the body's own multipliers decide what it does to it.
@@ -50,9 +56,9 @@
 	if(!forced)
 		// A plate that answered this attack replaces the percentage for it: everything up to its
 		// tolerance was stopped outright, and what got past arrives as though nothing were worn. Worn
-		// armour still decides every attack no plate answered - the wrong sort, a spent one, an
-		// uncovered zone, or no plate at all. See phase 6, D6.
-		if(!stopping_plate)
+		// armour still decides an uncovered hit or one with no fitted plate. A mismatched or spent
+		// plate owns its covered hit but stops none of it, so that hit is fully penetrating.
+		if(!plate_owns_hit)
 			damage_amount *= ((100 - blocked) / 100)
 		delivered_damage = damage_amount
 		damage_amount *= get_incoming_damage_modifier(damage_amount, damagetype, def_zone, sharpness, attack_direction, attacking_item)

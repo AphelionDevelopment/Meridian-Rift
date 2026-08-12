@@ -21,6 +21,8 @@
 	var/felt_pain = 0
 	/// Felt pain the strongest active painkiller is hiding. Painkillers do not stack.
 	var/dampening = 0
+	/// Fixed dampening from the strongest painkiller or analgesia trait, before adrenaline halves felt pain.
+	var/base_dampening = 0
 	/// Set when organ damage changes. Organs tick constantly, so their floor is rebuilt on the next process rather than per hit.
 	var/floor_needs_recalculation = FALSE
 	/// Set when pain moved while the mob was in no state to take a health refresh. Retried next process.
@@ -32,6 +34,8 @@
 	var/heart_strain = 0
 	/// Whether a spike is currently holding the mob blacked out. Cached, as the crit ladder reads it on every updatehealth().
 	var/in_shock = FALSE
+	/// When the current uninterrupted blackout must end.
+	var/blackout_ends_at = 0
 	/// Whether the floor alone is currently pinning the mob down. Cached for the same reason.
 	var/crawling = FALSE
 	/// The bracket felt_pain currently falls into.
@@ -103,10 +107,20 @@
 		recalculate_floor()
 
 	if(temporary_pain > 0)
+		// Shock is an arrest window, never a long-term stun. At the ceiling, drain enough of the pool
+		// to satisfy the normal recovery rule; a high floor drains it entirely and leaves a crawler.
+		if(in_shock && blackout_ends_at && world.time >= blackout_ends_at)
+			var/adrenaline_factor = parent.has_status_effect(/datum/status_effect/adrenaline) ? (1 - PAIN_ADRENALINE_DAMPEN_RATIO) : 1
+			var/raw_recovery_threshold = (PAIN_SHOCK_RECOVERY_THRESHOLD - DAMAGE_PRECISION) / adrenaline_factor
+			var/recovery_pool = min(temporary_pain, max(raw_recovery_threshold - pain_floor + base_dampening, 0))
+			adjust_temporary_pain(recovery_pool - temporary_pain)
+
 		// Fast while high, slower as it falls, so a maxed pool drains to the shock recovery threshold
 		// in under five seconds.
 		var/decay = (PAIN_TEMPORARY_DECAY_FLAT + (temporary_pain * PAIN_TEMPORARY_DECAY_COEFFICIENT)) * seconds_per_tick
-		decay *= (1 - (heart_strain * PAIN_HEART_DECAY_BRAKE))
+		// Heart strain slows lingering pain, but never extends the hard five-second arrest window.
+		if(!in_shock)
+			decay *= (1 - (heart_strain * PAIN_HEART_DECAY_BRAKE))
 		adjust_temporary_pain(-decay)
 
 	// Adrenaline re-arms once the mob has no pain left at all.
@@ -278,9 +292,17 @@
 	// The doll draws the floor, so it is blinded by how much of the floor a painkiller hides. Scaling
 	// against the total instead would let the temporary pool darken every zone at once.
 	if(pain_floor > 0)
-		zone_pain *= clamp((pain_floor - dampening) / pain_floor, 0, 1)
+		zone_pain *= get_felt_floor() / pain_floor
 
 	return clamp(zone_pain / zone_cap, 0, 1)
+
+/// The permanent floor as the mob feels it after medication and fight-or-flight.
+/datum/pain/proc/get_felt_floor(adrenaline_override)
+	var/felt_floor = base_dampening >= PAIN_DAMPEN_TOTAL ? 0 : max(pain_floor - base_dampening, 0)
+	var/adrenaline_active = isnull(adrenaline_override) ? !!parent.has_status_effect(/datum/status_effect/adrenaline) : adrenaline_override
+	if(adrenaline_active)
+		felt_floor *= (1 - PAIN_ADRENALINE_DAMPEN_RATIO)
+	return felt_floor
 
 /**
  * Returns the most permanent pain a bodypart zone may contribute to the floor.
@@ -316,6 +338,10 @@
 
 	temporary_pain = new_temporary
 	update_pain()
+	// Repeated hits can juggle a target, but each one demands fresh commitment and buys at most the
+	// same five-second window.
+	if(amount > 0 && in_shock)
+		blackout_ends_at = world.time + PAIN_SHOCK_MAXIMUM_DURATION
 
 	if(amount >= PAIN_ADRENALINE_SPIKE_TRIGGER)
 		try_trigger_adrenaline()
@@ -348,23 +374,23 @@
 	if(inebriation?.drunk_value >= PAIN_DAMPEN_DRUNK_REQUIREMENT)
 		strongest = max(strongest, PAIN_DAMPEN_ALCOHOL)
 
-	if(has_total_analgesia())
-		strongest = PAIN_DAMPEN_TOTAL
+	if(has_ungraded_analgesia())
+		strongest = max(strongest, PAIN_DAMPEN_STRONG)
 
-	if(dampening == strongest)
+	if(base_dampening == strongest)
 		return
 
-	dampening = strongest
+	base_dampening = strongest
 	update_pain()
 
 /**
- * Whether something with no dampening value of its own has numbed this mob completely.
+ * Whether something with no dampening value of its own grants generic analgesia.
  *
  * Painkillers grant TRAIT_ANALGESIA as well, but carry their own value and are never total. So do
- * the cocktails, implants and gene mods that grant it. Anything else holding the trait (the numb
- * quirk, stasis, a trauma, admin chems) means the mob cannot feel anything at all.
+ * the cocktails, implants and gene mods that grant it. Anything else holding the trait receives a
+ * strong numeric dampener; no trait grants immunity from the combat pain system.
  */
-/datum/pain/proc/has_total_analgesia()
+/datum/pain/proc/has_ungraded_analgesia()
 	if(!HAS_TRAIT(parent, TRAIT_ANALGESIA))
 		return FALSE
 
@@ -390,15 +416,22 @@
 	return FALSE
 
 /// Recomputes the totals, the bracket and the shock state. Everything that changes pain ends up here.
-/datum/pain/proc/update_pain()
+/datum/pain/proc/update_pain(adrenaline_override)
 	var/old_felt_pain = felt_pain
 
 	// Uncapped: the floor and the pool carry their own caps. Clamping the total to PAIN_MAXIMUM would
 	// put it at the shock threshold, leaving anyone on a painkiller permanently short of shock.
 	total_pain = pain_floor + temporary_pain
-	felt_pain = clamp(total_pain - dampening, 0, PAIN_MAXIMUM)
+	var/unclamped_felt = base_dampening >= PAIN_DAMPEN_TOTAL ? 0 : max(total_pain - base_dampening, 0)
+	// Fight or flight halves whatever the mob would otherwise feel, including pain gained after the
+	// trigger and pain left visible through medication.
+	var/adrenaline_active = isnull(adrenaline_override) ? !!parent.has_status_effect(/datum/status_effect/adrenaline) : adrenaline_override
+	if(adrenaline_active)
+		unclamped_felt *= (1 - PAIN_ADRENALINE_DAMPEN_RATIO)
+	dampening = total_pain - unclamped_felt
+	felt_pain = clamp(unclamped_felt, 0, PAIN_MAXIMUM)
 	update_bracket()
-	update_shock()
+	update_shock(adrenaline_override)
 
 	// The doll, the meter and the damage slowdown all read pain, so a change needs the same refresh
 	// taking damage does. Not while the chest is off: updatehealth() reads it without a null check,
@@ -503,7 +536,7 @@
  * Which shock applies depends on what is holding the mob at the cap. A temporary spike blacks them
  * out briefly; a floor that high has nothing to drain, so they crawl until they are treated.
  */
-/datum/pain/proc/update_shock()
+/datum/pain/proc/update_shock(adrenaline_override)
 	if(QDELETED(parent) || parent.stat == DEAD)
 		return
 
@@ -511,13 +544,13 @@
 	var/was_crawling = crawling
 
 	// A floor at the cap has nothing to drain, so only treatment or a painkiller lifts it.
-	var/should_crawl = (pain_floor - dampening) >= PAIN_SHOCK_THRESHOLD
+	var/should_crawl = get_felt_floor(adrenaline_override) >= PAIN_SHOCK_THRESHOLD
 
 	var/should_black_out = FALSE
 	if(felt_pain >= PAIN_SHOCK_THRESHOLD)
 		// Anything at the cap that is not purely the floor blacks out, including a fresh hit on
 		// someone already crawling.
-		should_black_out = !should_crawl || (temporary_pain >= PAIN_SHOCK_BLACKOUT_MINIMUM)
+		should_black_out = !should_crawl || temporary_pain > 0
 	else if(was_blacked_out)
 		// Down at the cap, up at the recovery threshold. A floor of 70-99 never reaches that
 		// threshold, so it rises once its pool is gone instead.
@@ -533,8 +566,10 @@
 
 	if(should_black_out != was_blacked_out)
 		if(should_black_out)
+			blackout_ends_at = world.time + PAIN_SHOCK_MAXIMUM_DURATION
 			parent.apply_status_effect(/datum/status_effect/incapacitating/pain_shock)
 		else
+			blackout_ends_at = 0
 			parent.remove_status_effect(/datum/status_effect/incapacitating/pain_shock)
 
 	if(should_crawl != was_crawling)
@@ -574,6 +609,7 @@
 		QDEL_NULL(actionspeed_mod)
 	parent.clear_mood_event(PAIN_MOOD_CATEGORY)
 	in_shock = FALSE
+	blackout_ends_at = 0
 	crawling = FALSE
 	parent.remove_status_effect(/datum/status_effect/incapacitating/pain_shock)
 	parent.remove_status_effect(/datum/status_effect/pain_crawl)

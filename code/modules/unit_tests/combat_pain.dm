@@ -54,11 +54,16 @@
 	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/pain_crawl), "A floor at the cap should leave the mob crawling")
 	TEST_ASSERT(!victim.has_status_effect(/datum/status_effect/incapacitating/pain_shock), "A floor at the cap should not black the mob out, as there is nothing to drain")
 
-	victim.add_temporary_pain(PAIN_SHOCK_BLACKOUT_MINIMUM)
+	victim.add_temporary_pain(DAMAGE_PRECISION)
 	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/incapacitating/pain_shock), "A fresh hit on a crawler should black them out again")
 	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/pain_crawl), "Blacking out should not clear the floor that was holding them down")
 
-	pain.adjust_temporary_pain(-PAIN_TEMPORARY_MAXIMUM)
+	// The hard ceiling drains whatever is needed for normal recovery, even against a ruined heart.
+	var/obj/item/organ/heart/heart = victim.get_organ_slot(ORGAN_SLOT_HEART)
+	heart.set_organ_damage(heart.maxHealth)
+	pain.update_heart_strain()
+	pain.blackout_ends_at = world.time
+	pain.process(1)
 	TEST_ASSERT(!victim.has_status_effect(/datum/status_effect/incapacitating/pain_shock), "The blackout should lift once the fresh pain has drained")
 	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/pain_crawl), "Draining the pool should not stand a mob up whose floor is still at the cap")
 
@@ -79,6 +84,16 @@
 	TEST_ASSERT(HAS_TRAIT(victim, TRAIT_FLOORED), "A crawler should not be able to stand")
 	TEST_ASSERT(!HAS_TRAIT(victim, TRAIT_HANDS_BLOCKED), "A crawler cannot reach their own injector with their hands blocked")
 	TEST_ASSERT(!HAS_TRAIT(victim, TRAIT_INCAPACITATED), "A crawler cannot treat themselves while incapacitated")
+
+	var/obj/item/held_injector = allocate(/obj/item/reagent_containers/hypospray/medipen)
+	victim.put_in_hands(held_injector)
+	TEST_ASSERT(!(SEND_SIGNAL(victim, COMSIG_MOB_CLICKON, victim, list()) & COMSIG_MOB_CANCEL_CLICKON), \
+		"A crawler was prevented from treating their own body")
+	TEST_ASSERT(!(SEND_SIGNAL(victim, COMSIG_MOB_CLICKON, held_injector, list()) & COMSIG_MOB_CANCEL_CLICKON), \
+		"A crawler was prevented from using an item in their own hands")
+	var/obj/item/external_item = allocate(/obj/item/crowbar)
+	TEST_ASSERT(SEND_SIGNAL(victim, COMSIG_MOB_CLICKON, external_item, list()) & COMSIG_MOB_CANCEL_CLICKON, \
+		"A crawler could interact with something outside their own body and equipment")
 
 	// The exception belongs to the crawl alone; every other soft crit is as helpless as before.
 	victim.remove_pain_source("test_chest")
@@ -115,11 +130,10 @@
 	TEST_ASSERT(!victim.can_recover_breath(), "Bleeding out should still stop a patient clearing an oxygen debt")
 
 /**
- * Everything that hands out TRAIT_ANALGESIA has to carry a dampening value.
+ * Everything that hands out TRAIT_ANALGESIA is a numeric dampener, never pain immunity.
  *
- * Without one the controller reads the trait as total numbness, which means no shock, no crawl and no
- * finisher. Painkillers are graded, and so are the cocktails, implants and gene mods that grant the
- * same trait.
+ * Painkillers are graded, as are the cocktails, implants and gene mods that grant the same trait.
+ * An otherwise ungraded source falls back to a strong finite value.
  */
 /datum/unit_test/pain_graded_analgesia/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
@@ -136,6 +150,12 @@
 	TEST_ASSERT_EQUAL(pain.dampening, PAIN_DAMPEN_ALCOHOL, "A cocktail should dampen pain by its own value rather than numbing entirely")
 	TEST_ASSERT_EQUAL(pain.felt_pain, PAIN_SHOCK_THRESHOLD - PAIN_DAMPEN_ALCOHOL, "A graded painkiller hid more pain than it is worth")
 
+	patient.remove_status_effect(/datum/status_effect/rev_resilience)
+	ADD_TRAIT(patient, TRAIT_ANALGESIA, TRAIT_GENERIC)
+	pain.update_dampening()
+	TEST_ASSERT_EQUAL(pain.base_dampening, PAIN_DAMPEN_STRONG, "An ungraded analgesia trait granted total pain immunity")
+	TEST_ASSERT(pain.felt_pain > 0, "An ungraded analgesia trait made the patient unable to feel pain")
+
 /// Appendix B puts Extreme pain on a missing limb. The loss wound cannot carry it, since the limb it
 /// was applied to is gone by the time the floor is rebuilt, so the empty socket does.
 /datum/unit_test/pain_missing_limb/Run()
@@ -150,9 +170,8 @@
 /**
  * Adrenaline delays pain shock. It never cancels it.
  *
- * The dampener is snapshotted when fight or flight fires rather than tracked against the mob's
- * current total: halving it live would hold felt pain at half the cap and make shock unreachable for
- * the whole thirty seconds.
+ * Fight or flight continuously halves felt pain for its duration. It delays shock, but enough raw
+ * pain can still fill the felt meter because the floor and temporary pool have independent caps.
  */
 /datum/unit_test/pain_adrenaline_delays_shock/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
@@ -166,11 +185,17 @@
 	TEST_ASSERT(pain.dampening > 0, "Adrenaline should be hiding some of what the mob is already carrying")
 	TEST_ASSERT(pain.felt_pain < PAIN_SHOCK_THRESHOLD, "Adrenaline should keep a survivable spike survivable")
 
-	// Everything that lands afterwards is felt at full price, so the meter can still fill.
+	// New pain is halved too. Enough injuries plus a full pool must still be able to reach shock.
+	victim.add_pain_source("test_chest", PAIN_CAP_CHEST, BODY_ZONE_CHEST)
+	victim.add_pain_source("test_arm", PAIN_CAP_LIMB, BODY_ZONE_R_ARM)
 	victim.add_temporary_pain(PAIN_TEMPORARY_MAXIMUM)
-	pain.update_dampening()
 	TEST_ASSERT_EQUAL(pain.felt_pain, PAIN_SHOCK_THRESHOLD, "Adrenaline cancelled pain shock instead of delaying it")
 	TEST_ASSERT(pain.in_shock, "A mob past the cap on adrenaline should still black out")
+
+	pain.adjust_temporary_pain(-40)
+	var/felt_before_hit = pain.felt_pain
+	victim.add_temporary_pain(20)
+	TEST_ASSERT_EQUAL(pain.felt_pain - felt_before_hit, 10, "Pain gained during adrenaline was not halved")
 
 /**
  * A surgical anaesthetic needs a full dose, not a sip.
@@ -191,7 +216,8 @@
 
 	patient.reagents.add_reagent(/datum/reagent/nitrous_oxide, 1)
 	pain.update_dampening()
-	TEST_ASSERT_EQUAL(pain.dampening, PAIN_DAMPEN_TOTAL, "A full dose of anaesthetic should numb the patient completely")
+	TEST_ASSERT_EQUAL(pain.base_dampening, PAIN_DAMPEN_TOTAL, "A full dose of anaesthetic should provide full-strength dampening")
+	TEST_ASSERT_EQUAL(pain.felt_pain, 0, "A full dose of anaesthetic should numb the patient's current pain completely")
 
 /**
  * A body that comes apart easily takes more damage, not more stun.
