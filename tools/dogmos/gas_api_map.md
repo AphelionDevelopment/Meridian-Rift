@@ -101,7 +101,10 @@ Derived from a full read of the file at `1808f41`. Line numbers are from that re
 **Delete; the Dogmos bind takes the name directly** — no wrapper, no call-site change:
 `heat_capacity`, `total_moles`, `return_pressure`, `return_temperature`, `return_volume`,
 `thermal_energy`, `set_temperature`, `copy_from`, `compare`, `temperature_share`.
-- `compare` loses its `cmp_archive` argument; archives are gone, so drop it at call sites.
+- `compare` loses its `cmp_archive` argument; archives are gone, so drop it at call sites. **Return
+  type also differs** — DM's `compare()` returns a string (a gas id, `"temp"`, or `""`); Dogmos'
+  returns a boolean. Checked all 3 real call sites (`LINDA_turf_tile.dm:308,336`, `air.dm:574`) — all
+  three only test truthiness in an `if()`, never read the string. Confirmed safe as a direct swap.
 - `set_temperature` becomes stricter: Dogmos clamps to >= 2.7 and rejects non-finite. Check for call
   sites that currently set below `TCMB`.
 - `/datum/gas_mixture/turf/heat_capacity()` must **stay** as a DM override calling `..() ||
@@ -140,6 +143,28 @@ L592/596/606/616/617/668), `gas_pressure_quadratic`, `gas_pressure_approximate`,
 iterates `moles`).
 
 The last three iterate the `moles` list directly and need `get_gases()` instead.
+
+## Volume: a gap the original mapping missed entirely
+
+`GasArena::register_mix` reads a var named **`initial_volume`**, not `volume`, to seed the Rust-side
+mixture (`gas.rs:183`). Rust then tracks its own volume internally, used by `return_pressure()` and
+`heat_capacity()`; nothing keeps it synced to DM's `var/volume` automatically, since BYOND has no
+setter interception.
+
+Decision: keep `var/volume` as a plain DM field for reads (dozens of legitimate call sites across
+`gas_pressure_calculate` and friends — rewriting all of them to `return_volume()` buys nothing, since
+volume essentially never changes post-construction). Add `var/initial_volume`, set from `volume` in
+`New()` immediately before `__gasmixture_register()`. At the only real reassignment sites
+(`datum_pipeline.dm:77,130` — confirmed by grepping for `X.volume =` restricted to gas-mixture-shaped
+receiver names; the 394 raw `.volume` hits are almost all `sound`/`reagent`, unrelated), call
+`set_volume()` immediately after the DM assignment so Rust's internal volume never goes stale.
+
+**Also found in the same pass, mandatory for `New()` to work at all:** `mark_immutable()` blocks
+`merge()` and `copy_from_mutable()` but **not** `remove_into`/`remove_ratio_into` — removing gas from
+an immutable mixture (space) would silently deplete it, unlike upstream tg's
+`/datum/gas_mixture/immutable/space/remove()` which returns an inexhaustible copy. No `is_immutable()`
+bind existed to let DM detect this. Added one to the fork (`afc728f`+); the `remove`/`remove_ratio`
+wrappers must check it and short-circuit to a copy for immutable mixtures.
 
 ## Sweep mechanics
 

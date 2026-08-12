@@ -793,19 +793,18 @@ GLOBAL_LIST_EMPTY(colored_images)
 
 	var/list/gas = params2list(gas_string)
 	if(gas["TEMP"])
-		canonical_mix.temperature = text2num(gas["TEMP"])
-		canonical_mix.temperature_archived = canonical_mix.temperature
+		canonical_mix.set_temperature(text2num(gas["TEMP"]))
 		gas -= "TEMP"
 	else // if we do not have a temp in the new gas mix lets assume room temp.
-		canonical_mix.temperature = T20C
-	var/list/cached_moles = canonical_mix.moles
+		canonical_mix.set_temperature(T20C)
 	for(var/id in gas)
 		var/path = id
 		if(!ispath(path))
 			path = gas_id2path(path) //a lot of these strings can't have embedded expressions (especially for mappers), so support for IDs needs to stick around
-		cached_moles[path] = text2num(gas[id])
+		canonical_mix.set_moles(path, text2num(gas[id]))
 
 	if(istype(canonical_mix, /datum/gas_mixture/immutable))
+		canonical_mix.mark_immutable() //content is final now; New() deliberately did not do this
 		return canonical_mix
 	return canonical_mix.copy()
 
