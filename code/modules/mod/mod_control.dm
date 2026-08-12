@@ -122,6 +122,10 @@
 	QDEL_NULL(mod_link)
 	for(var/part_key in mod_parts)
 		var/datum/mod_part/part_datum = mod_parts[part_key]
+		// Overslotted items can exit the part while it is being deleted. Stop listening
+		// before removing its datum, or on_overslot_exit() cannot look the part up.
+		if(part_datum.overslotting)
+			UnregisterSignal(part_datum.part_item, COMSIG_ATOM_EXITED)
 		mod_parts -= part_key
 		qdel(part_datum)
 	return ..()
