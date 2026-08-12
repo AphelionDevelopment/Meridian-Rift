@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 #define TTS_REQUEST_REF "ref"
 #define TTS_REQUEST_EXPIRE "expiry_time"
 
@@ -687,3 +688,5 @@ SUBSYSTEM_DEF(tts)
 	return TRUE
 
 #undef SHIFT_DATA_ARRAY
+=======
+>>>>>>> Stashed changes

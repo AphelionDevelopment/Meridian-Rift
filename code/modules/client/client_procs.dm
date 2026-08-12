@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 	////////////
 	//SECURITY//
 	////////////
@@ -1328,3 +1329,5 @@ GAME_VERB(/client, toggle_fullscreen, "Toggle Fullscreen", "OOC")
 #undef LIMITER_SIZE
 #undef MINUTE_COUNT
 #undef SECOND_COUNT
+=======
+>>>>>>> Stashed changes

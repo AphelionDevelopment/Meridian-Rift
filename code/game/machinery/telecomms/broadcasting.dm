@@ -184,7 +184,7 @@
 		if(get_chat_toggles(ghost.client) & CHAT_GHOSTRADIO)
 			receive |= ghost
 			if(tts_radio_id && can_hear_radio_tts(ghost, frequency))
-				receive_radios[TTS_GHOST_RADIO] ||= list()
+				receive_radios[TS_GHOST_RADIO] ||= list()
 				receive_radios[TTS_GHOST_RADIO] += WEAKREF(ghost)
 
 	if(tts_radio_id && length(receive_radios))

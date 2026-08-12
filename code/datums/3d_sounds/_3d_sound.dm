@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 /// The mob is deaf
 #define MUTE_DEAF (1<<0)
 /// The mob is out of range of the sound
@@ -283,3 +284,5 @@
 
 #undef MUTE_DEAF
 #undef MUTE_RANGE
+=======
+>>>>>>> Stashed changes
