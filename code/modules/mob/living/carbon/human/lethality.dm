@@ -63,10 +63,16 @@
 	return !circulation_stopped() && !is_bled_out()
 
 /mob/living/carbon/human/is_damaged_beyond_revival()
-	// Never, on damage alone. Brute and burn no longer kill and nothing caps their totals short of the
-	// bodyparts' own limits, so an ordinary combat corpse sits far under the old revival floor and
-	// this check would make most kills permanent. What can come back is decided by can_defib().
-	return FALSE
+	// Not on damage alone. Brute and burn no longer kill and nothing caps their totals short of the
+	// bodyparts' own limits, so an ordinary combat corpse sits far under the old revival floor and that
+	// check would make most kills permanent.
+	//
+	// A dead brain does stand in the way, since it is the thing that killed them: reviving through one
+	// hands back a body the next Life() kills again, and for anything immune to the slower routes -
+	// synthetics take no oxygen or toxin damage - the loop never resolves. The brain has to be repaired
+	// first, which is the same answer can_defib() gives.
+	var/obj/item/organ/our_brain = get_organ_slot(ORGAN_SLOT_BRAIN)
+	return !isnull(our_brain) && (our_brain.organ_flags & ORGAN_FAILING)
 
 /mob/living/carbon/human/is_dying()
 	// Pain is excluded: succumb reads this, and a stun must not be the same as a kill.

@@ -79,6 +79,27 @@
 		[round(victim.get_fire_loss())] burn damage, [length(victim.all_wounds)] injuries, \
 		[round(victim.get_organ_loss(ORGAN_SLOT_HEART))] heart and [round(victim.get_organ_loss(ORGAN_SLOT_BRAIN))] brain damage")
 
+/**
+ * A body killed through its brain stays dead until the brain is repaired.
+ */
+/datum/unit_test/revival_needs_a_working_brain/Run()
+	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/organ/brain/ruined_brain = patient.get_organ_slot(ORGAN_SLOT_BRAIN)
+
+	patient.adjust_organ_loss(ORGAN_SLOT_BRAIN, ruined_brain.maxHealth)
+	ruined_brain.on_life(seconds_per_tick = 2)
+	TEST_ASSERT_EQUAL(patient.stat, DEAD, "Failed to kill the patient this test is about")
+
+	TEST_ASSERT(!patient.can_be_revived(), "A brain-dead body was cleared for revival")
+	patient.heal_and_revive()
+	TEST_ASSERT_EQUAL(patient.stat, DEAD, "Healing a brain-dead patient brought them back with the brain still ruined")
+
+	// Repairing the brain is what makes them recoverable, exactly as can_defib() has it.
+	patient.adjust_organ_loss(ORGAN_SLOT_BRAIN, -ruined_brain.maxHealth)
+	TEST_ASSERT(patient.can_be_revived(), "A repaired brain did not make its owner recoverable again")
+	patient.heal_and_revive()
+	TEST_ASSERT_NOTEQUAL(patient.stat, DEAD, "A patient with a repaired brain could not be brought back")
+
 /// A defibrillator needs something to circulate, so an exsanguinated patient has to be transfused first.
 /datum/unit_test/defib_needs_blood/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
