@@ -499,17 +499,12 @@
 	// on or comes off, which is one of the things that lands here. See [/datum/wound/proc/get_pain_factor].
 	victim?.mark_pain_dirty()
 
-/// Additional beneficial effects when the wound is gained, in case you want to give a temporary boost to allow the victim to try an escape or last stand
+/// Gives severe trauma its fight-or-flight window.
 /datum/wound/proc/second_wind()
-	switch(severity)
-		if(WOUND_SEVERITY_MODERATE)
-			victim.reagents.add_reagent(/datum/reagent/determination, WOUND_DETERMINATION_MODERATE)
-		if(WOUND_SEVERITY_SEVERE)
-			victim.reagents.add_reagent(/datum/reagent/determination, WOUND_DETERMINATION_SEVERE)
-		if(WOUND_SEVERITY_CRITICAL)
-			victim.reagents.add_reagent(/datum/reagent/determination, WOUND_DETERMINATION_CRITICAL)
-		if(WOUND_SEVERITY_LOSS)
-			victim.reagents.add_reagent(/datum/reagent/determination, WOUND_DETERMINATION_LOSS)
+	if(severity < WOUND_SEVERITY_SEVERE)
+		return
+
+	victim.pain_controller?.try_trigger_adrenaline()
 
 /datum/wound/proc/interact_try_treating(datum/source, mob/living/user, obj/item/tool, ...)
 	SIGNAL_HANDLER

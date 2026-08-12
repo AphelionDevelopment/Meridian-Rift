@@ -224,6 +224,17 @@
 	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/adrenaline_crash), "Adrenaline ended without applying its crash")
 	TEST_ASSERT(victim.has_movespeed_modifier(/datum/movespeed_modifier/status_effect/adrenaline_crash), "The adrenaline crash did not slow movement")
 
+/// Wounds and the pain controller must not run two independent fight-or-flight effects.
+/datum/unit_test/pain_wound_uses_single_second_wind/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/bodypart/arm = victim.get_bodypart(BODY_ZONE_R_ARM)
+
+	arm.force_wound_upwards(/datum/wound/blunt/bone/severe)
+
+	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/adrenaline), "A severe wound should trigger adrenaline")
+	TEST_ASSERT_EQUAL(victim.reagents.get_reagent_amount(/datum/reagent/determination), 0, \
+		"A wound triggered legacy determination in addition to adrenaline")
+
 /// PAIN and FELT are 0-100 meters even though temporary pain retains extra impact for recovery.
 /datum/unit_test/pain_values_are_bounded/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
