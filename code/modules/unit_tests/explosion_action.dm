@@ -187,17 +187,30 @@
 	EX_ACT(test_object, EXPLODE_DEVASTATE) // does an INFINITE amount of damage, will trigger a qdel()
 	TEST_ASSERT(QDELETED(test_object), "EX_ACT() with EXPLODE_DEVASTATE severity should have deleted the target, but instead saw no change!")
 
+// Dirty hack to give corgi regular armor with legacy protection values.
+/obj/item/clothing/suit/armor/vest/corgi
+	name = "Padded armor vest"
+	desc = "A slim Type I armored vest that provides decent protection against most types of damage without the need for plates."
+	accepts_armor_plates = FALSE
+	icon_state = "armoralt"
+	inhand_icon_state = "armor"
+	blood_overlay_type = "armor"
+	dog_fashion = /datum/dog_fashion/back/armorvest
+
+/obj/item/clothing/head/helmet/corgi
+	accepts_armor_plates = FALSE
+
 /// Sets up a fully armored corgi for testing purposes. Split out into its own proc as to not clutter up the main test.
 /datum/unit_test/explosion_action/proc/set_up_test_dog()
 	var/mob/living/basic/pet/dog/corgi/returnable_dog = allocate(/mob/living/basic/pet/dog/corgi)
 	returnable_dog.maxHealth = MAX_LIVING_HEALTH
 	returnable_dog.health = MAX_LIVING_HEALTH
 
-	var/obj/item/clothing/head/helmet/invincible_hat = allocate(/obj/item/clothing/head/helmet)
+	var/obj/item/clothing/head/helmet/invincible_hat = allocate(/obj/item/clothing/head/helmet/corgi)
 	invincible_hat.set_armor(/datum/armor/immune)
 	returnable_dog.inventory_head = invincible_hat
 
-	var/obj/item/clothing/suit/armor/vest/invincible_vest = allocate(/obj/item/clothing/suit/armor/vest)
+	var/obj/item/clothing/suit/armor/vest/invincible_vest = allocate(/obj/item/clothing/suit/armor/vest/corgi)
 	invincible_vest.set_armor(/datum/armor/immune)
 	returnable_dog.inventory_back = invincible_vest
 
