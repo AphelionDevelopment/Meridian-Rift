@@ -34,12 +34,24 @@ Push-Location $GameRepo
 try {
 	# Default-flagged tests only run on the primary unit test map. Set it the way CI does.
 	Copy-Item '_maps\runtimestation_minimal.json' 'data\next_map.json' -Force
+
+	# Delete prior results first. Without this, a run that crashes before reaching the tests leaves
+	# the PREVIOUS run's results in place and every check below happily passes against them.
+	Remove-Item $ResultsPath -ErrorAction SilentlyContinue
+	Remove-Item 'data\logs\ci\clean_run.lk' -ErrorAction SilentlyContinue
+
 	Write-Host '=== Running dm-test on runtimestation_minimal ===' -ForegroundColor Cyan
 
 	& cmd /c 'tools\build\build.bat dm-test --define=MINIMAL_CENTCOM --define=SKIP_LAVALAND --define=SKIP_SPACE_LEVELS'
 
 	if (-not (Test-Path $ResultsPath)) {
-		throw "No $ResultsPath produced - the run did not reach the unit tests at all."
+		throw "No $ResultsPath produced - the run never reached the unit tests. Check data\logs\ci\runtime.log for where initialisation stopped; a hard crash (e.g. a Rust access violation) leaves no DM runtime behind."
+	}
+
+	# The server is expected to shut down cleanly even when tests fail. Its absence means the
+	# process died rather than completing the suite.
+	if (-not (Test-Path 'data\logs\ci\clean_run.lk')) {
+		throw "The run produced no clean_run.lk - DreamDaemon terminated abnormally. Results in $ResultsPath may be incomplete."
 	}
 
 	$results = Get-Content $ResultsPath -Raw | ConvertFrom-Json
