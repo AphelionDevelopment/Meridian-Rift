@@ -123,7 +123,7 @@
 	var/initial_limb_count = length(slime.get_bodyparts())
 
 	slime.handle_blood(1)
-	TEST_ASSERT_NOT_EQUAL(slime.stat, DEAD, "A slimeperson died before it could cannibalize a jelly limb.")
+	TEST_ASSERT_NOTEQUAL(slime.stat, DEAD, "A slimeperson died before it could cannibalize a jelly limb.")
 	TEST_ASSERT_EQUAL(length(slime.get_bodyparts()), initial_limb_count - 1, "A critically drained slimeperson did not cannibalize a jelly limb.")
 
 	for(var/obj/item/bodypart/limb as anything in slime.get_bodyparts())
