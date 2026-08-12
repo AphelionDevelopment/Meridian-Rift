@@ -1,0 +1,10 @@
+[
+  "/datum/unit_test/create_and_destroy",
+  "/datum/unit_test/door_access_check",
+  "/datum/unit_test/fish_portal_gen_linking",
+  "/datum/unit_test/job_display_order",
+  "/datum/unit_test/mafia",
+  "/datum/unit_test/mob_faction",
+  "/datum/unit_test/revolution_conversion",
+  "/datum/unit_test/shuttle_call_times"
+]

@@ -83,6 +83,27 @@ env PKG_CONFIG_ALLOW_CROSS=1 ~/.cargo/bin/cargo build --ignore-rust-version --re
 cp -f target/i686-unknown-linux-gnu/release/libdreamluau.so "$1/libdreamluau.so"
 cd ..
 
+#
+cd "$original_dir"
+# update dogmos
+if [ ! -d "dogmos" ]; then
+	echo "Cloning dogmos..."
+	git clone "https://github.com/$DOGMOS_REPO" dogmos
+	cd dogmos
+	~/.cargo/bin/rustup target add i686-unknown-linux-gnu
+else
+	echo "Fetching dogmos..."
+	cd dogmos
+	git fetch
+	~/.cargo/bin/rustup target add i686-unknown-linux-gnu
+fi
+
+echo "Deploying Dogmos..."
+git checkout "$DOGMOS_VERSION"
+env PKG_CONFIG_ALLOW_CROSS=1 ~/.cargo/bin/cargo build --ignore-rust-version --release --target=i686-unknown-linux-gnu
+cp -f target/i686-unknown-linux-gnu/release/libdogmos.so "$1/libdogmos.so"
+cd ..
+
 # compile tgui
 echo "Compiling tgui..."
 cd "$1"

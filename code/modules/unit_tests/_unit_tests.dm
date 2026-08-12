@@ -171,6 +171,7 @@
 #include "designs.dm"
 #include "dismemberment.dm"
 #include "dna_infusion.dm"
+#include "dogmos_load.dm"
 #include "door_access.dm"
 #include "dragon_expiration.dm"
 #include "drink_icons.dm"
