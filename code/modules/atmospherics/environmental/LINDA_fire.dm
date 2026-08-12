@@ -30,18 +30,17 @@
 	//NOVA EDIT END
 
 	//If the air doesn't exist we just return false
-	var/cached_moles = air?.moles
-	if(!cached_moles)
+	if(!air)
 		return
 
-	if (cached_moles[/datum/gas/oxygen] < 0.5)
+	if (air.get_moles(/datum/gas/oxygen) < 0.5)
 		return
 
 	var/plas_trit_h2_threshold = (\
-		   cached_moles[/datum/gas/plasma] > 0.5\
-		|| cached_moles[/datum/gas/tritium] > 0.5\
-		|| cached_moles[/datum/gas/hydrogen] > 0.5)
-	var/freon_threshold = (cached_moles[/datum/gas/freon] > 0.5)
+		   air.get_moles(/datum/gas/plasma) > 0.5\
+		|| air.get_moles(/datum/gas/tritium) > 0.5\
+		|| air.get_moles(/datum/gas/hydrogen) > 0.5)
+	var/freon_threshold = (air.get_moles(/datum/gas/freon) > 0.5)
 	if(active_hotspot)
 		if(soh)
 			if(plas_trit_h2_threshold)
@@ -198,7 +197,7 @@
 		var/datum/gas_mixture/affected = location.air.remove_ratio(volume/location.air.volume)
 		if(affected) //in case volume is 0
 			reference = affected // Our color and volume will depend on this small sparked gasmix
-			affected.temperature = temperature
+			affected.set_temperature(temperature)
 			affected.react(src)
 			location.assume_air(affected)
 
@@ -207,7 +206,7 @@
 		var/list/cached_results = reference.reaction_results
 		for (var/reaction in SSair.hotspot_reactions)
 			volume += cached_results[reaction] * FIRE_GROWTH_RATE
-		temperature = reference.temperature
+		temperature = reference.return_temperature()
 
 	// Handles the burning of atoms.
 	if(cold_fire)
@@ -283,7 +282,7 @@
 	color = list(LERP(0.3, 1, 1-greyscale_fire) * heat_r,0.3 * heat_g * greyscale_fire,0.3 * heat_b * greyscale_fire, 0.59 * heat_r * greyscale_fire,LERP(0.59, 1, 1-greyscale_fire) * heat_g,0.59 * heat_b * greyscale_fire, 0.11 * heat_r * greyscale_fire,0.11 * heat_g * greyscale_fire,LERP(0.11, 1, 1-greyscale_fire) * heat_b, 0,0,0)
 	alpha = heat_a
 
-#define INSUFFICIENT(path) (!location.air.moles[path] || location.air.moles[path] < 0.5)
+#define INSUFFICIENT(path) (location.air.get_moles(path) < 0.5)
 
 /**
  * Regular process proc for hotspots governed by the controller.
@@ -326,10 +325,10 @@
 			location.burn_tile()
 
 		//Possible spread due to radiated heat.
-		if(location.air.temperature > FIRE_MINIMUM_TEMPERATURE_TO_SPREAD || cold_fire)
-			var/radiated_temperature = location.air.temperature*FIRE_SPREAD_RADIOSITY_SCALE
+		if(location.air.return_temperature() > FIRE_MINIMUM_TEMPERATURE_TO_SPREAD || cold_fire)
+			var/radiated_temperature = location.air.return_temperature()*FIRE_SPREAD_RADIOSITY_SCALE
 			if(cold_fire)
-				radiated_temperature = location.air.temperature * COLD_FIRE_SPREAD_RADIOSITY_SCALE
+				radiated_temperature = location.air.return_temperature() * COLD_FIRE_SPREAD_RADIOSITY_SCALE
 			for(var/t in location.atmos_adjacent_turfs)
 				var/turf/open/T = t
 				if(!T.active_hotspot)

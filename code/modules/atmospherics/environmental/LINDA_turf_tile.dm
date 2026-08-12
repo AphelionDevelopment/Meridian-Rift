@@ -84,7 +84,7 @@
 	//acounts for changes in temperature
 	var/turf/parent = parent_type
 	if(temperature != initial(temperature) || temperature != initial(parent.temperature))
-		mix.temperature = temperature
+		mix.set_temperature(temperature)
 
 	return mix
 
@@ -173,9 +173,7 @@
 			src.atmos_overlay_types = null
 		return
 
-	var/list/moles = air.moles
-	var/list/new_overlay_types
-	GAS_OVERLAYS(moles, new_overlay_types, src)
+	var/list/new_overlay_types = air.return_visuals(src)
 
 	if (atmos_overlay_types)
 		for(var/overlay in atmos_overlay_types-new_overlay_types) //doesn't remove overlays that would only be added
@@ -340,9 +338,16 @@
 				our_excited_group = excited_group
 			// shares 4/5 of our difference in moles with the atmosphere
 			our_air.share(planetary_mix, 0.8, 0.8)
-			// temperature share with the atmosphere with an inflated heat capacity to simulate faster sharing with a large atmosphere
-			our_air.temperature_share(planetary_mix, OPEN_HEAT_TRANSFER_COEFFICIENT, planetary_mix.temperature_archived, planetary_mix.heat_capacity() * 5)
-			planetary_mix.garbage_collect()
+			// temperature share with the atmosphere with an inflated heat capacity to simulate faster sharing with a large atmosphere.
+			// Dogmos' temperature_share dispatches on total arg count: 3 args (src, sharer, coeff) shares
+			// against a live mixture and writes back to it; 4 args (src, coeff, temp, heat_capacity) shares
+			// against raw values with no mixture and no write-back. planetary_mix is immutable and can never
+			// be written to anyway, so the 4-arg raw form is both correct and what's actually needed here -
+			// the old 4-arg DM call passed a mixture AND override values together, a combination Dogmos
+			// doesn't support because it was never meaningful: the write-back target was always immutable.
+			our_air.temperature_share(OPEN_HEAT_TRANSFER_COEFFICIENT, planetary_mix.return_temperature(), planetary_mix.heat_capacity() * 5)
+			// No reset needed: planetary_mix is mark_immutable()'d at construction (immutable_mixtures.dm),
+			// so unlike the old system it can never have drifted from its canonical state to begin with.
 			PLANET_SHARE_CHECK
 
 	for(var/turf/open/enemy_tile as anything in share_end)
@@ -370,7 +375,7 @@
 			SSair.sleep_active_turf(src)
 
 	significant_share_ticker = cached_ticker //Save our changes
-	temperature_expose(our_air, our_air.temperature)
+	temperature_expose(our_air, our_air.return_temperature())
 
 //////////////////////////SPACEWIND/////////////////////////////
 
@@ -469,8 +474,6 @@
 /datum/excited_group/proc/self_breakdown(roundstart = FALSE, poke_turfs = FALSE)
 	var/datum/gas_mixture/shared_mix = new
 
-	//make local for sanic speed
-	var/list/shared_cached_moles = shared_mix.moles
 	var/list/turf_list = src.turf_list
 	var/turflen = turf_list.len
 	var/imumutable_in_group = FALSE
@@ -484,29 +487,26 @@
 			if(istype(group_member.air, /datum/gas_mixture/immutable))
 				imumutable_in_group = TRUE
 				shared_mix.copy_from(group_member.air) //This had better be immutable young man
-				shared_cached_moles = shared_mix.moles //update the cache
 				break
 			// If we're planetary use THAT mix, and stop here
 			if(group_member.planetary_atmos)
 				imumutable_in_group = TRUE
 				var/datum/gas_mixture/planetary_mix = SSair.planetary[group_member.initial_gas_mix]
 				shared_mix.copy_from(planetary_mix)
-				shared_cached_moles = shared_mix.moles // Cache update
 				break
 		//"borrowing" this code from merge(), I need to play with the temp portion. Lets expand it out
 		//temperature = (giver.temperature * giver_heat_capacity + temperature * self_heat_capacity) / combined_heat_capacity
 		var/capacity = mix.heat_capacity()
-		energy += mix.temperature * capacity
+		energy += mix.return_temperature() * capacity
 		heat_cap += capacity
 
-		for(var/gas_id, amount in mix.moles)
-			shared_cached_moles[gas_id] += amount
+		for(var/gas_id in mix.get_gases())
+			shared_mix.adjust_moles(gas_id, mix.get_moles(gas_id))
 
 	if(!imumutable_in_group)
-		shared_mix.temperature = energy / heat_cap
-		for(var/gas_id in shared_cached_moles)
-			shared_cached_moles[gas_id] /= turflen
-		shared_mix.garbage_collect()
+		shared_mix.set_temperature(energy / heat_cap)
+		for(var/gas_id in shared_mix.get_gases())
+			shared_mix.set_moles(gas_id, shared_mix.get_moles(gas_id) / turflen)
 
 	for(var/turf/open/group_member as anything in turf_list)
 		if(group_member.planetary_atmos) //We do this as a hack to try and minimize unneeded excited group spread over planetary turfs
@@ -647,8 +647,12 @@ Then we space some of our heat, and think about if we should stop conducting.
 
 /turf/open/finish_superconduction()
 	//Conduct with air on my tile if I have it
-	if(..((blocks_air ? temperature : air.temperature)) != FALSE && !blocks_air)
-		temperature = air.temperature_share(null, thermal_conductivity, temperature, heat_capacity)
+	if(..((blocks_air ? temperature : air.return_temperature())) != FALSE && !blocks_air)
+		// Dogmos' 4-total-arg temperature_share is the raw-values form: no mixture object, no
+		// write-back target. That's exactly what the old sharer=null call meant - the "if(sharer)"
+		// branch in the old DM body never fired for these calls, so the explicit temperature/
+		// heat_capacity values passed in were always what actually got used.
+		temperature = air.temperature_share(thermal_conductivity, temperature, heat_capacity)
 
 ///Should we attempt to superconduct?
 /turf/proc/consider_superconductivity(starting)
@@ -659,7 +663,7 @@ Then we space some of our heat, and think about if we should stop conducting.
 	return TRUE
 
 /turf/open/consider_superconductivity(starting)
-	if(air.temperature < (starting?MINIMUM_TEMPERATURE_START_SUPERCONDUCTION:MINIMUM_TEMPERATURE_FOR_SUPERCONDUCTION))
+	if(air.return_temperature() < (starting?MINIMUM_TEMPERATURE_START_SUPERCONDUCTION:MINIMUM_TEMPERATURE_FOR_SUPERCONDUCTION))
 		return FALSE
 	if(air.heat_capacity() < M_CELL_WITH_RATIO) // Was: MOLES_CELLSTANDARD*0.1*0.05 Since there are no variables here we can make this a constant.
 		return FALSE
@@ -684,7 +688,7 @@ Then we space some of our heat, and think about if we should stop conducting.
 	temperature -= heat / heat_capacity
 
 /turf/open/proc/temperature_share_open_to_solid(turf/sharer)
-	sharer.temperature = air.temperature_share(null, sharer.thermal_conductivity, sharer.temperature, sharer.heat_capacity)
+	sharer.temperature = air.temperature_share(sharer.thermal_conductivity, sharer.temperature, sharer.heat_capacity)
 
 /turf/proc/share_temperature_mutual_solid(turf/sharer, conduction_coefficient) //This is all just heat sharing, don't get freaked out
 	var/delta_temperature = sharer.temperature_archived - temperature_archived
