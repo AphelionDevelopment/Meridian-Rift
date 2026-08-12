@@ -1083,7 +1083,11 @@
 
 /mob/living/carbon/human/updatehealth()
 	. = ..()
-	var/health_deficiency = max((maxHealth - health), get_stamina_loss())
+	var/health_deficiency = maxHealth - health
+	// Pain-controlled humans get their movement penalty from FELT pain brackets. Folding stamina back
+	// in here would read raw temporary pain and bypass analgesia and adrenaline.
+	if(isnull(pain_controller))
+		health_deficiency = max(health_deficiency, get_stamina_loss())
 	if(health_deficiency >= 40)
 		add_or_update_variable_movespeed_modifier(/datum/movespeed_modifier/damage_slowdown, TRUE, multiplicative_slowdown = health_deficiency / 75)
 	else
