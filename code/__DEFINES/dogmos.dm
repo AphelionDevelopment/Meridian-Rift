@@ -33,6 +33,23 @@
 /proc/process_atmos_callbacks(remaining)
 	return call_ext(DOGMOS, "byond:atmos_callback_handle_ffi")(remaining)
 
+/// Registers a single gas datum with Dogmos. Called for each gas by auxtools_atmos_init.
+/proc/_auxtools_register_gas(gas)
+	return call_ext(DOGMOS, "byond:hook_register_gas_ffi")(gas)
+
+/**
+ * Registers every gas and snapshots reaction info. Only call while SSair is initialising.
+ *
+ * Arguments:
+ * * gas_data - a datum with a `datums` list of /datum/gas instances, and an `overlays` list.
+ */
+/proc/auxtools_atmos_init(gas_data)
+	return call_ext(DOGMOS, "byond:hook_init_ffi")(gas_data)
+
+/// Re-reads SSair.dogmos_reactions. Only call when the reaction set actually changes.
+/datum/controller/subsystem/air/proc/auxtools_update_reactions()
+	return call_ext(DOGMOS, "byond:update_reactions_ffi")()
+
 /// Returns: the amount of gas mixtures that are attached to a byond gas mixture.
 /datum/controller/subsystem/air/proc/get_amt_gas_mixes()
 	return call_ext(DOGMOS, "byond:hook_amt_gas_mixes_ffi")()

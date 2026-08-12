@@ -39,6 +39,75 @@
 
 	return priority_reactions
 
+/**
+ * Flattens the nested reaction table into the shape Dogmos reads, and stamps each reaction with a
+ * Dogmos-facing priority and requirements list.
+ *
+ * Dogmos wants a flat list of reaction datums, each carrying a numeric `priority` and a
+ * `min_requirements` list keyed by gas id string. /tg/ instead groups reactions by their major gas
+ * and by one of four priority groups, so we translate rather than restructure - DM's own react()
+ * keeps using the nested table until turf processing lands.
+ *
+ * Two constraints drive the priority numbering:
+ * * Dogmos stores reactions in a map keyed by priority and **silently discards duplicates**, so
+ *   every priority must be unique.
+ * * Dogmos iterates reactions from highest priority to lowest, the opposite of /tg/'s ascending
+ *   priority groups. Counting down from the total therefore reproduces /tg/'s order exactly,
+ *   including the order within a group.
+ *
+ * Arguments:
+ * * priority_reactions - the nested gas id -> priority group -> reactions table from init_gas_reactions().
+ */
+/proc/init_dogmos_reactions(list/priority_reactions)
+	var/list/by_group = list(list(), list(), list(), list())
+	for(var/gas_id in priority_reactions)
+		var/list/reaction_set = priority_reactions[gas_id]
+		if(!reaction_set)
+			continue
+		for(var/group in 1 to length(reaction_set))
+			by_group[group] += reaction_set[group]
+
+	var/list/flattened = list()
+	for(var/group in 1 to length(by_group))
+		flattened += by_group[group]
+
+	var/next_priority = length(flattened)
+	for(var/datum/gas_reaction/reaction as anything in flattened)
+		reaction.priority = next_priority--
+		reaction.min_requirements = translate_reaction_requirements(reaction.requirements)
+
+	return flattened
+
+/**
+ * Converts a reaction's requirements list into the keys Dogmos expects.
+ *
+ * Gas type paths become gas id strings, and "MIN_TEMP" becomes "TEMP". Everything else, including
+ * "MAX_TEMP", passes through untouched.
+ *
+ * Arguments:
+ * * requirements - a /datum/gas_reaction requirements list.
+ */
+/proc/translate_reaction_requirements(list/requirements)
+	if(!length(requirements))
+		return null
+
+	var/list/meta_gas_id = GLOB.meta_gas_info[META_GAS_ID]
+	var/list/translated = list()
+	for(var/requirement, value in requirements)
+		if(ispath(requirement))
+			var/gas_id = meta_gas_id[requirement]
+			if(!gas_id)
+				stack_trace("Reaction requirement [requirement] has no registered gas id.")
+				continue
+			translated[gas_id] = value
+			continue
+		if(requirement == "MIN_TEMP")
+			translated["TEMP"] = value
+			continue
+		translated[requirement] = value
+
+	return translated
+
 /datum/gas_reaction
 	/**
 	 * Regarding the requirements list: the minimum or maximum requirements must be non-zero.
@@ -47,6 +116,12 @@
 	 * More complex implementations will require modifications to gas_mixture.react()
 	 */
 	var/list/requirements
+	/// Dogmos-facing translation of requirements: gas id strings instead of type paths, and
+	/// "TEMP" instead of "MIN_TEMP". Built by init_dogmos_reactions(), do not set by hand.
+	var/list/min_requirements
+	/// Dogmos-facing ordering key. Unique across all reactions, higher runs first.
+	/// Built by init_dogmos_reactions(), do not set by hand.
+	var/priority
 	var/major_gas //the highest rarity gas used in the reaction.
 	var/exclude = FALSE //do it this way to allow for addition/removal of reactions midmatch in the future
 	///The priority group this reaction is a part of. You can think of these as processing in batches, put your reaction into the one that's most fitting

@@ -37,6 +37,8 @@ SUBSYSTEM_DEF(air)
 	var/list/pipe_init_dirs_cache = list()
 	//atmos singletons
 	var/list/gas_reactions = list()
+	/// Flat, uniquely-prioritised view of gas_reactions. Read by Dogmos; see init_dogmos_reactions().
+	var/list/dogmos_reactions = list()
 	var/list/atmos_gen
 	var/list/planetary = list() //Lets cache static planetary mixes
 	/// List of gas string -> canonical gas mixture
@@ -94,7 +96,12 @@ SUBSYSTEM_DEF(air)
 /datum/controller/subsystem/air/Initialize()
 	map_loading = FALSE
 	gas_reactions = init_gas_reactions()
+	dogmos_reactions = init_dogmos_reactions(gas_reactions)
 	hotspot_reactions = init_hotspot_reactions()
+
+	// Registers every gas with Dogmos and snapshots the reaction table. Must happen after
+	// dogmos_reactions is built, because Dogmos reads it during this call.
+	auxtools_atmos_init(GLOB.gas_data)
 
 	setup_allturfs()
 	setup_atmos_machinery()
