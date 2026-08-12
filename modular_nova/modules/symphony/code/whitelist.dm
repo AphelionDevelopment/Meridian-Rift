@@ -43,6 +43,8 @@
 /// Cached whitelist answers, keyed by ckey. Only here to eat bursts, anything that changes a grant drops it.
 GLOBAL_LIST_EMPTY(symphony_whitelist_cache)
 GLOBAL_LIST_EMPTY(symphony_whitelist_cache_expiry)
+/// Bumped on invalidation, so a slept lookup knows it was overtaken.
+GLOBAL_VAR_INIT(symphony_whitelist_epoch, 0)
 
 #define SYMPHONY_WHITELIST_CACHE_TIME (10 SECONDS)
 
@@ -53,6 +55,7 @@ GLOBAL_LIST_EMPTY(symphony_whitelist_cache_expiry)
 		return
 	GLOB.symphony_whitelist_cache -= target_ckey
 	GLOB.symphony_whitelist_cache_expiry -= target_ckey
+	GLOB.symphony_whitelist_epoch++
 
 /// TRUE if the gate is off, or we hold the whitelist role. Fail-OPEN when disabled - it's a gate, not an entitlement.
 /proc/is_symphony_whitelisted(target_ckey)
@@ -64,7 +67,11 @@ GLOBAL_LIST_EMPTY(symphony_whitelist_cache_expiry)
 	var/expiry = GLOB.symphony_whitelist_cache_expiry[target_ckey]
 	if(expiry && world.time < expiry)
 		return GLOB.symphony_whitelist_cache[target_ckey]
+	var/epoch = GLOB.symphony_whitelist_epoch
 	. = symphony_has_ingame_role(target_ckey, "whitelist")
+	// A revoke can land while we wait on the DB. Don't cache over it.
+	if(epoch != GLOB.symphony_whitelist_epoch)
+		return
 	GLOB.symphony_whitelist_cache[target_ckey] = .
 	GLOB.symphony_whitelist_cache_expiry[target_ckey] = world.time + SYMPHONY_WHITELIST_CACHE_TIME
 

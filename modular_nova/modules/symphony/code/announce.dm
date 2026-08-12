@@ -49,7 +49,7 @@
 				if("Syndicate")
 					type = ANNOUNCEMENT_TYPE_SYNDICATE
 			// Priority always plays something, "none" can't silence it, so the panel doesn't offer it.
-			priority_announce(message, title, (play_sound && sound_key) ? sound_key : null, type, from || "SSymphony")
+			priority_announce(message, title, (play_sound && sound_key) ? sound_key : null, type, from ? html_encode(from) : "SSymphony")
 		if("chat")
 			var/body = html_encode(message)
 			switch(input["style"])

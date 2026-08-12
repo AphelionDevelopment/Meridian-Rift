@@ -218,9 +218,9 @@
 	<input type='checkbox' id='applyadmins' name='applyadmins' value='1'[applies_to_admins ? " checked": ""]>
 	<div class='inputbox'></div></label>
 	<!-- NOVA EDIT ADDITION BEGIN - SSYMPHONY -->
-	<label class='inputlabel checkbox'>Community ban (all servers)
-	<input type='checkbox' id='symphonycommunity' name='symphonycommunity' value='1'>
-	<div class='inputbox'></div></label>
+	[CONFIG_GET(flag/symphony_enabled) ? "<label class='inputlabel checkbox'>Community ban (all servers)\
+	<input type='checkbox' id='symphonycommunity' name='symphonycommunity' value='1'[edit_id ? " disabled" : ""]>\
+	<div class='inputbox'></div></label>" : ""]
 	<!-- NOVA EDIT ADDITION END -->
 	<input type='submit' value='Submit'>
 	<br>
@@ -657,8 +657,9 @@
 	if(!SSdbcore.MassInsert(format_table_name("ban"), sql_ban, warn = TRUE, special_columns = special_columns))
 		return
 	// NOVA EDIT ADDITION BEGIN - SSYMPHONY
-	if(community_ban && player_ckey)
-		symphony_request_community_ban(player_ckey, roles_to_ban, reason, duration, interval, admin_ckey)
+	// Say so if it didn't take - our ban stands, the rest never hear.
+	if(community_ban && !symphony_request_community_ban(player_ckey, roles_to_ban, reason, duration, interval, admin_ckey))
+		to_chat(usr, span_boldwarning("The community-wide ban was NOT recorded. This server's ban still applies."))
 	// NOVA EDIT ADDITION END
 	var/target = ban_target_string(player_key, player_ip, player_cid)
 	var/msg = "has created a [isnull(duration) ? "permanent" : "temporary [time_message]"] [applies_to_admins ? "admin " : ""][is_server_ban ? "server ban" : "role ban from [roles_to_ban.len] roles"] for [target]."

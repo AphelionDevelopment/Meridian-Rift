@@ -1,5 +1,8 @@
 /// Warn them, wait out the grace period, then bin them to the lobby if the role hasn't come back.
 /proc/symphony_revoke(target_ckey)
+	// The panel pushes revokes whether we're enforcing or not.
+	if(!CONFIG_GET(flag/symphony_enabled))
+		return
 	target_ckey = ckey(target_ckey)
 	symphony_invalidate_whitelist_cache(target_ckey)
 	var/client/found = GLOB.directory[target_ckey]
@@ -61,6 +64,9 @@
 	symphony_revoke(ckey)
 
 /proc/symphony_notify_grant(target_ckey)
+	// Same - no announcing a whitelist nothing was enforcing.
+	if(!CONFIG_GET(flag/symphony_enabled))
+		return
 	symphony_invalidate_whitelist_cache(target_ckey)
 	var/client/found = GLOB.directory[ckey(target_ckey)]
 	if(!found)

@@ -64,7 +64,10 @@
 		if(!islist(slot))
 			json_tree[key] = list()
 			continue
-		slot["loadout_list"] = prefs_import_clean_loadout(slot["loadout_list"])
+		slot["loadout_lists"] = prefs_import_clean_loadout_presets(slot["loadout_lists"])
+		// Pre-preset savefiles still carry the flat key; migration reads it.
+		if("loadout_list" in slot)
+			slot["loadout_list"] = prefs_import_clean_loadout(slot["loadout_list"])
 		slot["alt_job_titles"] = sanitize_alt_job_titles(slot["alt_job_titles"])
 		slot["augments"] = prefs_import_clean_assoc_paths(slot["augments"])
 		slot["augment_limb_styles"] = prefs_import_clean_assoc_paths(slot["augment_limb_styles"])
@@ -72,12 +75,26 @@
 	json_tree[PREFS_IMPORT_PENDING_KEY] = TRUE
 	return json_tree
 
+/// loadout_lists is preset -> path -> details, so unwrap a level first.
+/proc/prefs_import_clean_loadout_presets(raw)
+	if(!islist(raw))
+		return list()
+	var/list/out = list()
+	for(var/preset in raw)
+		if(!istext(preset))
+			continue
+		out[copytext(html_encode(preset), 1, MAX_NAME_LEN)] = prefs_import_clean_loadout(raw[preset])
+	return out
+
 /// The UI encodes and caps these, the load path doesn't, so we redo it here.
 /proc/prefs_import_clean_loadout(raw)
 	if(!islist(raw))
 		return list()
 	var/list/out = list()
 	for(var/path in raw)
+		// A number indexes the list instead of keying it, and runtimes.
+		if(!istext(path) && !ispath(path))
+			continue
 		var/list/details = raw[path]
 		if(!islist(details))
 			out[path] = list()
@@ -183,7 +200,17 @@
 
 /// Migration leaves null keys behind, and sanitize_loadout_list stack_traces on them.
 /proc/prefs_import_strip_empty_loadout_keys(list/slot)
-	var/list/loadout = slot["loadout_list"]
+	// Runs post-migration: presets are the live shape, the flat key may linger.
+	prefs_import_strip_empty_keys(slot, "loadout_list")
+	var/list/presets = slot["loadout_lists"]
+	if(!islist(presets))
+		return
+	for(var/preset in presets)
+		prefs_import_strip_empty_keys(presets, preset)
+
+/// Drops null and empty keys from one loadout list, in place.
+/proc/prefs_import_strip_empty_keys(list/holder, key)
+	var/list/loadout = holder[key]
 	if(!islist(loadout))
 		return
 	var/list/clean = list()
@@ -192,7 +219,7 @@
 			continue
 		clean[path] = loadout[path]
 	if(length(clean) != length(loadout))
-		slot["loadout_list"] = clean
+		holder[key] = clean
 
 /// Only out-of-range slots go. load_preferences scans these names, other junk is inert.
 /datum/preferences/proc/prefs_import_prune_unknown()

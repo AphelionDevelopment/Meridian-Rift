@@ -1,8 +1,9 @@
 /// Prefix on an in-game role key, everything after it is the rank name.
 #define SYMPHONY_ADMIN_ROLE_PREFIX "admin:"
 
+/// Both, so the master switch really does turn it off.
 /proc/symphony_discord_admin_sync_enabled()
-	return CONFIG_GET(flag/symphony_discord_admin_sync)
+	return CONFIG_GET(flag/symphony_enabled) && CONFIG_GET(flag/symphony_discord_admin_sync)
 
 /// Has to run at the end of load_admins() - it Cut()s GLOB.admin_datums and would eat ours.
 /proc/symphony_apply_discord_admins()

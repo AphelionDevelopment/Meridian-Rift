@@ -287,17 +287,19 @@ GLOBAL_VAR_INIT(last_maptick_time, 0)
 			handler = topic_handlers[I]
 			break
 
-	// APHELION EDIT ADDITION START - scrub the comms key out of the topic log
+	// APHELION EDIT CHANGE BEGIN - scrub the comms key out of the topic log
+	// ORIGINAL: 		log_topic("\"[T]\", from:[addr], master:[master], key:[key]")
 	if((!handler || initial(handler.log)) && config && CONFIG_GET(flag/log_world_topic))
-		var/static/regex/comms_key_scrub = regex("key=\[^&]*", "g")
-		log_topic("\"[comms_key_scrub.Replace(T, "key=***")]\", from:[addr], master:[master]")
-	// APHELION EDIT ADDITION END
+		// Anchored, or target_ckey= matches too and the log loses the target.
+		var/static/regex/comms_key_scrub = regex("(^|&|\\?)key=\[^&]*", "g")
+		log_topic("\"[comms_key_scrub.Replace(T, "$1key=***")]\", from:[addr], master:[master]")
+	// APHELION EDIT CHANGE END
 
 	if(!handler)
 		return
 
 	handler = new handler()
-	return handler.TryRun(input, addr) // APHELION EDIT - addr passed through for the Symphony address gate
+	return handler.TryRun(input, addr) // APHELION EDIT CHANGE - addr for the Symphony address gate - ORIGINAL: return handler.TryRun(input)
 
 /world/proc/AnnouncePR(announcement, list/payload)
 	var/static/list/PRcounts = list() //PR id -> number of times announced this round

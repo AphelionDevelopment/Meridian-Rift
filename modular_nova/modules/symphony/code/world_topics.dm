@@ -71,6 +71,11 @@ GLOBAL_LIST_EMPTY(symphony_panel_refused)
 		.["success"] = FALSE
 		.["message"] = "missing target_ckey"
 		return
+	// Don't claim we did something the master switch stopped.
+	if(!CONFIG_GET(flag/symphony_enabled))
+		.["success"] = FALSE
+		.["message"] = "enforcement is off"
+		return
 	symphony_revoke(target_ckey)
 	.["success"] = TRUE
 
@@ -84,6 +89,10 @@ GLOBAL_LIST_EMPTY(symphony_panel_refused)
 	if(!target_ckey)
 		.["success"] = FALSE
 		.["message"] = "missing target_ckey"
+		return
+	if(!CONFIG_GET(flag/symphony_enabled))
+		.["success"] = FALSE
+		.["message"] = "enforcement is off"
 		return
 	symphony_notify_grant(target_ckey)
 	.["success"] = TRUE

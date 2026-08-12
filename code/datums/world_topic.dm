@@ -30,7 +30,7 @@
 	/// If the comms.txt config key is required. If you flip this to false, ensure the code is correct and the query you receive is legit.
 	var/require_comms_key = TRUE
 
-/datum/world_topic/proc/TryRun(list/input, addr) // APHELION EDIT - addr, so a topic can see where it came from
+/datum/world_topic/proc/TryRun(list/input, addr) // APHELION EDIT CHANGE - addr, so a topic can see where it came from - ORIGINAL: /datum/world_topic/proc/TryRun(list/input)
 	key_valid = (CONFIG_GET(string/comms_key) == input["key"]) && CONFIG_GET(string/comms_key) && input["key"]
 	input -= "key"
 	if(require_comms_key && !key_valid)
