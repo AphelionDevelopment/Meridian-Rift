@@ -88,7 +88,7 @@
 	// Looking is not an action, and must remain available for situational awareness.
 	if(LAZYACCESS(modifiers, SHIFT_CLICK))
 		return NONE
-	if(target == owner || target in owner.get_all_contents())
+	if(target == owner || (target in owner.get_all_contents()))
 		return NONE
 
 	to_chat(owner, span_warning("You can only manage your own gear and injuries through the pain."))
