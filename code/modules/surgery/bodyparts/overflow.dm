@@ -132,7 +132,7 @@
 /obj/item/bodypart/chest/apply_overflow(damage, wounding_type, attack_direction, damage_source)
 	var/obj/item/organ/heart/inner_heart = owner.get_organ_slot(ORGAN_SLOT_HEART)
 	if(isnull(inner_heart))
-		return FALSE
+		return overflow_without_a_heart(damage, damage_source)
 
 	var/overflow = damage * OVERFLOW_DAMAGE_RATIO
 	owner.adjust_organ_loss(ORGAN_SLOT_HEART, overflow)
@@ -144,4 +144,27 @@
 		owner.set_heartattack(TRUE)
 
 	announce_overflow("Something tears deep in your chest!", "Something tears deep in [owner]'s chest!")
+	return FALSE
+
+/**
+ * Chest overflow for a body with no heart in it at all.
+ *
+ * Some species have no heart, which left their torsos with nothing to overflow into: a
+ * maxed chest absorbed penetrating hits forever and body shots on them could never kill. There is no
+ * circulation to stop, so what a ruined torso costs such a body is the brain, at the rate a ruined
+ * skull costs anyone else.
+ *
+ * Arguments:
+ * * damage - Wounding damage of the hit that overflowed.
+ * * damage_source - What did it, for the logs.
+ */
+/obj/item/bodypart/chest/proc/overflow_without_a_heart(damage, damage_source)
+	if(isnull(owner.get_organ_slot(ORGAN_SLOT_BRAIN)))
+		return FALSE
+
+	var/overflow = damage * OVERFLOW_DAMAGE_RATIO
+	owner.adjust_organ_loss(ORGAN_SLOT_BRAIN, overflow)
+	log_overflow(owner, damage_source, plaintext_zone, "brain", overflow)
+
+	announce_overflow("Something deep in your chest gives out!", "Something deep in [owner]'s chest gives out!")
 	return FALSE

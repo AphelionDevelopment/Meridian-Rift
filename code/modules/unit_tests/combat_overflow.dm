@@ -37,6 +37,25 @@
 	TEST_ASSERT(second_victim.get_organ_loss(ORGAN_SLOT_HEART) > 0, "A hit on a ruined chest left the heart untouched")
 
 /**
+ * A body with no heart in it still has to be killable through the torso.
+ *
+ * Skeletons and jellypeople carry no heart at all, so the chest's usual overflow target is not there.
+ * With nothing to fall back on, their torsos absorbed penetrating hits forever and only the head was
+ * worth aiming at.
+ */
+/datum/unit_test/overflow_reaches_a_heartless_body/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+	victim.set_species(/datum/species/jelly)
+	TEST_ASSERT(isnull(victim.get_organ_slot(ORGAN_SLOT_HEART)), "Failed to allocate the heartless patient this test is about")
+
+	var/obj/item/bodypart/chest = victim.get_bodypart(BODY_ZONE_CHEST)
+	TEST_ASSERT(max_out_injuries(victim, chest), "Failed to give the patient the critical chest injury this test is about")
+
+	victim.apply_damage(30, BRUTE, chest, sharpness = SHARP_EDGED)
+	TEST_ASSERT(victim.get_organ_loss(ORGAN_SLOT_BRAIN) > 0, \
+		"A hit on the ruined chest of a heartless body went nowhere")
+
+/**
  * Once a part's injuries stack up, what is inside it starts taking hits, not only that part's own
  * overflow target. Which organ is random for now, so this asserts that something other than the
  * head's overflow target eventually gets hurt.

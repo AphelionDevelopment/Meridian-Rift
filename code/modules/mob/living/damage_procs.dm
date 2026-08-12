@@ -45,6 +45,8 @@
 	var/obj/item/armor_plate/stopping_plate = (armour_flag && !forced) ? get_covering_plate(damagetype, armour_flag, def_zone) : null
 	if(stopping_plate)
 		damage_amount -= stopping_plate.take_impact(src, damage, def_zone, wound_bonus, attack_direction, attacking_item, wound_clothing)
+	// What the attack put into this body, before the body's own multipliers decide what it does to it.
+	var/delivered_damage = damage_amount
 	if(!forced)
 		// A plate that answered this attack replaces the percentage for it: everything up to its
 		// tolerance was stopped outright, and what got past arrives as though nothing were worn. Worn
@@ -52,6 +54,7 @@
 		// uncovered zone, or no plate at all. See phase 6, D6.
 		if(!stopping_plate)
 			damage_amount *= ((100 - blocked) / 100)
+		delivered_damage = damage_amount
 		damage_amount *= get_incoming_damage_modifier(damage_amount, damagetype, def_zone, sharpness, attack_direction, attacking_item)
 	if(damage_amount <= 0)
 		return 0
@@ -120,7 +123,11 @@
 	// Being hit hurts whether or not it wounds. This is only what got through; what a plate stopped
 	// spiked the meter on its way in, scaled by how close to the plate's tolerance it landed.
 	if(damagetype == BRUTE || damagetype == BURN)
-		add_temporary_pain(damage_amount * PAIN_IMPACT_RATIO)
+		// The lesser of what the attack delivered and what this body made of it. A hide that shrugs a
+		// blow off quiets it, but a body that comes apart easily must not have its stun multiplied as
+		// well as its injuries: a holosynth takes five times burn damage and would otherwise be in pain
+		// shock from the first thing that touched it.
+		add_temporary_pain(min(delivered_damage, damage_amount) * PAIN_IMPACT_RATIO)
 		// Shake scaled by how much got through, arbitrated so a burst of fire is one moment.
 		shake_from_impact(damage_amount)
 

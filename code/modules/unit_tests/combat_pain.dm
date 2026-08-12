@@ -192,3 +192,30 @@
 	patient.reagents.add_reagent(/datum/reagent/nitrous_oxide, 1)
 	pain.update_dampening()
 	TEST_ASSERT_EQUAL(pain.dampening, PAIN_DAMPEN_TOTAL, "A full dose of anaesthetic should numb the patient completely")
+
+/**
+ * A body that comes apart easily takes more damage, not more stun.
+ *
+ * Impact pain reads the lesser of what an attack delivered and what the body made of it. A species on
+ * a damage multiplier still pays for it in injuries, but its stun is the blow that was struck: a
+ * holosynth is on five times burn and would otherwise be in pain shock from the first thing to touch
+ * it. Resistance still quiets a hit, since there the lesser figure is what the body took.
+ */
+/datum/unit_test/pain_ignores_fragility/Run()
+	var/mob/living/carbon/human/baseline = allocate(/mob/living/carbon/human/consistent)
+	var/mob/living/carbon/human/fragile = allocate(/mob/living/carbon/human/consistent)
+	var/mob/living/carbon/human/resistant = allocate(/mob/living/carbon/human/consistent)
+	fragile.physiology.burn_mod *= 5
+	resistant.physiology.burn_mod *= 0.5
+
+	baseline.apply_damage(20, BURN, baseline.get_bodypart(BODY_ZONE_CHEST))
+	fragile.apply_damage(20, BURN, fragile.get_bodypart(BODY_ZONE_CHEST))
+	resistant.apply_damage(20, BURN, resistant.get_bodypart(BODY_ZONE_CHEST))
+
+	TEST_ASSERT(fragile.get_fire_loss() > baseline.get_fire_loss(), "The fragile patient should still have taken more burn damage")
+	TEST_ASSERT_EQUAL(fragile.pain_controller.temporary_pain, baseline.pain_controller.temporary_pain, \
+		"A damage multiplier multiplied the stun along with the damage")
+
+	TEST_ASSERT(resistant.get_fire_loss() < baseline.get_fire_loss(), "The resistant patient should have taken less burn damage")
+	TEST_ASSERT(resistant.pain_controller.temporary_pain < baseline.pain_controller.temporary_pain, \
+		"A hit that a body shrugged off should hurt it less")
