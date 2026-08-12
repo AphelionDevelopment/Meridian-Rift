@@ -12,12 +12,7 @@
 /datum/movespeed_modifier/status_effect/adrenaline_crash
 	multiplicative_slowdown = PAIN_ADRENALINE_CRASH_SLOWDOWN
 
-/**
- * Pain shock, the spike variant.
- *
- * Applied when a mob is pinned at the pain cap. Blacks the mob out entirely, and is removed the
- * moment felt pain drops back under PAIN_SHOCK_RECOVERY_THRESHOLD, so nobody yo-yos on the line.
- */
+/// Brief unconsciousness caused by a temporary pain spike.
 /datum/status_effect/incapacitating/pain_shock
 	id = "pain_shock"
 	status_type = STATUS_EFFECT_UNIQUE
@@ -48,13 +43,7 @@
 	to_chat(owner, span_warning("You come to, wrecked."))
 	return ..()
 
-/**
- * Pain shock, the floor variant.
- *
- * Applied when the mob's permanent floor alone pins it at the cap. Unlike a spike blackout there is
- * nothing to drain, so this lasts until treatment or a painkiller lowers felt pain. The mob can
- * crawl, drag itself and reach its own pockets, but cannot stand or fight.
- */
+/// A pain-induced crawl that lasts until treatment or analgesia lowers the pain floor.
 /datum/status_effect/pain_crawl
 	id = "pain_crawl"
 	status_type = STATUS_EFFECT_UNIQUE
@@ -94,12 +83,7 @@
 	to_chat(owner, span_warning("You can only manage your own gear and injuries through the pain."))
 	return COMSIG_MOB_CANCEL_CLICKON
 
-/**
- * Adrenaline.
- *
- * Massive trauma triggers fight or flight once per fight. Halves felt pain long enough to shoot back
- * or run, then hands all of it back at once. Delays pain shock, never cancels it.
- */
+/// Temporarily halves felt pain after major trauma.
 /datum/status_effect/adrenaline
 	id = "adrenaline"
 	status_type = STATUS_EFFECT_UNIQUE

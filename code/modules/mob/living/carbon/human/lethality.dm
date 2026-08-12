@@ -1,11 +1,4 @@
-/**
- * What it takes to kill a person, and what it takes to knock one down.
- *
- * Damage totals decide neither any more. A person is alive while their brain is alive, their heart is
- * beating and there is blood in them to circulate, so everything that used to kill through the health
- * bar now kills by ruining one of those three. Humans only: xenos carry no heart and keep the health
- * ladder on /mob/living/carbon.
- */
+/// Human critical states are based on the brain, circulation, blood, and pain.
 
 /mob/living/carbon/human/update_stat_from_condition()
 	// A missing or destroyed required heart is death, not merely unconsciousness. A stopped but still
@@ -82,13 +75,10 @@
 
 /mob/living/carbon/human/is_dying()
 	// Pain is excluded: succumb reads this, and a stun must not be the same as a kill.
-	if(circulation_stopped())
-		return TRUE
-	if(get_oxy_loss() >= OXYLOSS_ORGAN_DAMAGE_THRESHOLD)
-		return TRUE
-	if(get_tox_loss() >= TOXLOSS_BRAIN_DAMAGE_THRESHOLD)
-		return TRUE
-	return is_bled_out()
+	return circulation_stopped() \
+		|| get_oxy_loss() >= OXYLOSS_ORGAN_DAMAGE_THRESHOLD \
+		|| get_tox_loss() >= TOXLOSS_BRAIN_DAMAGE_THRESHOLD \
+		|| is_bled_out()
 
 /**
  * How much margin this body has left, read off the three things that keep it alive.

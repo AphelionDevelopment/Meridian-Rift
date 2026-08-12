@@ -4,17 +4,7 @@
 	icon_file = 'icons/obj/clothing/armor_plate.dmi'
 	json_config = 'code/datums/greyscale/json_configs/armor_plate.json'
 
-/**
- * An armour plate.
- *
- * A plate does not reduce damage by a percentage. It has a tolerance, stops everything up to that
- * tolerance outright, and lets everything past it through as though nothing were worn. There is no
- * penetration stat to beat, only damage. Stopping hits is what wears a plate out.
- *
- * Fitted into an armour suit or a helmet, one apiece. The carrier decides which zones are covered
- * and the plate decides how much a hit to one of them has to carry to matter, so wide coverage
- * protects more and wears out faster.
- */
+/// Stops matching hits up to its tolerance and loses durability when it does.
 /obj/item/armor_plate
 	name = "armour plate"
 	desc = "A plate of composite armour, shaped to drop into a carrier. Every hit it stops wears it down."
@@ -79,7 +69,7 @@
  * * armour_flag - One of the armour flags, e.g. [BULLET] or [LASER].
  */
 /obj/item/armor_plate/proc/stops_attack(armour_flag)
-	return (armour_flag in stops_flags)
+	return armour_flag in stops_flags
 
 /**
  * Takes a hit on behalf of whoever is wearing this plate, and reports how much of it never landed.
@@ -191,8 +181,7 @@
 /// Ballistic plates stop physical impacts and do nothing about beam weapons.
 /obj/item/armor_plate/ballistic
 	name = "ballistic plate"
-	desc = "A layered ceramic plate for a carrier. Catches bullets, fists and shrapnel. Lasers pass \
-		straight through it."
+	desc = "A ceramic carrier plate that stops physical impacts but not lasers."
 	icon_state = "/obj/item/armor_plate/ballistic"
 	greyscale_colors = "#8a8577#3f3d36"
 	stops_flags = list(MELEE, BULLET, BOMB)
@@ -200,8 +189,7 @@
 
 /obj/item/armor_plate/ballistic/reinforced
 	name = "reinforced ballistic plate"
-	desc = "A thicker ceramic plate for a carrier. Catches bullets, fists and shrapnel, and does \
-		nothing about lasers."
+	desc = "A reinforced ceramic carrier plate that stops physical impacts but not lasers."
 	icon_state = "/obj/item/armor_plate/ballistic/reinforced"
 	greyscale_colors = "#6f7a5f#3a3f33"
 	level = 2
@@ -209,8 +197,7 @@
 
 /obj/item/armor_plate/ballistic/composite
 	name = "composite ballistic plate"
-	desc = "A plasteel-backed composite plate, the heaviest that will drop into a standard carrier. \
-		Stops most of what a gun can do, and no part of what a laser can."
+	desc = "A heavy composite carrier plate that stops physical impacts but not lasers."
 	icon_state = "/obj/item/armor_plate/ballistic/composite"
 	greyscale_colors = "#4f5a63#2f353a"
 	level = 3
@@ -219,8 +206,7 @@
 /// Ablative plates stop beam weapons, and what they stop burns the plate rather than the wearer.
 /obj/item/armor_plate/ablative
 	name = "ablative plate"
-	desc = "A reflective sheet backed with sacrificial foam, shaped for a carrier. It boils away \
-		instead of the wearer. It will not slow a bullet."
+	desc = "A reflective carrier plate that stops energy impacts but not bullets."
 	icon_state = "/obj/item/armor_plate/ablative"
 	greyscale_colors = "#b9c2c9#4a4f52"
 	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 2, /datum/material/silver = SHEET_MATERIAL_AMOUNT)
@@ -229,8 +215,7 @@
 
 /obj/item/armor_plate/ablative/reinforced
 	name = "reinforced ablative plate"
-	desc = "A thicker ablative sheet for a carrier, with enough foam behind it to soak a sustained \
-		burst. Bullets pass straight through it."
+	desc = "A reinforced carrier plate that stops energy impacts but not bullets."
 	icon_state = "/obj/item/armor_plate/ablative/reinforced"
 	greyscale_colors = "#9fb6c4#3f4a52"
 	level = 2
@@ -238,8 +223,7 @@
 
 /obj/item/armor_plate/ablative/composite
 	name = "composite ablative plate"
-	desc = "A mirrored composite plate over a deep ablative block, the heaviest a standard carrier \
-		will take. It shrugs off a sustained beam, but not a knife."
+	desc = "A heavy composite carrier plate that stops energy impacts but not physical attacks."
 	icon_state = "/obj/item/armor_plate/ablative/composite"
 	greyscale_colors = "#7fc3c8#33484a"
 	level = 3
@@ -307,7 +291,7 @@
 	if(!accepts_armor_plates)
 		return null
 	if(isnull(fitted_plate))
-		return span_notice("Its plate carrier is empty. It can be crowbarred back out once filled.")
+		return span_notice("Its plate carrier is empty.")
 
 	return list(
 		span_notice("A [fitted_plate.name] is fitted, stopping up to <b>[fitted_plate.get_tolerance()]</b> damage from any one hit."),

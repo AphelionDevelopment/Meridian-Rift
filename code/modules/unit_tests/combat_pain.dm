@@ -106,9 +106,7 @@
 /**
  * Being put down by pain must not cost you air.
  *
- * The breath loop reads the crit ladder, and pain owns two rungs of it now. If the rung alone stopped
- * a mob breathing then every stun would feed oxyloss, which phase 4 routes into organ damage, making
- * stunlocking a way of killing someone.
+ * Pain critical states must not stop breathing, or repeated stuns would become lethal.
  */
 /datum/unit_test/pain_does_not_suffocate/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
@@ -183,8 +181,7 @@
 	TEST_ASSERT_EQUAL(pain.base_dampening, PAIN_DAMPEN_STRONG, "An ungraded analgesia trait granted total pain immunity")
 	TEST_ASSERT(pain.felt_pain > 0, "An ungraded analgesia trait made the patient unable to feel pain")
 
-/// Appendix B puts Extreme pain on a missing limb. The loss wound cannot carry it, since the limb it
-/// was applied to is gone by the time the floor is rebuilt, so the empty socket does.
+/// A missing limb contributes Extreme pain through its empty socket.
 /datum/unit_test/pain_missing_limb/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 	var/datum/pain/pain = victim.pain_controller

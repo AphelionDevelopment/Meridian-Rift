@@ -104,17 +104,10 @@
 #undef NANITE_SLURRY_ORGANIC_VOMIT_CHANCE
 
 // NOVA EDIT ADDITION START - COMBAT_PAIN
-/**
- * Feedback dampener: the synthetic half of Appendix D.
- *
- * A machine feels its body through a damage feedback bus rather than through nerves, so numbing one is
- * a robotics job rather than a medbay one; morphine does nothing for a servo. Carries morphine's
- * numbers, since Appendix F makes parity a design requirement.
- */
+/// A synthetic painkiller equivalent to morphine.
 /datum/reagent/medicine/feedback_dampener
 	name = "Feedback Dampener"
-	description = "A robotics-grade suspension that damps a synthetic's damage feedback bus. Numbs what \
-		the chassis is reporting without repairing any of it, and clouds the diagnostics along with it."
+	description = "A synthetic analgesic that dampens damage feedback and clouds diagnostics."
 	color = "#4C6E8C"
 	taste_description = "cold static"
 	metabolization_rate = 0.4 * REAGENTS_METABOLISM

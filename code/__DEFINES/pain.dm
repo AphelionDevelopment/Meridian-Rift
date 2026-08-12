@@ -124,8 +124,7 @@
 /// nothing at all.
 #define PAIN_DAMPEN_ANAESTHETIC_DOSE 15
 
-// Grades for analgesic chems the design does not name individually. An ungraded analgesia trait uses
-// the strong value too: traits may damp pain, but the combat contract grants none total immunity.
+// Dampening values for analgesics without a dedicated grade. Ungraded analgesia uses the strong value.
 /// A mild additive, or a painkiller that is mostly something else.
 #define PAIN_DAMPEN_WEAK 10
 /// A field painkiller.

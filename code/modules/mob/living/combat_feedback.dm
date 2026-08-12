@@ -1,10 +1,4 @@
-/**
- * The feedback budget: one arbiter for what a fight is allowed to announce.
- *
- * A burst of fire is several impacts, several injuries, a plate cracking and an organ giving out
- * inside half a second. Every combat event asks here first, and within [COMBAT_FEEDBACK_WINDOW]
- * only the highest priority one is announced. The window is per mob.
- */
+/// Limits each mob to the highest-priority combat feedback in a short window.
 
 /mob/living
 	/// Priority of whatever last won a feedback moment. Only meaningful while the window is open.
@@ -73,5 +67,4 @@
 		return combat_feedback(COMBAT_FEEDBACK_IMPACT, shake_strength = COMBAT_SHAKE_NONPENETRATING)
 
 	var/severity = min(damage / COMBAT_SHAKE_FULL_STRENGTH_DAMAGE, 1)
-	var/strength = LERP(COMBAT_SHAKE_PENETRATING_MIN, COMBAT_SHAKE_PENETRATING_MAX, severity)
-	return combat_feedback(COMBAT_FEEDBACK_IMPACT, shake_strength = strength)
+	return combat_feedback(COMBAT_FEEDBACK_IMPACT, shake_strength = LERP(COMBAT_SHAKE_PENETRATING_MIN, COMBAT_SHAKE_PENETRATING_MAX, severity))

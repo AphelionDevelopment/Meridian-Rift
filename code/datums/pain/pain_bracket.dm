@@ -7,12 +7,7 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	new /datum/pain_bracket/minor,
 ))
 
-/**
- * A band of felt pain, and what the body does while it sits in that band.
- *
- * Tuning the pain system means editing the numbers on these datums, not the controller. Permanent
- * effects last as long as the mob stays in the bracket; intermittent ones roll against their chance.
- */
+/// Defines the effects for one band of felt pain.
 /datum/pain_bracket
 	/// Shown on examine and in logs.
 	var/name = "minor pain"
@@ -103,17 +98,17 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	event_flags = MOOD_EVENT_PAIN
 
 /datum/mood_event/pain/mild
-	description = "Something hurts and I can't ignore it."
+	description = "I can't ignore the pain."
 	mood_change = -2
 
 /datum/mood_event/pain/moderate
-	description = "It hurts. Thinking around it takes work."
+	description = "The pain makes it hard to think."
 	mood_change = -5
 
 /datum/mood_event/pain/severe
-	description = "I can barely think through the pain!"
+	description = "I can barely think through the pain."
 	mood_change = -8
 
 /datum/mood_event/pain/agony
-	description = "MAKE IT STOP!"
+	description = "The pain is unbearable."
 	mood_change = -12

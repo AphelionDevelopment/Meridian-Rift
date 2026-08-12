@@ -737,9 +737,7 @@
 /**
  * Moves this mob up or down the consciousness ladder to match what is currently wrong with it.
  *
- * Split out of update_stat() because what counts as "wrong" differs by mob: a health bar for
- * anything that runs on one, and the state of the organs keeping it alive for anything that does
- * not. See the combat overhaul plan, phase 0.
+ * Split from update_stat() so subtypes can use either health or organ state.
  *
  * Returns TRUE if the mob died, in which case the caller should stop; a corpse has no HUD to update.
  */

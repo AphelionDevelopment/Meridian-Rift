@@ -1,19 +1,9 @@
-/**
- * Severed artery.
- *
- * A heavy bleed carrying Light pain, where everything else this lethal is Severe or Extreme. A limb
- * with a cut artery still works and barely aches, so the patient bleeds out while treating whatever
- * hurts more.
- *
- * Built on the flesh cut, so it inherits the bleeding, grasping and cauterising machinery, but sits
- * in a series of its own: an artery is carried alongside the wound that opened it rather than
- * instead of it. It never clots and gauze does nothing for it; a tourniquet buys time.
- */
+/// A low-pain arterial bleed that requires a tourniquet and cautery.
 /datum/wound/slash/flesh/artery
 	name = "Severed Artery"
 	// Without a scanner this reads as bleeding from whatever cut is next to it.
 	undiagnosed_name = "Heavy Bleeding"
-	desc = "Patient's limb has a severed artery, bleeding heavily with little outward sign of it."
+	desc = "The patient has a severed artery with heavy internal bleeding."
 	treat_text = "Apply a tourniquet immediately to buy time, then cauterise the vessel closed. \
 		Bandaging will not reach it."
 	treat_text_short = "Tourniquet, then cauterise."

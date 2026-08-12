@@ -8,7 +8,7 @@
 	return plate
 
 /**
- * A plate that answers an attack replaces the percentage model for that hit. D6.
+ * A matching plate replaces percentage armour for that hit.
  *
  * Everything up to its tolerance is stopped outright, and what gets past arrives as though nothing
  * were worn: the carrier's percentage does not get a second say. Worn armour still decides every
@@ -54,7 +54,7 @@
 	TEST_ASSERT_EQUAL(shot, 30, "A spent plate should let the entire hit penetrate")
 
 /**
- * There is no penetration stat. C6.
+ * Damage alone determines whether a hit exceeds plate tolerance.
  *
  * Damage is penetration: a hit is either inside a plate's tolerance or it is not, and only how hard
  * it lands decides which. armour_penetration keeps every one of its references and still applies to

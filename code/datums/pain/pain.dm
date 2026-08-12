@@ -1,11 +1,4 @@
-/**
- * Pain controller.
- *
- * Holds the two values every pain gate in the game reads. Injuries and damaged organs set a
- * permanent floor that only treatment lowers; impacts, stuns and exertion stack a temporary pool on
- * top of it. Painkillers reduce what the mob feels, never what it is carrying, so bloodloss and
- * overflow read the floor while brackets and shock read [felt_pain].
- */
+/// Tracks permanent, temporary, and felt pain for a carbon mob.
 /datum/pain
 	/// The mob this controller belongs to.
 	var/mob/living/carbon/parent
@@ -182,12 +175,7 @@
 
 	parent.update_pain_hud()
 
-/**
- * Rebuilds the permanent floor from every wound and damaged organ the mob is carrying.
- *
- * Each zone is capped on its own before the total is summed, so no single bodypart can put someone
- * into shock, but combinations can.
- */
+/// Rebuilds permanent pain from wounds, organs, and other registered sources.
 /datum/pain/proc/recalculate_floor()
 	if(QDELETED(parent))
 		return
@@ -383,13 +371,7 @@
 	base_dampening = strongest
 	update_pain()
 
-/**
- * Whether something with no dampening value of its own grants generic analgesia.
- *
- * Painkillers grant TRAIT_ANALGESIA as well, but carry their own value and are never total. So do
- * the cocktails, implants and gene mods that grant it. Anything else holding the trait receives a
- * strong numeric dampener; no trait grants immunity from the combat pain system.
- */
+/// Whether an ungraded source grants generic analgesia.
 /datum/pain/proc/has_ungraded_analgesia()
 	if(!HAS_TRAIT(parent, TRAIT_ANALGESIA))
 		return FALSE

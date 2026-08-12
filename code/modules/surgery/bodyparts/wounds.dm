@@ -117,8 +117,7 @@
 		if (nonpenetrating && (initial(wound_type.severity) > WOUND_NONPENETRATING_MAX_SEVERITY || pregen_data.bleeds))
 			continue
 
-		var/specific_injury_roll = (injury_roll + series_wounding_mods[pregen_data.wound_series])
-		if (pregen_data.get_threshold_for(src, attack_direction, damage_source) > specific_injury_roll)
+		if (pregen_data.get_threshold_for(src, attack_direction, damage_source) > injury_roll + series_wounding_mods[pregen_data.wound_series])
 			continue
 
 		if (pregen_data.can_be_applied_to(src, woundtype, random_roll = TRUE))
@@ -140,7 +139,7 @@
 
 	var/datum/wound/possible_wound = pick_weight(possible_wounds)
 	var/datum/wound_pregen_data/possible_pregen_data = GLOB.all_wound_pregen_data[possible_wound]
-	var/datum/wound/replaced_wound = null
+	var/datum/wound/replaced_wound
 	for(var/datum/wound/existing_wound as anything in wounds)
 		var/datum/wound_pregen_data/existing_pregen_data = GLOB.all_wound_pregen_data[existing_wound.type]
 		if(existing_pregen_data.wound_series == possible_pregen_data.wound_series)
@@ -286,8 +285,7 @@
 /obj/item/bodypart/proc/get_wound_threshold_of_wound_type(wounding_type, severity, return_value_if_no_wound, wound_source)
 	var/datum/wound/wound_path = get_corresponding_wound_type(wounding_type, src, severity, duplicates_allowed = TRUE, care_about_existing_wounds = FALSE)
 	if (wound_path)
-		var/datum/wound_pregen_data/pregen_data = GLOB.all_wound_pregen_data[wound_path]
-		return pregen_data.get_threshold_for(src, damage_source = wound_source)
+		return GLOB.all_wound_pregen_data[wound_path].get_threshold_for(src, damage_source = wound_source)
 
 	return return_value_if_no_wound
 
@@ -309,8 +307,7 @@
 
 	if(ishuman(owner))
 		var/mob/living/carbon/human/human_owner = owner
-		var/list/clothing = human_owner.get_clothing_on_part(src)
-		for(var/obj/item/clothing/clothes as anything in clothing)
+		for(var/obj/item/clothing/clothes as anything in human_owner.get_clothing_on_part(src))
 			// unlike normal armor checks, we tabluate these piece-by-piece manually so we can also pass on appropriate damage the clothing's limbs if necessary
 			armor_ablation += clothes.get_armor_rating(WOUND)
 			// Should attack also cause damage to the clothes?

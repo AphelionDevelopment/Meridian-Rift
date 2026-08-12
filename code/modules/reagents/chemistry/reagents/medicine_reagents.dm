@@ -2020,7 +2020,7 @@
 
 /datum/reagent/medicine/paracetamol
 	name = "Paracetamol"
-	description = "A mild over-the-counter analgesic. Takes the edge off, and very little more. Easy to overdose on."
+	description = "A mild over-the-counter analgesic that is easy to overdose on."
 	color = "#E8E8E8"
 	taste_description = "chalky bitterness"
 	metabolization_rate = 0.4 * REAGENTS_METABOLISM
@@ -2037,7 +2037,7 @@
 
 /datum/reagent/medicine/ibuprofen
 	name = "Ibuprofen"
-	description = "A safer anti-inflammatory analgesic, weaker than most. Thins the blood, so think twice with an open wound."
+	description = "A mild anti-inflammatory analgesic that thins the blood."
 	color = "#F0D8B0"
 	taste_description = "bitterness"
 	metabolization_rate = 0.4 * REAGENTS_METABOLISM
@@ -2050,18 +2050,10 @@
 	// injury, which would roughly double how fast a mild painkiller's taker collects critical wounds.
 	metabolized_traits = list(TRAIT_BLOOD_FOUNTAIN)
 
-/**
- * Fentanyl: the surgical analgesic.
- *
- * Appendix D's strongest painkiller, previously filed as a poison. It lived under /toxin dealing
- * brain damage and toxloss on every tick. Recategorised here with those removed, keeping the
- * sedation and the addiction, and gaining the drawback the design names: enough of it stops the
- * patient breathing. It remains a knockout drug, so every existing use of it still works.
- */
+/// A strong surgical analgesic that sedates and depresses breathing.
 /datum/reagent/medicine/fentanyl
 	name = "Fentanyl"
-	description = "A surgical-grade opioid analgesic. Numbs almost anything, sedates heavily, and is \
-		viciously addictive. Too much of it will stop the patient breathing."
+	description = "A strong opioid analgesic that sedates, causes addiction, and depresses breathing."
 	color = "#64916E"
 	metabolization_rate = 0.5 * REAGENTS_METABOLISM
 	creation_purity = REAGENT_STANDARD_PURITY

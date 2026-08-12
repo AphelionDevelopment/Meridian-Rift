@@ -1,10 +1,4 @@
-/**
- * Finishers.
- *
- * The intentional route to a kill; overflow is the incidental one. Every condition has to hold at
- * once: the target is at the attacker's mercy, adjacent, aimed at the head, and the weapon is
- * lethal. The wind-up on top of that gives onlookers time to intervene.
- */
+/// Executes helpless targets after an interruptible wind-up.
 
 /**
  * Whether this mob can no longer do anything about what happens to it.
@@ -14,18 +8,12 @@
  * out, stunned, cuffed, or with no legs left to stand on.
  */
 /mob/living/carbon/proc/is_at_mercy()
-	if(pain_controller?.in_shock || pain_controller?.crawling)
-		return TRUE
-	if(stat != STABLE)
-		return TRUE
-	// One bitfield already covers being stunned, cuffed, held in an aggressive grab, and in stasis.
-	if(incapacitated)
-		return TRUE
-	if(HAS_TRAIT(src, TRAIT_KNOCKEDOUT))
-		return TRUE
-	if(usable_legs <= 0)
-		return TRUE
-	return FALSE
+	return pain_controller?.in_shock \
+		|| pain_controller?.crawling \
+		|| stat != STABLE \
+		|| incapacitated \
+		|| HAS_TRAIT(src, TRAIT_KNOCKEDOUT) \
+		|| usable_legs <= 0
 
 /**
  * Whether this item is capable of finishing someone off.
@@ -52,17 +40,7 @@
 		return FALSE
 	return round.damage >= FINISHER_MINIMUM_PROJECTILE_DAMAGE
 
-/**
- * Runs the conditions for a finisher and, if they all hold, performs one.
- *
- * Called from a point blank gun and from a right-clicked melee weapon, not from the ordinary swing:
- * hooked there it took over every combat-mode blow aimed at the head of anyone cuffed, grabbed or
- * on the floor. Returns TRUE if the finisher took the click, whether or not it ran to completion.
- *
- * Arguments:
- * * user - Whoever is doing this.
- * * weapon - What they are doing it with.
- */
+/// Attempts a finisher. Returns TRUE when it consumes the click.
 /mob/living/carbon/human/proc/try_finisher(mob/living/user, obj/item/weapon)
 	if(user == src || !user.combat_mode || stat == DEAD)
 		return FALSE
@@ -108,16 +86,7 @@
 
 	return ..()
 
-/**
- * The killing blow itself.
- *
- * The fast way across the brain's death threshold; overflow is the slow one. The corpse is as
- * recoverable as any other brain death: repair the brain, then defibrillate.
- *
- * Arguments:
- * * user - Whoever is doing this.
- * * weapon - What they are doing it with.
- */
+/// Kills through brain damage, leaving the target recoverable after organ repair.
 /mob/living/carbon/human/proc/finish_off(mob/living/user, obj/item/weapon)
 	var/obj/item/organ/inner_brain = get_organ_slot(ORGAN_SLOT_BRAIN)
 

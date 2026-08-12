@@ -75,12 +75,7 @@
 	TEST_ASSERT(collateral > 0, \
 		"Twenty hits on a ruined head never touched an eye, an ear or a tongue - organs in a stacked part should take hits")
 
-/**
- * A bruise is never lethal, however bad it gets.
- *
- * Capacity is read off the injury track, so any Critical injury would open a part up to being killed
- * through it. Appendix A excludes bruises, via allows_overflow on the datum.
- */
+/// Critical bruises do not allow overflow.
 /datum/unit_test/overflow_ignores_bruises/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 	var/obj/item/bodypart/head = victim.get_bodypart(BODY_ZONE_HEAD)
@@ -149,12 +144,7 @@
 	TEST_ASSERT_EQUAL(victim.can_defib(), DEFIB_FAIL_FAILING_BRAIN, \
 		"An overflow kill should need the brain repaired before a defibrillator means anything")
 
-/**
- * The gap phase 4 left open: nothing died of accumulated burn any more.
- *
- * Overflow is the route back, and burning arrives as many small ticks rather than as hits, so it has
- * to work at that size or a body can burn indefinitely with a working heart in it.
- */
+/// Repeated burn damage must overflow into organs.
 /datum/unit_test/overflow_closes_the_burn_hole/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 	var/obj/item/bodypart/chest = victim.get_bodypart(BODY_ZONE_CHEST)
@@ -239,13 +229,7 @@
 	TEST_ASSERT(!baton.is_lethal_enough_to_finish(), "A stun baton should not count as a lethal weapon")
 	TEST_ASSERT(!victim.try_finisher(killer, baton), "A finisher was allowed with a stun baton")
 
-/**
- * An artery is not what takes a limb off.
- *
- * Appendix B's dismemberment rule is a Critical fracture or laceration plus a high-damage penetrating
- * hit. An artery is Critical too, but the limb around it is structurally intact, so counting it would
- * amputate the patient instead of letting them bleed.
- */
+/// A severed artery does not make a limb ready for dismemberment.
 /datum/unit_test/artery_does_not_take_the_limb/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 	var/obj/item/bodypart/leg = victim.get_bodypart(BODY_ZONE_L_LEG)

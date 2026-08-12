@@ -1,12 +1,4 @@
-/**
- * Bruising.
- *
- * The injury blunt trauma leaves, and the only injury a hit that armour stopped may leave. Bruises
- * are never lethal and never bleed. They hurt, they make a limb worse at its job, and they fade on
- * their own given rest.
- *
- * Unlike the rest of the tree, this applies to the chest and head as well as limbs.
- */
+/// Nonlethal blunt trauma that heals with rest.
 /datum/wound/bruise
 	name = "Bruise"
 	a_or_from = "a"
@@ -78,7 +70,7 @@
 /// Minor: fades on its own.
 /datum/wound/bruise/moderate
 	name = "Minor Bruise"
-	desc = "Patient's flesh is bruised, with minor swelling and discolouration."
+	desc = "The patient has minor bruising and swelling."
 	treat_text = "Rest, with a cold pack if available."
 	treat_text_short = "Rest."
 	simple_treat_text = "<b>Rest</b>. It will fade on its own."
@@ -100,7 +92,7 @@
 /// Major: deep bruising that hurts to use.
 /datum/wound/bruise/severe
 	name = "Deep Bruise"
-	desc = "Patient's flesh is deeply bruised, with significant swelling and pain on use."
+	desc = "The patient has deep bruising that hurts when used."
 	treat_text = "A cold pack and rest. Splinting the limb will speed recovery."
 	treat_text_short = "Cold pack and rest."
 	simple_treat_text = "<b>Rest</b> and a <b>cold pack</b>. A <b>splint</b> speeds it up."
@@ -126,7 +118,7 @@
 /// Critical: contused to the point of a weakened grip and a limp. Slow to heal.
 /datum/wound/bruise/critical
 	name = "Severe Contusion"
-	desc = "Patient's flesh is contused throughout, with heavy swelling, weakened grip and pain on any use."
+	desc = "The patient has severe bruising, swelling, and reduced limb function."
 	treat_text = "Immobilisation and prolonged rest. There is nothing to operate on."
 	treat_text_short = "Immobilise and wait."
 	simple_treat_text = "<b>Splint</b> it and <b>rest</b>. It heals slowly."

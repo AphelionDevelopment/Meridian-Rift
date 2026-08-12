@@ -1108,11 +1108,8 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 /**
  * Whether this mob's body is in good enough shape to breathe normally and clear an oxygen debt.
  *
- * Was a plain health check everywhere it is used, which stopped meaning anything for humans once
- * damage totals stopped deciding death. Pain puts people on the floor with working lungs, so a crit
- * that is only pain must not take the airway with it, or stunlocking a mob would suffocate it
- * through the organ damage phase 4 routes oxyloss into. Anything still running on a health bar keeps
- * the old reading.
+ * Health-based mobs recover breath outside critical health. Organ-based mobs override this so pain
+ * alone does not prevent breathing.
  */
 /mob/living/proc/can_recover_breath()
 	return health >= crit_threshold
@@ -1120,10 +1117,7 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 /**
  * How much margin this mob has left before it dies, from 0 to 1.
  *
- * Read by every triage instrument: medical HUD glasses, the health analyser's headline, the mob's own
- * health bar. Anything that still dies of its damage totals answers with them, which is what this
- * returns. Humans stopped dying of them in phase 4 and answer with the three things that keep a
- * person alive instead; see [/mob/living/carbon/human/proc/get_vitals_ratio].
+ * Health-based mobs use damage totals. Humans override this with organ and circulation state.
  */
 /mob/living/proc/get_vitals_ratio()
 	return maxHealth ? clamp(health / maxHealth, 0, 1) : 0

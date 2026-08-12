@@ -54,8 +54,7 @@
  * destroyed outright, so eyes, ears, tongues, lungs, livers and stomachs are on the receiving end of
  * a fight as well as the part's own overflow target.
  *
- * Which organ a hit finds is random, as neither design document gives a rule for it. The zone's own
- * overflow target is in the pool with the rest.
+ * Chooses randomly among the organs in the damaged bodypart.
  *
  * Assumes the part has an owner; receive_damage()'s owner branch is the only caller.
  *
