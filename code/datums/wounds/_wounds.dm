@@ -499,7 +499,7 @@
 	// on or comes off, which is one of the things that lands here. See [/datum/wound/proc/get_pain_factor].
 	victim?.mark_pain_dirty()
 
-/// Gives severe trauma its fight-or-flight window.
+/// Gives severe trauma its fight-or-flight window
 /datum/wound/proc/second_wind()
 	if(severity < WOUND_SEVERITY_SEVERE)
 		return
