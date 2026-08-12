@@ -121,7 +121,10 @@
 			continue
 
 		if (pregen_data.can_be_applied_to(src, woundtype, random_roll = TRUE))
-			possible_wounds[wound_type] = pregen_data.get_weight(src, woundtype, damage, attack_direction, damage_source)
+			// A weightless wound can never be picked, so it does not get to compete either.
+			var/weight = pregen_data.get_weight(src, woundtype, damage, attack_direction, damage_source)
+			if (weight > 0)
+				possible_wounds[wound_type] = weight
 
 	for (var/datum/wound/wound_type as anything in possible_wounds)
 		var/datum/wound_pregen_data/pregen_data = GLOB.all_wound_pregen_data[wound_type]
