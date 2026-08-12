@@ -3,7 +3,7 @@
  *
  * Bump it whenever a topic, its response, or a shared table changes, and raise REQUIRED_GAME_MODULE in SSymphony to match.
  */
-#define SYMPHONY_MODULE_VERSION 4
+#define SYMPHONY_MODULE_VERSION 5
 
 /// Live server status for the SSymphony panel. Returns a raw list; the caller passes format=json.
 /datum/world_topic/symphony/server_status
