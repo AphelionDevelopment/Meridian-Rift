@@ -28,8 +28,8 @@
 	var/armour_penetration = 0
 	///Damage type of a simple mob's melee attack, should it do damage.
 	var/melee_damage_type = BRUTE
-	///How much wounding power it has
-	var/wound_bonus = CANT_WOUND
+	///How much wounding power it has. Use CANT_WOUND if you don't want wounds.
+	var/wound_bonus = 0
 	///How much bare wounding power it has
 	var/exposed_wound_bonus = 0
 	///If the attacks from this are sharp
