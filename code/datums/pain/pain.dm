@@ -505,14 +505,15 @@
 	// servo tremors in place of stuttering and shaking.
 	var/is_synthetic = (parent.mob_biotypes & MOB_ROBOTIC)
 
-	if(current_bracket.stutters)
+	if(current_bracket.stutter_chance && prob(current_bracket.stutter_chance))
 		parent.adjust_stutter_up_to(PAIN_EFFECT_ROLL_INTERVAL, PAIN_EFFECT_ROLL_INTERVAL * 2)
 		if(is_synthetic)
 			parent.adjust_slurring_up_to(PAIN_EFFECT_ROLL_INTERVAL, PAIN_EFFECT_ROLL_INTERVAL * 2)
 
+	if(current_bracket.shake_chance && prob(current_bracket.shake_chance))
+		parent.adjust_jitter_up_to(PAIN_EFFECT_ROLL_INTERVAL, PAIN_EFFECT_ROLL_INTERVAL * 2)
+
 	if(current_bracket.vocalise_chance && prob(current_bracket.vocalise_chance))
-		if(is_synthetic)
-			parent.adjust_jitter_up_to(PAIN_EFFECT_ROLL_INTERVAL, PAIN_EFFECT_ROLL_INTERVAL * 2)
 		parent.emote(felt_pain >= PAIN_BRACKET_SEVERE_THRESHOLD ? "scream" : "whimper")
 
 	if(current_bracket.drop_chance && prob(current_bracket.drop_chance))
@@ -528,6 +529,13 @@
 		parent.visible_message(
 			span_warning("[parent] buckles!"),
 			span_userdanger("Your legs give out."),
+		)
+
+	if(current_bracket.passout_chance && prob(current_bracket.passout_chance))
+		parent.Unconscious(PAIN_EFFECT_ROLL_INTERVAL, ignore_canstun = TRUE)
+		parent.visible_message(
+			span_warning("[parent] passes out from the pain!"),
+			span_userdanger("The pain swallows everything for a moment."),
 		)
 
 /**

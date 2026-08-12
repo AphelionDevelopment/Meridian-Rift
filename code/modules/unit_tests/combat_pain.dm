@@ -141,6 +141,21 @@
 	TEST_ASSERT(!victim.has_movespeed_modifier(/datum/movespeed_modifier/damage_slowdown), \
 		"Raw temporary pain applied the legacy health slowdown instead of relying on the FELT-pain bracket")
 
+/// Each bracket carries every permanent and intermittent effect named by the pain design.
+/datum/unit_test/pain_brackets_cover_documented_effects/Run()
+	var/datum/pain_bracket/moderate = locate(/datum/pain_bracket/moderate) in GLOB.pain_brackets
+	var/datum/pain_bracket/severe = locate(/datum/pain_bracket/severe) in GLOB.pain_brackets
+	var/datum/pain_bracket/agony = locate(/datum/pain_bracket/agony) in GLOB.pain_brackets
+
+	TEST_ASSERT(moderate.shake_chance > 0, "Moderate pain had no chance to cause visible shaking")
+	TEST_ASSERT(moderate.stutter_chance > 0 && moderate.stutter_chance < 100, \
+		"Moderate pain should stutter intermittently rather than never or constantly")
+	TEST_ASSERT(severe.shake_chance > 0, "Severe pain had no chance to cause visible shaking")
+	TEST_ASSERT_EQUAL(severe.stutter_chance, 100, "Severe pain should cause constant stuttering")
+	TEST_ASSERT_EQUAL(agony.shake_chance, 100, "Agony should cause constant visible shaking")
+	TEST_ASSERT_EQUAL(agony.stutter_chance, 100, "Agony should cause constant stuttering")
+	TEST_ASSERT(agony.passout_chance > 0, "Agony had no chance to make the patient pass out")
+
 /**
  * Everything that hands out TRAIT_ANALGESIA is a numeric dampener, never pain immunity.
  *

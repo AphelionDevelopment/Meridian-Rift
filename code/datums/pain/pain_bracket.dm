@@ -32,8 +32,12 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	var/fall_chance = 0
 	/// Chance per roll to make an involuntary noise.
 	var/vocalise_chance = 0
-	/// Whether speech is impaired while here.
-	var/stutters = FALSE
+	/// Chance per roll for pain to make the mob visibly shake.
+	var/shake_chance = 0
+	/// Chance per roll for pain to impair speech until the next roll.
+	var/stutter_chance = 0
+	/// Chance per roll to briefly pass out.
+	var/passout_chance = 0
 	/// Whether the pain meter pulses while here, as the last rung past red.
 	var/meter_flashes = FALSE
 
@@ -60,6 +64,8 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	interaction_penalty = 1.3
 	drop_chance = 5
 	vocalise_chance = 10
+	shake_chance = 10
+	stutter_chance = 10
 
 /// Movement slows, speech breaks up and items start dropping.
 /datum/pain_bracket/severe
@@ -72,7 +78,8 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	drop_chance = 15
 	fall_chance = 5
 	vocalise_chance = 20
-	stutters = TRUE
+	shake_chance = 25
+	stutter_chance = 100
 
 /// Barely standing, one spike short of shock.
 /datum/pain_bracket/agony
@@ -85,7 +92,9 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	drop_chance = 30
 	fall_chance = 15
 	vocalise_chance = 35
-	stutters = TRUE
+	shake_chance = 100
+	stutter_chance = 100
+	passout_chance = 10
 	meter_flashes = TRUE
 
 // One moodlet per bracket, all flagged MOOD_EVENT_PAIN so painkillers hide them alongside the meter
