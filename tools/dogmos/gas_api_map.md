@@ -86,6 +86,71 @@ Beyond the signals, `react()` carries logic Rust knows nothing about:
 - **`/datum/gas_mixture/turf/heat_capacity()` floors at `HEAT_CAPACITY_VACUUM`**; the base type returns
   the raw value. Turf mixes go through Rust in Phase 3, so this floor has to survive somewhere.
 
+## Disposition of every proc in gas_mixture.dm
+
+Derived from a full read of the file at `1808f41`. Line numbers are from that revision.
+
+**Renamed in Rust, DM keeps a wrapper** (done in the fork at `afc728f`):
+- `merge(giver)` → calls `__merge`, sends `COMSIG_GASMIX_MERGED`, returns TRUE/FALSE, returns FALSE on
+  null giver.
+- `react(holder)` → the hypernoblium gate and `reaction_results` stay in DM; delegate the reaction loop
+  to `__react`, send `COMSIG_GASMIX_REACTED` when anything changed. **Note `react()` currently filters
+  reactions in DM using `reaction.requirements` (L534-543); Dogmos does that gating itself from
+  `min_requirements`, so the DM loop goes away — but the return value must stay a bitflag union.**
+
+**Delete; the Dogmos bind takes the name directly** — no wrapper, no call-site change:
+`heat_capacity`, `total_moles`, `return_pressure`, `return_temperature`, `return_volume`,
+`thermal_energy`, `set_temperature`, `copy_from`, `compare`, `temperature_share`.
+- `compare` loses its `cmp_archive` argument; archives are gone, so drop it at call sites.
+- `set_temperature` becomes stricter: Dogmos clamps to >= 2.7 and rejects non-finite. Check for call
+  sites that currently set below `TCMB`.
+- `/datum/gas_mixture/turf/heat_capacity()` must **stay** as a DM override calling `..() ||
+  HEAT_CAPACITY_VACUUM`, since only the turf subtype floors at vacuum.
+
+**Delete outright, no replacement needed:**
+`assert_gas`, `assert_gases`, `add_gas`, `add_gases`, `garbage_collect`, `archive`,
+`heat_capacity_archive`, `/datum/gas_mixture/turf/heat_capacity_archive`.
+
+**Rename at call sites:**
+`set_gas` → `set_moles`, `adjust_gas` → `adjust_moles`, `adjust_multiple_gases` → `adjust_multi`
+(assoc list becomes variadic pairs).
+
+**Reimplement in DM on the new primitives:**
+- `remove(amount)` / `remove_ratio(ratio)` — allocate the destination, call `__remove`/`__remove_ratio`,
+  send `COMSIG_GASMIX_REMOVED`, preserve the null-vs-empty asymmetry above.
+- `remove_specific(gas_id, amount)` / `remove_specific_ratio` (L249-278) — no Dogmos equivalent; build
+  on `get_moles`/`adjust_moles` into a fresh mixture.
+- `copy()` (L311) — returns a **new** mixture; `copy_from` only fills an existing one.
+- `copy_from_ratio` (L345) — `copy_from` then `multiply(partial)`.
+- `convert_gas` (L194) — `adjust_multi` with a negative and a positive term.
+- `equalize(other)` (L282) — pure DM arithmetic today; rewrite on `get_gases`/`set_moles`. Distinct from
+  Dogmos' `equalize_with`, which is volume-scaled copy, **not** the same operation.
+- `share(sharer, our_coeff, sharer_coeff)` (L359) — depends on archived values that no longer exist, so
+  it must be rewritten, **not deleted**. Verified callers reach well beyond LINDA:
+  `closets.dm`, `morgue.dm`, `transit_tubes/station.dm`, `unary_devices/passive_vent.dm` and
+  `modular_nova/modules/liquids/code/liquid_systems/liquid_controller.dm`. Those survive Phase 3, so
+  `share` needs a real implementation on Dogmos primitives — the archived-value consistency it provides
+  is exactly what Dogmos does internally for turfs, but these callers are not turfs.
+
+**Keep unchanged except `temperature` → `return_temperature()`:**
+`has_gas`, `return_visuals`, `get_breath_partial_pressure` (L565),
+`gas_pressure_minimum_transfer` (L575), `gas_pressure_calculate` (L586, reads `temperature` at
+L592/596/606/616/617/668), `gas_pressure_quadratic`, `gas_pressure_approximate`, `pump_gas_to` (L700),
+`release_gas_to` (L729), `electrolyze`, `to_string` (L765, iterates `moles`), `check_gases` (L796,
+iterates `moles`).
+
+The last three iterate the `moles` list directly and need `get_gases()` instead.
+
+## Sweep mechanics
+
+Removing `moles` and `temperature` from the datum makes the DM compiler enumerate most call sites for
+you: access through a **typed** `var/datum/gas_mixture/` is a compile error. Untyped access is not, so
+the compiler list is a floor, not a ceiling - `rg '\.moles\b|\.temperature\b'` afterwards to catch the
+rest.
+
+Work hottest-file-first and compile between files. Run the five golden tests after the wrappers land,
+after the datum is gutted, and after the sweep - not only at the end.
+
 ## Open questions to resolve while writing the wrappers
 
 - Does Dogmos `adjust_moles` quantize the way `QUANTIZE()` does? If not, small transfers will drift
