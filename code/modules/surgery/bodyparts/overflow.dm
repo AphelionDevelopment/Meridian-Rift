@@ -29,7 +29,7 @@
 		COMBAT_FEEDBACK_OVERFLOW,
 		message = span_bolddanger(onlooker_message),
 		self_message = span_userdanger(message),
-		sound = 'sound/effects/wounds/crackandbleed.ogg',
+		sound = biological_state & BIO_METAL ? 'sound/effects/sparks/sparks4.ogg' : 'sound/effects/wounds/crackandbleed.ogg', // APHELION EDIT CHANGE - ORIGINAL: sound = 'sound/effects/wounds/crackandbleed.ogg',
 		shake_strength = COMBAT_SHAKE_PENETRATING_MAX,
 	)
 
