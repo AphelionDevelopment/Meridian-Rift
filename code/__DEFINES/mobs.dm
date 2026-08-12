@@ -19,6 +19,9 @@
 #define OXYLOSS_ORGAN_DAMAGE_THRESHOLD 60
 /// Damage per second dealt to both lungs and heart while suffocating past that threshold.
 #define OXYLOSS_ORGAN_DAMAGE_RATE 0.75
+/// Brain damage per second while circulation is stopped. This gives cardiac arrest a rescue window
+/// before brain death, including for species which do not accumulate oxygen damage.
+#define CIRCULATION_BRAIN_DAMAGE_RATE 2
 /// Toxloss past this starts destroying the liver that is trying to clear it.
 #define TOXLOSS_LIVER_DAMAGE_THRESHOLD 40
 /// Liver damage per second while poisoned past that threshold.

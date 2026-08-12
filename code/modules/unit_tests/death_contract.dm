@@ -28,7 +28,8 @@
 	TEST_ASSERT_EQUAL(victim.stat, DEAD, "A brain past its death threshold did not kill its owner")
 
 /**
- * A ruined heart has to be lethal whatever the heart is made of.
+ * A ruined heart has to cause cardiac critical condition and eventually be lethal whatever the
+ * heart is made of.
  *
  * undergoing_cardiac_arrest() is FALSE for a robotic heart, which cannot have a heart attack, and for
  * anything carrying TRAIT_STABLEHEART. Both used to die of the damage totals this phase stopped
@@ -48,11 +49,27 @@
 	TEST_ASSERT(augmented.circulation_stopped(), "A ruined cybernetic heart should read as stopped circulation")
 
 	augmented.updatehealth()
-	TEST_ASSERT_EQUAL(augmented.stat, DEAD, "A destroyed heart did not kill its owner immediately")
+	TEST_ASSERT_EQUAL(augmented.stat, HARD_CRIT, "A destroyed heart did not put its owner into hard critical condition")
+	TEST_ASSERT_NOTEQUAL(augmented.stat, DEAD, "A destroyed heart killed its owner without a cardiac-arrest rescue window")
 	TEST_ASSERT_EQUAL(augmented.can_defib(), DEFIB_FAIL_FAILING_HEART, "A patient with a destroyed heart was cleared for defibrillation")
+
+	var/brain_damage_before = augmented.get_organ_loss(ORGAN_SLOT_BRAIN)
+	augmented.handle_heart(seconds_per_tick = 2)
+	TEST_ASSERT(augmented.get_organ_loss(ORGAN_SLOT_BRAIN) > brain_damage_before, "Stopped circulation did not begin damaging the brain")
 
 	implant.set_organ_damage(0)
 	TEST_ASSERT_EQUAL(augmented.can_defib(), DEFIB_POSSIBLE, "Repairing the heart did not make its owner defibrillatable")
+
+	// Without that repair, the rescue window must still end in brain death. Re-break the heart after
+	// proving repair works, then run enough cardiac-arrest ticks to exhaust any standard brain.
+	implant.set_organ_damage(implant.maxHealth)
+	for(var/tick in 1 to 100)
+		if(augmented.stat == DEAD)
+			break
+		augmented.handle_heart(seconds_per_tick = 2)
+		var/obj/item/organ/brain/dying_brain = augmented.get_organ_slot(ORGAN_SLOT_BRAIN)
+		dying_brain?.on_life(seconds_per_tick = 2)
+	TEST_ASSERT_EQUAL(augmented.stat, DEAD, "Untreated cardiac arrest never progressed to brain death")
 
 /**
  * Someone left burning has to eventually die of it.

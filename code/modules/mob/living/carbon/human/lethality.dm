@@ -1,13 +1,6 @@
 /// Human critical states are based on the brain, circulation, blood, and pain.
 
 /mob/living/carbon/human/update_stat_from_condition()
-	// A missing or destroyed required heart is death, not merely unconsciousness. A stopped but still
-	// repairable heart remains hard crit so defibrillation has a window to restart it.
-	var/obj/item/organ/heart/our_heart = get_organ_slot(ORGAN_SLOT_HEART)
-	if(needs_heart() && (isnull(our_heart) || (our_heart.organ_flags & ORGAN_FAILING)) && !HAS_TRAIT(src, TRAIT_NODEATH))
-		death()
-		return TRUE
-
 	// This runs on every updatehealth(), so the pain rungs come off the controller's cached state
 	// rather than a scan of the status effect list.
 	var/datum/pain/pain = pain_controller
@@ -49,9 +42,9 @@
 		return TRUE
 
 	var/obj/item/organ/heart/our_heart = get_organ_slot(ORGAN_SLOT_HEART)
-	// Nothing in the chest to have stopped; a body that needs a heart and has none is already in arrest.
+	// A body which requires a heart has no circulation when that heart is missing.
 	if(isnull(our_heart))
-		return FALSE
+		return needs_heart()
 
 	return !our_heart.is_beating() || (our_heart.organ_flags & ORGAN_FAILING)
 

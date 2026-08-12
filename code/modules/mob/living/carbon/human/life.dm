@@ -295,6 +295,8 @@
 	if(we_breath)
 		adjust_oxy_loss(4 * seconds_per_tick)
 		Unconscious(80)
+	// Stopped circulation kills through the brain.
+	adjust_organ_loss(ORGAN_SLOT_BRAIN, CIRCULATION_BRAIN_DAMAGE_RATE * seconds_per_tick)
 	// Tissues die without blood circulation
 	adjust_brute_loss(1 * seconds_per_tick)
 
