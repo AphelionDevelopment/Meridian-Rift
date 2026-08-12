@@ -214,6 +214,17 @@
 	victim.Paralyze(10 SECONDS)
 	TEST_ASSERT(victim.is_at_mercy(), "A paralysed human should be at the attacker's mercy")
 
+	// Pain crawl must qualify on its own. TRAIT_NOSOFTCRIT keeps this target STABLE, as several species
+	// are, so relying on the crit rung would make them impossible to finish.
+	var/mob/living/carbon/human/pain_crawler = allocate(/mob/living/carbon/human/consistent)
+	ADD_TRAIT(pain_crawler, TRAIT_NOSOFTCRIT, TRAIT_SOURCE_UNIT_TESTS)
+	pain_crawler.add_pain_source("test_chest", PAIN_CAP_CHEST, BODY_ZONE_CHEST)
+	pain_crawler.add_pain_source("test_left_arm", PAIN_CAP_LIMB, BODY_ZONE_L_ARM)
+	pain_crawler.add_pain_source("test_right_arm", PAIN_CAP_LIMB, BODY_ZONE_R_ARM)
+	TEST_ASSERT_EQUAL(pain_crawler.stat, STABLE, "TRAIT_NOSOFTCRIT did not keep the pain crawler out of soft crit")
+	TEST_ASSERT(pain_crawler.pain_controller.crawling, "A permanent pain floor at the cap did not make the target crawl")
+	TEST_ASSERT(pain_crawler.is_at_mercy(), "A pain-incapacitated target with TRAIT_NOSOFTCRIT was not eligible for a finisher")
+
 /// Restraint tools cannot finish anyone off, whatever their force.
 /datum/unit_test/finisher_needs_a_lethal_weapon/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)

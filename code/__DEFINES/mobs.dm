@@ -15,10 +15,10 @@
 
 // Suffocation and poison kill through the organs they ruin rather than through a damage total, so
 // each has a point past which it starts destroying one.
-/// Oxyloss past this starves the brain, which is how suffocation, drowning and cardiac arrest kill.
-#define OXYLOSS_BRAIN_DAMAGE_THRESHOLD 60
-/// Brain damage per second while suffocating past that threshold. Roughly two minutes from held breath to brain death.
-#define OXYLOSS_BRAIN_DAMAGE_RATE 1.5
+/// Oxyloss past this starts damaging the lungs and heart responsible for breathing and circulation.
+#define OXYLOSS_ORGAN_DAMAGE_THRESHOLD 60
+/// Damage per second dealt to both lungs and heart while suffocating past that threshold.
+#define OXYLOSS_ORGAN_DAMAGE_RATE 0.75
 /// Toxloss past this starts destroying the liver that is trying to clear it.
 #define TOXLOSS_LIVER_DAMAGE_THRESHOLD 40
 /// Liver damage per second while poisoned past that threshold.

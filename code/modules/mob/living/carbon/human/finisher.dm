@@ -14,6 +14,8 @@
  * out, stunned, cuffed, or with no legs left to stand on.
  */
 /mob/living/carbon/proc/is_at_mercy()
+	if(pain_controller?.in_shock || pain_controller?.crawling)
+		return TRUE
 	if(stat != STABLE)
 		return TRUE
 	// One bitfield already covers being stunned, cuffed, held in an aggressive grab, and in stasis.

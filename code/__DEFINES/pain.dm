@@ -101,8 +101,10 @@
 #define PAIN_ADRENALINE_DURATION (30 SECONDS)
 /// Portion of total pain adrenaline hides while it lasts.
 #define PAIN_ADRENALINE_DAMPEN_RATIO 0.5
-/// How long the mob stutters once the adrenaline crashes.
-#define PAIN_ADRENALINE_CRASH_STUTTER (10 SECONDS)
+/// How long the mob is slowed once the adrenaline crashes.
+#define PAIN_ADRENALINE_CRASH_DURATION (10 SECONDS)
+/// Movement slowdown applied during the adrenaline crash.
+#define PAIN_ADRENALINE_CRASH_SLOWDOWN 1
 
 /// Felt pain hidden by each painkiller. Only the strongest active one counts; they never stack.
 #define PAIN_DAMPEN_IBUPROFEN 10

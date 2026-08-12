@@ -11,11 +11,15 @@
 	victim.updatehealth()
 	TEST_ASSERT_NOTEQUAL(victim.stat, DEAD, "A human died of brute damage alone, at [victim.health] health. Nothing should die that way now")
 
-	// Suffocation has to reach the brain to kill, so check that it gets there.
-	victim.adjust_oxy_loss(OXYLOSS_BRAIN_DAMAGE_THRESHOLD, forced = TRUE)
+	// Suffocation ruins the organs responsible for breathing and circulation, not the brain directly.
+	victim.adjust_oxy_loss(OXYLOSS_ORGAN_DAMAGE_THRESHOLD, forced = TRUE)
+	var/lung_damage_before = victim.get_organ_loss(ORGAN_SLOT_LUNGS)
+	var/heart_damage_before = victim.get_organ_loss(ORGAN_SLOT_HEART)
 	var/brain_damage_before = victim.get_organ_loss(ORGAN_SLOT_BRAIN)
 	victim.handle_organ_lethality(seconds_per_tick = 2)
-	TEST_ASSERT(victim.get_organ_loss(ORGAN_SLOT_BRAIN) > brain_damage_before, "Suffocating past the threshold did not cost the patient any brain")
+	TEST_ASSERT(victim.get_organ_loss(ORGAN_SLOT_LUNGS) > lung_damage_before, "Suffocating past the threshold did not damage the patient's lungs")
+	TEST_ASSERT(victim.get_organ_loss(ORGAN_SLOT_HEART) > heart_damage_before, "Suffocating past the threshold did not damage the patient's heart")
+	TEST_ASSERT_EQUAL(victim.get_organ_loss(ORGAN_SLOT_BRAIN), brain_damage_before, "Suffocation damaged the brain directly")
 
 	// And a dead brain is death, wherever the damage came from.
 	var/obj/item/organ/brain/dying_brain = victim.get_organ_slot(ORGAN_SLOT_BRAIN)
@@ -44,11 +48,11 @@
 	TEST_ASSERT(augmented.circulation_stopped(), "A ruined cybernetic heart should read as stopped circulation")
 
 	augmented.updatehealth()
-	TEST_ASSERT_EQUAL(augmented.stat, HARD_CRIT, "A stopped pump should put its owner in hard crit whatever it is made of")
+	TEST_ASSERT_EQUAL(augmented.stat, DEAD, "A destroyed heart did not kill its owner immediately")
+	TEST_ASSERT_EQUAL(augmented.can_defib(), DEFIB_FAIL_FAILING_HEART, "A patient with a destroyed heart was cleared for defibrillation")
 
-	// The kill itself is the same slow route as an organic arrest: no circulation, then oxyloss, then brain.
-	augmented.handle_heart(seconds_per_tick = 2)
-	TEST_ASSERT(augmented.get_oxy_loss() > 0, "A ruined cybernetic heart never started starving its owner of oxygen")
+	implant.set_organ_damage(0)
+	TEST_ASSERT_EQUAL(augmented.can_defib(), DEFIB_POSSIBLE, "Repairing the heart did not make its owner defibrillatable")
 
 /**
  * Someone left burning has to eventually die of it.

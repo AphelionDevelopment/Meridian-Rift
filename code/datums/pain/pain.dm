@@ -15,7 +15,7 @@
 	var/pain_floor = 0
 	/// Pain from impacts and stuns. Decays on its own, fast while high.
 	var/temporary_pain = 0
-	/// pain_floor plus temporary_pain. The real total, which painkillers do not touch.
+	/// pain_floor plus temporary_pain, clamped to the pain meter. Painkillers do not touch it.
 	var/total_pain = 0
 	/// total_pain minus dampening. Brackets, shock and recovery all read this.
 	var/felt_pain = 0
@@ -419,9 +419,9 @@
 /datum/pain/proc/update_pain(adrenaline_override)
 	var/old_felt_pain = felt_pain
 
-	// Uncapped: the floor and the pool carry their own caps. Clamping the total to PAIN_MAXIMUM would
-	// put it at the shock threshold, leaving anyone on a painkiller permanently short of shock.
-	total_pain = pain_floor + temporary_pain
+	// The temporary reservoir may exceed the meter so a blackout can drain without erasing the whole
+	// spike, but PAIN and FELT are both 0-100 values as presented to every gameplay gate.
+	total_pain = min(pain_floor + temporary_pain, PAIN_MAXIMUM)
 	var/unclamped_felt = base_dampening >= PAIN_DAMPEN_TOTAL ? 0 : max(total_pain - base_dampening, 0)
 	// Fight or flight halves whatever the mob would otherwise feel, including pain gained after the
 	// trigger and pain left visible through medication.

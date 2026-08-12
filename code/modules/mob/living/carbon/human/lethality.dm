@@ -8,9 +8,15 @@
  */
 
 /mob/living/carbon/human/update_stat_from_condition()
-	// Death is handled by the brain, the blood and the heart, each where it lives, so this decides
-	// consciousness only. It runs on every updatehealth(), so the pain rungs come off the controller's
-	// cached state rather than a scan of the status effect list.
+	// A missing or destroyed required heart is death, not merely unconsciousness. A stopped but still
+	// repairable heart remains hard crit so defibrillation has a window to restart it.
+	var/obj/item/organ/heart/our_heart = get_organ_slot(ORGAN_SLOT_HEART)
+	if(needs_heart() && (isnull(our_heart) || (our_heart.organ_flags & ORGAN_FAILING)) && !HAS_TRAIT(src, TRAIT_NODEATH))
+		death()
+		return TRUE
+
+	// This runs on every updatehealth(), so the pain rungs come off the controller's cached state
+	// rather than a scan of the status effect list.
 	var/datum/pain/pain = pain_controller
 	if((pain?.in_shock || circulation_stopped()) && !HAS_TRAIT(src, TRAIT_NOHARDCRIT))
 		set_stat(HARD_CRIT)
@@ -78,7 +84,7 @@
 	// Pain is excluded: succumb reads this, and a stun must not be the same as a kill.
 	if(circulation_stopped())
 		return TRUE
-	if(get_oxy_loss() >= OXYLOSS_BRAIN_DAMAGE_THRESHOLD)
+	if(get_oxy_loss() >= OXYLOSS_ORGAN_DAMAGE_THRESHOLD)
 		return TRUE
 	if(get_tox_loss() >= TOXLOSS_BRAIN_DAMAGE_THRESHOLD)
 		return TRUE
@@ -129,7 +135,7 @@
 /**
  * The most brain damage ordinary violence is allowed to leave.
  *
- * Ordinary violence leaves cognitive damage, not death; overflow, finishers and suffocation are the
+ * Ordinary violence leaves cognitive damage, not death; overflow, finishers and poisoning are the
  * routes past it. Read off the brain rather than assumed, since not every brain gives out at the
  * standard threshold: a surplus one goes at half of it.
  */
@@ -151,8 +157,10 @@
  * * seconds_per_tick - Standard Life() timing.
  */
 /mob/living/carbon/human/proc/handle_organ_lethality(seconds_per_tick)
-	if(get_oxy_loss() >= OXYLOSS_BRAIN_DAMAGE_THRESHOLD)
-		adjust_organ_loss(ORGAN_SLOT_BRAIN, OXYLOSS_BRAIN_DAMAGE_RATE * seconds_per_tick)
+	if(get_oxy_loss() >= OXYLOSS_ORGAN_DAMAGE_THRESHOLD)
+		var/oxygen_organ_damage = OXYLOSS_ORGAN_DAMAGE_RATE * seconds_per_tick
+		adjust_organ_loss(ORGAN_SLOT_LUNGS, oxygen_organ_damage)
+		adjust_organ_loss(ORGAN_SLOT_HEART, oxygen_organ_damage)
 
 	var/poisoning = get_tox_loss()
 	// The liver is clearing the poison, so it is what the poison ruins first.

@@ -1111,7 +1111,7 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
  * Was a plain health check everywhere it is used, which stopped meaning anything for humans once
  * damage totals stopped deciding death. Pain puts people on the floor with working lungs, so a crit
  * that is only pain must not take the airway with it, or stunlocking a mob would suffocate it
- * through the brain damage phase 4 routes oxyloss into. Anything still running on a health bar keeps
+ * through the organ damage phase 4 routes oxyloss into. Anything still running on a health bar keeps
  * the old reading.
  */
 /mob/living/proc/can_recover_breath()

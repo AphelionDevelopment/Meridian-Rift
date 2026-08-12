@@ -107,7 +107,7 @@
  * Being put down by pain must not cost you air.
  *
  * The breath loop reads the crit ladder, and pain owns two rungs of it now. If the rung alone stopped
- * a mob breathing then every stun would feed oxyloss, which phase 4 routes into brain damage, making
+ * a mob breathing then every stun would feed oxyloss, which phase 4 routes into organ damage, making
  * stunlocking a way of killing someone.
  */
 /datum/unit_test/pain_does_not_suffocate/Run()
@@ -182,8 +182,9 @@
 /**
  * Adrenaline delays pain shock. It never cancels it.
  *
- * Fight or flight continuously halves felt pain for its duration. It delays shock, but enough raw
- * pain can still fill the felt meter because the floor and temporary pool have independent caps.
+ * Fight or flight continuously halves felt pain for its duration. The public pain meter remains
+ * bounded at 100 even though its temporary reservoir can carry more, so shock lands when adrenaline
+ * expires rather than leaking through the upper half of an oversized meter.
  */
 /datum/unit_test/pain_adrenaline_delays_shock/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
@@ -197,17 +198,33 @@
 	TEST_ASSERT(pain.dampening > 0, "Adrenaline should be hiding some of what the mob is already carrying")
 	TEST_ASSERT(pain.felt_pain < PAIN_SHOCK_THRESHOLD, "Adrenaline should keep a survivable spike survivable")
 
-	// New pain is halved too. Enough injuries plus a full pool must still be able to reach shock.
+	// New pain is halved too, and neither public pain value may exceed its documented 0-100 range.
 	victim.add_pain_source("test_chest", PAIN_CAP_CHEST, BODY_ZONE_CHEST)
 	victim.add_pain_source("test_arm", PAIN_CAP_LIMB, BODY_ZONE_R_ARM)
 	victim.add_temporary_pain(PAIN_TEMPORARY_MAXIMUM)
-	TEST_ASSERT_EQUAL(pain.felt_pain, PAIN_SHOCK_THRESHOLD, "Adrenaline cancelled pain shock instead of delaying it")
-	TEST_ASSERT(pain.in_shock, "A mob past the cap on adrenaline should still black out")
+	TEST_ASSERT_EQUAL(pain.total_pain, PAIN_MAXIMUM, "The raw pain meter exceeded its documented maximum")
+	TEST_ASSERT_EQUAL(pain.felt_pain, PAIN_MAXIMUM * (1 - PAIN_ADRENALINE_DAMPEN_RATIO), "Adrenaline did not halve newly gained pain")
+	TEST_ASSERT(!pain.in_shock, "Adrenaline failed to delay pain shock")
 
-	pain.adjust_temporary_pain(-40)
-	var/felt_before_hit = pain.felt_pain
-	victim.add_temporary_pain(20)
-	TEST_ASSERT_EQUAL(pain.felt_pain - felt_before_hit, 10, "Pain gained during adrenaline was not halved")
+	victim.remove_status_effect(/datum/status_effect/adrenaline)
+	TEST_ASSERT_EQUAL(pain.felt_pain, PAIN_MAXIMUM, "Pain held back by adrenaline did not return when it expired")
+	TEST_ASSERT(pain.in_shock, "Adrenaline cancelled pain shock instead of delaying it")
+	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/adrenaline_crash), "Adrenaline ended without applying its crash")
+	TEST_ASSERT(victim.has_movespeed_modifier(/datum/movespeed_modifier/status_effect/adrenaline_crash), "The adrenaline crash did not slow movement")
+
+/// PAIN and FELT are 0-100 meters even though temporary pain retains extra impact for recovery.
+/datum/unit_test/pain_values_are_bounded/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+	var/datum/pain/pain = victim.pain_controller
+	TEST_ASSERT(pain, "The test subject has no pain controller")
+
+	// Suppress the automatic rush so this checks the meter contract independently of adrenaline.
+	pain.adrenaline_spent = TRUE
+	victim.add_pain_source("test_chest", PAIN_CAP_CHEST, BODY_ZONE_CHEST)
+	victim.add_temporary_pain(PAIN_TEMPORARY_MAXIMUM)
+	TEST_ASSERT_EQUAL(pain.temporary_pain, PAIN_TEMPORARY_MAXIMUM, "The temporary pain reservoir lost its intended headroom")
+	TEST_ASSERT_EQUAL(pain.total_pain, PAIN_MAXIMUM, "PAIN exceeded its documented maximum")
+	TEST_ASSERT_EQUAL(pain.felt_pain, PAIN_MAXIMUM, "FELT exceeded its documented maximum")
 
 /**
  * A surgical anaesthetic needs a full dose, not a sip.

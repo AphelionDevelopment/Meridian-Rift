@@ -8,6 +8,10 @@
 	id = "pain"
 	variable = TRUE
 
+/// Brief movement penalty after fight-or-flight wears off.
+/datum/movespeed_modifier/status_effect/adrenaline_crash
+	multiplicative_slowdown = PAIN_ADRENALINE_CRASH_SLOWDOWN
+
 /**
  * Pain shock, the spike variant.
  *
@@ -117,8 +121,24 @@
 
 /datum/status_effect/adrenaline/on_remove()
 	var/mob/living/carbon/carbon_owner = owner
-	// The crash: everything it held back lands at once, with a brief stutter on top.
+	// The crash: everything it held back lands at once, with a brief slowdown on top.
 	carbon_owner.pain_controller?.update_pain(adrenaline_override = FALSE)
-	carbon_owner.adjust_stutter(PAIN_ADRENALINE_CRASH_STUTTER)
+	carbon_owner.apply_status_effect(/datum/status_effect/adrenaline_crash)
 	to_chat(owner, span_userdanger("The adrenaline drains away, and everything hurts at once."))
+	return ..()
+
+/// The brief slowdown after an adrenaline rush ends.
+/datum/status_effect/adrenaline_crash
+	id = "adrenaline_crash"
+	status_type = STATUS_EFFECT_REFRESH
+	duration = PAIN_ADRENALINE_CRASH_DURATION
+	tick_interval = STATUS_EFFECT_NO_TICK
+	alert_type = null
+
+/datum/status_effect/adrenaline_crash/on_apply()
+	owner.add_movespeed_modifier(/datum/movespeed_modifier/status_effect/adrenaline_crash)
+	return TRUE
+
+/datum/status_effect/adrenaline_crash/on_remove()
+	owner.remove_movespeed_modifier(/datum/movespeed_modifier/status_effect/adrenaline_crash)
 	return ..()
