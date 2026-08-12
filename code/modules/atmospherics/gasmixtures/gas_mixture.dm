@@ -498,6 +498,16 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 	atmos_contents += temperature_str
 	return atmos_contents.Join(";")
 
+/// Reconstructs an assoc list of gas id -> moles for this mixture. There is no equivalent single
+/// Dogmos call - get_gases() only returns keys - so this pays one FFI round-trip per gas present.
+/// Only use where something genuinely needs the whole mixture as a list (e.g. values_dot/values_sum);
+/// a targeted get_moles(gas_id) is always cheaper for a handful of known gases.
+/datum/gas_mixture/proc/get_moles_list()
+	var/list/snapshot = list()
+	for(var/gas_id in get_gases())
+		snapshot[gas_id] = get_moles(gas_id)
+	return snapshot
+
 /// Checks if the gas amount exists in the mixture.
 /// Do NOT use this in code where performance matters!
 /datum/gas_mixture/proc/has_gas(gas_id, amount=0)
