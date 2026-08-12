@@ -1144,6 +1144,7 @@ GLOBAL_LIST_INIT(unrecommended_builds, list(
 		panel_tabs |= verb_to_init.category
 		verblist[++verblist.len] = list(verb_to_init.category, verb_to_init.name)
 	src.stat_panel.send_message("init_verbs", list(panel_tabs = panel_tabs, verblist = verblist, favorite_verbs = prefs?.favorite_verbs)) // APHELION EDIT CHANGE - ORIGINAL: src.stat_panel.send_message("init_verbs", list(panel_tabs = panel_tabs, verblist = verblist))
+
 	var/list/panel_verbs = list()
 	for(var/procpath/verb_to_init as anything in verbstoprocess)
 		if(!verb_to_init || verb_to_init.hidden)
