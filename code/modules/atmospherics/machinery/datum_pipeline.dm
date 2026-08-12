@@ -208,7 +208,7 @@
 		member.air_temporary.volume = member.volume
 		member.air_temporary.copy_from_ratio(air, member.volume / air.volume)
 
-		member.air_temporary.temperature = air.temperature
+		member.air_temporary.set_temperature(air.return_temperature())
 
 /datum/pipeline/proc/temperature_interact(turf/target, share_volume, thermal_conductivity)
 	var/total_heat_capacity = air.heat_capacity()
@@ -221,28 +221,28 @@
 	if(target.liquids?.liquid_state >= LIQUID_STATE_FOR_HEAT_EXCHANGERS)
 		turf_temperature = target.liquids.temp
 		turf_heat_capacity = target.liquids.total_reagents * REAGENT_HEAT_CAPACITY
-		var/delta_temperature = (air.temperature - turf_temperature)
+		var/delta_temperature = (air.return_temperature() - turf_temperature)
 
 		if(turf_heat_capacity <= 0 || partial_heat_capacity <= 0)
 			return TRUE
 
 		var/heat = CALCULATE_CONDUCTION_ENERGY(thermal_conductivity * delta_temperature, turf_heat_capacity, partial_heat_capacity)
 
-		air.temperature -= heat / total_heat_capacity
+		air.set_temperature(air.return_temperature() - (heat / total_heat_capacity))
 		if(!target.liquids.immutable)
 			target.liquids.temp += heat / turf_heat_capacity
 	else //NOVA EDIT END
 		if(turf_heat_capacity <= 0 || partial_heat_capacity <= 0)
 			return TRUE
 
-		var/delta_temperature = turf_temperature - air.temperature
+		var/delta_temperature = turf_temperature - air.return_temperature()
 
 		var/heat = thermal_conductivity * CALCULATE_CONDUCTION_ENERGY(delta_temperature, partial_heat_capacity, turf_heat_capacity)
-		air.temperature += heat / total_heat_capacity
+		air.set_temperature(air.return_temperature() + (heat / total_heat_capacity))
 		target.TakeTemperature(-1 * heat / turf_heat_capacity)
 
 		if(target.blocks_air)
-			target.temperature_expose(air, target.temperature)
+			target.temperature_expose(air, target.return_temperature())
 		update = TRUE
 
 /datum/pipeline/proc/return_air()
@@ -274,7 +274,6 @@
 	var/static/process_id = 0
 	process_id = WRAP_UID(process_id + 1)
 	var/datum/gas_mixture/total_gas_mixture = new
-	var/list/total_cached_moles = total_gas_mixture.moles
 	var/list/cached_specific_heat = GAS_META[META_GAS_SPECIFIC_HEAT]
 
 	for(var/datum/gas_mixture/gas_mixture as anything in gas_mixture_list)
@@ -287,21 +286,20 @@
 
 		// This is sort of a combined merge + heat_capacity calculation
 
-		var/list/giver_cached_moles = gas_mixture.moles
+		var/list/giver_cached_moles = gas_mixture.get_moles_list()
 		var/heat_capacity = values_dot(giver_cached_moles, cached_specific_heat)
 		//gas transfer
 		for(var/gas_id, amount in giver_cached_moles)
-			total_cached_moles[gas_id] += amount
+			total_gas_mixture.adjust_moles(gas_id, amount)
 
 		total_heat_capacity += heat_capacity
-		total_thermal_energy += gas_mixture.temperature * heat_capacity
+		total_thermal_energy += gas_mixture.return_temperature() * heat_capacity
 
 	if(volume_sum == 0)
 		return
 
 	total_gas_mixture.volume = volume_sum
-	total_gas_mixture.temperature = total_heat_capacity ? (total_thermal_energy / total_heat_capacity) : 0
-	total_gas_mixture.garbage_collect()
+	total_gas_mixture.set_temperature(total_heat_capacity ? (total_thermal_energy / total_heat_capacity) : 0)
 
 	//Update individual gas_mixtures by volume ratio
 	for(var/datum/gas_mixture/gas_mixture as anything in gas_mixture_list)

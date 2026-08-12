@@ -16,13 +16,15 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 	var/static/list/gas_meta
 	/// Dogmos' handle to this mixture's slot in its gas arena. Do not read or write this directly.
 	var/_extools_pointer_gasmixture
-	/// Volume in liters (duh). Kept as a plain var since dozens of DM-side formula procs read it
-	/// directly and volume essentially never changes post-construction; the few sites that DO
-	/// reassign it must also call set_volume() to keep Dogmos' internal copy in sync - see
-	/// tools/dogmos/gas_api_map.md, "Volume".
-	var/volume = CELL_VOLUME
 	/// Seeds Dogmos' internal volume at registration. Transient - only read once, by New().
-	var/initial_volume
+	/// There is no persistent `volume` var: an earlier version of this file kept one for DM-side
+	/// reads, on the assumption that reassignment was rare enough to patch at each call site by
+	/// hand. That assumption was wrong - a full audit found 20+ real reassignment sites across the
+	/// codebase, all silently able to desync Dogmos' internal volume from what DM believed, which
+	/// corrupts every pressure/heat-capacity calculation downstream with no compile error to catch
+	/// it. Routing all access through return_volume()/set_volume(), same as temperature, makes that
+	/// desync structurally impossible instead of something to keep hunting for.
+	var/initial_volume = CELL_VOLUME
 	/// The last tick this gas mixture shared on. A counter that turfs use to manage activity
 	var/last_share = 0
 	/// Tells us what reactions have happened in our gasmix. Assoc list of reaction - moles reacted pair.
@@ -33,10 +35,9 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 
 /datum/gas_mixture/New(volume)
 	if(!isnull(volume))
-		src.volume = volume
-	if(src.volume <= 0)
+		initial_volume = volume
+	if(initial_volume <= 0)
 		stack_trace("Created a gas mixture with zero volume!")
-	initial_volume = src.volume
 	__gasmixture_register()
 	reaction_results = new
 
