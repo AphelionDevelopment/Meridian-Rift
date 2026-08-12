@@ -48,10 +48,12 @@ try {
 		throw "No $ResultsPath produced - the run never reached the unit tests. Check data\logs\ci\runtime.log for where initialisation stopped; a hard crash (e.g. a Rust access violation) leaves no DM runtime behind."
 	}
 
-	# The server is expected to shut down cleanly even when tests fail. Its absence means the
-	# process died rather than completing the suite.
-	if (-not (Test-Path 'data\logs\ci\clean_run.lk')) {
-		throw "The run produced no clean_run.lk - DreamDaemon terminated abnormally. Results in $ResultsPath may be incomplete."
+	# Note: clean_run.lk is NOT a completion signal - it is tg's "the run was clean" marker, absent
+	# whenever tests failed or runtimes were logged. With a non-empty baseline it never appears, so it
+	# cannot be used to detect an abnormal exit. Freshness is guaranteed by deleting the results above;
+	# completeness is checked by the test count below.
+	if (Test-Path 'data\logs\ci\clean_run.lk') {
+		Write-Host 'clean_run.lk present: the run was clean by tg standards (no failures, no runtimes).'
 	}
 
 	$results = Get-Content $ResultsPath -Raw | ConvertFrom-Json

@@ -64,6 +64,18 @@ archival internally, and `share`/`equalize` are subsumed by turf processing and 
 `check_gases`, `electrolyze`, `has_gas`, `return_visuals`. These are composed of `get_moles`,
 `get_gases`, `total_moles` and arithmetic - no Rust needed.
 
+## DM-side behaviour the wrappers must preserve
+
+Beyond the signals, `react()` carries logic Rust knows nothing about:
+
+- **Hypernoblium oppression.** `gas_mixture.dm`'s `react()` returns `STOP_REACTIONS` outright when
+  hypernoblium is at or above `REACTION_OPPRESSION_THRESHOLD` and the mix is hotter than
+  `REACTION_OPPRESSION_MIN_TEMP`, before any reaction runs. Dogmos has no equivalent, so a wrapper must
+  apply this check *before* delegating, or hypernob stops suppressing reactions entirely.
+- **Reaction results bookkeeping.** `reaction_results` is rebuilt per react() call and read by the
+  atmos reaction recorder and TTV analysis.
+- **Empty-mix short circuit.** `react()` returns early when the mix has no gases.
+
 ## Open questions to resolve while writing the wrappers
 
 - Does Dogmos `adjust_moles` quantize the way `QUANTIZE()` does? If not, small transfers will drift
