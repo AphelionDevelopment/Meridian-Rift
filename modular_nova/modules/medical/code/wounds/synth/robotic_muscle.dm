@@ -1,5 +1,5 @@
 /datum/wound/muscle/robotic
-	sound_effect = 'sound/effects/wounds/blood1.ogg'
+	sound_effect = 'modular_nova/modules/medical/sound/robotic_slash_T1.ogg' // NOVA EDIT CHANGE - ORIGINAL: sound_effect = 'sound/effects/wounds/blood1.ogg'
 	treat_text_short = "Wrap the affected limb with gauze and tell them to rest."
 
 /datum/wound_pregen_data/muscle/robotic
@@ -27,7 +27,7 @@
 
 /datum/wound/muscle/robotic/severe
 	name = "Exhausted Piston"
-	sound_effect = 'sound/effects/wounds/blood2.ogg'
+	sound_effect = 'modular_nova/modules/medical/sound/robotic_slash_T2.ogg' // NOVA EDIT CHANGE - ORIGINAL: sound_effect = 'sound/effects/wounds/blood2.ogg'
 	desc = "An important hydraulic piston has been critically overused, resulting in total dysfunction until it recovers."
 	treat_text = "A tight splint on the affected limb, as well as plenty of rest and sleep."
 	examine_desc = "is stiffly limp, the extremities splayed out widely"
@@ -47,4 +47,3 @@
 
 	wound_path_to_generate = /datum/wound/muscle/robotic/severe
 	threshold_minimum = 80
-
