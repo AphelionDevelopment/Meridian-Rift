@@ -1,5 +1,4 @@
-/// TRUE if the ckey's linked Discord holds any role that grants the given in-game role key.
-/// Reads the SSymphony grants table (grant_type='ingame'). Fail-closed - any DB error returns FALSE.
+/// Does this ckey hold a Discord role that grants the in-game role? Fail-closed, a DB error is a no.
 /proc/symphony_has_ingame_role(target_ckey, role_key)
 	target_ckey = ckey(target_ckey)
 	if(!target_ckey || !role_key)
@@ -20,9 +19,7 @@
 	. = query.NextRow()
 	qdel(query)
 
-/// Every ckey that currently holds the given in-game role key, as an assoc set (ckey -> TRUE).
-/// One query for the whole server, so building a player list doesn't cost a query per player.
-/// Fail-closed - returns null, not an empty list, so callers can tell "nobody holds it" from "couldn't check".
+/// Everyone holding an in-game role key, ckey -> TRUE. Null if we couldn't check, empty if nobody has it.
 /proc/symphony_ingame_role_ckeys(role_key)
 	if(!role_key || !SSdbcore.Connect())
 		return null
@@ -43,15 +40,13 @@
 	qdel(query)
 	return holders
 
-/// Short-lived cache of whitelist answers, keyed by ckey. Only collapses bursts - grants, revokes and sweeps drop it outright.
+/// Cached whitelist answers, keyed by ckey. Only here to eat bursts, anything that changes a grant drops it.
 GLOBAL_LIST_EMPTY(symphony_whitelist_cache)
-/// world.time at which each cached answer stops being trusted.
 GLOBAL_LIST_EMPTY(symphony_whitelist_cache_expiry)
 
-/// How long a cached whitelist answer is reused for.
 #define SYMPHONY_WHITELIST_CACHE_TIME (10 SECONDS)
 
-/// Drop a ckey's cached answer, so a grant or revoke is visible immediately rather than after the TTL.
+/// Forget a ckey, so a grant or revoke lands now instead of after the TTL.
 /proc/symphony_invalidate_whitelist_cache(target_ckey)
 	target_ckey = ckey(target_ckey)
 	if(!target_ckey)
@@ -59,11 +54,7 @@ GLOBAL_LIST_EMPTY(symphony_whitelist_cache_expiry)
 	GLOB.symphony_whitelist_cache -= target_ckey
 	GLOB.symphony_whitelist_cache_expiry -= target_ckey
 
-/**
- * TRUE if the gate is off, or the ckey holds the in-game "whitelist" role.
- *
- * Fail-OPEN when disabled - right for a GATE, wrong for an ENTITLEMENT. "May this player use a restricted feature" wants symphony_holds_whitelist_role().
- */
+/// TRUE if the gate is off, or we hold the whitelist role. Fail-OPEN when disabled - it's a gate, not an entitlement.
 /proc/is_symphony_whitelisted(target_ckey)
 	if(!CONFIG_GET(flag/symphony_enabled))
 		return TRUE
@@ -77,8 +68,7 @@ GLOBAL_LIST_EMPTY(symphony_whitelist_cache_expiry)
 	GLOB.symphony_whitelist_cache[target_ckey] = .
 	GLOB.symphony_whitelist_cache_expiry[target_ckey] = world.time + SYMPHONY_WHITELIST_CACHE_TIME
 
-/// The entitlement form - TRUE only when the ckey actually holds the whitelist role.
-/// Fail-CLOSED: a disabled module means nobody holds it, because nothing has granted it.
+/// The entitlement version, fail-CLOSED - if the module is off then nothing granted it, so nobody has it.
 /proc/symphony_holds_whitelist_role(target_ckey)
 	if(!CONFIG_GET(flag/symphony_enabled))
 		return FALSE

@@ -1,4 +1,4 @@
-/// Safety net: periodically re-checks connected players in case a revoke push was missed.
+/// Safety net for revokes we never heard about.
 SUBSYSTEM_DEF(symphony)
 	name = "Discord Whitelist"
 	wait = 5 MINUTES
@@ -8,22 +8,21 @@ SUBSYSTEM_DEF(symphony)
 /datum/controller/subsystem/symphony/fire()
 	if(!CONFIG_GET(flag/symphony_enabled))
 		return
-	// One query for the whole server. null means "couldn't check" so we bail, an empty list means nobody holds it.
+	// One query for the lot. null means we couldn't check, an empty list means nobody holds it.
 	var/list/holders = symphony_ingame_role_ckeys("whitelist")
 	if(isnull(holders))
 		return
-	// Iterate a copy: revoking can qdel a client, and mutating GLOB.clients mid-loop skips entries.
+	// A copy, because revoking can qdel a client out from under the loop.
 	for(var/client/checked as anything in GLOB.clients.Copy())
 		if(!checked || !checked.ckey)
 			continue
-		// We already have the authoritative answer in bulk, so bin the stale per-ckey cache here.
+		// We've got the real answer in bulk, so the stale per-ckey cache can go.
 		symphony_invalidate_whitelist_cache(checked.ckey)
 		if(holders[checked.ckey])
 			continue
-		// Staff exemption, matching gate.dm - admins keep both their body and their readiness.
 		if(checked.holder)
 			continue
-		// Lobby players need unreadying too, or a lost revoke push still spawns them. Only touch the ready ones.
+		// Lobby players need unreadying too, or a missed revoke still spawns them.
 		if(isnewplayer(checked.mob))
 			var/mob/dead/new_player/lobby = checked.mob
 			if(lobby.ready != PLAYER_NOT_READY)

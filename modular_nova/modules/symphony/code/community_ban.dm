@@ -1,4 +1,4 @@
-/// Minutes for one unit of each duration interval the ban panel offers.
+/// Minutes in one unit of each interval.
 GLOBAL_LIST_INIT(symphony_interval_minutes, list(
 	"SECOND" = 1,
 	"MINUTE" = 1,
@@ -9,7 +9,7 @@ GLOBAL_LIST_INIT(symphony_interval_minutes, list(
 	"YEAR" = 525600,
 ))
 
-/// Ban duration in minutes, as SSymphony records it. 0 is permanent.
+/// Ban length in minutes, 0 being permanent.
 /proc/symphony_ban_minutes(duration, interval)
 	if(isnull(duration))
 		return 0
@@ -19,12 +19,7 @@ GLOBAL_LIST_INIT(symphony_interval_minutes, list(
 	var/per = GLOB.symphony_interval_minutes[interval] || 1
 	return max(1, round(amount * per))
 
-/**
- * Record a request for this ban to apply on every server in the community.
- *
- * The ban is already in this server's own table. SSymphony polls this table, applies the ban to the
- * other servers, and keeps applying it to servers added later. Returns FALSE if nothing was written.
- */
+/// We're already banned here, this just asks SSymphony to spread it to the rest.
 /proc/symphony_request_community_ban(target_ckey, list/roles, reason, duration, interval, admin_ckey)
 	if(!target_ckey || !length(roles) || !SSdbcore.Connect())
 		return FALSE

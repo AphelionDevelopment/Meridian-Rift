@@ -1,11 +1,11 @@
-/// Sender addresses that mean "this machine". BYOND leaves addr null for a same-machine sender, the rest are loopback spellings.
+/// Addresses that mean "this machine".
 GLOBAL_LIST_INIT(symphony_local_addresses, list("127.0.0.1", "::1", "localhost"))
 
-/// TRUE when a Symphony topic from this sender address may run. Everything passes while the gate is off.
+/// TRUE if a topic from this sender is allowed to run.
 /proc/symphony_address_allowed(addr)
 	if(!CONFIG_GET(flag/symphony_topics_local_only))
 		return TRUE
-	// Null is the server telling us the sender is on this machine, so there is nothing to check.
+	// Null addr means the sender is on this machine.
 	if(!addr)
 		return TRUE
 	var/sender = LOWER_TEXT(trim(addr))
@@ -16,12 +16,7 @@ GLOBAL_LIST_INIT(symphony_local_addresses, list("127.0.0.1", "::1", "localhost")
 			return TRUE
 	return FALSE
 
-/**
- * Shared parent for every Symphony world topic.
- *
- * Subtype this and the address gate applies on its own - nothing to remember when adding a topic later.
- * Abstract, so TopicHandlers() skips it rather than warning about the missing keyword.
- */
+/// Subtype this and the address gate comes along for free.
 /datum/world_topic/symphony
 	abstract_type = /datum/world_topic/symphony
 	require_comms_key = TRUE

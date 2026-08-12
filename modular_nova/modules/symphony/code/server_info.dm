@@ -1,11 +1,7 @@
-/**
- * Version of this game module, reported to SSymphony so it can spot a mismatched pair.
- *
- * Bump it whenever a topic, its response, or a shared table changes, and raise REQUIRED_GAME_MODULE in SSymphony to match.
- */
+/// Bump this and REQUIRED_GAME_MODULE in SSymphony together, or the two sides read as mismatched.
 #define SYMPHONY_MODULE_VERSION 5
 
-/// Live server status for the SSymphony panel. Returns a raw list; the caller passes format=json.
+/// Live server status for the SSymphony panel.
 /datum/world_topic/symphony/server_status
 	keyword = "symphony_server_status"
 	require_comms_key = TRUE
@@ -13,7 +9,6 @@
 
 /datum/world_topic/symphony/server_status/Run(list/input)
 	. = list()
-	// A missing module_version is itself the signal that the game side predates version reporting.
 	.["module_version"] = SYMPHONY_MODULE_VERSION
 	var/state = SSticker?.current_state
 	.["game_state"] = state
@@ -30,7 +25,7 @@
 			.["game_state_name"] = "finished"
 	.["round_id"] = GLOB.round_id
 
-	// This is a Dynamic-based fork - no gamemode/storyteller. tier is null until roundstart.
+	// Dynamic fork, no storyteller. Tier is null until roundstart.
 	var/datum/dynamic_tier/tier = SSdynamic?.current_tier
 	.["dynamic_tier"] = tier?.name
 	var/list/rulesets = list()
@@ -65,7 +60,7 @@
 	.["byond_version"] = "[world.byond_version].[world.byond_build]"
 	.["revision"] = GLOB.revdata?.commit
 
-/// Live player list with per-player detail for the panel. Sensitive (ckeys, antag roles) - comms-key gated.
+/// Live player list for the panel. Ckeys and antag roles, so it's comms-key gated.
 /datum/world_topic/symphony/player_list
 	keyword = "symphony_player_list"
 	require_comms_key = TRUE
@@ -74,11 +69,10 @@
 /datum/world_topic/symphony/player_list/Run(list/input)
 	. = list()
 	var/list/players = list()
-	// Audit line - this hands out the whole live antag roster, and log = FALSE keeps the comms key out of the topic log.
+	// Audit line, we hand out the whole antag roster here. log = FALSE keeps the comms key out of the topic log.
 	log_admin("Symphony: player list read via topic ([length(GLOB.clients)] clients).")
-	// Grab the whitelist holders in one query rather than one per player. null means the lookup failed and everyone reads FALSE - fail closed.
+	// null means the lookup failed and everyone reads FALSE, fail closed.
 	var/list/whitelisted_ckeys = symphony_ingame_role_ckeys("whitelist")
-	// GLOB.clients covers lobby + in-round + observers, one client per connected player.
 	for(var/client/connected as anything in GLOB.clients)
 		var/mob/player_mob = connected.mob
 		var/datum/mind/player_mind = player_mob?.mind
