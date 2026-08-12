@@ -34,6 +34,20 @@ if (-not (Test-Path $DogmosRepo)) {
 Push-Location $DogmosRepo
 try {
 	$branch = (git rev-parse --abbrev-ref HEAD)
+
+	# The fork's checkout has been switched out from under this twice now. On master the crate is
+	# still named "auxmos", so an unguarded build there produces the wrong library - or, worse,
+	# succeeds against upstream code that has none of our fixes.
+	$expectedBranch = 'dogmos'
+	if ($branch -ne $expectedBranch) {
+		throw "Fork is on branch '$branch', expected '$expectedBranch'. Run: git -C `"$DogmosRepo`" checkout $expectedBranch"
+	}
+	$crateName = (Select-String -Path (Join-Path $DogmosRepo 'Cargo.toml') -Pattern '^name = "(.+)"' |
+		Select-Object -First 1).Matches.Groups[1].Value
+	if ($crateName -ne 'dogmos') {
+		throw "Cargo.toml declares crate '$crateName', expected 'dogmos'. The checkout is not our fork's work."
+	}
+
 	Write-Host "=== Building Dogmos ($branch) for $Target ===" -ForegroundColor Cyan
 
 	cargo build --release --target $Target
