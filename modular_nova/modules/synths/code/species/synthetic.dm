@@ -1,3 +1,5 @@
+#define SYNTH_CRITICAL_BRAIN_DAMAGE_PER_SECOND 2
+
 /datum/species/synthetic
 	name = "Synthetic Humanoid"
 	id = SPECIES_SYNTH
@@ -70,11 +72,12 @@
 		FEATURE_SYNTH_HEAD = MUTPART_BLUEPRINT("Default Head", is_randomizable = FALSE),
 	)
 
-/datum/species/synthetic/proc/on_life(mob/living/carbon/human/human)
+/datum/species/synthetic/proc/on_life(mob/living/carbon/human/human, seconds_per_tick)
 	SIGNAL_HANDLER
 
 	if(human.stat == SOFT_CRIT || human.stat == HARD_CRIT)
 		human.adjust_fire_loss(1) //Still deal some damage in case a cold environment would be preventing us from the sweet release to robot heaven
+		human.adjust_organ_loss(ORGAN_SLOT_BRAIN, SYNTH_CRITICAL_BRAIN_DAMAGE_PER_SECOND * seconds_per_tick, required_organ_flag = ORGAN_ROBOTIC)
 		human.adjust_bodytemperature(13) //We're overheating!!
 		if(prob(10))
 			to_chat(human, span_warning("Alert: Critical damage taken! Cooling systems failing!"))
@@ -309,3 +312,5 @@
 	beepboop.dna.mutant_bodyparts[FEATURE_SYNTH_SCREEN] = build_mutant_part("Console")
 	apply_supplementary_body_changes(beepboop, visuals_only = TRUE)
 	regenerate_organs(beepboop, src, visual_only = TRUE)
+
+#undef SYNTH_CRITICAL_BRAIN_DAMAGE_PER_SECOND

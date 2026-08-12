@@ -187,6 +187,11 @@
 
 /datum/component/aura_healing/holosynth/process(seconds_per_tick)
 	. = ..()
+	var/obj/item/holosynth_pen/projector = parent
+	var/mob/living/carbon/human/linked_mob = projector.linked_mob_ref?.resolve()
+	if(linked_mob?.loc == projector)
+		for(var/organ_slot in organ_healing)
+			linked_mob.adjust_organ_loss(organ_slot, -organ_healing[organ_slot] * seconds_per_tick)
 
 	var/list/candidates = requires_visibility ? view(range, parent) : range(range, parent)
 	for(var/mob/living/carbon/candidate in candidates)
