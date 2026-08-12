@@ -166,6 +166,22 @@ an immutable mixture (space) would silently deplete it, unlike upstream tg's
 bind existed to let DM detect this. Added one to the fork (`afc728f`+); the `remove`/`remove_ratio`
 wrappers must check it and short-circuit to a copy for immutable mixtures.
 
+## Sweep methodology (learned during execution)
+
+Regex-based bulk transform works well but has three recurring failure modes, all silent until either
+grep or the compiler catches them - check for all three after every transform pass, before compiling:
+
+1. **Trailing `//` comments get pulled inside the new call's parens** when the original line ended in
+   a comment after the value (`cached_moles[x] -= y //comment`). Check: `grep '//[^()\n]*\)\s*$'`.
+2. **`+=`/`-=` regex anchored to a specific indentation depth misses deeper-nested lines** (inside
+   `if`/`else`), which a later generic-read pass then corrupts into `get_moles(x) += y` (assigning to a
+   proc call - DM catches this one as a hard error, at least). Prefer unanchored `(\w+)\.moles\[...\]`
+   over line-start-anchored patterns for this reason.
+3. **Multi-line assignments** (`X.temperature = clamp(\n\ta,\n\tb,\n)`) only have their first line
+   matched by a single-line regex, leaving an unbalanced paren the compiler reports far from the real
+   site. Check paren balance per-file after every transform (strip strings and comments first, count
+   `(` vs `)`) before trusting a "0 errors" result.
+
 ## Sweep mechanics
 
 Removing `moles` and `temperature` from the datum makes the DM compiler enumerate most call sites for
