@@ -1,3 +1,9 @@
+/// Plate body first, webbing second, so a plate's material and its straps colour separately.
+/datum/greyscale_config/armor_plate
+	name = "Armour Plate"
+	icon_file = 'icons/obj/clothing/armor_plate.dmi'
+	json_config = 'code/datums/greyscale/json_configs/armor_plate.json'
+
 /**
  * An armour plate.
  *
@@ -14,8 +20,9 @@
 	desc = "A plate of composite armour, shaped to drop into a carrier. Every hit it stops wears it down."
 	// What a plate is made to stop is what makes it one, so the base has nothing to stop and is never spawned.
 	abstract_type = /obj/item/armor_plate
-	icon = 'icons/obj/clothing/modsuit/mod_construction.dmi'
-	icon_state = "security-plating"
+	icon = 'icons/obj/clothing/armor_plate.dmi'
+	icon_state = "armor_plate"
+	greyscale_config = /datum/greyscale_config/armor_plate
 	inhand_icon_state = "armor"
 	lefthand_file = 'icons/mob/inhands/clothing/suits_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/clothing/suits_righthand.dmi'
@@ -183,7 +190,7 @@
 	name = "ballistic plate"
 	desc = "A layered ceramic plate for a carrier. Catches bullets, fists and shrapnel. Lasers pass \
 		straight through it."
-	icon_state = "security-plating"
+	greyscale_colors = "#8a8577#3f3d36"
 	stops_flags = list(MELEE, BULLET, BOMB)
 	nonpenetrating_wound_type = WOUND_BLUNT
 
@@ -191,6 +198,7 @@
 	name = "reinforced ballistic plate"
 	desc = "A thicker ceramic plate for a carrier. Catches bullets, fists and shrapnel, and does \
 		nothing about lasers."
+	greyscale_colors = "#6f7a5f#3a3f33"
 	level = 2
 	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 6, /datum/material/alloy/plasteel = SHEET_MATERIAL_AMOUNT * 2)
 
@@ -198,6 +206,7 @@
 	name = "composite ballistic plate"
 	desc = "A plasteel-backed composite plate, the heaviest that will drop into a standard carrier. \
 		Stops most of what a gun can do, and no part of what a laser can."
+	greyscale_colors = "#4f5a63#2f353a"
 	level = 3
 	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 8, /datum/material/alloy/plasteel = SHEET_MATERIAL_AMOUNT * 4, /datum/material/titanium = SHEET_MATERIAL_AMOUNT * 2)
 
@@ -206,7 +215,7 @@
 	name = "ablative plate"
 	desc = "A reflective sheet backed with sacrificial foam, shaped for a carrier. It boils away \
 		instead of the wearer. It will not slow a bullet."
-	icon_state = "engineering-plating"
+	greyscale_colors = "#b9c2c9#4a4f52"
 	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 2, /datum/material/silver = SHEET_MATERIAL_AMOUNT)
 	stops_flags = list(LASER, ENERGY)
 	nonpenetrating_wound_type = WOUND_BURN
@@ -215,6 +224,7 @@
 	name = "reinforced ablative plate"
 	desc = "A thicker ablative sheet for a carrier, with enough foam behind it to soak a sustained \
 		burst. Bullets pass straight through it."
+	greyscale_colors = "#9fb6c4#3f4a52"
 	level = 2
 	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 4, /datum/material/silver = SHEET_MATERIAL_AMOUNT * 2)
 
@@ -222,6 +232,7 @@
 	name = "composite ablative plate"
 	desc = "A mirrored composite plate over a deep ablative block, the heaviest a standard carrier \
 		will take. It shrugs off a sustained beam, but not a knife."
+	greyscale_colors = "#7fc3c8#33484a"
 	level = 3
 	custom_materials = list(/datum/material/iron = SHEET_MATERIAL_AMOUNT * 6, /datum/material/silver = SHEET_MATERIAL_AMOUNT * 4, /datum/material/titanium = SHEET_MATERIAL_AMOUNT * 2)
 
