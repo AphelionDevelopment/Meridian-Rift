@@ -1,11 +1,25 @@
 /// Fits a working plate into a suit and puts it on the test subject, returning the plate.
 /datum/unit_test/proc/plate_up(mob/living/carbon/human/victim, plate_type = /obj/item/armor_plate/ballistic)
 	var/obj/item/clothing/suit/armor/vest/carrier = allocate(/obj/item/clothing/suit/armor/vest)
-	var/obj/item/armor_plate/plate = allocate(plate_type)
-	carrier.fitted_plate = plate
-	plate.forceMove(carrier)
+	var/obj/item/armor_plate/plate = carrier.fitted_plate
+	if(!istype(plate, plate_type))
+		QDEL_NULL(carrier.fitted_plate)
+		plate = new plate_type(carrier)
+		carrier.fitted_plate = plate
 	victim.equip_to_slot(carrier, ITEM_SLOT_OCLOTHING)
 	return plate
+
+/// Plate carriers start ready to protect their wearer.
+/datum/unit_test/plate_carrier_starts_with_plate/Run()
+	var/obj/item/clothing/suit/armor/vest/carrier = allocate(/obj/item/clothing/suit/armor/vest)
+	TEST_ASSERT(istype(carrier.fitted_plate, /obj/item/armor_plate/ballistic), \
+		"A plate carrier should spawn with a ballistic plate fitted")
+	TEST_ASSERT_EQUAL(carrier.fitted_plate.loc, carrier, \
+		"A plate carrier's starting plate should be contained inside it")
+
+	var/obj/item/clothing/suit/armor/vest/capcarapace/captain_armor = allocate(/obj/item/clothing/suit/armor/vest/capcarapace)
+	TEST_ASSERT(istype(captain_armor.fitted_plate, /obj/item/armor_plate/ballistic/composite), \
+		"The captain's armor should spawn with a composite ballistic plate fitted")
 
 /// Plate carriers expose only protections that are independent of their fitted plate.
 /datum/unit_test/plate_carrier_has_no_legacy_combat_armour/Run()
@@ -38,7 +52,9 @@
 		"A hit through a plate should lose exactly the plate's tolerance; worn armour does not apply on top")
 
 	var/mob/living/carbon/human/empty_carrier = allocate(/mob/living/carbon/human/consistent)
-	empty_carrier.equip_to_slot(allocate(/obj/item/clothing/suit/armor/vest), ITEM_SLOT_OCLOTHING)
+	var/obj/item/clothing/suit/armor/vest/empty_vest = allocate(/obj/item/clothing/suit/armor/vest)
+	QDEL_NULL(empty_vest.fitted_plate)
+	empty_carrier.equip_to_slot(empty_vest, ITEM_SLOT_OCLOTHING)
 	var/obj/item/bodypart/unplated_chest = empty_carrier.get_bodypart(BODY_ZONE_CHEST)
 	TEST_ASSERT(isnull(empty_carrier.get_covering_plate(BRUTE, MELEE, unplated_chest)), "An empty carrier should have no covering plate")
 	TEST_ASSERT(empty_carrier.has_plate_carrier_covering(unplated_chest), "An empty carrier should still own hits on the zones it covers")

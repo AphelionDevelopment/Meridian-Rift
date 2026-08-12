@@ -72,6 +72,8 @@
 	if(LAZYLEN(clothing_traits))
 		clothing_traits = string_list(clothing_traits)
 	. = ..()
+	if(accepts_armor_plates && initial_armor_plate)
+		fitted_plate = new initial_armor_plate(src)
 	AddElement(/datum/element/venue_price, FOOD_PRICE_CHEAP)
 	if(can_be_bloody && ((body_parts_covered & FEET) || (flags_inv & HIDESHOES)))
 		LoadComponent(/datum/component/bloodysoles)

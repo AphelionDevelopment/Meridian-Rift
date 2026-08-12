@@ -257,6 +257,7 @@
 	inhand_icon_state = "armor"
 	body_parts_covered = CHEST|GROIN
 	armor_type = /datum/armor/vest_capcarapace
+	initial_armor_plate = /obj/item/armor_plate/ballistic/composite
 	dog_fashion = null
 	resistance_flags = FIRE_PROOF
 

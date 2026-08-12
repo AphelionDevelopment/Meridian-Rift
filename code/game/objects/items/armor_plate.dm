@@ -234,6 +234,8 @@
 	var/obj/item/armor_plate/fitted_plate
 	/// Whether a plate can be fitted into this. Armour and helmets take one, a jumpsuit does not.
 	var/accepts_armor_plates = FALSE
+	/// The plate this carrier starts with. Set to null for carriers that should spawn empty.
+	var/initial_armor_plate = /obj/item/armor_plate/ballistic
 
 /obj/item/clothing/suit/armor
 	accepts_armor_plates = TRUE
