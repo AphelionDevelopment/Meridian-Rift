@@ -63,7 +63,7 @@
  * Whether this plate has any opinion about an attack.
  *
  * A plate is ballistic or ablative and never both, so the wrong sort of attack does not meet it at
- * all and the carrier's own armour rating handles that hit as before.
+ * all and the hit lands as though the carrier were unarmoured.
  *
  * Arguments:
  * * armour_flag - One of the armour flags, e.g. [BULLET] or [LASER].
@@ -249,6 +249,20 @@
 
 /obj/item/clothing/head/mod
 	accepts_armor_plates = TRUE
+
+/**
+ * Plate carriers do not provide percentage combat armour of their own.
+ *
+ * Their coverage determines where a fitted plate can answer a hit, while the plate determines what
+ * it stops. Environmental and material protections remain on the clothing: bio protection and fire
+ * or acid durability are independent of the fitted plate.
+ */
+/obj/item/clothing/get_armor_rating(damage_type)
+	if(accepts_armor_plates)
+		switch(damage_type)
+			if(MELEE, BULLET, LASER, ENERGY, BOMB, WOUND)
+				return 0
+	return ..()
 
 /**
  * Fits a plate into this carrier, or pries the fitted one back out with a crowbar.

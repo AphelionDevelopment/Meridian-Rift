@@ -7,12 +7,22 @@
 	victim.equip_to_slot(carrier, ITEM_SLOT_OCLOTHING)
 	return plate
 
+/// Plate carriers expose only protections that are independent of their fitted plate.
+/datum/unit_test/plate_carrier_has_no_legacy_combat_armour/Run()
+	var/obj/item/clothing/suit/armor/vest/carrier = allocate(/obj/item/clothing/suit/armor/vest)
+	for(var/combat_rating in list(MELEE, BULLET, LASER, ENERGY, BOMB, WOUND))
+		TEST_ASSERT_EQUAL(carrier.get_armor_rating(combat_rating), 0, \
+			"A plate carrier retained a legacy [combat_rating] armour rating")
+
+	TEST_ASSERT(carrier.get_armor_rating(FIRE) > 0, \
+		"Removing a carrier's combat armour also removed its independent fire durability")
+
 /**
  * A matching plate replaces percentage armour for that hit.
  *
  * Everything up to its tolerance is stopped outright, and what gets past arrives as though nothing
- * were worn: the carrier's percentage does not get a second say. Worn armour still decides every
- * attack no plate answered.
+ * were worn: the carrier's percentage does not get a second say. Worn armour still decides attacks
+ * outside a plate carrier's coverage.
  */
 /datum/unit_test/plate_replaces_worn_armour/Run()
 	var/mob/living/carbon/human/plated = allocate(/mob/living/carbon/human/consistent)
@@ -27,13 +37,15 @@
 	TEST_ASSERT_EQUAL(plated_damage, 30 - plate.get_tolerance(), \
 		"A hit through a plate should lose exactly the plate's tolerance; worn armour does not apply on top")
 
-	var/mob/living/carbon/human/unplated = allocate(/mob/living/carbon/human/consistent)
-	var/obj/item/bodypart/bare_chest = unplated.get_bodypart(BODY_ZONE_CHEST)
-	TEST_ASSERT(isnull(unplated.get_covering_plate(BRUTE, MELEE, bare_chest)), "An unplated human should have no covering plate")
+	var/mob/living/carbon/human/empty_carrier = allocate(/mob/living/carbon/human/consistent)
+	empty_carrier.equip_to_slot(allocate(/obj/item/clothing/suit/armor/vest), ITEM_SLOT_OCLOTHING)
+	var/obj/item/bodypart/unplated_chest = empty_carrier.get_bodypart(BODY_ZONE_CHEST)
+	TEST_ASSERT(isnull(empty_carrier.get_covering_plate(BRUTE, MELEE, unplated_chest)), "An empty carrier should have no covering plate")
+	TEST_ASSERT(empty_carrier.has_plate_carrier_covering(unplated_chest), "An empty carrier should still own hits on the zones it covers")
 
-	var/unplated_damage = unplated.apply_damage(30, BRUTE, bare_chest, blocked = 50, wound_bonus = CANT_WOUND, armour_flag = MELEE)
-	TEST_ASSERT_EQUAL(unplated_damage, 15, \
-		"With no plate to answer the hit, worn armour should still reduce it by its percentage")
+	var/unplated_damage = empty_carrier.apply_damage(30, BRUTE, unplated_chest, blocked = 50, wound_bonus = CANT_WOUND, armour_flag = MELEE)
+	TEST_ASSERT_EQUAL(unplated_damage, 30, \
+		"An empty plate carrier should not reduce damage with its percentage armour")
 
 /// A plate is ballistic or ablative and never both, so the wrong sort of attack does not meet it at all.
 /datum/unit_test/plate_answers_one_kind_of_attack/Run()

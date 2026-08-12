@@ -3,7 +3,8 @@
  *
  * [/mob/living/proc/apply_damage] asks for a plate once per attack that carries an armour flag. If it
  * gets one, that plate decides the hit instead of the percentage model: everything up to its
- * tolerance is stopped outright and the rest lands unarmoured.
+ * tolerance is stopped outright and the rest lands unarmoured. A covered carrier with no working,
+ * matching plate also suppresses its legacy percentage armour, so the whole hit penetrates.
  *
  * Only carbons with clothing have plates. Fire, pressure, explosions and poison carry no armour flag
  * and never ask, so environmental damage skips the plate model.
@@ -20,8 +21,8 @@
 /mob/living/proc/get_covering_plate(damagetype, armour_flag, def_zone)
 	return null
 
-/// Whether a fitted plate occupies the carrier covering this zone, even if it is spent or the wrong type.
-/mob/living/proc/has_fitted_plate_covering(def_zone)
+/// Whether a plate carrier covers this zone, even if it is empty or its plate cannot stop the attack.
+/mob/living/proc/has_plate_carrier_covering(def_zone)
 	return FALSE
 
 /mob/living/carbon/human/get_covering_plate(damagetype, armour_flag, def_zone)
@@ -37,7 +38,7 @@
 	// Helmet before suit, since the only zone both could claim is a head the suit has a hood over.
 	return get_plate_from(head, hit_part, armour_flag) || get_plate_from(wear_suit, hit_part, armour_flag)
 
-/mob/living/carbon/human/has_fitted_plate_covering(def_zone)
+/mob/living/carbon/human/has_plate_carrier_covering(def_zone)
 	if(isnull(def_zone))
 		return FALSE
 
@@ -45,11 +46,11 @@
 	if(isnull(hit_part))
 		return FALSE
 
-	return plate_covers_part(head, hit_part) || plate_covers_part(wear_suit, hit_part)
+	return plate_carrier_covers_part(head, hit_part) || plate_carrier_covers_part(wear_suit, hit_part)
 
-/// Whether this carrier has a fitted plate over the bodypart. Its condition and type do not matter.
-/mob/living/carbon/human/proc/plate_covers_part(obj/item/clothing/carrier, obj/item/bodypart/hit_part)
-	return !isnull(carrier?.fitted_plate) && (carrier.body_parts_covered & hit_part.body_part)
+/// Whether this item is a plate carrier worn over the bodypart. A carrier needs a working plate to protect it.
+/mob/living/carbon/human/proc/plate_carrier_covers_part(obj/item/clothing/carrier, obj/item/bodypart/hit_part)
+	return carrier?.accepts_armor_plates && (carrier.body_parts_covered & hit_part.body_part)
 
 /**
  * The plate in one worn item, if it has one that covers this part and cares about this attack.

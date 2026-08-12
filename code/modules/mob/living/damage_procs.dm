@@ -47,7 +47,7 @@
 		armour_flag \
 		&& !forced \
 		&& (damagetype == BRUTE || damagetype == BURN) \
-		&& has_fitted_plate_covering(def_zone)
+		&& has_plate_carrier_covering(def_zone)
 	)
 	if(stopping_plate)
 		damage_amount -= stopping_plate.take_impact(src, damage, def_zone, wound_bonus, attack_direction, attacking_item, wound_clothing)
@@ -56,8 +56,8 @@
 	if(!forced)
 		// A plate that answered this attack replaces the percentage for it: everything up to its
 		// tolerance was stopped outright, and what got past arrives as though nothing were worn. Worn
-		// armour still decides an uncovered hit or one with no fitted plate. A mismatched or spent
-		// plate owns its covered hit but stops none of it, so that hit is fully penetrating.
+		// armour still decides an uncovered hit. An empty carrier, or one with a mismatched or spent
+		// plate, owns its covered hit but stops none of it, so that hit is fully penetrating.
 		if(!plate_owns_hit)
 			damage_amount *= ((100 - blocked) / 100)
 		delivered_damage = damage_amount
