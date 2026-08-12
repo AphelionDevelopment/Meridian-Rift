@@ -85,8 +85,18 @@
 			to_chat(slime, span_danger("You feel drained!"))
 
 	// Saline can prevent you from cannibalizing yourself.
+	var/cannibalized_limb = FALSE
 	if(slime.get_blood_volume(apply_modifiers = TRUE) < BLOOD_VOLUME_BAD)
-		cannibalize_body(slime)
+		cannibalized_limb = cannibalize_body(slime)
+
+	// Slimes used to turn an empty jelly reserve into brute damage. Brute totals are no longer
+	// lethal to humans, so an exhausted slime with no limb left to consume became impossible to
+	// exsanguinate. Give the limb sacrifice its intended chance to save them before checking this.
+	// Saline still counts here, just as it does for other species.
+	if(!cannibalized_limb && slime.get_blood_volume(apply_modifiers = TRUE) <= BLOOD_VOLUME_SURVIVE && !HAS_TRAIT(slime, TRAIT_NODEATH))
+		slime.investigate_log("has died of slime jelly loss.", INVESTIGATE_DEATHS)
+		slime.death()
+		return HANDLE_BLOOD_HANDLED
 
 	regenerate_limbs?.build_all_button_icons(UPDATE_BUTTON_STATUS)
 	return HANDLE_BLOOD_NO_NUTRITION_DRAIN|HANDLE_BLOOD_NO_OXYLOSS
@@ -109,7 +119,7 @@
 
 	if(!length(limbs_to_consume))
 		target.losebreath++
-		return
+		return FALSE
 
 	if(target.num_legs > 0) //Legs go before arms
 		limbs_to_consume -= list(BODY_ZONE_R_ARM, BODY_ZONE_L_ARM)
@@ -121,6 +131,7 @@
 	qdel(consumed_limb)
 
 	target.adjust_blood_volume(65 * target.physiology.blood_regen_mod) //NOVA EDIT CHANGE - This is because losing a limb now costs them 60 blood, so this refunds it with a pinch extra so it doesn't. Y'know. Kill you. - ORIGINAL: target.adjust_blood_volume(20 * target.physiology.blood_regen_mod)
+	return TRUE
 
 /datum/species/jelly/get_species_description()
 	return "Jellypeople are a strange and alien species with three eyes, made entirely out of gel."

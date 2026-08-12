@@ -113,3 +113,25 @@
 	TEST_ASSERT(dummy.can_have_blood(), "Removing TRAIT_NOBLOOD didn't make the mob have blood again.")
 	TEST_ASSERT(CAN_HAVE_BLOOD(dummy), "Caching of blood volume status is screwed up after the removal of TRAIT_NOBLOOD.")
 	TEST_ASSERT_EQUAL(dummy.get_blood_volume(), dummy.default_blood_volume, "Blood volume wasn't fixed after the removal of TRAIT_NOBLOOD.")
+
+/datum/unit_test/slime_bloodloss_is_lethal
+
+/datum/unit_test/slime_bloodloss_is_lethal/Run()
+	var/mob/living/carbon/human/slime = allocate(/mob/living/carbon/human/consistent)
+	slime.set_species(/datum/species/jelly/roundstartslime)
+	slime.set_blood_volume(BLOOD_VOLUME_SURVIVE - 1)
+	var/initial_limb_count = length(slime.get_bodyparts())
+
+	slime.handle_blood(1)
+	TEST_ASSERT_NOT_EQUAL(slime.stat, DEAD, "A slimeperson died before it could cannibalize a jelly limb.")
+	TEST_ASSERT_EQUAL(length(slime.get_bodyparts()), initial_limb_count - 1, "A critically drained slimeperson did not cannibalize a jelly limb.")
+
+	for(var/obj/item/bodypart/limb as anything in slime.get_bodyparts())
+		if(limb.body_zone == BODY_ZONE_CHEST || limb.body_zone == BODY_ZONE_HEAD)
+			continue
+		limb.drop_limb(TRUE)
+		qdel(limb)
+
+	slime.set_blood_volume(BLOOD_VOLUME_SURVIVE - 1)
+	slime.handle_blood(1)
+	TEST_ASSERT_EQUAL(slime.stat, DEAD, "A slimeperson below the lethal jelly threshold with no limb left to consume did not die.")
