@@ -76,6 +76,16 @@ Beyond the signals, `react()` carries logic Rust knows nothing about:
   atmos reaction recorder and TTV analysis.
 - **Empty-mix short circuit.** `react()` returns early when the mix has no gases.
 
+## Shape asymmetries that look like tidying opportunities but are not
+
+- **`remove()` returns null, `remove_ratio()` returns an empty mixture.** For `amount <= 0`,
+  `remove()` returns `null`; for `ratio <= 0`, `remove_ratio()` returns a *new empty mixture*. Callers
+  differ accordingly, some null-checking and some not. Making them consistent during the rewrite would
+  silently change behaviour at every call site that relied on one or the other.
+- **`remove()` clamps to available moles** rather than allowing a negative result.
+- **`/datum/gas_mixture/turf/heat_capacity()` floors at `HEAT_CAPACITY_VACUUM`**; the base type returns
+  the raw value. Turf mixes go through Rust in Phase 3, so this floor has to survive somewhere.
+
 ## Open questions to resolve while writing the wrappers
 
 - Does Dogmos `adjust_moles` quantize the way `QUANTIZE()` does? If not, small transfers will drift

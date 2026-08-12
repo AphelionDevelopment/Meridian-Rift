@@ -192,6 +192,7 @@
 #include "food_edibility_check.dm"
 #include "food_processor.dm"
 #include "full_heal.dm"
+#include "gas_mixture_golden.dm"
 #include "gas_transfer.dm"
 #include "get_turf_pixel.dm"
 #include "geyser.dm"

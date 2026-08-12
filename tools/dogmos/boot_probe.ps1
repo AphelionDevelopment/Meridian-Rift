@@ -81,6 +81,18 @@ try {
 		Write-Host "Last subsystem initialised: $lastSubsystem"
 	}
 
+	# Atmospherics is the subsystem this project keeps breaking, so answer that directly rather than
+	# making the reader infer it from the last-initialised line.
+	if (Test-Path $runtimeLog) {
+		$atmos = Select-String -Path $runtimeLog -Pattern 'Initialized Atmospherics subsystem' |
+			Select-Object -Last 1
+		if ($atmos) {
+			Write-Host "Atmospherics: OK - $($atmos.Line.Trim())" -ForegroundColor Green
+		} else {
+			Write-Host 'Atmospherics: DID NOT INITIALISE' -ForegroundColor Red
+		}
+	}
+
 	foreach ($stream in @(@{ Name = 'stderr'; Path = $stderr }, @{ Name = 'stdout'; Path = $stdout })) {
 		if ((Test-Path $stream.Path) -and (Get-Item $stream.Path).Length -gt 0) {
 			Write-Host ''
