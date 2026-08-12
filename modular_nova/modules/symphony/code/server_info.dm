@@ -1,6 +1,3 @@
-/// Bump this and REQUIRED_GAME_MODULE in SSymphony together, or the two sides read as mismatched.
-#define SYMPHONY_MODULE_VERSION 5
-
 /// Live server status for the SSymphony panel.
 /datum/world_topic/symphony/server_status
 	keyword = "symphony_server_status"
@@ -113,5 +110,3 @@
 
 	.["count"] = length(players)
 	.["players"] = players
-
-#undef SYMPHONY_MODULE_VERSION

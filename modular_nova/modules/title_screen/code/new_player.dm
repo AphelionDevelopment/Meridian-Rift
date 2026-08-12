@@ -18,9 +18,9 @@
 		return
 
 	// APHELION EDIT ADDITION START - discord whitelist gate.
-	// Allow-list, not deny-list - anything outside symphony_gate_free_hrefs is gated.
-	// Those keys are checked for EXCLUSIVITY, so one extra parameter can't unlock the rest of this Topic.
-	// get_whitelisted is handled above the gate so lobby clicks don't each cost a whitelist query.
+	// Allow-list, not deny-list - everything else is gated.
+	// Checked for EXCLUSIVITY, so an extra param can't unlock the rest.
+	// get_whitelisted sits above the gate so clicks don't each query.
 	if(!symphony_href_is_gate_free(href_list) && symphony_blocks_play())
 		symphony_gate_notice()
 		return

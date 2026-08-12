@@ -1,13 +1,7 @@
-/**
- * One-time chat notice telling an arriving player they can bring their characters with them.
- *
- * Tracked by a savefile key rather than player_age, so it needs no database and cannot fire twice.
- */
-
-/// How long after login to print the notice, late enough to land under the MOTD and changelog.
+/// Late enough to land under the MOTD and changelog.
 #define PREFS_IMPORT_NOTICE_DELAY (12 SECONDS)
 
-/// Queues the import notice. Deferred off the login tick, since the whitelist lookup hits the database.
+/// Off the login tick, the whitelist lookup hits the database.
 /client/proc/aphelion_offer_preferences_import()
 	addtimer(CALLBACK(src, PROC_REF(aphelion_show_import_notice)), PREFS_IMPORT_NOTICE_DELAY)
 
@@ -18,7 +12,7 @@
 		return
 	if(CONFIG_GET(flag/forbid_preferences_import))
 		return
-	// Not marked as seen when they fail this, so somebody who is whitelisted later still gets told once.
+	// Not marked seen, so somebody whitelisted later still gets told once.
 	if(!symphony_holds_whitelist_role(ckey))
 		return
 

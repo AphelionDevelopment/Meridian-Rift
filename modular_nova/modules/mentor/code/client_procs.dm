@@ -13,7 +13,7 @@
 		connect_to_relay()
 		return TRUE
 
-	// APHELION EDIT ADDITION - link target for the one-time preferences import notice, the verb re-checks every gate itself.
+	// APHELION EDIT ADDITION - link target for the import notice
 	if(href_list["aphelion_import_prefs"])
 		import_preferences()
 		return TRUE

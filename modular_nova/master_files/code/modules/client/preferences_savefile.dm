@@ -59,7 +59,7 @@
 	mismatched_customization = save_data["mismatched_customization"]
 	allow_advanced_colors = save_data["allow_advanced_colors"]
 
-	// APHELION EDIT ADDITION - never take this straight from the savefile, an edited one can put any string on the ID card and the manifest.
+	// APHELION EDIT ADDITION - edited savefiles can put any string on the ID card
 	alt_job_titles = sanitize_alt_job_titles(save_data["alt_job_titles"])
 
 	general_record = sanitize_text(general_record)
@@ -252,7 +252,7 @@
 
 	if(current_version < VERSION_TG_LOADOUT)
 		var/list/save_loadout = SANITIZE_LIST(save_data["loadout_list"])
-		// APHELION EDIT CHANGE BEGIN - build a new list instead of mutating save_loadout while iterating it, and drop paths _text2path can't resolve rather than storing a null key.
+		// APHELION EDIT CHANGE BEGIN - don't mutate the list while iterating it, and drop bad paths
 		// ORIGINAL:
 		// for(var/loadout in save_loadout)
 		// 	var/entry = save_loadout[loadout]
@@ -637,7 +637,7 @@
 #undef INDEX_UNDERWEAR
 #undef INDEX_BRA
 
-/// Shape check only, an assoc list of text to text. Never ask SSjob in here, it can be down at client connect and we would wipe everyone's titles - get_alt_job_title() does that check instead.
+/// Shape check only. Never ask SSjob here, it can be down on connect and we'd wipe everyone's titles.
 /proc/sanitize_alt_job_titles(raw)
 	if(!islist(raw))
 		return list()

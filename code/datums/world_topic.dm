@@ -5,7 +5,7 @@
 	var/list/all_handlers = subtypesof(/datum/world_topic)
 	for(var/I in all_handlers)
 		var/datum/world_topic/WT = I
-		// APHELION EDIT ADDITION BEGIN - an abstract parent carries shared behaviour and no keyword, skip it before the warning below fires every boot.
+		// APHELION EDIT ADDITION BEGIN - skip abstract parents, no keyword to warn about
 		if(initial(WT.abstract_type) == WT)
 			continue
 		// APHELION EDIT ADDITION END
@@ -37,7 +37,7 @@
 		. = "Bad Key"
 		if (input["format"] == "json")
 			. = list("error" = .)
-	// APHELION EDIT ADDITION BEGIN - refuse an address a topic does not accept, worded differently from a bad key so the caller can tell them apart.
+	// APHELION EDIT ADDITION BEGIN - Bad Address, told apart from Bad Key
 	else if(!AddressAllowed(addr))
 		. = "Bad Address"
 		if (input["format"] == "json")
@@ -50,8 +50,8 @@
 	else if(islist(.))
 		. = list2params(.)
 
-// APHELION EDIT ADDITION BEGIN - hook for the Symphony address gate, everything else keeps answering from anywhere.
-/// Whether this topic accepts the sender address. Allows everything unless a subtype says otherwise.
+// APHELION EDIT ADDITION BEGIN - Symphony address gate hook
+/// Whether this topic accepts the sender address. Subtypes override to restrict.
 /datum/world_topic/proc/AddressAllowed(addr)
 	return TRUE
 // APHELION EDIT ADDITION END

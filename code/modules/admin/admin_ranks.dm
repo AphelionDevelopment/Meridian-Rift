@@ -326,7 +326,7 @@ GLOBAL_PROTECT(protected_ranks)
 			if(skip)
 				continue
 			new /datum/admins(ranks_from_rank_name(backup_file_json["admins"]["[backup_admin_ckey]"]), ckey("[backup_admin_ckey]"))
-	// APHELION EDIT ADDITION BEGIN - Discord-granted admin ranks. Has to run in here, load_admins() Cut()s GLOB.admin_datums above so anywhere else gets wiped on every reload.
+	// APHELION EDIT ADDITION BEGIN - Discord admin ranks, must be after the Cut() above
 	symphony_refresh_admin_role_keys()
 	symphony_apply_discord_admins()
 	// APHELION EDIT ADDITION END

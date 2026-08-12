@@ -11,7 +11,7 @@
 	var/check_mode = TRICOLOR_CHECK_BOOLEAN
 
 /datum/preference/tri_color/deserialize(input, datum/preferences/preferences)
-	// APHELION EDIT ADDITION - savefile values get here without is_valid() ever running, and a runtime out through client/New() locks the ckey out on every reconnect.
+	// APHELION EDIT ADDITION - savefile values skip is_valid(), a runtime here locks the ckey out
 	if(!islist(input) || length(input) < 3)
 		return create_default_value()
 	var/list/input_colors = input

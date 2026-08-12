@@ -287,7 +287,7 @@ GLOBAL_VAR_INIT(last_maptick_time, 0)
 			handler = topic_handlers[I]
 			break
 
-	// APHELION EDIT ADDITION START - scrub the comms key, it must never reach game.log. Staff read that log through the Symphony panel.
+	// APHELION EDIT ADDITION START - scrub the comms key out of the topic log
 	if((!handler || initial(handler.log)) && config && CONFIG_GET(flag/log_world_topic))
 		var/static/regex/comms_key_scrub = regex("key=\[^&]*", "g")
 		log_topic("\"[comms_key_scrub.Replace(T, "key=***")]\", from:[addr], master:[master]")

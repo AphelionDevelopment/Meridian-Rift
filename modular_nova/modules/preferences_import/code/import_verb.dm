@@ -1,10 +1,4 @@
-/**
- * Player-facing preferences import, for people bringing a character across from another server.
- *
- * Whitelisted players only, and always over the CALLER's own savefile - there is no target parameter.
- */
-// Named apart from the admin "Import Preferences" verb: an admin holds both, BYOND keys the verb panel
-// on the display name, and the two collide - staff could not see this one at all.
+// Name must differ from the admin verb, BYOND keys the verb panel on it and they collide.
 GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences", "Upload a character preferences JSON file, replacing your current one.", "OOC")
 
 	if(CONFIG_GET(flag/forbid_preferences_import))
@@ -15,11 +9,11 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 		to_chat(src, span_warning("Your preferences are not loaded yet. Try again in a moment."))
 		return
 
-	if(is_guest_key(key)) // `key`, not `ckey` - ckey() strips the hyphen that is_guest_key matches on
+	if(is_guest_key(key)) // key, not ckey - ckey() eats the hyphen is_guest_key looks for
 		to_chat(src, span_warning("Guest accounts cannot import preferences."))
 		return
 
-	// The ENTITLEMENT form, not the gate form - fail closed if the database is down or Symphony is off.
+	// The entitlement version, not the gate - nobody has it if Symphony is off.
 	if(!symphony_holds_whitelist_role(ckey))
 		to_chat(src, span_warning("Importing preferences is only available to whitelisted players."))
 		return
@@ -40,7 +34,7 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 	if(confirm != "Import")
 		return
 
-	// Re-check after the prompt: the player may have been sitting on the dialog.
+	// They could've been sat on that prompt a while, so check again.
 	if(!symphony_holds_whitelist_role(ckey) || CONFIG_GET(flag/forbid_preferences_import))
 		to_chat(src, span_warning("Importing is no longer available."))
 		return
@@ -55,8 +49,6 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 		to_chat(src, span_warning("That is not a .json file."))
 		return
 
-	// SAVEFILE_UPLOAD_LIMIT, the same config the admin import obeys - one knob, and raising it needs no
-	// recompile. The old hardcoded 1 MB was under a full 60-slot savefile, so it rejected valid files.
 	var/filesize = length(uploaded_file)
 	var/size_limit = CONFIG_GET(number/savefile_upload_limit) * 1024
 	if(filesize > size_limit)
@@ -76,7 +68,7 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 		log_game("Preferences import by [ckey] failed to parse: [err]")
 		return
 
-	// Depth is measured on the DECODED tree - a pre-decode text scan is slower than json_decode itself.
+	// Depth goes on the decoded tree, a text scan first is slower than decoding.
 	if(prefs_import_tree_too_deep(json_tree))
 		to_chat(src, span_warning("That file is nested too deeply to be a preferences file."))
 		log_admin("[key_name(src)] attempted a preferences import with excessive JSON nesting.")
@@ -100,7 +92,7 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 	fdel("[savefile_path].updatebac") // else load_preferences can revert to a stale migration backup
 	text2file(json_encode(json_tree), file(savefile_path))
 
-	// Drop the cached datum, else the still-connected client writes its stale prefs back over the import.
+	// Else the still-connected client writes its stale prefs over the import.
 	GLOB.preferences_datums[ckey] = null
 
 	log_admin("[key_name(src)] imported their own preferences ([filesize] bytes).")
@@ -110,7 +102,7 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 	to_chat(src, span_notice("Anything the server could not accept will be reset to a default when you return."))
 	QDEL_IN(src, 2)
 
-/// Copies the current savefile aside into a ring buffer, dropping the oldest so nobody locks themselves out.
+/// Stashes a copy of the savefile, oldest one drops off the end.
 /proc/prefs_import_backup(savefile_path)
 	if(!fexists(savefile_path))
 		return TRUE // nothing to back up, which is fine
@@ -120,7 +112,6 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 		var/candidate = "[savefile_path].importbac-[i]"
 		if(fexists(candidate))
 			existing += candidate
-	// Ring buffer: once full, drop the oldest and shuffle the rest down.
 	if(length(existing) >= limit)
 		fdel("[savefile_path].importbac-1")
 		for(var/i = 2 to limit)
@@ -133,5 +124,5 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 	return fcopy(savefile_path, "[savefile_path].importbac-[slot]")
 
 /client
-	/// world.time before which this client may not import preferences again.
+	/// world.time before we let them import again.
 	var/next_preferences_import = 0
