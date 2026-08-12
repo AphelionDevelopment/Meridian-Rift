@@ -32,6 +32,8 @@
 
 	var/rst = SSticker?.round_start_time
 	.["round_elapsed_secs"] = rst ? round((world.time - rst) / 10) : 0
+	// The lobby has no round to time, so the bot shows this instead.
+	.["uptime_secs"] = round(world.time / 10)
 	.["round_elapsed_text"] = rst ? DisplayTimeText(world.time - rst) : null
 
 	.["clients"] = length(GLOB.clients)

@@ -1,5 +1,5 @@
 /// What this module can do, in one number. Bump with SSymphony's EXPECTED_GAME_MODULE.
-#define SYMPHONY_MODULE_VERSION 6
+#define SYMPHONY_MODULE_VERSION 7
 
 /// Which half is behind, if either. needs/wants are what the panel asked for.
 /proc/symphony_version_verdict(needs, wants)
