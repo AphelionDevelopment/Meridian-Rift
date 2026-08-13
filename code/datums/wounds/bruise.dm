@@ -18,10 +18,11 @@
 
 /datum/wound/bruise/set_victim(new_victim)
 	if(victim)
-		UnregisterSignal(victim, COMSIG_LIVING_EARLY_UNARMED_ATTACK)
+		UnregisterSignal(victim, list(COMSIG_LIVING_EARLY_UNARMED_ATTACK, COMSIG_CARBON_LIMPING))
 
 	if(new_victim && use_pain)
 		RegisterSignal(new_victim, COMSIG_LIVING_EARLY_UNARMED_ATTACK, PROC_REF(on_hurt_hand_used))
+		RegisterSignal(new_victim, COMSIG_CARBON_LIMPING, PROC_REF(on_hurt_leg_used))
 
 	return ..()
 
@@ -50,6 +51,21 @@
 
 	victim.add_temporary_pain(use_pain)
 	to_chat(victim, span_warning("Your bruised [limb.plaintext_zone] throbs as you strike [target]."))
+
+/**
+ * Spikes pain when the bruised leg is walked on.
+ *
+ * Using a leg is walking on it, which is what makes a deep bruise in one worth carrying. The signal
+ * fires on every step the limp is due to take, ahead of the limp's own roll, so this rolls the same
+ * chance rather than charging for every footfall.
+ */
+/datum/wound/bruise/proc/on_hurt_leg_used(mob/living/carbon/source, obj/item/bodypart/limping_leg)
+	SIGNAL_HANDLER
+
+	if(limping_leg != limb || !prob(limp_chance))
+		return
+
+	victim.add_temporary_pain(use_pain)
 
 /datum/wound/bruise/get_limb_examine_description()
 	return span_warning("The flesh here is swollen and discoloured.")

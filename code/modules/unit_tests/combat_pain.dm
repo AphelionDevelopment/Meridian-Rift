@@ -227,15 +227,23 @@
 	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/adrenaline_crash), "Adrenaline ended without applying its crash")
 	TEST_ASSERT(victim.has_movespeed_modifier(/datum/movespeed_modifier/status_effect/adrenaline_crash), "The adrenaline crash did not slow movement")
 
-/// Wounds and the pain controller must not run two independent fight-or-flight effects.
-/datum/unit_test/pain_wound_uses_single_second_wind/Run()
-	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
-	var/obj/item/bodypart/arm = victim.get_bodypart(BODY_ZONE_R_ARM)
+/**
+ * Fight-or-flight is decided by an injury's pain factor, never by its severity tier.
+ *
+ * The two disagree: an Open Laceration is a Severe wound worth only a Moderate pain factor. One rule
+ * decides, so a wound below the factor triggers nothing however severe it reads.
+ */
+/datum/unit_test/pain_adrenaline_triggers_on_pain_factor/Run()
+	var/mob/living/carbon/human/quiet_wound = allocate(/mob/living/carbon/human/consistent)
+	quiet_wound.get_bodypart(BODY_ZONE_R_ARM).force_wound_upwards(/datum/wound/slash/flesh/severe)
+	TEST_ASSERT(!quiet_wound.has_status_effect(/datum/status_effect/adrenaline), \
+		"A wound under the pain factor trigger caused adrenaline on its severity alone")
 
-	arm.force_wound_upwards(/datum/wound/blunt/bone/severe)
-
-	TEST_ASSERT(victim.has_status_effect(/datum/status_effect/adrenaline), "A severe wound should trigger adrenaline")
-	TEST_ASSERT_EQUAL(victim.reagents.get_reagent_amount(/datum/reagent/determination), 0, \
+	var/mob/living/carbon/human/loud_wound = allocate(/mob/living/carbon/human/consistent)
+	loud_wound.get_bodypart(BODY_ZONE_R_ARM).force_wound_upwards(/datum/wound/blunt/bone/severe)
+	TEST_ASSERT(loud_wound.has_status_effect(/datum/status_effect/adrenaline), \
+		"An injury at the pain factor trigger did not cause adrenaline")
+	TEST_ASSERT_EQUAL(loud_wound.reagents.get_reagent_amount(/datum/reagent/determination), 0, \
 		"A wound triggered legacy determination in addition to adrenaline")
 
 /// PAIN and FELT are 0-100 meters even though temporary pain retains extra impact for recovery.
@@ -255,8 +263,8 @@
 /**
  * A surgical anaesthetic needs a full dose, not a sip.
  *
- * Total numbness means no shock, no crawl and no finisher, so anything carrying it has to be gated on
- * enough being present to put someone under, or it is the cheapest stun immunity in the game.
+ * Total numbness means no shock and no crawl, so anything carrying it has to be gated on enough being
+ * present to put someone under, or it is the cheapest stun immunity in the game.
  */
 /datum/unit_test/pain_anaesthetic_needs_a_dose/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)

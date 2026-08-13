@@ -900,7 +900,8 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 
 /mob/living/update_health_hud(healthpercent)
 	var/severity = 0
-	if(!healthpercent)
+	// isnull, not falsy: zero is a real reading, and the mob that reports it is the one dying.
+	if(isnull(healthpercent))
 		healthpercent = (health/maxHealth) * 100
 	var/atom/movable/screen/healthdoll/living/livingdoll = hud_used?.screen_objects[HUD_MOB_HEALTHDOLL]
 	if(istype(livingdoll)) //to really put you in the boots of a simplemob

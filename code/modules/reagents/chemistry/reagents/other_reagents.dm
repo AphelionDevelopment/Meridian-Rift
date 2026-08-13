@@ -3109,18 +3109,18 @@
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
 	randomized_spawns = REAGENT_SPAWN_ALL_RANDOM_SPAWNS
 
-// "Second wind" reagent generated when someone suffers a wound. Epinephrine, adrenaline, and stimulants are all already taken so here we are
+// A push-on-a-little-more reagent. Epinephrine, adrenaline, and stimulants are all already taken so here we are
 /datum/reagent/determination
 	name = "Determination"
 	description = "For when you need to push on a little more. Do NOT allow near plants."
 	color = "#D2FFFA"
-	metabolization_rate = 0.75 * REAGENTS_METABOLISM // 5u (WOUND_DETERMINATION_CRITICAL) will last for ~34 seconds
+	metabolization_rate = 0.75 * REAGENTS_METABOLISM // 5u will last for ~34 seconds
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
 	randomized_spawns = REAGENT_SPAWN_ALL_RANDOM_SPAWNS
 	self_consuming = TRUE
 	metabolized_traits = list(TRAIT_ANALGESIA)
 	pain_dampening = PAIN_DAMPEN_MODERATE
-	/// Whether we've had at least WOUND_DETERMINATION_SEVERE (2.5u) of determination at any given time. No damage slowdown immunity or indication we're having a second wind if it's just a single moderate wound
+	/// Whether we've had at least WOUND_DETERMINATION_SEVERE (2.5u) of determination at any given time. No damage slowdown immunity or indication we're pushing through it for a trace dose
 	var/significant = FALSE
 
 /datum/reagent/determination/on_mob_end_metabolize(mob/living/carbon/affected_mob)

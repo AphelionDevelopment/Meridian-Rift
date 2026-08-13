@@ -254,8 +254,6 @@
 			playsound(limb.owner, sound_effect, sound_volume + (20 * severity), TRUE, falloff_exponent = SOUND_FALLOFF_EXPONENT + 2,  ignore_walls = FALSE, falloff_distance = 0)
 
 	wound_injury(old_wound, attack_direction = attack_direction)
-	if(!demoted)
-		second_wind()
 
 	return TRUE
 
@@ -498,13 +496,6 @@
 	// A wrapped injury hurts a tier less than a bare one, so the floor is stale the moment gauze goes
 	// on or comes off, which is one of the things that lands here. See [/datum/wound/proc/get_pain_factor].
 	victim?.mark_pain_dirty()
-
-/// Gives severe trauma its fight-or-flight window
-/datum/wound/proc/second_wind()
-	if(severity < WOUND_SEVERITY_SEVERE)
-		return
-
-	victim.pain_controller?.try_trigger_adrenaline()
 
 /datum/wound/proc/interact_try_treating(datum/source, mob/living/user, obj/item/tool, ...)
 	SIGNAL_HANDLER

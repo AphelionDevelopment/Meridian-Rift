@@ -88,13 +88,7 @@
 	if(isnull(our_brain) || circulation_stopped())
 		return 0
 
-	var/margin = 1
-	if(our_brain.maxHealth)
-		margin = min(margin, 1 - (our_brain.damage / our_brain.maxHealth))
-
-	var/obj/item/organ/heart/our_heart = get_organ_slot(ORGAN_SLOT_HEART)
-	if(our_heart?.maxHealth)
-		margin = min(margin, 1 - (our_heart.damage / our_heart.maxHealth))
+	var/margin = min(get_organ_margin(our_brain), get_organ_margin(get_organ_slot(ORGAN_SLOT_HEART)))
 
 	// Raw volume rather than the modified figure: this runs on every updatehealth() and the modifiers
 	// walk the whole reagent list.
@@ -102,6 +96,21 @@
 		margin = min(margin, (blood_volume - BLOOD_VOLUME_SURVIVE) / (BLOOD_VOLUME_NORMAL - BLOOD_VOLUME_SURVIVE))
 
 	return clamp(margin, 0, 1)
+
+/**
+ * How much of an organ is left, from 0 to 1.
+ *
+ * A missing organ is not this proc's business: whether a body can live without one is decided by its
+ * caller, so an absent organ reads as no constraint rather than as death.
+ *
+ * Arguments:
+ * * checked_organ - The organ to measure, or null.
+ */
+/proc/get_organ_margin(obj/item/organ/checked_organ)
+	if(isnull(checked_organ) || !checked_organ.maxHealth)
+		return 1
+
+	return 1 - (checked_organ.damage / checked_organ.maxHealth)
 
 /mob/living/carbon/human/get_health_hud_percent()
 	var/margin = get_vitals_ratio()
@@ -118,9 +127,9 @@
 /**
  * The most brain damage ordinary violence is allowed to leave.
  *
- * Ordinary violence leaves cognitive damage, not death; overflow, finishers and poisoning are the
- * routes past it. Read off the brain rather than assumed, since not every brain gives out at the
- * standard threshold: a surplus one goes at half of it.
+ * Ordinary violence leaves cognitive damage, not death; overflow and poisoning are the routes past
+ * it. Read off the brain rather than assumed, since not every brain gives out at the standard
+ * threshold: a surplus one goes at half of it.
  */
 /mob/living/proc/get_brain_damage_combat_cap()
 	return BRAIN_DAMAGE_COMBAT_MAXIMUM

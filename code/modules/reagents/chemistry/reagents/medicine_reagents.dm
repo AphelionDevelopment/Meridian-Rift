@@ -2027,6 +2027,7 @@
 	overdose_threshold = 15
 	ph = 6.2
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	metabolized_traits = list(TRAIT_ANALGESIA)
 	pain_dampening = PAIN_DAMPEN_PARACETAMOL
 
 /datum/reagent/medicine/paracetamol/overdose_process(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)
@@ -2048,7 +2049,7 @@
 	// An anticoagulant: open wounds run faster and will not clot while it is metabolising. Not
 	// TRAIT_BLOODY_MESS, whose only effect is to uncap how much of a hit counts towards the next
 	// injury, which would roughly double how fast a mild painkiller's taker collects critical wounds.
-	metabolized_traits = list(TRAIT_BLOOD_FOUNTAIN)
+	metabolized_traits = list(TRAIT_ANALGESIA, TRAIT_BLOOD_FOUNTAIN)
 
 /// A strong surgical analgesic that sedates and depresses breathing.
 /datum/reagent/medicine/fentanyl

@@ -25,8 +25,8 @@
 	category = LOG_CATEGORY_ECONOMY
 	config_flag = /datum/config_entry/flag/log_econ
 
-/// Overflow and finishers both write here as well as to the attack log, so a round's kills are one
-/// search rather than a trawl through every hit landed.
+/// Overflow writes here as well as to the attack log, so a round's kills are one search rather than
+/// a trawl through every hit landed.
 /datum/log_category/execution
 	category = LOG_CATEGORY_EXECUTION
 

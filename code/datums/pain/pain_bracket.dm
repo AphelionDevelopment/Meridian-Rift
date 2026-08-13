@@ -13,8 +13,8 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	var/name = "minor pain"
 	/// Lowest felt pain that puts a mob in this bracket.
 	var/threshold = PAIN_BRACKET_MINOR_THRESHOLD
-	/// Colour the pain meter takes while here.
-	var/meter_colour = COLOR_WHITE
+	/// Colour the pain meter takes while here. Null leaves it unpainted, which is the bottom rung.
+	var/meter_colour = null
 	/// Moodlet applied while here. Null for brackets with no moodlet.
 	var/datum/mood_event/mood_event
 	/// Multiplier on how long tasks take. 1 is unimpaired.
@@ -66,7 +66,7 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 /datum/pain_bracket/severe
 	name = "severe pain"
 	threshold = PAIN_BRACKET_SEVERE_THRESHOLD
-	meter_colour = COLOR_SOFT_RED
+	meter_colour = COLOR_RED
 	mood_event = /datum/mood_event/pain/severe
 	interaction_penalty = 1.6
 	slowdown = 1

@@ -188,47 +188,6 @@
 	TEST_ASSERT(leg.get_wound_type(/datum/wound/slash/flesh/artery), \
 		"A tourniquet should only slow the artery, never close it")
 
-/// A finisher needs a target that can no longer prevent it. Anyone still upright can.
-/datum/unit_test/finisher_needs_a_helpless_target/Run()
-	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
-	var/mob/living/carbon/human/killer = allocate(/mob/living/carbon/human/consistent)
-	var/obj/item/knife = allocate(/obj/item/knife/combat)
-
-	killer.put_in_active_hand(knife)
-	killer.set_combat_mode(TRUE)
-	killer.zone_selected = BODY_ZONE_HEAD
-
-	TEST_ASSERT(!victim.is_at_mercy(), "A healthy standing human should not be at anyone's mercy")
-	TEST_ASSERT(!victim.try_finisher(killer, knife), "A finisher was allowed on a target who was still standing")
-
-	victim.Paralyze(10 SECONDS)
-	TEST_ASSERT(victim.is_at_mercy(), "A paralysed human should be at the attacker's mercy")
-
-	// Pain crawl must qualify on its own. TRAIT_NOSOFTCRIT keeps this target STABLE, as several species
-	// are, so relying on the crit rung would make them impossible to finish.
-	var/mob/living/carbon/human/pain_crawler = allocate(/mob/living/carbon/human/consistent)
-	ADD_TRAIT(pain_crawler, TRAIT_NOSOFTCRIT, TRAIT_SOURCE_UNIT_TESTS)
-	pain_crawler.add_pain_source("test_chest", PAIN_CAP_CHEST, BODY_ZONE_CHEST)
-	pain_crawler.add_pain_source("test_left_arm", PAIN_CAP_LIMB, BODY_ZONE_L_ARM)
-	pain_crawler.add_pain_source("test_right_arm", PAIN_CAP_LIMB, BODY_ZONE_R_ARM)
-	TEST_ASSERT_EQUAL(pain_crawler.stat, STABLE, "TRAIT_NOSOFTCRIT did not keep the pain crawler out of soft crit")
-	TEST_ASSERT(pain_crawler.pain_controller.crawling, "A permanent pain floor at the cap did not make the target crawl")
-	TEST_ASSERT(pain_crawler.is_at_mercy(), "A pain-incapacitated target with TRAIT_NOSOFTCRIT was not eligible for a finisher")
-
-/// Restraint tools cannot finish anyone off, whatever their force.
-/datum/unit_test/finisher_needs_a_lethal_weapon/Run()
-	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
-	var/mob/living/carbon/human/killer = allocate(/mob/living/carbon/human/consistent)
-	var/obj/item/baton = allocate(/obj/item/melee/baton/security)
-
-	killer.put_in_active_hand(baton)
-	killer.set_combat_mode(TRUE)
-	killer.zone_selected = BODY_ZONE_HEAD
-	victim.Paralyze(10 SECONDS)
-
-	TEST_ASSERT(!baton.is_lethal_enough_to_finish(), "A stun baton should not count as a lethal weapon")
-	TEST_ASSERT(!victim.try_finisher(killer, baton), "A finisher was allowed with a stun baton")
-
 /// A severed artery does not make a limb ready for dismemberment.
 /datum/unit_test/artery_does_not_take_the_limb/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)

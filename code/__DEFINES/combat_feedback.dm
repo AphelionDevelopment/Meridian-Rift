@@ -16,8 +16,6 @@
 #define COMBAT_FEEDBACK_STATE 30
 /// Damage reaching an organ through a maxed bodypart.
 #define COMBAT_FEEDBACK_OVERFLOW 40
-/// Someone being finished off.
-#define COMBAT_FEEDBACK_EXECUTION 50
 
 // Screen shake, scaled by whether the hit got inside. Both are soft caps; see [/proc/shake_camera].
 /// How hard a hit an armour plate stopped shakes the wearer.

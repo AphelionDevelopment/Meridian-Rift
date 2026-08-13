@@ -126,10 +126,10 @@
  * * wearer - Who to tell, if anyone.
  */
 /obj/item/armor_plate/proc/wear_down(amount, mob/living/wearer)
-	var/maximum = get_maximum_durability()
-	var/was_at = durability / maximum
+	var/static/list/wear_bands = list(PLATE_WEAR_SCUFFED, PLATE_WEAR_CRACKED, PLATE_WEAR_FAILING)
+
+	var/was_at = durability / get_maximum_durability()
 	durability = max(durability - amount, 0)
-	var/now_at = durability / maximum
 
 	if(isnull(wearer))
 		return
@@ -145,7 +145,8 @@
 		)
 		return
 
-	for(var/band in list(PLATE_WEAR_SCUFFED, PLATE_WEAR_CRACKED, PLATE_WEAR_FAILING))
+	var/now_at = durability / get_maximum_durability()
+	for(var/band in wear_bands)
 		if(was_at > band && now_at <= band)
 			wearer.combat_feedback(
 				COMBAT_FEEDBACK_STATE,

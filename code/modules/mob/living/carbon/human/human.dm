@@ -757,14 +757,14 @@
 	if(locked_record)
 		locked_record.name = newname
 
-/mob/living/carbon/human/update_health_hud(shown_health_amount)
+/mob/living/carbon/human/update_health_hud(healthpercent)
 	if(!client || !hud_used)
 		return
-	// Use vital organ health unless the caller supplies a display value.
-	if(isnull(shown_health_amount))
-		shown_health_amount = get_vitals_ratio() * maxHealth
+	// Vital organ state, not the damage total, unless the caller supplies a reading of its own.
+	if(isnull(healthpercent))
+		healthpercent = get_vitals_ratio() * 100
 	// Updates the health bar, also sends signal
-	. = ..(shown_health_amount)
+	. = ..(healthpercent)
 	// Handles changing limb colors and stuff
 	if(!(living_flags & STOP_OVERLAY_UPDATE_BODY_PARTS))
 		hud_used.screen_objects[HUD_MOB_HEALTHDOLL]?.update_appearance()

@@ -1,8 +1,7 @@
-// Overflow and finishers: the two ways combat damage is allowed to kill.
+// Overflow: how combat damage is allowed to kill.
 //
 // A bodypart absorbs punishment by carrying injuries. Once its injuries are maxed, further
-// penetrating damage lands on whatever the part was protecting, which is overflow. A finisher is a
-// telegraphed execution on a helpless target, with every condition checked.
+// penetrating damage lands on whatever the part was protecting, which is overflow.
 
 /// Portion of an overflowing hit that lands on what the bodypart was protecting. The pacing knob for
 /// how many hits a kill takes.
@@ -19,15 +18,3 @@
 /// How often an overflowing part announces itself. Continuous damage, mostly burning, arrives every
 /// tick and would otherwise announce every tick.
 #define OVERFLOW_FEEDBACK_COOLDOWN (3 SECONDS)
-
-/// How long a finisher's wind-up takes, during which anyone watching can stop it.
-#define FINISHER_WINDUP_TIME (3 SECONDS)
-/// Least force a blunt melee weapon needs before it can finish anyone off. Anything sharp qualifies
-/// regardless. Set above the security baton's force.
-#define FINISHER_MINIMUM_FORCE 15
-/// Least damage a chambered round needs before a gun can.
-#define FINISHER_MINIMUM_PROJECTILE_DAMAGE 10
-/// Brute the killing blow leaves on the head, on top of taking the brain past its threshold.
-#define FINISHER_HEAD_TRAUMA 25
-/// How far the wind-up can be heard.
-#define FINISHER_WINDUP_HEARING_RANGE 7

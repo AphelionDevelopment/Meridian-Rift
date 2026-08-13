@@ -328,7 +328,7 @@
 #define BRAIN_DAMAGE_SEVERE 100
 #define BRAIN_DAMAGE_DEATH 200
 /// The most brain damage a hit is allowed to leave. Ordinary violence causes cognitive damage, not
-/// death; finishers and overflow are the routes past this.
+/// death; overflow is the route past this.
 #define BRAIN_DAMAGE_COMBAT_MAXIMUM (BRAIN_DAMAGE_DEATH - 1)
 
 #define BRAIN_TRAUMA_MILD /datum/brain_trauma/mild

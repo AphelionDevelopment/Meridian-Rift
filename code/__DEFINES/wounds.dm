@@ -63,12 +63,11 @@ GLOBAL_LIST_INIT(wound_severities_chronological, list(
 /// Mainly a define used for wound_pregen_data, if a pregen data instance expects this, it will accept any and all wound types, even none at all
 #define WOUND_ALL "wound_all"
 
-// ~determination second wind defines
-// How much determination reagent to add each time someone gains a new wound in [/datum/wound/proc/second_wind]
-#define WOUND_DETERMINATION_MODERATE 1
+// ~determination defines
+// Wounds no longer grant determination; fight-or-flight is the pain controller's, and keys off an
+// injury's pain factor. What remains is for the reagent itself, which chems and mutations still give out.
+/// how much determination counts as a real dose rather than a trace
 #define WOUND_DETERMINATION_SEVERE 2.5
-#define WOUND_DETERMINATION_CRITICAL 5
-#define WOUND_DETERMINATION_LOSS 7.5
 /// the max amount of determination you can have
 #define WOUND_DETERMINATION_MAX 10
 

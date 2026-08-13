@@ -89,22 +89,6 @@
 	logger.Log(LOG_CATEGORY_EXECUTION, "[key_name(victim)]: [message]")
 	victim.log_message(message, LOG_ATTACK, color = "red")
 
-/**
- * log_finisher() is for an execution: a killing blow on a target that could no longer prevent it.
- * The other of the two ways combat kills.
- *
- * Arguments:
- * * victim - Whoever was finished off
- * * user - Whoever did it
- * * weapon - What they did it with
- */
-/proc/log_finisher(atom/victim, atom/user, atom/weapon)
-	if(QDELETED(victim))
-		return
-
-	logger.Log(LOG_CATEGORY_EXECUTION, "[key_name(user)] -> [key_name(victim)]: FINISHER[weapon ? " with [weapon]" : ""]")
-	log_combat(user, victim, "executed", weapon)
-
 /// Logging for bombs detonating
 /proc/log_bomber(atom/user, details, atom/bomb, additional_details, message_admins = TRUE)
 	var/bomb_message = "[details][bomb ? " [bomb.name] at [AREACOORD(bomb)]": ""][additional_details ? " [additional_details]" : ""]."

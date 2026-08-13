@@ -103,10 +103,7 @@
 		// Shock is an arrest window, never a long-term stun. At the ceiling, drain enough of the pool
 		// to satisfy the normal recovery rule; a high floor drains it entirely and leaves a crawler.
 		if(in_shock && blackout_ends_at && world.time >= blackout_ends_at)
-			var/adrenaline_factor = parent.has_status_effect(/datum/status_effect/adrenaline) ? (1 - PAIN_ADRENALINE_DAMPEN_RATIO) : 1
-			var/raw_recovery_threshold = (PAIN_SHOCK_RECOVERY_THRESHOLD - DAMAGE_PRECISION) / adrenaline_factor
-			var/recovery_pool = min(temporary_pain, max(raw_recovery_threshold - pain_floor + base_dampening, 0))
-			adjust_temporary_pain(recovery_pool - temporary_pain)
+			adjust_temporary_pain(get_shock_recovery_pool() - temporary_pain)
 
 		// Fast while high, slower as it falls, so a maxed pool drains to the shock recovery threshold
 		// in under five seconds.
@@ -127,13 +124,28 @@
 
 	roll_bracket_effects()
 
+/**
+ * The largest temporary pool that still lets the mob come out of a blackout, ending one on time.
+ *
+ * A blackout ends by draining the pool to wherever felt pain would sit at the recovery threshold,
+ * rather than by waiting: the five second ceiling is a hard promise, and the decay curve alone
+ * cannot make it against an arbitrary floor. Comes out at zero when the floor alone is high enough
+ * to hold the mob under, which is exactly the case that leaves a crawler instead.
+ */
+/datum/pain/proc/get_shock_recovery_pool()
+	// Felt pain is what recovery reads, so the threshold is converted back through everything sitting
+	// between the pool and it. A hair under the threshold, so the mob wakes rather than landing on it.
+	var/adrenaline_factor = parent.has_status_effect(/datum/status_effect/adrenaline) ? (1 - PAIN_ADRENALINE_DAMPEN_RATIO) : 1
+	var/felt_headroom = (PAIN_SHOCK_RECOVERY_THRESHOLD - DAMAGE_PRECISION) / adrenaline_factor
+
+	return clamp(felt_headroom - pain_floor + base_dampening, 0, temporary_pain)
+
 /// Raises the floor as soon as an injury lands, rather than on the next process.
 /datum/pain/proc/on_wound_gained(datum/source, datum/wound/new_wound, obj/item/bodypart/limb)
 	SIGNAL_HANDLER
 
 	recalculate_floor()
-	if(new_wound?.pain_factor >= PAIN_ADRENALINE_INJURY_TRIGGER)
-		try_trigger_adrenaline()
+	try_trigger_adrenaline_from_injury(new_wound?.pain_factor)
 
 /// Drops an injury's pain when it is treated. See New() for why this listens to the post signal.
 /datum/pain/proc/on_wound_lost(datum/source, datum/wound/lost_wound, obj/item/bodypart/limb)
@@ -148,7 +160,7 @@
 	// Deferred for two reasons: every organ damages and heals on its own tick, so this fires constantly
 	// and once per second is frequent enough; and organs are pulled in bulk during a species change,
 	// where rebuilding the floor from a half-assembled body runtimes.
-	floor_needs_recalculation = TRUE
+	mark_dirty()
 
 /// Rebuilds the floor immediately on a full heal, since it takes every injury with it.
 /datum/pain/proc/on_fully_healed(datum/source, heal_flags)
@@ -206,6 +218,10 @@
 
 	pain_floor = min(round(new_floor, DAMAGE_PRECISION), PAIN_FLOOR_MAXIMUM)
 	update_pain()
+
+/// Flags the floor for a rebuild on the next process, for changes too frequent to answer one by one.
+/datum/pain/proc/mark_dirty()
+	floor_needs_recalculation = TRUE
 
 /// Recomputes heart strain. A failing heart makes hits land harder and decay slower.
 /datum/pain/proc/update_heart_strain()
@@ -320,6 +336,11 @@
 	if(amount > 0 && heart_strain)
 		amount *= (1 + (heart_strain * PAIN_HEART_STRAIN_MULTIPLIER))
 
+	// Asked of the whole hit, before the pool clamps it. A spike big enough for fight or flight is
+	// still that big when it lands on a mob that was already at the ceiling.
+	if(amount >= PAIN_ADRENALINE_SPIKE_TRIGGER)
+		try_trigger_adrenaline()
+
 	var/new_temporary = clamp(temporary_pain + amount, 0, PAIN_TEMPORARY_MAXIMUM)
 	if(new_temporary == temporary_pain)
 		return
@@ -331,16 +352,29 @@
 	if(amount > 0 && in_shock)
 		blackout_ends_at = world.time + PAIN_SHOCK_MAXIMUM_DURATION
 
-	if(amount >= PAIN_ADRENALINE_SPIKE_TRIGGER)
-		try_trigger_adrenaline()
-
-/// Recomputes how much pain the brain is currently allowed to ignore.
+/**
+ * Recomputes how much pain the brain is currently allowed to ignore.
+ *
+ * Runs every tick for every carbon, so it walks the reagents, status effects and mutations exactly
+ * once. That single pass collects both the strongest graded dampener and the trait source each
+ * graded thing would be holding TRAIT_ANALGESIA under, which is what tells an ungraded analgesic
+ * apart from one already counted. Only a mob actually carrying the trait pays for that second part.
+ */
 /datum/pain/proc/update_dampening()
 	if(QDELETED(parent))
 		return
 
+	// Cocktails, augmented hearts and gene mods grant TRAIT_ANALGESIA too. Anything holding it without
+	// a value here reads as total numbness.
+	var/tracking_analgesia = HAS_TRAIT(parent, TRAIT_ANALGESIA)
+	var/list/graded_sources = tracking_analgesia ? list() : null
+
 	var/strongest = 0
 	for(var/datum/reagent/held_reagent as anything in parent.reagents?.reagent_list)
+		if(!held_reagent.pain_dampening)
+			continue
+		if(tracking_analgesia)
+			graded_sources += METABOLIZATION_TRAIT(held_reagent.type)
 		// A surgical anaesthetic does nothing below a full dose. Zero for a normal painkiller, which
 		// works from the first unit.
 		if(held_reagent.volume < held_reagent.pain_dampening_minimum_volume)
@@ -350,19 +384,26 @@
 			continue
 		strongest = max(strongest, held_reagent.pain_dampening)
 
-	// Cocktails, augmented hearts and gene mods grant TRAIT_ANALGESIA too. Anything holding it without
-	// a value here reads as total numbness.
 	for(var/datum/status_effect/effect as anything in parent.status_effects)
+		if(!effect.pain_dampening)
+			continue
+		if(tracking_analgesia)
+			graded_sources += TRAIT_STATUS_EFFECT(effect.id)
 		strongest = max(strongest, effect.pain_dampening)
 
 	for(var/datum/mutation/mutation as anything in parent.dna?.mutations)
+		if(!mutation.pain_dampening)
+			continue
+		// Every mutation shares one trait source, so one graded mutation covers all of them.
+		if(tracking_analgesia)
+			graded_sources |= GENETIC_MUTATION
 		strongest = max(strongest, mutation.pain_dampening)
 
 	var/datum/status_effect/inebriated/inebriation = parent.has_status_effect(/datum/status_effect/inebriated)
 	if(inebriation?.drunk_value >= PAIN_DAMPEN_DRUNK_REQUIREMENT)
 		strongest = max(strongest, PAIN_DAMPEN_ALCOHOL)
 
-	if(has_ungraded_analgesia())
+	if(tracking_analgesia && has_ungraded_analgesia(graded_sources))
 		strongest = max(strongest, PAIN_DAMPEN_STRONG)
 
 	if(base_dampening == strongest)
@@ -371,26 +412,14 @@
 	base_dampening = strongest
 	update_pain()
 
-/// Whether an ungraded source grants generic analgesia.
-/datum/pain/proc/has_ungraded_analgesia()
-	if(!HAS_TRAIT(parent, TRAIT_ANALGESIA))
-		return FALSE
-
-	var/list/graded_sources = list()
-	for(var/datum/reagent/held_reagent as anything in parent.reagents?.reagent_list)
-		if(held_reagent.pain_dampening)
-			graded_sources += METABOLIZATION_TRAIT(held_reagent.type)
-
-	for(var/datum/status_effect/effect as anything in parent.status_effects)
-		if(effect.pain_dampening)
-			graded_sources += TRAIT_STATUS_EFFECT(effect.id)
-
-	// Every mutation shares one trait source, so one graded mutation covers all of them.
-	for(var/datum/mutation/mutation as anything in parent.dna?.mutations)
-		if(mutation.pain_dampening)
-			graded_sources += GENETIC_MUTATION
-			break
-
+/**
+ * Whether something is granting analgesia that carries no dampening value of its own.
+ *
+ * Arguments:
+ * * graded_sources - Trait sources already accounted for by a graded dampener, gathered by the
+ * caller's single pass over the mob.
+ */
+/datum/pain/proc/has_ungraded_analgesia(list/graded_sources)
 	for(var/source in GET_TRAIT_SOURCES(parent, TRAIT_ANALGESIA))
 		if(!(source in graded_sources))
 			return TRUE
@@ -575,6 +604,22 @@
 	if(should_crawl != was_crawling)
 		parent.update_stat_traits()
 
+/**
+ * Triggers adrenaline if an injury this painful is enough to cause it.
+ *
+ * The single place an injury's worth is judged. How much a wound hurts and which severity tier it
+ * reads as are separate numbers that routinely disagree - an Open Laceration is Severe and worth a
+ * Moderate factor - so the pain factor decides and the tier never does.
+ *
+ * Arguments:
+ * * injury_pain_factor - The permanent pain the injury is worth.
+ */
+/datum/pain/proc/try_trigger_adrenaline_from_injury(injury_pain_factor)
+	if(injury_pain_factor < PAIN_ADRENALINE_INJURY_TRIGGER)
+		return
+
+	try_trigger_adrenaline()
+
 /// Triggers adrenaline, once per fight, on massive trauma only.
 /datum/pain/proc/try_trigger_adrenaline()
 	if(adrenaline_spent || QDELETED(parent) || parent.stat == DEAD)
@@ -626,8 +671,14 @@
  * limb is worth one rebuild.
  */
 /mob/living/carbon/proc/mark_pain_dirty()
-	if(pain_controller)
-		pain_controller.floor_needs_recalculation = TRUE
+	pain_controller?.mark_dirty()
+
+/// Triggers fight-or-flight from an injury too painful to shrug off. See [/datum/pain/proc/try_trigger_adrenaline_from_injury].
+/mob/living/proc/try_pain_adrenaline(injury_pain_factor)
+	return
+
+/mob/living/carbon/try_pain_adrenaline(injury_pain_factor)
+	pain_controller?.try_trigger_adrenaline_from_injury(injury_pain_factor)
 
 /// Felt pain, or zero for a mob with no pain controller.
 /mob/living/proc/get_felt_pain()

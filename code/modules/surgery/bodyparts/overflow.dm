@@ -29,7 +29,7 @@
 		COMBAT_FEEDBACK_OVERFLOW,
 		message = span_bolddanger(onlooker_message),
 		self_message = span_userdanger(message),
-		sound = biological_state & BIO_METAL ? 'sound/effects/sparks/sparks4.ogg' : 'sound/effects/wounds/crackandbleed.ogg', // APHELION EDIT CHANGE - ORIGINAL: sound = 'sound/effects/wounds/crackandbleed.ogg',
+		sound = (biological_state & BIO_METAL) ? 'sound/effects/sparks/sparks4.ogg' : 'sound/effects/wounds/crackandbleed.ogg',
 		shake_strength = COMBAT_SHAKE_PENETRATING_MAX,
 	)
 
@@ -114,56 +114,68 @@
 	log_overflow(losing_the_limb, damage_source, plaintext_zone, "dismemberment", damage)
 	return TRUE
 
-/obj/item/bodypart/head/apply_overflow(damage, wounding_type, attack_direction, damage_source)
-	var/obj/item/organ/inner_brain = owner.get_organ_slot(ORGAN_SLOT_BRAIN)
-	if(isnull(inner_brain))
+/**
+ * Puts an overflowing hit into one named organ, and tells the owner it happened.
+ *
+ * Shared by every part that overflows inwards rather than falling apart. Damage here is uncapped,
+ * unlike ordinary damage: overflow is the route past the brain's death threshold.
+ *
+ * Arguments:
+ * * slot - The ORGAN_SLOT_* the hit lands on.
+ * * damage - Wounding damage of the hit that overflowed.
+ * * damage_source - What did it, for the logs.
+ * * log_name - What the organ is called in the overflow log.
+ * * message - What the owner feels.
+ * * onlooker_message - What everyone else sees.
+ *
+ * Returns FALSE, as the bodypart itself survives.
+ */
+/obj/item/bodypart/proc/overflow_into_organ(slot, damage, damage_source, log_name, message, onlooker_message)
+	if(isnull(owner.get_organ_slot(slot)))
 		return FALSE
 
-	// Uncapped, unlike ordinary damage: overflow and finishers are the two routes past the brain's
-	// death threshold.
 	var/overflow = damage * OVERFLOW_DAMAGE_RATIO
-	owner.adjust_organ_loss(ORGAN_SLOT_BRAIN, overflow)
-	log_overflow(owner, damage_source, plaintext_zone, "brain", overflow)
+	owner.adjust_organ_loss(slot, overflow)
+	log_overflow(owner, damage_source, plaintext_zone, log_name, overflow)
 
-	announce_overflow("Something gives way inside your skull!", "Something gives way inside [owner]'s skull!")
+	announce_overflow(message, onlooker_message)
 	return FALSE
+
+/obj/item/bodypart/head/apply_overflow(damage, wounding_type, attack_direction, damage_source)
+	return overflow_into_organ(
+		ORGAN_SLOT_BRAIN,
+		damage,
+		damage_source,
+		"brain",
+		"Something gives way inside your skull!",
+		"Something gives way inside [owner]'s skull!",
+	)
 
 /obj/item/bodypart/chest/apply_overflow(damage, wounding_type, attack_direction, damage_source)
 	var/obj/item/organ/heart/inner_heart = owner.get_organ_slot(ORGAN_SLOT_HEART)
+	// Some species have no heart, which would leave their torsos with nothing to overflow into: a maxed
+	// chest would absorb penetrating hits forever and body shots on them could never kill. There is no
+	// circulation to stop, so what a ruined torso costs such a body is the brain instead.
 	if(isnull(inner_heart))
-		return overflow_without_a_heart(damage, damage_source)
+		return overflow_into_organ(
+			ORGAN_SLOT_BRAIN,
+			damage,
+			damage_source,
+			"brain",
+			"Something deep in your chest gives out!",
+			"Something deep in [owner]'s chest gives out!",
+		)
 
-	var/overflow = damage * OVERFLOW_DAMAGE_RATIO
-	owner.adjust_organ_loss(ORGAN_SLOT_HEART, overflow)
-	log_overflow(owner, damage_source, plaintext_zone, "heart", overflow)
+	. = overflow_into_organ(
+		ORGAN_SLOT_HEART,
+		damage,
+		damage_source,
+		"heart",
+		"Something tears deep in your chest!",
+		"Something tears deep in [owner]'s chest!",
+	)
 
 	// Failing and beating are separate states here, so a ruined heart does not stop on its own.
 	// Arrest is what makes chest overflow lethal, via the oxygen the brain stops getting.
 	if((inner_heart.organ_flags & ORGAN_FAILING) && !owner.undergoing_cardiac_arrest())
 		owner.set_heartattack(TRUE)
-
-	announce_overflow("Something tears deep in your chest!", "Something tears deep in [owner]'s chest!")
-	return FALSE
-
-/**
- * Chest overflow for a body with no heart in it at all.
- *
- * Some species have no heart, which left their torsos with nothing to overflow into: a
- * maxed chest absorbed penetrating hits forever and body shots on them could never kill. There is no
- * circulation to stop, so what a ruined torso costs such a body is the brain, at the rate a ruined
- * skull costs anyone else.
- *
- * Arguments:
- * * damage - Wounding damage of the hit that overflowed.
- * * damage_source - What did it, for the logs.
- */
-/obj/item/bodypart/chest/proc/overflow_without_a_heart(damage, damage_source)
-	if(isnull(owner.get_organ_slot(ORGAN_SLOT_BRAIN)))
-		return FALSE
-
-	var/overflow = damage * OVERFLOW_DAMAGE_RATIO
-	owner.adjust_organ_loss(ORGAN_SLOT_BRAIN, overflow)
-	log_overflow(owner, damage_source, plaintext_zone, "brain", overflow)
-
-	announce_overflow("Something deep in your chest gives out!", "Something deep in [owner]'s chest gives out!")
-	return FALSE

@@ -46,7 +46,9 @@
 	loss_wounding_type = wounding_type
 
 	set_limb(dismembered_part)
-	second_wind()
+	// Asked here rather than left to the pain controller: a loss wound deletes itself immediately and
+	// never fires the wound-gained signal the controller watches.
+	victim.try_pain_adrenaline(pain_factor)
 	log_wound(victim, src)
 	if(dismembered_part.can_bleed() && wounding_type != WOUND_BURN && victim.get_blood_volume())
 		victim.spray_blood(attack_direction, severity)
