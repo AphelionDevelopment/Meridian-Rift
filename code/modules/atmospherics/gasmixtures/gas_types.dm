@@ -56,10 +56,12 @@ GLOBAL_DATUM_INIT(gas_data, /datum/gas_data, new)
 	var/list/meta_gas_id = GLOB.meta_gas_info[META_GAS_ID]
 	if(id in meta_gas_id)
 		return id
-	for(var/path, meta_id in meta_gas_id)
-		if(meta_id == id)
-			return path
-	return ""
+	var/static/list/id_to_path
+	if(isnull(id_to_path))
+		id_to_path = list()
+		for(var/path, meta_id in meta_gas_id)
+			id_to_path[meta_id] = path
+	return id_to_path[id] || ""
 
 /*||||||||||||||/----------\||||||||||||||*\
 ||||||||||||||||[GAS DATUMS]||||||||||||||||

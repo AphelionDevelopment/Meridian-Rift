@@ -101,29 +101,34 @@
 	return call_ext(loaded)(src, num_val)
 
 /// Args: (gas_id_1, amount_1, gas_id_2, amount_2, ...). As adjust_moles, but with variadic arguments.
-/datum/gas_mixture/proc/adjust_multi(...)
+/// Raw FFI bind - gas ids must already be Dogmos' string form. Use adjust_multi() in gas_mixture.dm.
+/datum/gas_mixture/proc/__adjust_multi(...)
 	var/list/args_copy = args.Copy()
 	args_copy.Insert(1, src)
 	var/static/loaded = load_ext(DOGMOS, "byond:adjust_multi_hook_ffi")
 	return call_ext(loaded)(arglist(args_copy))
 
 /// Args: (gas_id, moles, temp). Adjusts the given gas's amount by the given amount, with that gas being treated as if it is at the given temperature.
-/datum/gas_mixture/proc/adjust_moles_temp(id_val, num_val, temp_val)
+/// Raw FFI bind - gas_id must already be Dogmos' string form. Use adjust_moles_temp() in gas_mixture.dm.
+/datum/gas_mixture/proc/__adjust_moles_temp(id_val, num_val, temp_val)
 	var/static/loaded = load_ext(DOGMOS, "byond:adjust_moles_temp_hook_ffi")
 	return call_ext(loaded)(src, id_val, num_val, temp_val)
 
 /// Args: (gas_id, moles). Adjusts the given gas's amount by the given amount, e.g. (GAS_O2, -0.1) will remove 0.1 moles of oxygen from the mixture.
-/datum/gas_mixture/proc/adjust_moles(id_val, num_val)
+/// Raw FFI bind - id_val must already be Dogmos' string form. Use adjust_moles() in gas_mixture.dm.
+/datum/gas_mixture/proc/__adjust_moles(id_val, num_val)
 	var/static/loaded = load_ext(DOGMOS, "byond:adjust_moles_hook_ffi")
 	return call_ext(loaded)(src, id_val, num_val)
 
 /// Args: (gas_id, moles). Sets the amount of substance of the given gas, in moles.
-/datum/gas_mixture/proc/set_moles(gas_id, amt_val)
+/// Raw FFI bind - gas_id must already be Dogmos' string form. Use set_moles() in gas_mixture.dm.
+/datum/gas_mixture/proc/__set_moles(gas_id, amt_val)
 	var/static/loaded = load_ext(DOGMOS, "byond:set_moles_hook_ffi")
 	return call_ext(loaded)(src, gas_id, amt_val)
 
 /// Args: (gas_id). Returns: the amount of substance of the given gas, in moles.
-/datum/gas_mixture/proc/get_moles(gas_id)
+/// Raw FFI bind - gas_id must already be Dogmos' string form. Use get_moles() in gas_mixture.dm.
+/datum/gas_mixture/proc/__get_moles(gas_id)
 	var/static/loaded = load_ext(DOGMOS, "byond:get_moles_hook_ffi")
 	return call_ext(loaded)(src, gas_id)
 
@@ -133,7 +138,8 @@
 	return call_ext(loaded)(src, vol_arg)
 
 /// Args: (gas_id). Returns the heat capacity from the given gas, in J/K (probably).
-/datum/gas_mixture/proc/partial_heat_capacity(gas_id)
+/// Raw FFI bind - gas_id must already be Dogmos' string form. Use partial_heat_capacity() in gas_mixture.dm.
+/datum/gas_mixture/proc/__partial_heat_capacity(gas_id)
 	var/static/loaded = load_ext(DOGMOS, "byond:partial_heat_capacity_ffi")
 	return call_ext(loaded)(src, gas_id)
 
@@ -143,7 +149,9 @@
 	return call_ext(loaded)(src, arg_temp)
 
 /// Returns: a list of the gases in the mixture, associated with their IDs.
-/datum/gas_mixture/proc/get_gases()
+/// Raw FFI bind - returns Dogmos' native string ids. Use get_gases() in gas_mixture.dm, which
+/// translates back to the typepaths every DM call site expects.
+/datum/gas_mixture/proc/__get_gases()
 	var/static/loaded = load_ext(DOGMOS, "byond:get_gases_hook_ffi")
 	return call_ext(loaded)(src)
 

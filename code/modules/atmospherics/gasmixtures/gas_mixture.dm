@@ -53,9 +53,64 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 /datum/gas_mixture/turf/heat_capacity()
 	return ..() || HEAT_CAPACITY_VACUUM
 
+/// Resolves a gas identifier to Dogmos' native string form. DM identifies gases by typepath
+/// everywhere (`/datum/gas/oxygen`, via GAS_META, meta_gas_info, gas_reactions, and effectively
+/// every call site in this codebase); Dogmos indexes gases by the interned string on `/datum/gas/id`
+/// (`"o2"`) and cannot resolve a bare typepath itself - BYOND typepath constants aren't readable
+/// through the FFI var-read the way a live instance is. Every gas_mixture proc that takes a gas
+/// identifier and crosses into Dogmos routes through here once, so callers can keep using typepaths.
+/proc/gas_string_id(gas_id)
+	if(istext(gas_id))
+		return gas_id
+	return GLOB.meta_gas_info[META_GAS_ID][gas_id]
+
 ///Update archived versions of variables. Returns: 1 in all cases
 /datum/gas_mixture/proc/archive()
 	return TRUE //Dogmos archives internally during turf processing; nothing for DM to do here
+
+/// Args: (gas_id). Returns: the amount of substance of the given gas, in moles. Accepts either a
+/// gas typepath or Dogmos' native string id.
+/datum/gas_mixture/proc/get_moles(gas_id)
+	return __get_moles(gas_string_id(gas_id))
+
+/// Args: (gas_id, moles). Sets the amount of substance of the given gas, in moles. Accepts either a
+/// gas typepath or Dogmos' native string id.
+/datum/gas_mixture/proc/set_moles(gas_id, amt_val)
+	return __set_moles(gas_string_id(gas_id), amt_val)
+
+/// Args: (gas_id, moles). Adjusts the given gas's amount by the given amount, e.g. (GAS_O2, -0.1)
+/// will remove 0.1 moles of oxygen. Accepts either a gas typepath or Dogmos' native string id.
+/datum/gas_mixture/proc/adjust_moles(id_val, num_val)
+	return __adjust_moles(gas_string_id(id_val), num_val)
+
+/// Args: (gas_id, moles, temp). As adjust_moles(), treating the added gas as if it is at the given
+/// temperature. Accepts either a gas typepath or Dogmos' native string id.
+/datum/gas_mixture/proc/adjust_moles_temp(id_val, num_val, temp_val)
+	return __adjust_moles_temp(gas_string_id(id_val), num_val, temp_val)
+
+/// Args: (gas_id). Returns the heat capacity from the given gas, in J/K. Accepts either a gas
+/// typepath or Dogmos' native string id.
+/datum/gas_mixture/proc/partial_heat_capacity(gas_id)
+	return __partial_heat_capacity(gas_string_id(gas_id))
+
+/// Args: (gas_id_1, amount_1, gas_id_2, amount_2, ...). As adjust_moles(), but with variadic
+/// arguments. Each gas id accepts either a typepath or Dogmos' native string id.
+/datum/gas_mixture/proc/adjust_multi(...)
+	var/list/args_copy = args.Copy()
+	for(var/i in 1 to args_copy.len step 2)
+		args_copy[i] = gas_string_id(args_copy[i])
+	args_copy.Insert(1, src)
+	return __adjust_multi(arglist(args_copy))
+
+/// Returns the typepaths of every gas present in the mixture. Dogmos' native return shape is a list
+/// of string ids; every DM call site expects typepaths (GAS_META, meta_gas_info and friends are all
+/// keyed by path), so this translates on the way out.
+/datum/gas_mixture/proc/get_gases()
+	var/list/ids = __get_gases()
+	var/list/paths = new/list(length(ids))
+	for(var/i in 1 to length(ids))
+		paths[i] = gas_id2path(ids[i])
+	return paths
 
 ///Merges all air from giver into self. Deletes giver. Returns: 1 if we are mutable, 0 otherwise
 /datum/gas_mixture/proc/merge(datum/gas_mixture/giver)

@@ -798,10 +798,7 @@ GLOBAL_LIST_EMPTY(colored_images)
 	else // if we do not have a temp in the new gas mix lets assume room temp.
 		canonical_mix.set_temperature(T20C)
 	for(var/id in gas)
-		var/path = id
-		if(!ispath(path))
-			path = gas_id2path(path) //a lot of these strings can't have embedded expressions (especially for mappers), so support for IDs needs to stick around
-		canonical_mix.set_moles(path, text2num(gas[id]))
+		canonical_mix.set_moles(id, text2num(gas[id]))
 
 	if(istype(canonical_mix, /datum/gas_mixture/immutable))
 		canonical_mix.mark_immutable() //content is final now; New() deliberately did not do this

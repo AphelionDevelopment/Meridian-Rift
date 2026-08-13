@@ -15,10 +15,10 @@
 /// Builds a standard-atmosphere mixture: O2 + N2 at T20C in one cell's worth of volume.
 /datum/unit_test/proc/allocate_standard_mix()
 	var/datum/gas_mixture/mix = allocate(/datum/gas_mixture)
-	mix.volume = CELL_VOLUME
-	mix.moles[/datum/gas/oxygen] = MOLES_O2STANDARD
-	mix.moles[/datum/gas/nitrogen] = MOLES_N2STANDARD
-	mix.temperature = T20C
+	mix.set_volume(CELL_VOLUME)
+	mix.set_moles(/datum/gas/oxygen, MOLES_O2STANDARD)
+	mix.set_moles(/datum/gas/nitrogen, MOLES_N2STANDARD)
+	mix.set_temperature(T20C)
 	return mix
 
 /// Pressure, heat capacity and thermal energy follow from the gas laws and the gas metadata.
@@ -53,9 +53,9 @@
 /datum/unit_test/gas_mixture_golden_merge/Run()
 	var/datum/gas_mixture/receiver = allocate_standard_mix()
 	var/datum/gas_mixture/giver = allocate(/datum/gas_mixture)
-	giver.volume = CELL_VOLUME
-	giver.moles[/datum/gas/plasma] = 50
-	giver.temperature = 1000
+	giver.set_volume(CELL_VOLUME)
+	giver.set_moles(/datum/gas/plasma, 50)
+	giver.set_temperature(1000)
 
 	var/total_moles_before = receiver.total_moles() + giver.total_moles()
 	var/total_energy_before = receiver.thermal_energy() + giver.thermal_energy()
@@ -65,7 +65,7 @@
 
 	TEST_ASSERT_EQUAL(round(receiver.total_moles(), 0.01), round(total_moles_before, 0.01), "merge() should conserve total moles")
 	TEST_ASSERT_EQUAL(round(receiver.thermal_energy(), 0.01), round(total_energy_before, 0.01), "merge() should conserve thermal energy")
-	TEST_ASSERT_EQUAL(round(receiver.moles[/datum/gas/plasma], 0.01), 50, "merge() should transfer the giver's plasma")
+	TEST_ASSERT_EQUAL(round(receiver.get_moles(/datum/gas/plasma), 0.01), 50, "merge() should transfer the giver's plasma")
 	TEST_ASSERT_EQUAL(round(giver.total_moles(), 0.01), round(giver_moles_before, 0.01), "merge() must not modify the giver")
 
 	TEST_ASSERT(!receiver.merge(null), "merge(null) should report failure rather than runtime")
@@ -81,7 +81,7 @@
 	TEST_ASSERT_NOTNULL(removed, "remove() should return a mixture when there is gas to take")
 	TEST_ASSERT_EQUAL(round(removed.total_moles(), 0.01), 10, "remove(10) should take exactly 10 moles")
 	TEST_ASSERT_EQUAL(round(source.total_moles() + removed.total_moles(), 0.01), round(starting_moles, 0.01), "remove() should conserve total moles")
-	TEST_ASSERT_EQUAL(round(removed.temperature, 0.01), round(source.temperature, 0.01), "Removed gas should keep the source temperature")
+	TEST_ASSERT_EQUAL(round(removed.return_temperature(), 0.01), round(source.return_temperature(), 0.01), "Removed gas should keep the source temperature")
 
 	// Ratios split proportionally, and the removed portion is a genuinely separate mixture.
 	var/datum/gas_mixture/half = source.remove_ratio(0.5)
@@ -103,15 +103,15 @@
 /datum/unit_test/gas_mixture_golden_copy/Run()
 	var/datum/gas_mixture/source = allocate_standard_mix()
 	var/datum/gas_mixture/target = allocate(/datum/gas_mixture)
-	target.volume = CELL_VOLUME
+	target.set_volume(CELL_VOLUME)
 
 	target.copy_from(source)
 	TEST_ASSERT_EQUAL(round(target.total_moles(), 0.01), round(source.total_moles(), 0.01), "copy_from() should reproduce the mole count")
-	TEST_ASSERT_EQUAL(round(target.temperature, 0.01), round(source.temperature, 0.01), "copy_from() should reproduce the temperature")
+	TEST_ASSERT_EQUAL(round(target.return_temperature(), 0.01), round(source.return_temperature(), 0.01), "copy_from() should reproduce the temperature")
 	TEST_ASSERT_EQUAL(round(target.return_pressure(), 0.01), round(source.return_pressure(), 0.01), "An equal-volume copy should read the same pressure")
 
 	// A copy is independent of its source.
-	target.moles[/datum/gas/oxygen] += 100
+	target.adjust_moles(/datum/gas/oxygen, 100)
 	TEST_ASSERT(target.total_moles() > source.total_moles(), "Modifying a copy must not affect the original")
 
 /// Reaction gating: hypernoblium suppresses reactions outright before any of them run.
@@ -127,9 +127,9 @@
 	// Hypernoblium above the oppression threshold stops everything, including reactions that would
 	// otherwise fire. This check happens before any reaction is considered.
 	var/datum/gas_mixture/oppressed = allocate(/datum/gas_mixture)
-	oppressed.volume = CELL_VOLUME
-	oppressed.moles[/datum/gas/hypernoblium] = REACTION_OPPRESSION_THRESHOLD + 1
-	oppressed.moles[/datum/gas/plasma] = 100
-	oppressed.moles[/datum/gas/oxygen] = 100
-	oppressed.temperature = FIRE_MINIMUM_TEMPERATURE_TO_EXIST + 100
+	oppressed.set_volume(CELL_VOLUME)
+	oppressed.set_moles(/datum/gas/hypernoblium, REACTION_OPPRESSION_THRESHOLD + 1)
+	oppressed.set_moles(/datum/gas/plasma, 100)
+	oppressed.set_moles(/datum/gas/oxygen, 100)
+	oppressed.set_temperature(FIRE_MINIMUM_TEMPERATURE_TO_EXIST + 100)
 	TEST_ASSERT_EQUAL(oppressed.react(null), STOP_REACTIONS, "Hypernoblium above the oppression threshold should stop all reactions")
