@@ -37,7 +37,7 @@
 		if(airs[i])
 			continue
 		var/datum/gas_mixture/component_mixture = new
-		component_mixture.volume = 200
+		component_mixture.set_volume(200)
 		airs[i] = component_mixture
 
 	update_appearance()
