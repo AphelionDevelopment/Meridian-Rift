@@ -270,11 +270,11 @@
 			pressure_delta = min(pressure_delta, (air_contents.return_pressure() - internal_pressure_bound))
 
 		if(pressure_delta > 0)
-			if(air_contents.temperature > 0)
+			if(air_contents.return_temperature() > 0)
 				if(!fan_overclocked && (environment_pressure >= 50 * ONE_ATMOSPHERE))
 					return FALSE
 
-				var/transfer_moles = (pressure_delta * environment.volume) / (air_contents.temperature * R_IDEAL_GAS_EQUATION)
+				var/transfer_moles = (pressure_delta * environment.return_volume()) / (air_contents.return_temperature() * R_IDEAL_GAS_EQUATION)
 				if(!fan_overclocked && (percent_integrity < 1))
 					transfer_moles *= percent_integrity
 
@@ -293,11 +293,11 @@
 		if(pressure_checks&ATMOS_INTERNAL_BOUND)
 			pressure_delta = min(pressure_delta, (internal_pressure_bound - air_contents.return_pressure()))
 
-		if(pressure_delta > 0 && environment.temperature > 0)
+		if(pressure_delta > 0 && environment.return_temperature() > 0)
 			if(!fan_overclocked && (air_contents.return_pressure() >= 50 * ONE_ATMOSPHERE))
 				return FALSE
 
-			var/transfer_moles = (pressure_delta * air_contents.volume) / (environment.temperature * R_IDEAL_GAS_EQUATION)
+			var/transfer_moles = (pressure_delta * air_contents.return_volume()) / (environment.return_temperature() * R_IDEAL_GAS_EQUATION)
 			if(!fan_overclocked && (percent_integrity < 1))
 				transfer_moles *= percent_integrity
 
@@ -366,7 +366,7 @@
 /obj/machinery/atmospherics/components/unary/vent_pump/high_volume/Initialize(mapload)
 	. = ..()
 	var/datum/gas_mixture/air_contents = airs[1]
-	air_contents.volume = 1000
+	air_contents.set_volume(1000)
 
 // mapping
 

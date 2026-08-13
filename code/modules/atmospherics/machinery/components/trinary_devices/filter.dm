@@ -60,13 +60,13 @@
 
 	//Early return
 	var/datum/gas_mixture/air1 = airs[1]
-	if(!air1 || air1.temperature <= 0)
+	if(!air1 || air1.return_temperature() <= 0)
 		return
 
 	var/datum/gas_mixture/air2 = airs[2]
 	var/datum/gas_mixture/air3 = airs[3]
 
-	var/transfer_ratio = transfer_rate / air1.volume
+	var/transfer_ratio = transfer_rate / air1.return_volume()
 
 	if(transfer_ratio <= 0)
 		return
@@ -98,7 +98,7 @@
 	if(filtering)
 		var/datum/gas_mixture/filtered_out = new
 
-		for(var/gas in removed.moles & filter_type)
+		for(var/gas in removed.get_gases() & filter_type)
 			var/datum/gas_mixture/removing = removed.remove_specific_ratio(gas, 1)
 			if(removing)
 				filtered_out.merge(removing)
@@ -108,8 +108,6 @@
 			air1.merge(filtered_out)
 		else
 			air2.merge(filtered_out)
-		// Make sure we don't send any now-empty gas entries to the main output
-		removed.garbage_collect()
 
 	// Send things to the main output if we can, return them to the input if we can't.
 	// This lets filtered gases continue to flow to the side output in a manner consistent with the main output behavior.
