@@ -312,7 +312,7 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:hook_init_ffi")
 	return call_ext(loaded)(gas_data)
 
-/turf/proc/return_temperature()
+/turf/return_temperature()
 	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_ffi")
 	return call_ext(loaded)(src)
 

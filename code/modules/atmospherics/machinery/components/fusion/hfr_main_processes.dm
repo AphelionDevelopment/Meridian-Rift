@@ -17,8 +17,6 @@
 		deactivate()
 		return
 
-	assert_gases()
-
 	// Run the reaction if it is either live or being started
 	if (start_power || power_level)
 		play_ambience(seconds_per_tick)
