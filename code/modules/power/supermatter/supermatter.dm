@@ -288,7 +288,7 @@ GLOBAL_DATUM(main_supermatter_engine, /obj/machinery/power/supermatter_crystal)
 	// PART 2: GAS PROCESSING
 	var/datum/gas_mixture/env = local_turf.return_air()
 	absorbed_gasmix = env?.remove_ratio(absorption_ratio) || new()
-	absorbed_gasmix.volume = (env?.volume || CELL_VOLUME) * absorption_ratio // To match the pressure.
+	absorbed_gasmix.set_volume((env?.return_volume() || CELL_VOLUME) * absorption_ratio) // To match the pressure.
 	calculate_gases()
 	// Extra effects should always fire after the compositions are all finished
 	// Some extra effects like [/datum/sm_gas/carbon_dioxide/extra_effects]

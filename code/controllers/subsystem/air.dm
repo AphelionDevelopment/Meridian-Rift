@@ -465,7 +465,7 @@ SUBSYSTEM_DEF(air)
 			net.members += item
 			border += item
 
-			net.air.volume += item.volume
+			net.air.set_volume(net.air.return_volume() + item.volume)
 			item.replace_pipenet(item.parent, net)
 
 			if(item.air_temporary)

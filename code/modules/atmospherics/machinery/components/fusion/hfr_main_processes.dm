@@ -66,7 +66,7 @@
 	//Store the temperature of the gases after one cicle of the fusion reaction
 	var/archived_heat = internal_fusion.return_temperature()
 	//Store the volume of the fusion reaction multiplied by the force of the magnets that controls how big it will be
-	var/volume = internal_fusion.volume * (magnetic_constrictor * 0.01)
+	var/volume = internal_fusion.return_volume() * (magnetic_constrictor * 0.01)
 
 	var/energy_concentration_multiplier = 1
 	var/positive_temperature_multiplier = 1

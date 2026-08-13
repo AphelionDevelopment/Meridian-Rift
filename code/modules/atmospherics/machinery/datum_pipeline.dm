@@ -32,7 +32,7 @@
 	SSair.networks -= src
 	if(building)
 		SSair.remove_from_expansion(src)
-	if(air?.volume)
+	if(air?.return_volume())
 		temporarily_store_air()
 	for(var/obj/machinery/atmospherics/pipe/considered_pipe in members)
 		considered_pipe.replace_pipenet(considered_pipe.parent, null)
@@ -74,7 +74,7 @@
 	if(!air)
 		set_air(new /datum/gas_mixture)
 
-	air.volume = volume
+	air.set_volume(volume)
 	SSair.add_to_expansion(src, base)
 
 ///Has the same effect as build_pipeline(), but this doesn't queue its work, so overrun abounds. It's useful for the pregame
@@ -127,7 +127,7 @@
 
 			possible_expansions -= borderline
 
-	air.volume = volume
+	air.set_volume(volume)
 
 	/**
 	 *  For a machine to properly "connect" to a pipeline and share gases,
@@ -165,12 +165,12 @@
 			merge(parent_pipeline)
 		if(!members.Find(reference_pipe))
 			members += reference_pipe
-			air.volume += reference_pipe.volume
+			air.set_volume(air.return_volume() + reference_pipe.volume)
 
 /datum/pipeline/proc/merge(datum/pipeline/parent_pipeline)
 	if(parent_pipeline == src)
 		return
-	air.volume += parent_pipeline.air.volume
+	air.set_volume(air.return_volume() + parent_pipeline.air.return_volume())
 	members.Add(parent_pipeline.members)
 	for(var/obj/machinery/atmospherics/pipe/reference_pipe in parent_pipeline.members)
 		reference_pipe.replace_pipenet(reference_pipe.parent, src)
@@ -205,14 +205,14 @@
 
 	for(var/obj/machinery/atmospherics/pipe/member in members)
 		member.air_temporary = new
-		member.air_temporary.volume = member.volume
-		member.air_temporary.copy_from_ratio(air, member.volume / air.volume)
+		member.air_temporary.set_volume(member.volume)
+		member.air_temporary.copy_from_ratio(air, member.volume / air.return_volume())
 
 		member.air_temporary.set_temperature(air.return_temperature())
 
 /datum/pipeline/proc/temperature_interact(turf/target, share_volume, thermal_conductivity)
 	var/total_heat_capacity = air.heat_capacity()
-	var/partial_heat_capacity = total_heat_capacity * (share_volume / air.volume)
+	var/partial_heat_capacity = total_heat_capacity * (share_volume / air.return_volume())
 
 	var/turf_temperature = target.GetTemperature()
 	var/turf_heat_capacity = target.GetHeatCapacity()
@@ -282,7 +282,7 @@
 			gas_mixture_list -= gas_mixture
 			continue
 		gas_mixture.pipeline_cycle = process_id
-		volume_sum += gas_mixture.volume
+		volume_sum += gas_mixture.return_volume()
 
 		// This is sort of a combined merge + heat_capacity calculation
 
@@ -298,12 +298,12 @@
 	if(volume_sum == 0)
 		return
 
-	total_gas_mixture.volume = volume_sum
+	total_gas_mixture.set_volume(volume_sum)
 	total_gas_mixture.set_temperature(total_heat_capacity ? (total_thermal_energy / total_heat_capacity) : 0)
 
 	//Update individual gas_mixtures by volume ratio
 	for(var/datum/gas_mixture/gas_mixture as anything in gas_mixture_list)
-		gas_mixture.copy_from_ratio(total_gas_mixture, gas_mixture.volume / volume_sum)
+		gas_mixture.copy_from_ratio(total_gas_mixture, gas_mixture.return_volume() / volume_sum)
 
 //--------------------
 // GAS VISUALS STUFF
@@ -340,8 +340,8 @@
 
 	var/current_weight = 0
 	var/current_color
-	for(var/datum/gas/gas_path as anything in air.moles)
-		var/gas_weight = air.moles[gas_path]
+	for(var/datum/gas/gas_path as anything in air.get_gases())
+		var/gas_weight = air.get_moles(gas_path)
 		if(!gas_weight)
 			continue
 		var/gas_color = initial(gas_path.primary_color)
@@ -355,7 +355,7 @@
 		current_color = COLOR_BLACK
 	else
 		// Empty weight is prety much arbitrary, just tuned to make the color change from black reasonably quickly without hitting max color immediately
-		var/empty_weight = (air.volume * 1.5 - current_weight) / 10
+		var/empty_weight = (air.return_volume() * 1.5 - current_weight) / 10
 		if(empty_weight > 0)
 			current_color = BlendHSV(COLOR_BLACK, current_color, current_weight / (empty_weight + current_weight))
 

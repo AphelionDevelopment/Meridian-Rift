@@ -90,7 +90,7 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 /datum/gas_mixture/proc/remove(amount)
 	if(amount <= 0)
 		return null
-	var/datum/gas_mixture/removed = new type(volume)
+	var/datum/gas_mixture/removed = new type(return_volume())
 	if(is_immutable())
 		removed.copy_from(src) //space etc. is inexhaustible; don't drain it
 	else
@@ -101,7 +101,7 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 ///Proportionally removes amount of gas from the gas_mixture.
 ///Returns: gas_mixture with the gases removed
 /datum/gas_mixture/proc/remove_ratio(ratio)
-	var/datum/gas_mixture/removed = new type(volume)
+	var/datum/gas_mixture/removed = new type(return_volume())
 	if(ratio <= 0)
 		return removed
 	ratio = min(ratio, 1)
@@ -146,22 +146,24 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 			other.set_temperature(new_temp)
 
 	var/min_p_delta = 0.1
-	var/total_volume = volume + other.volume
+	var/our_volume = return_volume()
+	var/other_volume = other.return_volume()
+	var/total_volume = our_volume + other_volume
 	var/list/gas_list = get_gases() | other.get_gases()
 	for(var/gas_id in gas_list)
 		var/our_moles = get_moles(gas_id)
 		var/their_moles = other.get_moles(gas_id)
 		//math is under the assumption temperatures are equal
-		if(abs(our_moles / volume - their_moles / other.volume) > min_p_delta / (R_IDEAL_GAS_EQUATION * return_temperature()))
+		if(abs(our_moles / our_volume - their_moles / other_volume) > min_p_delta / (R_IDEAL_GAS_EQUATION * return_temperature()))
 			. = TRUE
 			var/total_moles = our_moles + their_moles
-			set_moles(gas_id, total_moles * (volume/total_volume))
-			other.set_moles(gas_id, total_moles * (other.volume/total_volume))
+			set_moles(gas_id, total_moles * (our_volume/total_volume))
+			other.set_moles(gas_id, total_moles * (other_volume/total_volume))
 
 ///Creates new, identical gas mixture
 ///Returns: duplicate gas mixture
 /datum/gas_mixture/proc/copy()
-	var/datum/gas_mixture/copy = new type(volume)
+	var/datum/gas_mixture/copy = new type(return_volume())
 	copy.copy_from(src)
 	return copy
 
@@ -253,7 +255,7 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 	if(temperature_delta > MINIMUM_TEMPERATURE_TO_MOVE || abs(moved_moles) > MINIMUM_MOLES_DELTA_TO_MOVE)
 		var/our_moles = total_moles()
 		var/their_moles = sharer.total_moles()
-		return (return_temperature()*(our_moles + moved_moles) - sharer.return_temperature()*(their_moles - moved_moles)) * R_IDEAL_GAS_EQUATION / volume
+		return (return_temperature()*(our_moles + moved_moles) - sharer.return_temperature()*(their_moles - moved_moles)) * R_IDEAL_GAS_EQUATION / return_volume()
 
 ///Performs various reactions such as combustion and fabrication
 ///Returns: 1 if any reaction took place; 0 otherwise
@@ -294,7 +296,7 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 /datum/gas_mixture/proc/gas_pressure_minimum_transfer(datum/gas_mixture/output_air)
 	var/resulting_energy = output_air.thermal_energy() + (MOLAR_ACCURACY / total_moles() * thermal_energy())
 	var/resulting_capacity = output_air.heat_capacity() + (MOLAR_ACCURACY / total_moles() * heat_capacity())
-	return (output_air.total_moles() + MOLAR_ACCURACY) * R_IDEAL_GAS_EQUATION * (resulting_energy / resulting_capacity) / output_air.volume
+	return (output_air.total_moles() + MOLAR_ACCURACY) * R_IDEAL_GAS_EQUATION * (resulting_energy / resulting_capacity) / output_air.return_volume()
 
 
 /** Returns the amount of gas to be pumped to a specific container.
@@ -325,10 +327,10 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 		return FALSE
 
 	if(ignore_temperature)
-		return (pressure_delta*output_air.volume)/(our_temperature * R_IDEAL_GAS_EQUATION)
+		return (pressure_delta*output_air.return_volume())/(our_temperature * R_IDEAL_GAS_EQUATION)
 
 	// Lower and upper bound for the moles we must transfer to reach the pressure. The answer is bound to be here somewhere.
-	var/pv = target_pressure * output_air.volume
+	var/pv = target_pressure * output_air.return_volume()
 	/// The PV/R part in the equation we will use later. Counted early because pv/(r*t) might not be equal to pv/r/t, messing our lower and upper limit.
 	var/pvr = pv / R_IDEAL_GAS_EQUATION
 	// These works by assuming our gas has extremely high heat capacity
@@ -387,7 +389,7 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 	if(.)
 		return
 	// Inaccurate and will probably explode but whatever.
-	return (pressure_delta*output_air.volume)/(our_temperature * R_IDEAL_GAS_EQUATION)
+	return (pressure_delta*output_air.return_volume())/(our_temperature * R_IDEAL_GAS_EQUATION)
 
 /// Actually tries to solve the quadratic equation.
 /// Do mind that the numbers can get very big and might hit BYOND's single point float limit.
@@ -423,7 +425,7 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 	var/datum/gas_mixture/removed
 
 	var/transfer_moles_output = input_air.gas_pressure_calculate(output_air, target_pressure, temperature_delta <= 5)
-	var/transfer_moles_pipenet = output_pipenet_air?.volume ? input_air.gas_pressure_calculate(output_pipenet_air, target_pressure, temperature_delta <= 5) : 0
+	var/transfer_moles_pipenet = output_pipenet_air?.return_volume() ? input_air.gas_pressure_calculate(output_pipenet_air, target_pressure, temperature_delta <= 5) : 0
 	var/transfer_moles = max(transfer_moles_output, transfer_moles_pipenet)
 
 	if(specific_gas)
@@ -451,7 +453,7 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 	var/temperature_delta = abs(return_temperature() - output_air.return_temperature())
 
 	var/transfer_moles_output = gas_pressure_calculate(output_air, target_pressure, temperature_delta <= 5)
-	var/transfer_moles_pipenet = output_pipenet_air?.volume ? gas_pressure_calculate(output_pipenet_air, target_pressure, temperature_delta <= 5) : 0
+	var/transfer_moles_pipenet = output_pipenet_air?.return_volume() ? gas_pressure_calculate(output_pipenet_air, target_pressure, temperature_delta <= 5) : 0
 	var/transfer_moles = max(transfer_moles_output, transfer_moles_pipenet)
 
 	//Actually transfer the gas
