@@ -110,6 +110,9 @@
  */
 /datum/unit_test/pain_does_not_suffocate/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+	// This test needs to reach pain shock itself; fight-or-flight is covered separately and would
+	// delay that shock until the adrenaline expires.
+	victim.pain_controller.adrenaline_spent = TRUE
 
 	victim.add_temporary_pain(PAIN_SHOCK_THRESHOLD)
 	TEST_ASSERT_EQUAL(victim.stat, HARD_CRIT, "A pain spike at the cap should hard crit the mob")

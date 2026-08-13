@@ -90,10 +90,10 @@
  */
 /datum/unit_test/armour_penetration_does_nothing_to_people/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
-	victim.equip_to_slot(allocate(/obj/item/clothing/suit/armor/vest), ITEM_SLOT_OCLOTHING)
+	victim.equip_to_slot(allocate(/obj/item/clothing/under/misc/durathread), ITEM_SLOT_ICLOTHING)
 
 	var/unpenetrated = victim.run_armor_check(BODY_ZONE_CHEST, MELEE, silent = TRUE)
-	TEST_ASSERT(unpenetrated > 0, "The armour vest this test is about is not providing any melee armour")
+	TEST_ASSERT(unpenetrated > 0, "The armoured jumpsuit this test is about is not providing any melee armour")
 
 	var/penetrated = victim.run_armor_check(BODY_ZONE_CHEST, MELEE, armour_penetration = 100, silent = TRUE)
 	TEST_ASSERT_EQUAL(penetrated, unpenetrated, \
