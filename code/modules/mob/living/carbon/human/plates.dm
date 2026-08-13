@@ -25,6 +25,27 @@
 /mob/living/proc/has_plate_carrier_covering(def_zone)
 	return FALSE
 
+/**
+ * Whether a plate stops a hit outright, so that none of it reaches the body.
+ *
+ * Asked by everything an attack does to a body besides its damage — embedding, most of all. A plate
+ * answers a hit in place of the percentage model, so `blocked` stays at zero however much the plate
+ * caught, and anything reading `blocked` to decide whether the attack got inside needs this instead.
+ *
+ * Arguments:
+ * * damage - The whole hit, before anything is taken off it.
+ * * damagetype - One of the damage types.
+ * * armour_flag - The attack's armour flag, e.g. [BULLET] or [LASER].
+ * * def_zone - Bodypart or zone the attack landed on.
+ */
+/mob/living/proc/plate_stops_hit(damage, damagetype, armour_flag, def_zone)
+	// Nothing to stop, so nothing stopped it. Keeps harmless sticky things sticking to armour.
+	if(damage <= 0)
+		return FALSE
+
+	var/obj/item/armor_plate/covering = get_covering_plate(damagetype, armour_flag, def_zone)
+	return !isnull(covering) && damage <= covering.get_tolerance()
+
 /mob/living/carbon/human/get_covering_plate(damagetype, armour_flag, def_zone)
 	if(damagetype != BRUTE && damagetype != BURN)
 		return null

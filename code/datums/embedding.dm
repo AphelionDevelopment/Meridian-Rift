@@ -125,7 +125,8 @@
 /datum/embedding/proc/try_embed(obj/item/weapon, mob/living/carbon/victim, hit_zone, blocked, datum/thrownthing/throwingdatum)
 	SIGNAL_HANDLER
 
-	if (blocked || !can_embed(parent, victim, hit_zone, throwingdatum))
+	// A plate that caught the whole throw leaves nothing to embed. See [/mob/living/proc/plate_stops_hit].
+	if (blocked || !can_embed(parent, victim, hit_zone, throwingdatum) || victim.plate_stops_hit(parent.throwforce, parent.damtype, MELEE, hit_zone))
 		failed_embed(victim, hit_zone)
 		return
 
@@ -142,11 +143,12 @@
 	if (pierce_hit)
 		return
 
-	if (blocked >= 100 || !can_embed(source, hit))
+	var/mob/living/carbon/victim = hit
+	// A plate that caught the whole round leaves nothing to embed. See [/mob/living/proc/plate_stops_hit].
+	if (blocked >= 100 || !can_embed(source, hit) || victim.plate_stops_hit(source.damage, source.damage_type, source.armor_flag, hit_zone))
 		failed_embed(hit, hit_zone)
 		return
 
-	var/mob/living/carbon/victim = hit
 	var/obj/item/payload = setup_shrapnel(source, victim)
 
 	if (!roll_embed_chance(victim, hit_zone))

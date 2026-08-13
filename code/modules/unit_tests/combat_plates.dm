@@ -82,6 +82,28 @@
 	TEST_ASSERT_EQUAL(shot, 30, "A spent plate should let the entire hit penetrate")
 
 /**
+ * A round a plate stops outright never gets far enough into the body to embed.
+ *
+ * A plate answers a hit in place of percentage armour, so the `blocked` an embed roll used to read is
+ * zero however much the plate caught.
+ */
+/datum/unit_test/plate_stops_embedding/Run()
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/armor_plate/plate = plate_up(victim)
+	var/obj/projectile/bullet/c38/bullet = allocate(/obj/projectile/bullet/c38)
+	bullet.get_embed().embed_chance = 100
+
+	bullet.damage = plate.get_tolerance()
+	bullet.get_embed().try_embed_projectile(bullet, victim, BODY_ZONE_CHEST, blocked = 0)
+	TEST_ASSERT(isnull(locate(/obj/item/shrapnel) in victim), \
+		"A round the plate stopped outright still embedded")
+
+	bullet.damage = plate.get_tolerance() + 1
+	bullet.get_embed().try_embed_projectile(bullet, victim, BODY_ZONE_CHEST, blocked = 0)
+	TEST_ASSERT(locate(/obj/item/shrapnel) in victim, \
+		"A round heavier than the plate's tolerance failed to embed")
+
+/**
  * Damage alone determines whether a hit exceeds plate tolerance.
  *
  * Damage is penetration: a hit is either inside a plate's tolerance or it is not, and only how hard
