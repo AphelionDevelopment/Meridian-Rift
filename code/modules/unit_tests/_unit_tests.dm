@@ -171,6 +171,7 @@
 #include "designs.dm"
 #include "dismemberment.dm"
 #include "dna_infusion.dm"
+#include "dogmos_del_cost.dm"
 #include "dogmos_init_health.dm"
 #include "dogmos_load.dm"
 #include "dogmos_volume_sites.dm"
