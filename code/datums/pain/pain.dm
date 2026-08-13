@@ -35,10 +35,6 @@
 	var/datum/pain_bracket/current_bracket
 	/// Whether this mob has already spent its adrenaline for this fight.
 	var/adrenaline_spent = FALSE
-	/// Movement penalty from the current bracket. Held so its slowdown can be retuned in place.
-	var/datum/movespeed_modifier/pain/movespeed_mod
-	/// Task time penalty from the current bracket. Held for the same reason.
-	var/datum/actionspeed_modifier/pain/actionspeed_mod
 	/// When the current bracket may next roll its intermittent effects.
 	COOLDOWN_DECLARE(effect_roll_cooldown)
 
@@ -300,13 +296,32 @@
 
 	return clamp(zone_pain / zone_cap, 0, 1)
 
-/// The permanent floor as the mob feels it after medication and fight-or-flight.
-/datum/pain/proc/get_felt_floor(adrenaline_override)
-	var/felt_floor = base_dampening >= PAIN_DAMPEN_TOTAL ? 0 : max(pain_floor - base_dampening, 0)
+/**
+ * How much of some quantity of pain the mob actually feels.
+ *
+ * Medication takes a flat amount off, an anaesthetic takes all of it, and fight-or-flight halves
+ * whatever is left. The one place that arithmetic lives, so the floor and the total can never
+ * disagree about what a painkiller is worth.
+ *
+ * Arguments:
+ * * amount - Raw pain to dampen.
+ * * adrenaline_override - Whether to treat fight-or-flight as active. Null reads the mob, which is
+ * what everything but the status effect's own apply and remove wants.
+ */
+/datum/pain/proc/apply_dampening(amount, adrenaline_override)
+	if(base_dampening >= PAIN_DAMPEN_TOTAL)
+		return 0
+
+	var/felt = max(amount - base_dampening, 0)
 	var/adrenaline_active = isnull(adrenaline_override) ? !!parent.has_status_effect(/datum/status_effect/adrenaline) : adrenaline_override
 	if(adrenaline_active)
-		felt_floor *= (1 - PAIN_ADRENALINE_DAMPEN_RATIO)
-	return felt_floor
+		felt *= (1 - PAIN_ADRENALINE_DAMPEN_RATIO)
+
+	return felt
+
+/// The permanent floor as the mob feels it after medication and fight-or-flight.
+/datum/pain/proc/get_felt_floor(adrenaline_override)
+	return apply_dampening(pain_floor, adrenaline_override)
 
 /**
  * Returns the most permanent pain a bodypart zone may contribute to the floor.
@@ -433,12 +448,7 @@
 	// The temporary reservoir may exceed the meter so a blackout can drain without erasing the whole
 	// spike, but PAIN and FELT are both 0-100 values as presented to every gameplay gate.
 	total_pain = min(pain_floor + temporary_pain, PAIN_MAXIMUM)
-	var/unclamped_felt = base_dampening >= PAIN_DAMPEN_TOTAL ? 0 : max(total_pain - base_dampening, 0)
-	// Fight or flight halves whatever the mob would otherwise feel, including pain gained after the
-	// trigger and pain left visible through medication.
-	var/adrenaline_active = isnull(adrenaline_override) ? !!parent.has_status_effect(/datum/status_effect/adrenaline) : adrenaline_override
-	if(adrenaline_active)
-		unclamped_felt *= (1 - PAIN_ADRENALINE_DAMPEN_RATIO)
+	var/unclamped_felt = apply_dampening(total_pain, adrenaline_override)
 	dampening = total_pain - unclamped_felt
 	felt_pain = clamp(unclamped_felt, 0, PAIN_MAXIMUM)
 	update_bracket()
@@ -478,30 +488,16 @@
 		parent.clear_mood_event(PAIN_MOOD_CATEGORY)
 
 	if(current_bracket.slowdown)
-		if(isnull(movespeed_mod))
-			movespeed_mod = new
-			movespeed_mod.multiplicative_slowdown = current_bracket.slowdown
-			parent.add_movespeed_modifier(movespeed_mod)
-		else
-			movespeed_mod.multiplicative_slowdown = current_bracket.slowdown
-			parent.update_movespeed()
-	else if(movespeed_mod)
-		parent.remove_movespeed_modifier(movespeed_mod)
-		QDEL_NULL(movespeed_mod)
+		parent.add_or_update_variable_movespeed_modifier(/datum/movespeed_modifier/pain, multiplicative_slowdown = current_bracket.slowdown)
+	else
+		parent.remove_movespeed_modifier(/datum/movespeed_modifier/pain)
 
 	// interaction_penalty is a multiplier on task length, actionspeed wants the delta.
 	var/action_slowdown = current_bracket.interaction_penalty - 1
 	if(action_slowdown > 0)
-		if(isnull(actionspeed_mod))
-			actionspeed_mod = new
-			actionspeed_mod.multiplicative_slowdown = action_slowdown
-			parent.add_actionspeed_modifier(actionspeed_mod)
-		else
-			actionspeed_mod.multiplicative_slowdown = action_slowdown
-			parent.update_actionspeed()
-	else if(actionspeed_mod)
-		parent.remove_actionspeed_modifier(actionspeed_mod)
-		QDEL_NULL(actionspeed_mod)
+		parent.add_or_update_variable_actionspeed_modifier(/datum/actionspeed_modifier/pain, multiplicative_slowdown = action_slowdown)
+	else
+		parent.remove_actionspeed_modifier(/datum/actionspeed_modifier/pain)
 
 /// Rolls the current bracket's intermittent effects.
 /datum/pain/proc/roll_bracket_effects()
@@ -636,12 +632,8 @@
 	if(QDELETED(parent))
 		return
 
-	if(movespeed_mod)
-		parent.remove_movespeed_modifier(movespeed_mod)
-		QDEL_NULL(movespeed_mod)
-	if(actionspeed_mod)
-		parent.remove_actionspeed_modifier(actionspeed_mod)
-		QDEL_NULL(actionspeed_mod)
+	parent.remove_movespeed_modifier(/datum/movespeed_modifier/pain)
+	parent.remove_actionspeed_modifier(/datum/actionspeed_modifier/pain)
 	parent.clear_mood_event(PAIN_MOOD_CATEGORY)
 	in_shock = FALSE
 	blackout_ends_at = 0

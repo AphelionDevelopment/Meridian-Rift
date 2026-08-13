@@ -64,9 +64,10 @@
  */
 /obj/item/bodypart/proc/damage_random_organ(damage, damage_source)
 	var/list/obj/item/organ/candidates = list()
-	for(var/obj/item/organ/inner_organ as anything in owner.organs)
-		// Eyes and tongues live in precise zones, but are inside this part all the same.
-		if(inner_organ.slot && deprecise_zone(inner_organ.zone) == body_zone)
+	// include_children, as eyes and tongues live in precise zones but are inside this part all the same.
+	for(var/obj/item/organ/inner_organ as anything in owner.get_organs_for_zone(body_zone, include_children = TRUE))
+		// adjust_organ_loss() is keyed on a slot, so an organ without one cannot be reached.
+		if(inner_organ.slot)
 			candidates += inner_organ
 
 	if(!length(candidates))

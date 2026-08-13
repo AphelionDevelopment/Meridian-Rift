@@ -102,18 +102,14 @@
 	var/injury_roll = check_woundings_mods(woundtype, accumulated_damage, wound_bonus, exposed_wound_bonus, armor_ablation)
 	var/list/series_wounding_mods = check_series_wounding_mods()
 
-	// A hit a plate stopped bruises and burns. It does not open arteries and it does not take limbs
-	// off; the plate has to be broken first.
-
-	// Losing a limb outright is not decided here. It is a limb's overflow, and lives in
-	// [/obj/item/bodypart/proc/apply_overflow].
-
 	var/list/datum/wound/possible_wounds = list()
 	for (var/datum/wound/wound_type as anything in GLOB.all_wound_pregen_data)
 		var/datum/wound_pregen_data/pregen_data = GLOB.all_wound_pregen_data[wound_type]
 		if (!pregen_data.compete_for_wounding)
 			continue
 
+		// A hit a plate stopped bruises and burns. It does not open arteries; the plate has to be
+		// broken first. Nor does it take limbs off, which painless_wound_roll() handles above.
 		if (nonpenetrating && (initial(wound_type.severity) > WOUND_NONPENETRATING_MAX_SEVERITY || pregen_data.bleeds))
 			continue
 
