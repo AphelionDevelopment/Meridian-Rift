@@ -160,12 +160,12 @@
 	var/datum/gas_mixture/turf_gas = open_loc.air
 	if(isnull(turf_gas))
 		return
-	check_atmos_process(open_loc, turf_gas, turf_gas.temperature)
+	check_atmos_process(open_loc, turf_gas, turf_gas.return_temperature())
 
 /turf/open/atmos_conditions_changed()
 	if(isnull(air))
 		return
-	check_atmos_process(src, air, air.temperature)
+	check_atmos_process(src, air, air.return_temperature())
 
 /**
  * Called by the machinery disconnect(), custom for each type
