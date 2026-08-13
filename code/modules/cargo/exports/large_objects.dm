@@ -129,7 +129,6 @@
 	var/datum/gas_mixture/canister_mix = canister.return_air()
 	if(!canister_mix.total_moles())
 		return 0
-	var/cached_moles = canister_mix.moles
 
 	var/static/list/gases_to_check = list(
 		/datum/gas/bz,
@@ -151,9 +150,9 @@
 
 	var/worth = cost
 	for(var/gas_id in gases_to_check)
-		canister_mix.assert_gas(gas_id)
-		if(cached_moles[gas_id] > 0)
-			worth += get_gas_value(gas_id, cached_moles[gas_id])
+		var/moles = canister_mix.get_moles(gas_id)
+		if(moles > 0)
+			worth += get_gas_value(gas_id, moles)
 			if(worth > MAX_GAS_CREDITS)
 				worth = MAX_GAS_CREDITS
 				break
