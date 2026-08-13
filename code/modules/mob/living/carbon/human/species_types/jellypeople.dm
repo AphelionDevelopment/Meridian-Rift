@@ -66,6 +66,13 @@
 	// In the following code, do not cache blood volumes.
 	// They are repeadetly updated and caching can introduce bugs.
 
+	// Saline can prevent you from cannibalizing yourself.
+	if(slime.get_blood_volume(apply_modifiers = TRUE) < BLOOD_VOLUME_BAD)
+		if(!cannibalize_body(slime) && slime.get_blood_volume(apply_modifiers = TRUE) <= BLOOD_VOLUME_SURVIVE && !HAS_TRAIT(slime, TRAIT_NODEATH))
+			slime.investigate_log("has died of slime jelly loss.", INVESTIGATE_DEATHS)
+			slime.death()
+			return HANDLE_BLOOD_HANDLED
+
 	// Blood regen thresholds use your real amount of blood.
 	if(slime.get_blood_volume() <= 0)
 		slime.adjust_blood_volume(JELLY_REGEN_RATE_EMPTY * slime.physiology.blood_regen_mod * seconds_per_tick)
@@ -83,20 +90,6 @@
 	if(slime.get_blood_volume(apply_modifiers = TRUE) < BLOOD_VOLUME_OKAY)
 		if(SPT_PROB(2.5, seconds_per_tick))
 			to_chat(slime, span_danger("You feel drained!"))
-
-	// Saline can prevent you from cannibalizing yourself.
-	var/cannibalized_limb = FALSE
-	if(slime.get_blood_volume(apply_modifiers = TRUE) < BLOOD_VOLUME_BAD)
-		cannibalized_limb = cannibalize_body(slime)
-
-	// Slimes used to turn an empty jelly reserve into brute damage. Brute totals are no longer
-	// lethal to humans, so an exhausted slime with no limb left to consume became impossible to
-	// exsanguinate. Give the limb sacrifice its intended chance to save them before checking this.
-	// Saline still counts here, just as it does for other species.
-	if(!cannibalized_limb && slime.get_blood_volume(apply_modifiers = TRUE) <= BLOOD_VOLUME_SURVIVE && !HAS_TRAIT(slime, TRAIT_NODEATH))
-		slime.investigate_log("has died of slime jelly loss.", INVESTIGATE_DEATHS)
-		slime.death()
-		return HANDLE_BLOOD_HANDLED
 
 	regenerate_limbs?.build_all_button_icons(UPDATE_BUTTON_STATUS)
 	return HANDLE_BLOOD_NO_NUTRITION_DRAIN|HANDLE_BLOOD_NO_OXYLOSS

@@ -13,7 +13,7 @@
 	// A greyscale item carries its map preview here and switches to the real state on init, so the
 	// map editor has something to draw before anything is generated.
 	icon = 'icons/map_icons/items/_item.dmi'
-	icon_state = "/obj/item/armor_plate"
+	icon_state = "/obj/item/armor_plate/ballistic"
 	post_init_icon_state = "armor_plate"
 	greyscale_config = /datum/greyscale_config/armor_plate
 	inhand_icon_state = "armor"
