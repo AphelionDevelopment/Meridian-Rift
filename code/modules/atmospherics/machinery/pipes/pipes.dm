@@ -33,7 +33,7 @@
 		return
 	var/datum/gas_mixture/gasmix = parent?.air
 	if(gasmix)
-		gasmix.volume = gasmix.volume + new_volume - volume
+		gasmix.set_volume(gasmix.return_volume() + new_volume - volume)
 	volume = new_volume
 
 /obj/machinery/atmospherics/pipe/setup_hiding()

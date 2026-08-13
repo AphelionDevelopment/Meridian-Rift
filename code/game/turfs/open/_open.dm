@@ -501,10 +501,10 @@
 	. = air.heat_capacity()
 
 /turf/open/GetTemperature()
-	. = air.temperature
+	. = air.return_temperature()
 
 /turf/open/TakeTemperature(temp)
-	air.temperature += temp
+	air.set_temperature(air.return_temperature() + temp)
 	air_update_turf(FALSE, FALSE)
 
 /turf/open/proc/freeze_turf()
