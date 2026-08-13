@@ -1,6 +1,7 @@
 SUBSYSTEM_DEF(air)
 	name = "Atmospherics"
 	dependencies = list(
+		/datum/controller/subsystem/dogmos,
 		/datum/controller/subsystem/mapping,
 		/datum/controller/subsystem/atoms,
 	)
@@ -95,13 +96,9 @@ SUBSYSTEM_DEF(air)
 
 /datum/controller/subsystem/air/Initialize()
 	map_loading = FALSE
-	gas_reactions = init_gas_reactions()
-	dogmos_reactions = init_dogmos_reactions(gas_reactions)
+	// gas_reactions, dogmos_reactions and the Dogmos gas registry are built by SSdogmos at
+	// INITSTAGE_EARLY - they have to exist before the first turf builds its air. See dogmos.dm.
 	hotspot_reactions = init_hotspot_reactions()
-
-	// Registers every gas with Dogmos and snapshots the reaction table. Must happen after
-	// dogmos_reactions is built, because Dogmos reads it during this call.
-	auxtools_atmos_init(GLOB.gas_data)
 
 	setup_allturfs()
 	setup_atmos_machinery()

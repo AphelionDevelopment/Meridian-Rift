@@ -17,7 +17,10 @@
 
 /datum/gas_mixture/immutable/New(volume)
 	. = ..()
-	set_temperature(initial_temperature)
+	// /planetary leaves initial_temperature null here - parse_string_immutable() sets it in a later,
+	// separate step (see the file header). /space sets it via its own var initial value.
+	if(!isnull(initial_temperature))
+		set_temperature(initial_temperature)
 
 //used by space tiles. Never gets content set after construction, so it's safe to finalize immediately.
 /datum/gas_mixture/immutable/space

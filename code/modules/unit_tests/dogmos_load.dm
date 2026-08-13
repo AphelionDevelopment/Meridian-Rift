@@ -21,10 +21,27 @@
 	TEST_ASSERT(isnum(max_mixes), "SSair.get_max_gas_mixes() did not return a number across the FFI boundary, got: [isnull(max_mixes) ? "null" : max_mixes]")
 	TEST_ASSERT(max_mixes >= mix_count, "Dogmos reports fewer total gas mixtures ([max_mixes]) than attached ones ([mix_count])")
 
+	// All of the above proves Dogmos ANSWERS. None of it proves it STORES anything - a call that
+	// always returns a number, including a wrong one, would still pass. Round-trip a real value.
+	var/datum/gas_mixture/probe = allocate(/datum/gas_mixture)
+	probe.set_volume(CELL_VOLUME)
+	probe.set_moles(/datum/gas/oxygen, 5)
+	TEST_ASSERT_EQUAL(round(probe.get_moles(/datum/gas/oxygen), 0.0001), 5, "A value written across the FFI did not read back - the library answers but does not store.")
+	TEST_ASSERT_EQUAL(round(probe.return_volume(), 0.01), CELL_VOLUME, "set_volume()/return_volume() did not round-trip.")
+
 /// Verifies that every gas and reaction was handed to Dogmos during SSair init.
 /datum/unit_test/dogmos_registration
 
 /datum/unit_test/dogmos_registration/Run()
+	// The Defect-1 assertion, stated directly: SSdogmos must initialise before anything that could
+	// build a gas mixture. init_order is assigned by the MC in a single increasing sweep across all
+	// init stages (code\controllers\master.dm), so a plain numeric comparison is meaningful here.
+	TEST_ASSERT(SSdogmos.gases_registered, "SSdogmos never finished registering the gas table.")
+	TEST_ASSERT(SSdogmos.init_order < SSatoms.init_order, \
+		"SSdogmos initialised at order [SSdogmos.init_order], AFTER SSatoms at [SSatoms.init_order]. Every turf's air was built before Dogmos knew a single gas id.")
+	TEST_ASSERT(SSdogmos.init_order < SSmapping.init_order, \
+		"SSdogmos initialised after SSmapping - mapload creates gas mixtures.")
+
 	TEST_ASSERT(length(GLOB.gas_data.datums) == GAS_TYPE_COUNT, "GLOB.gas_data holds [length(GLOB.gas_data.datums)] gas datums, expected [GAS_TYPE_COUNT]")
 
 	for(var/gas_path in GLOB.gas_data.datums)
@@ -54,3 +71,34 @@
 			if(requirement == "TEMP" || requirement == "MAX_TEMP" || requirement == "ENER" || requirement == "FIRE_REAGENTS")
 				continue
 			TEST_ASSERT(known_gas_ids[requirement], "[reaction.type] has requirement key \"[requirement]\", which is neither a gas id nor a sentinel Dogmos understands")
+
+	// Everything above validates what DM handed Dogmos. Nothing yet has asked Dogmos whether it
+	// actually accepted any of it - round-trip every gas through the FFI boundary for real.
+	var/datum/gas_mixture/probe = allocate(/datum/gas_mixture)
+	probe.set_volume(CELL_VOLUME)
+	probe.set_temperature(T20C)
+
+	for(var/gas_path in GLOB.gas_data.datums)
+		var/datum/gas/gas = GLOB.gas_data.datums[gas_path]
+		probe.set_moles(gas_path, 1)
+		TEST_ASSERT_EQUAL(round(probe.get_moles(gas_path), 0.0001), 1, \
+			"Dogmos did not store 1 mole of [gas.id] ([gas_path]) - it never accepted this gas at registration.")
+		// partial_heat_capacity for exactly 1 mole IS the specific heat, so this proves Dogmos'
+		// copy of the gas metadata actually matches DM's, not just that the gas is present.
+		TEST_ASSERT_EQUAL(round(probe.partial_heat_capacity(gas_path), 0.01), round(gas.specific_heat, 0.01), \
+			"Dogmos reports specific heat [probe.partial_heat_capacity(gas_path)] for [gas.id], DM says [gas.specific_heat] - the registry is stale or gas indices collided.")
+		probe.set_moles(gas_path, 0)
+
+	// Every gas simultaneously: catches index collisions that per-gas testing above cannot, since
+	// a collision only shows up when two gases are present at once and one silently overwrites
+	// the other.
+	probe.clear()
+	for(var/gas_path in GLOB.gas_data.datums)
+		probe.set_moles(gas_path, 1)
+	var/list/present = probe.__get_gases()
+	TEST_ASSERT_EQUAL(length(present), GAS_TYPE_COUNT, \
+		"Dogmos reports [length(present)] gases present after setting one mole of each of [GAS_TYPE_COUNT] - ids collided on registration and gases are overwriting each other.")
+
+	// The reaction table crossed the boundary too, not just the gas table.
+	TEST_ASSERT_EQUAL(dogmos_reaction_count(), length(SSair.dogmos_reactions), \
+		"Dogmos holds [dogmos_reaction_count()] reactions, DM handed it [length(SSair.dogmos_reactions)] - reactions were dropped at init.")

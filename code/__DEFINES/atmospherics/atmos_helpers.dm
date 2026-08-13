@@ -50,9 +50,6 @@
 		T.pixel_z = (PipingLayer - PIPING_LAYER_DEFAULT) * PIPING_LAYER_P_Y; \
 	}
 
-///Calculate the thermal energy of the selected gas (J)
-#define THERMAL_ENERGY(gas) (gas.temperature * gas.heat_capacity())
-
 GLOBAL_LIST_INIT(nonoverlaying_gases, typecache_of_gases_with_no_overlays())
 ///Returns a list of overlays of every gas in the mixture
 #define GAS_OVERLAYS(moles, out_var, z_layer_turf)\

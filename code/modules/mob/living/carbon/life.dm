@@ -191,7 +191,14 @@
 	// Breath may be null, so use a fallback "empty breath" for convenience.
 	if(!breath)
 		/// Fallback "empty breath" for convenience.
-		var/static/datum/gas_mixture/immutable/empty_breath = new(BREATH_VOLUME)
+		var/static/datum/gas_mixture/immutable/empty_breath
+		// Constructed lazily rather than as the static initializer above: a proc-local var/static
+		// with a `new()` initializer can still evaluate at a point earlier than a normal Dogmos
+		// registration is safe at (the exact same hazard as /turf/open/space's space_gas singleton -
+		// see immutable_mixtures.dm), silently leaving _extools_pointer_gasmixture unset. Guarding
+		// it here ensures registration happens on first real use instead.
+		if(isnull(empty_breath))
+			empty_breath = new(BREATH_VOLUME)
 		breath = empty_breath
 
 	/// Indicates if there are moles of gas in the breath.

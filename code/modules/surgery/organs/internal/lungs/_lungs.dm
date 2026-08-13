@@ -167,7 +167,13 @@
 	. = ..()
 	// This is very "manual" I realize, but it's useful to ensure cleanup for gases we're removing happens
 	// Avoids stuck alerts and such
-	var/static/datum/gas_mixture/immutable/dummy = new(BREATH_VOLUME)
+	// Constructed lazily rather than at proc-local static init - a proc-local var/static with a
+	// new() initializer can evaluate before Dogmos registration is safe, silently leaving
+	// _extools_pointer_gasmixture unset (see the empty_breath guard below and space_gas in
+	// code/game/turfs/open/space/space.dm for the same hazard).
+	var/static/datum/gas_mixture/immutable/dummy
+	if(isnull(dummy))
+		dummy = new(BREATH_VOLUME)
 	for(var/gas_id, partial_pressure in last_partial_pressures)
 		var/on_loss = breath_lost[gas_id]
 		if(!on_loss)
@@ -600,7 +606,11 @@
 
 	// If the breath is falsy or "null", we can use the backup empty_breath.
 	if(!breath)
-		var/static/datum/gas_mixture/immutable/empty_breath = new(BREATH_VOLUME)
+		// Lazily constructed - see the identical guard in life.dm's check_breath() and space_gas
+		// in code/game/turfs/open/space/space.dm for why `= new` at declaration is unsafe here.
+		var/static/datum/gas_mixture/immutable/empty_breath
+		if(isnull(empty_breath))
+			empty_breath = new(BREATH_VOLUME)
 		breath = empty_breath
 
 	// NOVA EDIT ADDITION - Akula breathing trait

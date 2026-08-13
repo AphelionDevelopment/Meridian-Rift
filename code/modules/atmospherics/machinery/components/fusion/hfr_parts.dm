@@ -280,7 +280,8 @@
 			"enabled" = (path in connected_core.moderator_scrubbing)
 		))
 
-	data["cooling_volume"] = connected_core.airs[1].volume
+	var/datum/gas_mixture/core_coolant = connected_core.airs[1]
+	data["cooling_volume"] = core_coolant.return_volume()
 	data["mod_filtering_rate"] = connected_core.moderator_filtering_rate
 
 	return data
@@ -359,7 +360,8 @@
 		if("cooling_volume")
 			var/cooling_volume = text2num(params["cooling_volume"])
 			if(cooling_volume != null)
-				connected_core.airs[1].volume = clamp(cooling_volume, 50, 2000)
+				var/datum/gas_mixture/core_coolant = connected_core.airs[1]
+				core_coolant.set_volume(clamp(cooling_volume, 50, 2000))
 				. = TRUE
 
 /obj/machinery/hypertorus/corner

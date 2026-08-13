@@ -144,6 +144,18 @@ if $grep "href[\s='\"\\\\]*\?" "${code_files[@]}" ; then
 fi;
 
 section "common mistakes"
+part "gas mixture vars accessed through a list index"
+# /datum/gas_mixture has no volume/temperature vars - they are procs (set_volume()/return_volume(),
+# set_temperature()/return_temperature()). Indexing a list (airs[N]) yields an untyped value, so DM
+# cannot catch a direct .volume/.temperature access there at compile time; it compiles clean and
+# fails - or silently reads null - at runtime. `airs` is exclusively a gas_mixture list/var in this
+# codebase (components_base.dm, gas_analyzer.dm, atmosscan.dm), so this pattern is unambiguous.
+if $grep -P 'airs\[\d+\]\.\s*(volume|temperature)\b' "${code_files[@]}"; then
+	echo
+	echo -e "${RED}ERROR: Direct .volume/.temperature access on a gas_mixture reached through a list index. Bind a typed 'var/datum/gas_mixture/' local first, then use set_volume()/return_volume() or set_temperature()/return_temperature().${NC}"
+	st=1
+fi;
+
 part "global vars"
 if $grep '^/*var/' "${code_files[@]}"; then
 	echo

@@ -1,5 +1,9 @@
 GLOBAL_VAR_INIT(total_runtimes, GLOB.total_runtimes || 0)
 GLOBAL_VAR_INIT(total_runtimes_skipped, 0)
+/// GLOB.total_runtimes as it stood the moment initialisation finished. Snapshotted by the MC
+/// (code\controllers\master.dm) so a unit test can ask "was the boot clean?" without being
+/// polluted by runtimes the tests themselves cause. See /datum/unit_test/no_runtimes_during_init.
+GLOBAL_VAR_INIT(runtimes_at_init_complete, 0)
 
 #ifdef USE_CUSTOM_ERROR_HANDLER
 #define ERROR_USEFUL_LEN 2

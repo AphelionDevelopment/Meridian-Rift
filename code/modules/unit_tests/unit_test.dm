@@ -217,6 +217,12 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 	var/skip_test = (test_path in SSmapping.current_map.skipped_tests)
 	var/test_output_desc = "[test_path]"
 	var/message = ""
+	// GLOB.total_runtimes is bumped by /world/Error (code\modules\error_handler\error_handler.dm).
+	// Snapshotting it around the test attributes each runtime to whichever test was running, which
+	// the suite could not previously do: a test that runtimed but never called TEST_FAIL was
+	// recorded as PASSED with no trace of the runtime anywhere but the global aggregate.
+	var/runtimes_before = GLOB.total_runtimes
+	var/runtimes_during = 0
 
 	log_world("::group::[test_path]")
 
@@ -228,6 +234,9 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 		test.Run()
 		if(test.priority < TEST_CREATE_AND_DESTROY) //We shouldn't care about restoring atmos after create_and_destroy.
 			test.restore_atmos()
+
+		// Restore-time runtimes are attributed to the test that dirtied the turf, not the next one.
+		runtimes_during = GLOB.total_runtimes - runtimes_before
 
 		duration = REALTIMEOFDAY - duration
 		GLOB.current_test = null
@@ -250,6 +259,9 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 			message = log_entry.Join("\n")
 			log_test(message)
 
+		if(runtimes_during)
+			log_world("[TEST_OUTPUT_YELLOW("RUNTIMES")] [test_path] logged [runtimes_during] runtime error(s)")
+
 		test_output_desc += " [duration / 10]s"
 		if(duration > 10)
 			GLOB.test_run_times[test_path] = duration
@@ -262,7 +274,7 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 		log_world("::error::[TEST_OUTPUT_RED("FAIL")] [test_output_desc]")
 
 	var/final_status = skip_test ? UNIT_TEST_SKIPPED : (test.succeeded ? UNIT_TEST_PASSED : UNIT_TEST_FAILED)
-	test_results[test_path] = list("status" = final_status, "message" = message, "name" = test_path)
+	test_results[test_path] = list("status" = final_status, "message" = message, "name" = test_path, "runtimes" = runtimes_during)
 
 	qdel(test)
 

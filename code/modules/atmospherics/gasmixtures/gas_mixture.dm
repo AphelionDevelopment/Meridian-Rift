@@ -60,6 +60,18 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 /// through the FFI var-read the way a live instance is. Every gas_mixture proc that takes a gas
 /// identifier and crosses into Dogmos routes through here once, so callers can keep using typepaths.
 /proc/gas_string_id(gas_id)
+	// One-shot tripwire: a gas id crossing into Dogmos before SSdogmos has registered the gas table
+	// means Rust will reject it and the caller silently gets nothing (see dogmos.dm for why this can
+	// happen and why it matters). stack_trace rather than CRASH, because CRASHing here takes down
+	// whatever is initialising instead of naming it; and once rather than per-call, because the
+	// failing case historically was every turf on the station - tens of thousands of identical
+	// stack traces in runtime.log otherwise.
+	if(!SSdogmos?.gases_registered)
+		var/static/warned_before_registration = FALSE
+		if(!warned_before_registration)
+			warned_before_registration = TRUE
+			stack_trace("A gas id was handed to Dogmos before SSdogmos finished registering the gas table. Dogmos will reject it and the mixture will stay empty. Check subsystem init order.")
+
 	if(istext(gas_id))
 		return gas_id
 	return GLOB.meta_gas_info[META_GAS_ID][gas_id]

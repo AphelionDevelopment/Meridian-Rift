@@ -26,11 +26,6 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:hook_register_turf_ffi")
 	return call_ext(loaded)(src, flag)
 
-/// Args: (heat). Adds a given amount of heat to the mixture, i.e. in joules taking into account capacity.
-/datum/gas_mixture/proc/adjust_heat(temp)
-	var/static/loaded = load_ext(DOGMOS, "byond:adjust_heat_hook_ffi")
-	return call_ext(loaded)(src, temp)
-
 /// Args: (holder). Runs all reactions on this gas mixture. Holder is used by the reactions, and can be any arbitrary datum or null.
 /// Underscored because DM keeps a `react()` wrapper of its own, carrying behaviour Dogmos has no
 /// equivalent for: the hypernoblium oppression gate that stops all reactions before any are
@@ -177,10 +172,12 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:remove_ratio_hook_ffi")
 	return call_ext(loaded)(src, into, ratio_arg)
 
-/// Args: (ms). Runs callbacks until time limit is reached. If time limit is omitted, runs all callbacks.
-/proc/process_atmos_callbacks(remaining)
-	var/static/loaded = load_ext(DOGMOS, "byond:atmos_callback_handle_ffi")
-	return call_ext(loaded)(remaining)
+/// Args: (mixture). Merges the gas from the giver into src, without modifying the giver mix.
+/// Underscored because DM keeps a `merge()` wrapper of its own: it sends COMSIG_GASMIX_MERGED,
+/// which gas tanks and the atmos reaction recorder listen for, and returns a success boolean.
+/datum/gas_mixture/proc/__merge(giver)
+	var/static/loaded = load_ext(DOGMOS, "byond:merge_hook_ffi")
+	return call_ext(loaded)(src, giver)
 
 /// Returns: true. Parses gas strings like "o2=2500;plasma=5000;TEMP=370" and turns src mixes into the parsed gas mixture, invalid patterns will be ignored
 /datum/gas_mixture/proc/__auxtools_parse_gas_string(string)
@@ -227,12 +224,10 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:transfer_hook_ffi")
 	return call_ext(loaded)(src, other, moles)
 
-/// Args: (mixture). Merges the gas from the giver into src, without modifying the giver mix.
-/// Underscored because DM keeps a `merge()` wrapper of its own: it sends COMSIG_GASMIX_MERGED,
-/// which gas tanks and the atmos reaction recorder listen for, and returns a success boolean.
-/datum/gas_mixture/proc/__merge(giver)
-	var/static/loaded = load_ext(DOGMOS, "byond:merge_hook_ffi")
-	return call_ext(loaded)(src, giver)
+/// Args: (heat). Adds a given amount of heat to the mixture, i.e. in joules taking into account capacity.
+/datum/gas_mixture/proc/adjust_heat(temp)
+	var/static/loaded = load_ext(DOGMOS, "byond:adjust_heat_hook_ffi")
+	return call_ext(loaded)(src, temp)
 
 /// Returns: the mix's thermal energy, the product of the mixture's heat capacity and its temperature.
 /datum/gas_mixture/proc/thermal_energy()
@@ -280,6 +275,11 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:register_gasmixture_hook_ffi")
 	return call_ext(loaded)(src)
 
+/// Args: (ms). Runs callbacks until time limit is reached. If time limit is omitted, runs all callbacks.
+/proc/process_atmos_callbacks(remaining)
+	var/static/loaded = load_ext(DOGMOS, "byond:atmos_callback_handle_ffi")
+	return call_ext(loaded)(remaining)
+
 /// Returns: If this cycle is interrupted by overtiming or not. Starts a processing excited groups cycle, does nothing if process_turfs isn't ran.
 /datum/controller/subsystem/air/proc/process_excited_groups_auxtools(remaining)
 	var/static/loaded = load_ext(DOGMOS, "byond:groups_hook_ffi")
@@ -313,6 +313,13 @@
 /// For updating reaction informations for auxmos, only call this when it is changed.
 /datum/controller/subsystem/air/proc/auxtools_update_reactions()
 	var/static/loaded = load_ext(DOGMOS, "byond:update_reactions_ffi")
+	return call_ext(loaded)()
+
+/// Returns: the number of reactions Dogmos accepted at init. Meridian: exists purely so DM can
+/// assert across the FFI that the reaction table actually crossed, rather than only that DM built
+/// one - see /datum/unit_test/dogmos_registration.
+/proc/dogmos_reaction_count()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_reaction_count_ffi")
 	return call_ext(loaded)()
 
 /// Registers gases, and get reaction infos for auxmos, only call when ssair is initing.
