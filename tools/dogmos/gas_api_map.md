@@ -177,7 +177,15 @@ grep or the compiler catches them - check for all three after every transform pa
    `if`/`else`), which a later generic-read pass then corrupts into `get_moles(x) += y` (assigning to a
    proc call - DM catches this one as a hard error, at least). Prefer unanchored `(\w+)\.moles\[...\]`
    over line-start-anchored patterns for this reason.
-3. **Multi-line assignments** (`X.temperature = clamp(\n\ta,\n\tb,\n)`) only have their first line
+3. **`.volume` regex is riskier than `.temperature`/`.moles`.** Volume collides with unrelated
+   `.volume` vars far more often - reagent containers, individual reagents, sound objects all have
+   their own. A blanket `(\w+)\.volume\b` pass silently corrupted `beaker.volume` and
+   `reagent.volume` in cryo.dm into calls to a gas_mixture proc that has nothing to do with either.
+   Only apply the volume regex to receivers confirmed `/datum/gas_mixture`-typed, and always diff the
+   file's `.volume` sites against the compiler's original error list before trusting a transform -
+   if a site wasn't flagged as broken before, it wasn't a gas_mixture access.
+
+4. **Multi-line assignments** (`X.temperature = clamp(\n\ta,\n\tb,\n)`) only have their first line
    matched by a single-line regex, leaving an unbalanced paren the compiler reports far from the real
    site. Check paren balance per-file after every transform (strip strings and comments first, count
    `(` vs `)`) before trusting a "0 errors" result.
