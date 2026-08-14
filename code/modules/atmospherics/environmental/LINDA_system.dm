@@ -53,6 +53,20 @@
 /atom/movable/proc/block_superconductivity() // objects that block air and don't let superconductivity act
 	return FALSE
 
+/**
+ * The AdjacentFlags value Dogmos expects for an edge between src and other (DOGMOS_ADJACENT_FIRELOCK,
+ * or NONE for an ordinary edge). Shared by both adjacency-calculation procs below rather than
+ * duplicated, since they already exist as two near-identical implementations of the same walk.
+ *
+ * A firelock on either side of the edge is enough to flag it: consider_firelocks()/explosive
+ * decompression (aphelion-dogmos src/turfs/katmos.rs) only needs "is there a firelock that could
+ * seal this edge", not which side it's actually mounted on.
+ */
+/turf/proc/atmos_adjacency_flags_with(turf/other)
+	if((locate(/obj/machinery/door/firedoor) in src) || (locate(/obj/machinery/door/firedoor) in other))
+		return DOGMOS_ADJACENT_FIRELOCK
+	return NONE
+
 /// This proc is a more deeply optimized version of immediate_calculate_adjacent_turfs
 /// It contains dumbshit, and also stuff I just can't do at runtime
 /// If you're not editing behavior, just read that proc. It's less bad
@@ -95,8 +109,9 @@
 		// (direction & (UP | DOWN)) is just "is this vertical" by the by
 		if(canpass && CANATMOSPASS(current_turf, src, (direction & (UP|DOWN))) && !(blocks_air || current_turf.blocks_air))
 			LAZYINITLIST(current_turf.atmos_adjacent_turfs)
-			atmos_adjacent_turfs[current_turf] = NONE
-			current_turf.atmos_adjacent_turfs[src] = NONE
+			var/adjacency_flags = atmos_adjacency_flags_with(current_turf)
+			atmos_adjacent_turfs[current_turf] = adjacency_flags
+			current_turf.atmos_adjacent_turfs[src] = adjacency_flags
 		else
 			atmos_adjacent_turfs -= current_turf
 			if (current_turf.atmos_adjacent_turfs)
@@ -123,8 +138,9 @@
 		// (direction & (UP | DOWN)) is just "is this vertical" by the by
 		if(canpass && CANATMOSPASS(current_turf, src, (direction & (UP|DOWN))) && !(blocks_air || current_turf.blocks_air))
 			LAZYINITLIST(current_turf.atmos_adjacent_turfs)
-			atmos_adjacent_turfs[current_turf] = NONE
-			current_turf.atmos_adjacent_turfs[src] = NONE
+			var/adjacency_flags = atmos_adjacency_flags_with(current_turf)
+			atmos_adjacent_turfs[current_turf] = adjacency_flags
+			current_turf.atmos_adjacent_turfs[src] = adjacency_flags
 		else
 			atmos_adjacent_turfs -= current_turf
 			if (current_turf.atmos_adjacent_turfs)

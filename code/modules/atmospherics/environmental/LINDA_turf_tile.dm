@@ -31,6 +31,11 @@
 	var/pressure_difference = 0
 	///Where the difference come from (from higher pressure to lower pressure)
 	var/pressure_direction = 0
+	/// Scratch var Dogmos' katmos equalizer (explosively_depressurize(), aphelion-dogmos
+	/// src/turfs/katmos.rs) uses while flood-filling a hull breach to track which space turf a given
+	/// turf's lost air is ultimately draining toward. Written and read back entirely on the Rust side
+	/// within a single equalize pass - nothing on the DM side needs to read it.
+	var/turf/pressure_specific_target
 
 	///Excited group we are part of
 	var/datum/excited_group/excited_group
@@ -255,6 +260,41 @@
 	if (move_prob > PROBABILITY_OFFSET && prob(move_prob) && (move_resist != INFINITY) && (!anchored && (max_force >= (move_resist * MOVE_FORCE_PUSH_RATIO))) || (anchored && (max_force >= (move_resist * MOVE_FORCE_FORCEPUSH_RATIO))))
 		step(src, direction)
 		last_high_pressure_movement_air_cycle = SSair.times_fired
+
+/// Minimum moles a neighbor turf had before a hull breach sucked it dry for handle_decompression_floor_rip()
+/// to consider the loss violent enough to tear up the floor, rather than a minor pressure settle.
+#define DECOMPRESSION_FLOOR_RIP_MIN_MOLES (MOLES_CELLSTANDARD * 0.25)
+
+/**
+ * Called by Dogmos' katmos equalizer (explosively_depressurize(), aphelion-dogmos
+ * src/turfs/katmos.rs) when flood-filling a hull breach finds a firelock-flagged edge
+ * (DOGMOS_ADJACENT_FIRELOCK, see atmos_adjacency_flags_with()) between src and adjacent - a chance to
+ * slam the firelock shut immediately rather than waiting for its own reactive alarm check
+ * (/obj/machinery/door/firedoor/proc/process_results(), signal-driven off COMSIG_TURF_EXPOSE) to
+ * catch up, which could let a tick's worth of extra air escape first during an active breach.
+ */
+/turf/proc/consider_firelocks(turf/adjacent)
+	var/obj/machinery/door/firedoor/lock = locate(/obj/machinery/door/firedoor) in src
+	if(!lock)
+		lock = locate(/obj/machinery/door/firedoor) in adjacent
+	lock?.start_activation_process(FIRELOCK_ALARM_TYPE_GENERIC)
+
+/**
+ * Called by Dogmos' katmos equalizer once per turf that a hull breach's flood-fill actually drained air
+ * from (aphelion-dogmos src/turfs/katmos.rs explosively_depressurize(), amount = the neighbor's moles
+ * just before it was pulled toward space). This codebase has no prior "decompression damages the floor"
+ * mechanic - ScrapeAway() (baseturfs.dm) is the existing general-purpose "strip this turf down to its
+ * next baseturf" proc already used by explosions and similar forceful events, reused here rather than
+ * inventing a parallel one. Gated on amount so an ordinary, minor pressure settle doesn't rip up every
+ * floor tile it touches - only a turf that actually lost a meaningful fraction of a standard cell's
+ * worth of gas counts as violent enough.
+ */
+/turf/proc/handle_decompression_floor_rip(amount)
+	if(amount < DECOMPRESSION_FLOOR_RIP_MIN_MOLES)
+		return
+	ScrapeAway(1, flags = CHANGETURF_INHERIT_AIR)
+
+#undef DECOMPRESSION_FLOOR_RIP_MIN_MOLES
 
 ///////////////////////////EXCITED GROUPS/////////////////////////////
 

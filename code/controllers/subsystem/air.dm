@@ -33,10 +33,9 @@ SUBSYSTEM_DEF(air)
 	/// Max FDM (finite-difference gas diffusion) iterations per process_turfs_auxtools call. Read by
 	/// Rust (src/turfs/processing.rs); unused until SSAIR_ACTIVETURFS cuts over.
 	var/share_max_steps = 1
-	/// Whether Dogmos' katmos pressure equalizer runs as part of the gas FDM pass. Deliberately left
-	/// FALSE until SSAIR_HIGHPRESSURE cuts over - see the Phase 3 plan for why turning this on early
-	/// would be premature (equalize_hard_turf_limit/high_pressure_delta wiring isn't exercised yet).
-	var/equalize_enabled = FALSE
+	/// Whether Dogmos' katmos pressure equalizer runs as part of the gas FDM pass. Turned on as of the
+	/// SSAIR_HIGHPRESSURE cutover - see process_high_pressure_delta() for the consumer.
+	var/equalize_enabled = TRUE
 	/// Ratio of a turf's gas shared with its planetary atmosphere per FDM cycle. Mirrors Rust's own
 	/// internal GAS_DIFFUSION_CONSTANT (1/8) so DM's declared default matches what Rust would fall
 	/// back to if this var didn't exist at all. Read by Rust; unused until SSAIR_ACTIVETURFS cuts over.
@@ -399,7 +398,36 @@ SUBSYSTEM_DEF(air)
 		if(MC_TICK_CHECK)
 			return
 
+/**
+ * Real pressure equalization for "high pressure" turfs (the FDM pass's other output set, alongside
+ * SSAIR_EXCITEDGROUPS's low_pressure_turfs) is now Rust's job too - process_turf_equalize_auxtools
+ * (aphelion-dogmos src/turfs/katmos.rs) runs a monstermos-style flood-fill/redistribution pass instead
+ * of the naive single-cell diffusion step the gas FDM pass would otherwise have done for these turfs
+ * (equalize_enabled gates that off - see process_turf_hook in processing.rs). This also activates
+ * katmos's hull-breach handling (explosively_depressurize()): the DM-side of that -
+ * consider_firelocks() and handle_decompression_floor_rip(), LINDA_turf_tile.dm - plus firelock-edge
+ * detection (atmos_adjacency_flags_with(), LINDA_system.dm) were added alongside this cutover, real
+ * feature work rather than a stub, per Zoe's call.
+ *
+ * high_pressure_movements() (the "spacewind" push-movables-around mechanic) is UNCHANGED and needs no
+ * porting: both the FDM's own non-equalize branch and katmos's finalize step ultimately call the same
+ * existing /turf/open/proc/consider_pressure_difference(), which is what populates high_pressure_delta
+ * below. Note the one-cycle latency this introduces: consider_pressure_difference calls made by katmos
+ * are queued auxcallbacks (auxcallback::byond_callback_sender), drained by
+ * finish_turf_processing_auxtools() - which only runs once per fire() cycle, in the earlier
+ * SSAIR_ACTIVETURFS stage. So a pressure-difference callback queued by THIS cycle's equalize pass
+ * (which runs after ACTIVETURFS) isn't drained until next cycle's ACTIVETURFS call, and the movables
+ * push it produces lags by one fire() cycle (0.5s). Accepted, not fixed - the whole port is already
+ * eventually-consistent across fire() stages, and this is a bounded, self-correcting one-cycle delay,
+ * not a starvation risk.
+ */
 /datum/controller/subsystem/air/proc/process_high_pressure_delta(resumed = FALSE)
+	if(!resumed)
+		var/remaining_ms = TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)
+		if(process_turf_equalize_auxtools(remaining_ms))
+			pause() // ran out of budget mid-equalize - resume next fire()
+			return
+
 	while (high_pressure_delta.len)
 		var/turf/open/T = high_pressure_delta[high_pressure_delta.len]
 		high_pressure_delta.len--
