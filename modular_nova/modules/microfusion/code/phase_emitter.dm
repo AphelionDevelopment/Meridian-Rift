@@ -42,7 +42,7 @@
 	. = ..()
 	START_PROCESSING(SSobj, src)
 
-/obj/item/microfusion_phase_emitter/Destroy()
+/obj/item/microfusion_phase_emitter/Destroy(force)
 	parent_gun = null
 	STOP_PROCESSING(SSobj, src)
 	return ..()
