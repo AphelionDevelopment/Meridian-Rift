@@ -174,6 +174,7 @@
 #include "dogmos_del_cost.dm"
 #include "dogmos_gas_fdm_golden.dm"
 #include "dogmos_gas_overlays.dm"
+#include "dogmos_excited_groups.dm"
 #include "dogmos_init_health.dm"
 #include "dogmos_load.dm"
 #include "dogmos_turf_adjacency_sync.dm"

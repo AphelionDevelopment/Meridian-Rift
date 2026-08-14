@@ -452,25 +452,31 @@ SUBSYSTEM_DEF(air)
 	if(finish_turf_processing_auxtools(remaining_ms))
 		pause() // still draining queued reactions/visuals/pressure-difference callbacks - resume next fire()
 
+/**
+ * Pressure-equalization for stable ("low pressure") turfs is now Rust's job too
+ * (process_excited_groups_auxtools, aphelion-dogmos src/turfs/groups.rs) - it consumes the
+ * low_pressure_turfs set Rust's own gas FDM pass (process_turfs_auxtools, SSAIR_ACTIVETURFS) already
+ * produced this cycle via an internal channel, flood-fills outward from each seed turf while pressure
+ * stays within excited_group_pressure_goal, and snaps every turf in the resulting group directly to
+ * the merged average - the same "converged region, stop diffusing incrementally, snap to average" idea
+ * /datum/excited_group/proc/self_breakdown() used to implement in DM, just run every cycle instead of
+ * after a stability cooldown.
+ *
+ * /datum/excited_group's breakdown/dismantle mechanism is intentionally NOT ported here (see the Phase
+ * 3 plan's "Excited groups" section) - it was a pure perf optimization for DM's naive per-tick pairwise
+ * diffusion, which no longer runs. The datum itself stays alive only for setup_allturfs()'s roundstart
+ * active-turf discovery pass, unrelated to this per-tick stage.
+ *
+ * Rust's low_pressure_turfs channel is taken (consumed) whole on each call - if a pass is interrupted
+ * by overtiming partway through a batch, whatever it hasn't reached yet is simply dropped rather than
+ * resumed, since the channel is already empty for any later call this cycle. Accepted, katmos-native
+ * "best effort within budget" behavior, not a bug: a skipped equalization self-corrects on the very
+ * next gas FDM cycle, which produces a fresh low_pressure_turfs set.
+ */
 /datum/controller/subsystem/air/proc/process_excited_groups(resumed = FALSE)
-	if (!resumed)
-		src.currentrun = excited_groups.Copy()
-	//cache for sanic speed (lists are references anyways)
-	var/list/currentrun = src.currentrun
-	while(currentrun.len)
-		var/datum/excited_group/EG = currentrun[currentrun.len]
-		currentrun.len--
-		var/volatile_reaction = EG.turf_reactions & VOLATILE_REACTION
-		EG.breakdown_cooldown++
-		if(!volatile_reaction)
-			EG.dismantle_cooldown++
-		if(EG.breakdown_cooldown >= EXCITED_GROUP_BREAKDOWN_CYCLES && !volatile_reaction)
-			EG.self_breakdown(poke_turfs = TRUE)
-		else if(EG.dismantle_cooldown >= EXCITED_GROUP_DISMANTLE_CYCLES && !(EG.turf_reactions & (REACTING | STOP_REACTIONS)))
-			EG.dismantle()
-		EG.turf_reactions = NONE
-		if (MC_TICK_CHECK)
-			return
+	var/remaining_ms = TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)
+	if(process_excited_groups_auxtools(remaining_ms))
+		pause() // ran out of budget mid-batch - resume next fire(), see doc comment above
 
 /datum/controller/subsystem/air/proc/process_rebuilds()
 	//Yes this does mean rebuilding pipenets can freeze up the subsystem forever, but if we're in that situation something else is very wrong
