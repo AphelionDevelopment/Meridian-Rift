@@ -195,7 +195,14 @@
 		else
 			render_list += "<span class='alert ml-1'>Subject has been husked.</span><br>"
 
-	if(target.get_stamina_loss())
+	// Carbons run stamina through the pain controller: get_felt_pain() reads the dampened total
+	var/felt_pain = target.get_felt_pain()
+	if(felt_pain)
+		if(scanpower >= SCANPOWER_ADVANCED)
+			render_list += "<span class='alert ml-1'>Pain level: [felt_pain]%.</span><br>"
+		else
+			render_list += "<span class='alert ml-1'>Subject appears to be suffering from pain.</span><br>"
+	else if(target.get_stamina_loss())
 		if(scanpower >= SCANPOWER_ADVANCED)
 			render_list += "<span class='alert ml-1'>Fatigue level: [target.get_stamina_loss()]%.</span><br>"
 		else
