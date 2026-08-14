@@ -8,7 +8,7 @@
 	e_cost = LASER_SHOTS(10, STANDARD_CELL_CHARGE) // 10 shots with a normal cell.
 	select_name = "laser"
 	fire_sound = 'modular_nova/modules/modular_weapons/sounds/laser_firing/laser.ogg'
-	fire_sound_volume = 100
+	fire_sound_volume = 75
 
 /obj/item/ammo_casing/proc/refresh_shot()
 	loaded_projectile = new projectile_type(src, src)
