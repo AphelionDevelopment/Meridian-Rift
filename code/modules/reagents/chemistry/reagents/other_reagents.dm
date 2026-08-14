@@ -151,7 +151,7 @@
 		if(exposed_turf.air)
 			var/datum/gas_mixture/air = exposed_turf.air
 			air.set_temperature(min(max(min(air.return_temperature()-(cool_temp*1000), air.return_temperature()/cool_temp), T0C), air.return_temperature())) // the outer min temperature check is for weird phenomena like freon combustion
-			exposed_turf.temperature = clamp(min(exposed_turf.temperature-(cool_temp*1000), exposed_turf.temperature/cool_temp), T20C, exposed_turf.temperature) // turfs normally don't go below T20C so I'll just clamp it to that in case of weird phenomena.
+			exposed_turf.set_temperature(clamp(min(exposed_turf.temperature-(cool_temp*1000), exposed_turf.temperature/cool_temp), T20C, exposed_turf.temperature)) // turfs normally don't go below T20C so I'll just clamp it to that in case of weird phenomena.
 			air.react(src)
 			qdel(hotspot)
 

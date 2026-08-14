@@ -26,7 +26,8 @@ subsystem and the one runtime-tracking global are the two pieces with no atmos-t
 - `modular_aphelion/modules/dogmos/code/dogmos.dm`: `SUBSYSTEM_DEF(dogmos)` (new subsystem, not an
   override of anything TG), `GLOBAL_VAR_INIT(runtimes_at_init_complete)`.
 - `modular_aphelion/master_files/code/game/turfs/turf.dm`: `/turf/var/initial_temperature`,
-  `/turf/var/conductivity_blocked_directions`, `/turf/Initalize_Atmos()`, `/turf/proc/register_dogmos_air()`.
+  `/turf/var/conductivity_blocked_directions`, `/turf/Initalize_Atmos()`, `/turf/proc/register_dogmos_air()`,
+  `/turf/proc/set_temperature()`.
 - `modular_aphelion/master_files/code/game/turfs/open/_open.dm`: `/turf/open/Initalize_Atmos()` (chains
   to the base override above via `..()`, since core's `/turf/open/Initalize_Atmos()` does not call
   `..()` itself and this needed to run before it).

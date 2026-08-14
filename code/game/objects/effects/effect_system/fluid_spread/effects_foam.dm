@@ -444,7 +444,7 @@
 		return
 
 	location.ClearWet()
-	location.temperature = T20C
+	location.set_temperature(T20C)
 	if(location.air)
 		var/datum/gas_mixture/air = location.air
 		air.set_temperature(T20C)

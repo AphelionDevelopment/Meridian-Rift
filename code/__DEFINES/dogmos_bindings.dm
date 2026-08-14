@@ -342,3 +342,7 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:process_heat_notify_ffi")
 	return call_ext(loaded)(src)
 
+/turf/proc/__set_temperature(arg_temp)
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_set_ffi")
+	return call_ext(loaded)(src, arg_temp)
+

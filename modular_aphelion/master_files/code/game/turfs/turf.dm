@@ -36,3 +36,20 @@
 	// StopLoadingMap()'s catch-up or the next air_update_turf() call.
 	var/turf/open/as_open = isopenturf(src) ? src : null
 	update_air_ref((as_open?.air && !blocks_air) ? DOGMOS_SIMULATION_ALL : DOGMOS_SIMULATION_NONE)
+
+/**
+ * Writes a turf's temperature through to Dogmos' heat-conduction graph. The single entry point for
+ * every call site that used to write /turf/var/temperature directly (fix_air.dm, effects_foam.dm,
+ * recipes.dm, other_reagents.dm, holo_effect.dm, supply.dm) - centralizes the space-turf guard
+ * instead of needing one at each of the six sites, and gives one place to enforce validation instead
+ * of six. Named distinctly from the raw __set_temperature() FFI bind so this can own the clean name.
+ *
+ * init_air turfs (space, see register_dogmos_air()) never register into TurfHeat, so calling the raw
+ * FFI setter on one would error - mirrors /turf/open/space/TakeTemperature()'s existing no-op
+ * override, so a converted call site keeps the same space-turf immunity it always had.
+ */
+/turf/proc/set_temperature(new_temp)
+	if(!init_air || !DOGMOS)
+		return
+	__set_temperature(new_temp)
+	temperature = new_temp
