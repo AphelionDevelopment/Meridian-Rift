@@ -526,7 +526,11 @@ SUBSYSTEM_DEF(air)
 
 /datum/controller/subsystem/air/StopLoadingMap()
 	map_loading = FALSE
-	for(var/T in queued_for_activation)
+	for(var/turf/T in queued_for_activation)
+		// Late-map-loaded turfs (ruins, away missions) never went through setup_allturfs()'s bulk
+		// Initalize_Atmos() pass, so they've never registered with Dogmos - do it now, alongside the
+		// existing add_to_active() catch-up this loop already does for the same reason.
+		T.register_dogmos_air()
 		add_to_active(T, TRUE)
 	queued_for_activation.Cut()
 

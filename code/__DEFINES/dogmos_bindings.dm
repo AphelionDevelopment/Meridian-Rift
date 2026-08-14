@@ -17,9 +17,16 @@
 	return call_ext(loaded)(src, remaining)
 
 /// Updates adjacency infos for turfs, only use this in immediateupdateturfs.
-/turf/proc/__update_auxtools_turf_adjacency_info()
+///
+/// Meridian: max_x/max_y are passed in from DM (world.maxx/world.maxy) rather than fetched here via
+/// FFI - byondapi's generic read_number_id/Byond_ReadVarByStrId does not work against the World
+/// value type for its built-in intrinsic properties (maxx/maxy are not stored in the regular var
+/// table the way user-declared datum vars are), so a self-fetch inside supercond_update_adjacencies
+/// always failed with "Attempt to interpret non-number value as number". DM has these trivially as
+/// native properties, so passing them through avoids the broken read path entirely.
+/turf/proc/__update_auxtools_turf_adjacency_info(max_x, max_y)
 	var/static/loaded = load_ext(DOGMOS, "byond:hook_infos_ffi")
-	return call_ext(loaded)(src)
+	return call_ext(loaded)(src, max_x, max_y)
 
 /// Returns: null. Updates turf air infos, whether the turf is closed, is space or a regular turf, or even a planet turf is decided here.
 /turf/proc/update_air_ref(flag)

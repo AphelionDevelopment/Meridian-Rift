@@ -174,6 +174,8 @@
 #include "dogmos_del_cost.dm"
 #include "dogmos_init_health.dm"
 #include "dogmos_load.dm"
+#include "dogmos_turf_adjacency_sync.dm"
+#include "dogmos_turf_registration.dm"
 #include "dogmos_volume_sites.dm"
 #include "door_access.dm"
 #include "dragon_expiration.dm"

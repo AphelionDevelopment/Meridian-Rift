@@ -493,6 +493,7 @@
 /turf/open/Initalize_Atmos(time)
 	excited = FALSE
 	update_visuals()
+	register_dogmos_air()
 
 	current_cycle = time
 	init_immediate_calculate_adjacent_turfs()

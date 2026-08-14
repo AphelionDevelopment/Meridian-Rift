@@ -95,18 +95,20 @@
 		// (direction & (UP | DOWN)) is just "is this vertical" by the by
 		if(canpass && CANATMOSPASS(current_turf, src, (direction & (UP|DOWN))) && !(blocks_air || current_turf.blocks_air))
 			LAZYINITLIST(current_turf.atmos_adjacent_turfs)
-			atmos_adjacent_turfs[current_turf] = TRUE
-			current_turf.atmos_adjacent_turfs[src] = TRUE
+			atmos_adjacent_turfs[current_turf] = NONE
+			current_turf.atmos_adjacent_turfs[src] = NONE
 		else
 			atmos_adjacent_turfs -= current_turf
 			if (current_turf.atmos_adjacent_turfs)
 				current_turf.atmos_adjacent_turfs -= src
 			UNSETEMPTY(current_turf.atmos_adjacent_turfs)
 		SEND_SIGNAL(current_turf, COMSIG_TURF_CALCULATED_ADJACENT_ATMOS)
+		current_turf.sync_dogmos_adjacency()
 
 	UNSETEMPTY(atmos_adjacent_turfs)
 	src.atmos_adjacent_turfs = atmos_adjacent_turfs
 	SEND_SIGNAL(src, COMSIG_TURF_CALCULATED_ADJACENT_ATMOS)
+	sync_dogmos_adjacency()
 
 /turf/proc/immediate_calculate_adjacent_turfs()
 	LAZYINITLIST(src.atmos_adjacent_turfs)
@@ -121,20 +123,42 @@
 		// (direction & (UP | DOWN)) is just "is this vertical" by the by
 		if(canpass && CANATMOSPASS(current_turf, src, (direction & (UP|DOWN))) && !(blocks_air || current_turf.blocks_air))
 			LAZYINITLIST(current_turf.atmos_adjacent_turfs)
-			atmos_adjacent_turfs[current_turf] = TRUE
-			current_turf.atmos_adjacent_turfs[src] = TRUE
+			atmos_adjacent_turfs[current_turf] = NONE
+			current_turf.atmos_adjacent_turfs[src] = NONE
 		else
 			atmos_adjacent_turfs -= current_turf
 			if (current_turf.atmos_adjacent_turfs)
 				current_turf.atmos_adjacent_turfs -= src
 			UNSETEMPTY(current_turf.atmos_adjacent_turfs)
 		SEND_SIGNAL(current_turf, COMSIG_TURF_CALCULATED_ADJACENT_ATMOS)
+		current_turf.sync_dogmos_adjacency()
 
 	UNSETEMPTY(atmos_adjacent_turfs)
 	src.atmos_adjacent_turfs = atmos_adjacent_turfs
 	SEND_SIGNAL(src, COMSIG_TURF_CALCULATED_ADJACENT_ATMOS)
+	sync_dogmos_adjacency()
 
 	update_adjacent_pollutants() //NOVA EDIT ADDITION //Atmos adjacency could unlock/block adjacent pollutants, this is dirty flags anyway so its fine having it here
+
+/**
+ * Keeps Dogmos' two independent adjacency graphs (gas, heat) current for this turf. atmos_adjacent_turfs
+ * (mutated just before this is called) drives the gas graph directly; conductivity_blocked_directions -
+ * the inverse of conductivity_directions(), which itself reads atmos_adjacent_turfs - is recomputed here
+ * so it reflects the adjacency change too, then a single hook call refreshes both Rust-side graphs
+ * (hook_infos reads atmos_adjacent_turfs for the gas graph, then unconditionally chains into
+ * supercond_update_adjacencies for the heat graph - see aphelion-dogmos src/turfs.rs).
+ */
+/turf/proc/sync_dogmos_adjacency()
+	// init_air turfs (space, see register_dogmos_air()) never register via update_air_ref() in the
+	// first place - calling the adjacency hook on an id Rust never inserted is what caused the
+	// "non-number value" crash reading world.maxx inside supercond_update_adjacencies, since it's
+	// downstream of an id lookup that was never valid to begin with. SSair.initialized is NOT checked
+	// here (unlike register_dogmos_air()'s callers): this proc is called from inside
+	// setup_allturfs()'s bulk roundstart pass, which runs before SSair.initialized flips true.
+	if(!init_air || !DOGMOS)
+		return
+	conductivity_blocked_directions = ALL_CARDINALS & ~conductivity_directions()
+	__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
 
 /**
  * returns a list of adjacent turfs that can share air with this one.
@@ -193,6 +217,11 @@
 /turf/air_update_turf(update = FALSE, remove = FALSE)
 	if(!SSair.initialized) // I'm sorry for polutting user code, I'll do 10 hail giacom's
 		return
+	// Broad catch-up: this proc is the existing "something about this turf's atmos changed" entry
+	// point, called from many sites (assume_air, remove_air, ChangeTurf-adjacent code...). Any turf
+	// whose register_dogmos_air() call fell back to heat-only earlier (air not created yet at the
+	// time) gets a real gas registration the next time anything routes through here.
+	register_dogmos_air()
 	if(update)
 		immediate_calculate_adjacent_turfs()
 	if(remove)

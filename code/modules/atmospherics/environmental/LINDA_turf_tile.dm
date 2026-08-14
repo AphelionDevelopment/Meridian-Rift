@@ -674,6 +674,19 @@ Then we space some of our heat, and think about if we should stop conducting.
 		return FALSE
 	return ..()
 
+/**
+ * Answers Dogmos' `should_conduct_to_space` FFI call (aphelion-dogmos src/turfs/superconduct.rs,
+ * supercond_update_ref) - "is this turf directly adjacent to space", read once at registration into
+ * ThermalInfo.adjacent_to_space. This is a pure adjacency check, not a radiation calculation: DM's own
+ * radiate_to_spess() replaces radiation math with Rust's own once superconduction cuts over, so this
+ * proc only needs to answer the yes/no question, not reproduce radiate_to_spess()'s math.
+ */
+/turf/proc/should_conduct_to_space()
+	for(var/direction in GLOB.cardinals)
+		if(isspaceturf(get_step(src, direction)))
+			return TRUE
+	return FALSE
+
 /// Radiate excess tile heat to space.
 /turf/proc/radiate_to_spess()
 	if(temperature <= T0C) // Considering 0 degC as the break even point for radiation in and out.
