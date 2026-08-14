@@ -265,7 +265,7 @@
 /obj/item/gun/microfusion/crowbar_act(mob/living/user, obj/item/tool)
 	if(!phase_emitter)
 		balloon_alert(user, "no phase emitter!")
-		return
+		return ITEM_INTERACT_BLOCKING
 	playsound(src, 'sound/items/tools/crowbar.ogg', 70, TRUE)
 	remove_emitter()
 
