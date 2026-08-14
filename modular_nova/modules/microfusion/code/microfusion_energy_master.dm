@@ -239,16 +239,17 @@
 			cell.use(microfusion_lens.e_cost)
 			. = span_danger("[user] casually lights [to_ignite.loc == user ? "[user.p_their()] [to_ignite.name]" : to_ignite] with [src]. Damn.")
 
-/obj/item/gun/microfusion/attackby(obj/item/attacking_item, mob/user, params)
-	. = ..()
-	if (.)
-		return
-	if(istype(attacking_item, base_cell_type))
-		insert_cell(user, attacking_item)
-	if(istype(attacking_item, /obj/item/microfusion_gun_attachment))
-		add_attachment(attacking_item, user)
-	if(istype(attacking_item, base_phase_emitter_type))
-		insert_emitter(attacking_item, user)
+/obj/item/gun/microfusion/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(istype(tool, base_cell_type))
+		insert_cell(user, tool)
+		return ITEM_INTERACT_SUCCESS
+	if(istype(tool, /obj/item/microfusion_gun_attachment))
+		add_attachment(tool, user)
+		return ITEM_INTERACT_SUCCESS
+	if(istype(tool, base_phase_emitter_type))
+		insert_emitter(tool, user)
+		return ITEM_INTERACT_SUCCESS
+	return ..()
 
 /obj/item/gun/microfusion/process_chamber(empty_chamber, from_firing, chamber_next_round)
 	. = ..()

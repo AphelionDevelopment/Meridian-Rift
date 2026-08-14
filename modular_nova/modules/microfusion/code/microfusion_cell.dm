@@ -65,10 +65,10 @@ These are basically advanced cells.
 	parent_gun = null
 	return ..()
 
-/obj/item/stock_parts/power_store/cell/microfusion/attackby(obj/item/attacking_item, mob/living/user, params)
-	if(istype(attacking_item, /obj/item/microfusion_cell_attachment))
-		add_attachment(attacking_item, user)
-		return
+/obj/item/stock_parts/power_store/cell/microfusion/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(istype(tool, /obj/item/microfusion_cell_attachment))
+		add_attachment(tool, user)
+		return ITEM_INTERACT_SUCCESS
 	return ..()
 
 /obj/item/stock_parts/power_store/cell/microfusion/emp_act(severity)
