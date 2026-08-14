@@ -70,7 +70,7 @@
 /// Move delay removed on top of the configured run delay, while on run intent.
 #define RUN_SPEED_BONUS -0.2
 /// Move delay removed on top of the configured walk delay, while on walk intent - now the default pace.
-#define WALK_SPEED_BONUS -1.6
+#define WALK_SPEED_BONUS -1.4
 
 /// Speedup applied while on run intent.
 /datum/movespeed_modifier/run_pace

@@ -30,7 +30,7 @@
 	// Info
 	add_screen_object(/atom/movable/screen/spacesuit, HUD_MOB_SPACESUIT, HUD_GROUP_INFO)
 	add_screen_object(/atom/movable/screen/healthdoll/human, HUD_MOB_HEALTHDOLL, HUD_GROUP_INFO)
-	add_screen_object(/atom/movable/screen/stamina, HUD_MOB_STAMINA, HUD_GROUP_INFO)
+	add_screen_object(/atom/movable/screen/stamina/pain, HUD_MOB_STAMINA, HUD_GROUP_INFO)
 	add_screen_object(/atom/movable/screen/run_stamina, HUD_MOB_RUN_STAMINA, HUD_GROUP_INFO)
 	add_screen_object(/atom/movable/screen/healths, HUD_MOB_HEALTH, HUD_GROUP_INFO)
 	add_screen_object(/atom/movable/screen/hunger, HUD_MOB_HUNGER, HUD_GROUP_INFO)

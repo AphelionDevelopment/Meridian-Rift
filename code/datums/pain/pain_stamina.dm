@@ -42,8 +42,8 @@
 /**
  * Redraws the pain meter in the slot the stamina bar used to hold.
  *
- * Reads felt pain, so a painkiller blinds this readout as it does the health doll. The bracket
- * colour and the fill state are the only readings; there is no number.
+ * Reads felt pain, so a painkiller blinds this readout as it does the health doll. Bracket colour
+ * is the only reading; there is no number.
  */
 /mob/living/carbon/proc/update_pain_hud()
 	if(!client || !hud_used)
@@ -56,24 +56,15 @@
 	meter.name = "pain"
 
 	if(stat == DEAD)
-		meter.icon_state = "stamina_dead"
+		meter.icon_state = "pain_dead"
 		meter.color = null
+		meter.set_flashing(FALSE)
 		return
 
-	var/felt = get_felt_pain()
+	meter.icon_state = "pain"
 	var/datum/pain_bracket/bracket = pain_controller?.current_bracket
 	meter.color = bracket?.meter_colour
 	meter.set_flashing(!!bracket?.meter_flashes)
-
-	if(felt >= PAIN_SHOCK_THRESHOLD)
-		meter.icon_state = "stamina_crit"
-		return
-
-	if(felt <= 0)
-		meter.icon_state = "stamina_full"
-		return
-
-	meter.icon_state = "stamina_[clamp(ceil(felt / (PAIN_MAXIMUM * 0.2)), 1, 5)]"
 
 /atom/movable/screen/stamina
 	/// Whether the meter is currently pulsing. Held so a redraw does not restart the animation.
