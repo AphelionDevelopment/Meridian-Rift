@@ -22,6 +22,43 @@ SUBSYSTEM_DEF(air)
 	var/cost_atmos_machinery = 0
 	var/cost_rebuilds = 0
 	var/cost_adjacent = 0
+	/// Cost of Dogmos' post_process() pass (reactions + visuals dispatch after a gas FDM cycle).
+	/// Read/written by process_turfs_auxtools (aphelion-dogmos src/turfs/processing.rs) - unused
+	/// until SSAIR_ACTIVETURFS cuts over to Rust.
+	var/cost_post_process = 0
+	/// Cost of Dogmos' katmos pressure-equalization pass. Read/written by
+	/// process_turf_equalize_auxtools (src/turfs/katmos.rs) - unused until SSAIR_HIGHPRESSURE cuts over.
+	var/cost_equalize = 0
+
+	/// Max FDM (finite-difference gas diffusion) iterations per process_turfs_auxtools call. Read by
+	/// Rust (src/turfs/processing.rs); unused until SSAIR_ACTIVETURFS cuts over.
+	var/share_max_steps = 1
+	/// Whether Dogmos' katmos pressure equalizer runs as part of the gas FDM pass. Deliberately left
+	/// FALSE until SSAIR_HIGHPRESSURE cuts over - see the Phase 3 plan for why turning this on early
+	/// would be premature (equalize_hard_turf_limit/high_pressure_delta wiring isn't exercised yet).
+	var/equalize_enabled = FALSE
+	/// Ratio of a turf's gas shared with its planetary atmosphere per FDM cycle. Mirrors Rust's own
+	/// internal GAS_DIFFUSION_CONSTANT (1/8) so DM's declared default matches what Rust would fall
+	/// back to if this var didn't exist at all. Read by Rust; unused until SSAIR_ACTIVETURFS cuts over.
+	var/planet_share_ratio = 0.125
+	/// How many turfs Dogmos' last gas FDM pass flagged as low pressure (stable, camera-eligible for
+	/// excited-group processing). Write-only telemetry from Rust; unused until SSAIR_ACTIVETURFS
+	/// cuts over.
+	var/low_pressure_turfs = 0
+	/// As low_pressure_turfs, for turfs flagged high pressure (feeds katmos equalization once
+	/// equalize_enabled is on). Write-only telemetry from Rust.
+	var/high_pressure_turfs = 0
+	/// Pressure delta threshold Dogmos' excited-group processor treats as "converged enough to stop".
+	/// Read by Rust (src/turfs/groups.rs); unused until SSAIR_EXCITEDGROUPS cuts over.
+	var/excited_group_pressure_goal = 0.5
+	/// How many turfs Dogmos' last excited-group pass processed. Write-only telemetry from Rust.
+	var/num_group_turfs_processed = 0
+	/// Ceiling on how many turfs a single katmos equalize pass will touch before bailing, to bound
+	/// worst-case cost on a large pressure event. Read by Rust (src/turfs/katmos.rs); unused until
+	/// SSAIR_HIGHPRESSURE cuts over.
+	var/equalize_hard_turf_limit = 2000
+	/// How many turfs Dogmos' last katmos equalize pass processed. Write-only telemetry from Rust.
+	var/num_equalize_processed = 0
 
 	var/list/excited_groups = list()
 	var/list/active_turfs = list()
