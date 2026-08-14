@@ -24,18 +24,30 @@
 	already failing for reason A must not silently absorb a new failure for reason B - that is
 	exactly how /datum/unit_test/create_and_destroy's hard-delete assertions (the Phase 2 Del()
 	milestone gate) could go silently blind while "still baselined" reads as fine.
+
+	-Focus restricts the run to specific tests via the existing UNIT_TEST_FOCUS mechanism
+	(code/modules/unit_tests/_unit_tests.dm's TEST_FOCUS macro) instead of the full ~495-test suite -
+	built after repeatedly running the whole suite this session just to see if one new test passed.
+	It writes a scratch .dm file and a temporary tgstation.dme include rather than touching any
+	tracked test file, and restores both in a finally block even if the build throws or times out.
+	-Focus output is NOT a substitute for a full run - it only proves the focused test(s) behave, not
+	that nothing else regressed. Always run without -Focus before calling a change done.
 #>
 
 [CmdletBinding()]
 param(
-	# A run recording fewer tests than this almost certainly hit the silent-skip trap.
+	# A run recording fewer tests than this almost certainly hit the silent-skip trap. Ignored when
+	# -Focus is set, since a focused run legitimately records far fewer.
 	[int]$MinimumTests = 400,
 	# Seconds to let the whole dm-test run take before concluding it hung and killing it.
 	[int]$TimeoutSeconds = 1800,
 	# Update the test-failure baseline to whatever this run produced, instead of comparing against it.
 	[switch]$UpdateBaseline,
 	# Update the runtime-error baseline to whatever this run produced, instead of comparing against it.
-	[switch]$UpdateRuntimeBaseline
+	[switch]$UpdateRuntimeBaseline,
+	# One or more test paths (e.g. /datum/unit_test/dogmos_turf_registration) to run in isolation via
+	# UNIT_TEST_FOCUS, instead of the full suite. Iteration only - see the note above.
+	[string[]]$Focus
 )
 
 $ErrorActionPreference = 'Stop'
@@ -47,12 +59,33 @@ $RuntimeBaselinePath = Join-Path $PSScriptRoot 'runtime_baseline.json'
 $ResultsPath = Join-Path $GameRepo 'data\unit_tests.json'
 $CiRuntimeLog = Join-Path $GameRepo 'data\logs\ci\runtime.log'
 $InitMarker = 'Initializations complete within'
+$DmeFile = Join-Path $GameRepo 'tgstation.dme'
+$FocusScratchDm = Join-Path $GameRepo 'code\modules\unit_tests\_zzz_run_tests_focus.dm'
+$FocusInclude = '#include "code\modules\unit_tests\_zzz_run_tests_focus.dm"'
 
 $UNIT_TEST_PASSED = 0
 $UNIT_TEST_FAILED = 1
 
 Push-Location $GameRepo
+$originalDmeBytes = $null
 try {
+	if ($Focus) {
+		Write-Host "=== -Focus: restricting this run to $($Focus.Count) test(s) ===" -ForegroundColor Yellow
+		$Focus | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+		# Raw bytes in and out, not Get-Content/Set-Content text mode: tgstation.dme is UTF8-with-BOM,
+		# and PowerShell 5.1's text cmdlets round-trip a BOM inconsistently (Get-Content -Raw can hand
+		# the BOM back as a literal U+FEFF character in the string rather than stripping it, and
+		# Set-Content -Encoding utf8 then adds its own on top) - this silently turned the file's BOM
+		# from a preamble into visible garbage on the first line the first time this was tried. Byte
+		# copies sidestep the whole question.
+		$originalDmeBytes = [System.IO.File]::ReadAllBytes($DmeFile)
+		$focusLines = $Focus | ForEach-Object { "TEST_FOCUS($_)" }
+		# Test paths are plain ASCII and this is a brand new file - no BOM concerns to inherit.
+		[System.IO.File]::WriteAllText($FocusScratchDm, ($focusLines -join "`n") + "`n", [System.Text.Encoding]::ASCII)
+		[System.IO.File]::AppendAllText($DmeFile, "`n" + $FocusInclude + "`n", [System.Text.Encoding]::ASCII)
+		$MinimumTests = 0
+	}
+
 	# Default-flagged tests only run on the primary unit test map. Set it the way CI does.
 	Copy-Item '_maps\runtimestation_minimal.json' 'data\next_map.json' -Force
 
@@ -237,7 +270,14 @@ try {
 
 	Write-Host ''
 	Write-Host 'No new failures, no new runtimes.' -ForegroundColor Green
+	if ($Focus) {
+		Write-Host 'Reminder: this was a -Focus run - it only proves the focused test(s) behave. Run without -Focus before calling anything done.' -ForegroundColor Yellow
+	}
 }
 finally {
+	if ($null -ne $originalDmeBytes) {
+		[System.IO.File]::WriteAllBytes($DmeFile, $originalDmeBytes)
+	}
+	Remove-Item $FocusScratchDm -ErrorAction SilentlyContinue
 	Pop-Location
 }
