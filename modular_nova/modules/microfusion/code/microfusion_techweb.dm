@@ -1,125 +1,118 @@
 /datum/techweb_node/basic_microfusion
-	id = "basic_microfusion"
-	starting_node = TRUE
+	node_flags = parent_type::node_flags | TECHWEB_NODE_STARTER
 	display_name = "Basic Microfusion Technology"
 	description = "Basic microfusion technology allowing for basic microfusion designs."
-	design_ids = list(
-		"basic_microfusion_cell",
+	unlocked_designs = list(
+		/datum/design/microfusion/cell/basic,
 	)
 
 //Enhanced microfusion
 /datum/techweb_node/enhanced_microfusion
-	id = "enhanced_microfusion"
 	display_name = "Enhanced Microfusion Technology"
 	description = "Enhanced microfusion technology allowing for upgraded basic microfusion!"
-	prereq_ids = list(
-		"basic_microfusion",
-		TECHWEB_NODE_CONSTRUCTION,
-		TECHWEB_NODE_BASIC_ARMS,
-		TECHWEB_NODE_PARTS_UPG,
+	prerequisite_nodes = list(
+		/datum/techweb_node/basic_microfusion,
+		/datum/techweb_node/construction,
+		/datum/techweb_node/basic_arms,
+		/datum/techweb_node/parts_upg,
 	)
-	design_ids = list(
-		"enhanced_microfusion_cell",
-		"microfusion_cell_attachment_rechargeable",
-		"enhanced_microfusion_phase_emitter",
-		"microfusion_gun_attachment_black_camo",
-		"microfusion_gun_attachment_nt_camo",
-		"microfusion_gun_attachment_heatsink",
-		"microfusion_gun_attachment_rgb",
-		"microfusion_cell_attachment_tactical",
-		"microfusion_cell_attachment_reloader",
+	unlocked_designs = list(
+		/datum/design/microfusion/cell/enhanced,
+		/datum/design/microfusion/cell_attachment/rechargeable,
+		/datum/design/microfusion/phase_emitter/enhanced,
+		/datum/design/microfusion/attachment/unique/camo_black,
+		/datum/design/microfusion/attachment/unique/camo_nanotrasen,
+		/datum/design/microfusion/attachment/underbarrel/heatsink,
+		/datum/design/microfusion/attachment/unique/rgb,
+		/datum/design/microfusion/cell_attachment/tactical,
+		/datum/design/microfusion/cell_attachment/reloader,
 	)
 	research_costs = list(TECHWEB_POINT_TYPE_GENERIC = 3500)
 
 //Advanced microfusion
 /datum/techweb_node/advanced_microfusion
-	id = "advanced_microfusion"
 	display_name = "Advanced Microfusion Technology"
 	description = "Advanced microfusion technology allowing for advanced microfusion!"
-	prereq_ids = list(
-		"enhanced_microfusion",
-		TECHWEB_NODE_SPEC_ENG,
-		TECHWEB_NODE_ELECTRIC_WEAPONS,
-		TECHWEB_NODE_ENERGY_MANIPULATION,
-		TECHWEB_NODE_PLASMA_CONTROL,
+	prerequisite_nodes = list(
+		/datum/techweb_node/enhanced_microfusion,
+		/datum/techweb_node/spec_eng,
+		/datum/techweb_node/electric_weapons,
+		/datum/techweb_node/energy_manipulation,
+		/datum/techweb_node/plasma_control,
 	)
-	design_ids = list(
-		"advanced_microfusion_cell",
-		"microfusion_cell_attachment_overcapacity",
-		"microfusion_cell_attachment_stabiliser",
-		"microfusion_gun_attachment_scatter",
-		"microfusion_gun_attachment_hellfire",
-		"advanced_microfusion_phase_emitter",
-		"microfusion_gun_attachment_lance",
-		"microfusion_gun_attachment_grip",
-		"microfusion_gun_attachment_rail",
-		"microfusion_gun_attachment_scope",
+	unlocked_designs = list(
+		/datum/design/microfusion/cell/advanced,
+		/datum/design/microfusion/cell_attachment/overcapacity,
+		/datum/design/microfusion/cell_attachment/stabilising,
+		/datum/design/microfusion/attachment/barrel/scatter,
+		/datum/design/microfusion/attachment/barrel/hellfire,
+		/datum/design/microfusion/phase_emitter/advanced,
+		/datum/design/microfusion/attachment/barrel/lance,
+		/datum/design/microfusion/attachment/underbarrel/grip,
+		/datum/design/microfusion/attachment/rail_slot/rail,
+		/datum/design/microfusion/attachment/rail_slot/scope,
 	)
 	research_costs = list(TECHWEB_POINT_TYPE_GENERIC = 5000)
 
 
 // Bluespace microfusion
 /datum/techweb_node/bluespace_microfusion
-	id = "bluespace_microfusion"
 	display_name = "Bluespace Microfusion Technology"
 	description = "Bluespace tinkering plus microfusion technology!"
-	prereq_ids = list(
-		"advanced_microfusion",
-		TECHWEB_NODE_APPLIED_BLUESPACE,
-		TECHWEB_NODE_BEAM_WEAPONS,
-		TECHWEB_NODE_EXPLOSIVES,
+	prerequisite_nodes = list(
+		/datum/techweb_node/advanced_microfusion,
+		/datum/techweb_node/applied_bluespace,
+		/datum/techweb_node/beam_weapons,
+		/datum/techweb_node/explosives,
 	)
-	design_ids = list(
-		"bluespace_microfusion_cell",
-		"microfusion_gun_attachment_repeater",
-		"bluespace_microfusion_phase_emitter",
-		"microfusion_cell_attachment_selfcharging",
+	unlocked_designs = list(
+		/datum/design/microfusion/cell/bluespace,
+		/datum/design/microfusion/attachment/barrel/repeater,
+		/datum/design/microfusion/phase_emitter/bluespace,
+		/datum/design/microfusion/cell_attachment/selfcharging,
 	)
 	research_costs = list(TECHWEB_POINT_TYPE_GENERIC = 10000)
 
 // Quantum microfusion
 /datum/techweb_node/quantum_microfusion
-	id = "quantum_microfusion"
 	display_name = "Quantum Microfusion Technology"
 	description = "Bleeding edge microfusion tech, making use of the latest in materials and components, bluespace or otherwise."
-	prereq_ids = list(
-		"bluespace_microfusion",
-		TECHWEB_NODE_ALIENTECH,
+	prerequisite_nodes = list(
+		/datum/techweb_node/bluespace_microfusion,
+		/datum/techweb_node/alien/base,
 	)
-	design_ids = list(
-		"microfusion_gun_attachment_xray",
+	unlocked_designs = list(
+		/datum/design/microfusion/attachment/barrel/xray,
 	)
 	research_costs = list(TECHWEB_POINT_TYPE_GENERIC = 15000)
 
 // Warcrime microfusion
 /datum/techweb_node/illegal_microfusion
-	id = "illegal_microfusion"
 	display_name = "Illegal Microfusion Technology"
 	description = "Microfusion tech that has previously been banned by SolFed. I love the smell of plasma in the mornings."
-	prereq_ids = list(
-		"advanced_microfusion",
-		TECHWEB_NODE_SYNDICATE_BASIC,
+	prerequisite_nodes = list(
+		/datum/techweb_node/advanced_microfusion,
+		/datum/techweb_node/syndicate_basic,
 	)
-	design_ids = list(
-		"microfusion_gun_attachment_superheat",
-		"microfusion_gun_attachment_scattermax",
-		"microfusion_gun_attachment_penetrator",
-		"microfusion_gun_attachment_syndi_camo",
-		"microfusion_gun_attachment_suppressor",
+	unlocked_designs = list(
+		/datum/design/microfusion/attachment/barrel/superheat,
+		/datum/design/microfusion/attachment/barrel/scatter/max,
+		/datum/design/microfusion/attachment/barrel/repeater/penetrator,
+		/datum/design/microfusion/attachment/unique/camo_syndicate,
+		/datum/design/microfusion/attachment/barrel/suppressor,
 	)
 	research_costs = list(TECHWEB_POINT_TYPE_GENERIC = 5000)
 
 // clown microfusion. | This exists to not make this non modular
 /datum/techweb_node/clown_microfusion
-	id = "clown_microfusion"
 	display_name = "Honkicron Clownery Systems Technology"
 	description = "Microfusion tech that is proprietary tech of Honkicron Clownery Systems. HONK!!"
-	prereq_ids = list(
-		"basic_microfusion",
-		TECHWEB_NODE_MECH_CLOWN, //Closest thing to clown tech we have left
+	prerequisite_nodes = list(
+		/datum/techweb_node/basic_microfusion,
+		/datum/techweb_node/mech_clown, //Closest thing to clown tech we have left
 	)
-	design_ids = list(
-		"microfusion_gun_attachment_honk",
-		"microfusion_gun_attachment_honk_camo",
+	unlocked_designs = list(
+		/datum/design/microfusion/attachment/barrel/honk,
+		/datum/design/microfusion/attachment/unique/camo_bananium,
 	)
 	research_costs = list(TECHWEB_POINT_TYPE_GENERIC = 500) //Its normally supposed to be in clown tech so
