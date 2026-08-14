@@ -3,10 +3,6 @@
 	var/thermal_conductivity = 0.05
 	///Amount of heat necessary to activate some atmos processes (there is a weird usage of this var because is compared directly to the temperature instead of heat energy)
 	var/heat_capacity = INFINITY //This should be opt in rather then opt out
-	///Archived version of the temperature on a turf
-	var/temperature_archived
-	///All currently stored conductivities changes
-	var/list/thermal_conductivities
 
 	///list of turfs adjacent to us that air can flow onto
 	var/list/atmos_adjacent_turfs
@@ -159,10 +155,7 @@
 	SEND_SIGNAL(src, COMSIG_TURF_EXPOSE, air, exposed_temperature)
 	check_atmos_process(src, air, exposed_temperature) //Manually do this to avoid needing to use elements, don't want 200 second atom init times
 
-/turf/proc/archive()
-	temperature_archived = temperature
-
-/turf/open/archive()
+/turf/open/proc/archive()
 	LINDA_CYCLE_ARCHIVE(src)
 
 /////////////////////////GAS OVERLAYS//////////////////////////////
@@ -448,27 +441,18 @@
 	var/offset = GET_Z_PLANE_OFFSET(thing.z) + 1
 	thing.vis_contents += GLOB.colored_turfs[display_id][offset]
 
-////////////////////////SUPERCONDUCTIVITY/////////////////////////////
-
+////////////////////////SUPERCONDUCTIVITY (Dogmos, aphelion-dogmos src/turfs/superconduct.rs)/////////////////////////////
 /**
-ALLLLLLLLLLLLLLLLLLLLRIGHT HERE WE GOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-
-Read the code for more details, but first, a brief concept discussion/area
-
-Our goal here is to "model" heat moving through solid objects, so walls, windows, and sometimes doors.
-We do this by heating up the floor itself with the heat of the gasmix ontop of it, this is what the coeffs are for here, they slow that movement
-Then we go through the process below.
-
-If an active turf is fitting, we add it to processing, conduct with any covered tiles, (read windows and sometimes walls)
-Then we space some of our heat, and think about if we should stop conducting.
-**/
-
-/turf/proc/conductivity_directions()
-	if(archived_cycle < SSair.times_fired)
-		archive()
-	return ALL_CARDINALS
+ * The DM-side heat-conduction walk (super_conduct(), neighbor_conduct_with_src(), radiate_to_spess(),
+ * consider_superconductivity(), etc.) is deleted - Rust owns turf-to-turf heat conduction now
+ * (process_turf_heat, SSair.process_super_conductivity(), controllers/subsystem/air.dm). What remains
+ * here are the two procs Rust still calls into directly and can't do without:
+ */
 
 ///Returns a set of directions that we should be conducting in, NOTE, atmos_supeconductivity is ACTUALLY inversed, don't worrry about it
+/turf/proc/conductivity_directions()
+	return ALL_CARDINALS
+
 /turf/open/conductivity_directions()
 	if(blocks_air)
 		return ..()
@@ -477,119 +461,16 @@ Then we space some of our heat, and think about if we should stop conducting.
 		if(!(checked_turf in atmos_adjacent_turfs) && !(atmos_supeconductivity & direction))
 			. |= direction
 
-///These two procs are a bit of a web, I belive in you
-/turf/proc/neighbor_conduct_with_src(turf/open/other)
-	if(!other.blocks_air) //Solid but neighbor is open
-		other.temperature_share_open_to_solid(src)
-	else //Both tiles are solid
-		other.share_temperature_mutual_solid(src, thermal_conductivity)
-	temperature_expose(null, temperature)
-
-/turf/open/neighbor_conduct_with_src(turf/other)
-	if(blocks_air)
-		return ..()
-
-	if(!other.blocks_air) //Both tiles are open
-		var/turf/open/open_other = other
-		open_other.air.temperature_share(air, WINDOW_HEAT_TRANSFER_COEFFICIENT)
-	else //Open but neighbor is solid
-		temperature_share_open_to_solid(other)
-	SSair.add_to_active(src)
-
-/turf/proc/super_conduct()
-	var/conductivity_directions = conductivity_directions()
-
-	if(conductivity_directions)
-		//Conduct with tiles around me
-		for(var/direction in GLOB.cardinals)
-			if(!(conductivity_directions & direction))
-				continue
-			var/turf/neighbor = get_step(src, direction)
-
-			if(!neighbor?.thermal_conductivity)
-				continue
-
-			if(neighbor.archived_cycle < SSair.times_fired)
-				neighbor.archive()
-
-			neighbor.neighbor_conduct_with_src(src)
-
-			neighbor.consider_superconductivity()
-
-	radiate_to_spess()
-
-	finish_superconduction()
-
-/turf/proc/finish_superconduction(temp = temperature)
-	//Make sure still hot enough to continue conducting heat
-	if(temp < MINIMUM_TEMPERATURE_FOR_SUPERCONDUCTION)
-		SSair.active_super_conductivity -= src
-		return FALSE
-
-/turf/open/finish_superconduction()
-	//Conduct with air on my tile if I have it
-	if(..((blocks_air ? temperature : air.return_temperature())) != FALSE && !blocks_air)
-		// Dogmos' 4-total-arg temperature_share is the raw-values form: no mixture object, no
-		// write-back target. That's exactly what the old sharer=null call meant - the "if(sharer)"
-		// branch in the old DM body never fired for these calls, so the explicit temperature/
-		// heat_capacity values passed in were always what actually got used.
-		temperature = air.temperature_share(thermal_conductivity, temperature, heat_capacity)
-
-///Should we attempt to superconduct?
-/turf/proc/consider_superconductivity(starting)
-	if(!thermal_conductivity)
-		return FALSE
-
-	SSair.active_super_conductivity |= src
-	return TRUE
-
-/turf/open/consider_superconductivity(starting)
-	if(air.return_temperature() < (starting?MINIMUM_TEMPERATURE_START_SUPERCONDUCTION:MINIMUM_TEMPERATURE_FOR_SUPERCONDUCTION))
-		return FALSE
-	if(air.heat_capacity() < M_CELL_WITH_RATIO) // Was: MOLES_CELLSTANDARD*0.1*0.05 Since there are no variables here we can make this a constant.
-		return FALSE
-	return ..()
-
-/turf/closed/consider_superconductivity(starting)
-	if(temperature < (starting?MINIMUM_TEMPERATURE_START_SUPERCONDUCTION:MINIMUM_TEMPERATURE_FOR_SUPERCONDUCTION))
-		return FALSE
-	return ..()
-
 /**
  * Answers Dogmos' `should_conduct_to_space` FFI call (aphelion-dogmos src/turfs/superconduct.rs,
  * supercond_update_ref) - "is this turf directly adjacent to space", read once at registration into
- * ThermalInfo.adjacent_to_space. This is a pure adjacency check, not a radiation calculation: DM's own
- * radiate_to_spess() replaces radiation math with Rust's own once superconduction cuts over, so this
- * proc only needs to answer the yes/no question, not reproduce radiate_to_spess()'s math.
+ * ThermalInfo.adjacent_to_space, and called synchronously with errors propagating, so this proc must
+ * always exist. Pure adjacency check, not a radiation calculation - Rust does its own space-radiation
+ * math entirely on its side now.
  */
 /turf/proc/should_conduct_to_space()
 	for(var/direction in GLOB.cardinals)
 		if(isspaceturf(get_step(src, direction)))
 			return TRUE
 	return FALSE
-
-/// Radiate excess tile heat to space.
-/turf/proc/radiate_to_spess()
-	if(temperature <= T0C) // Considering 0 degC as the break even point for radiation in and out.
-		return
-	// Because we keep losing energy, makes more sense for us to be the T2 here.
-	var/delta_temperature = temperature_archived - TCMB //hardcoded space temperature
-	if(heat_capacity <= 0 || abs(delta_temperature) <= MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER)
-		return
-	// Heat should be positive in most cases
-	// coefficient applied first because some turfs have very big heat caps.
-	var/heat = CALCULATE_CONDUCTION_ENERGY(thermal_conductivity * delta_temperature, HEAT_CAPACITY_VACUUM, heat_capacity)
-	temperature -= heat / heat_capacity
-
-/turf/open/proc/temperature_share_open_to_solid(turf/sharer)
-	sharer.temperature = air.temperature_share(sharer.thermal_conductivity, sharer.temperature, sharer.heat_capacity)
-
-/turf/proc/share_temperature_mutual_solid(turf/sharer, conduction_coefficient) //This is all just heat sharing, don't get freaked out
-	var/delta_temperature = sharer.temperature_archived - temperature_archived
-	if(abs(delta_temperature) <= MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER || !heat_capacity || !sharer.heat_capacity)
-		return
-	var/heat = conduction_coefficient * CALCULATE_CONDUCTION_ENERGY(delta_temperature, heat_capacity, sharer.heat_capacity)
-	temperature += heat / heat_capacity //The higher your own heat cap the less heat you get from this arrangement
-	sharer.temperature -= heat / sharer.heat_capacity
-
 

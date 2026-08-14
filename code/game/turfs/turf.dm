@@ -779,7 +779,10 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	. = temperature
 
 /turf/proc/TakeTemperature(temp)
-	temperature += temp
+	// set_temperature(), not a direct var write - a blocks_air turf (e.g. a wall an H/E pipe runs
+	// through, datum_pipeline.dm's temperature_interact()) reaches this base version, and a direct
+	// write here would silently desync Rust's TurfHeat copy of that turf's temperature.
+	set_temperature(temperature + temp)
 
 // I'm sorry, this is the only way that both makes sense and is cheap
 /turf/set_explosion_block(explosion_block)

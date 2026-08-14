@@ -32,6 +32,24 @@
 	tracked test file, and restores both in a finally block even if the build throws or times out.
 	-Focus output is NOT a substitute for a full run - it only proves the focused test(s) behave, not
 	that nothing else regressed. Always run without -Focus before calling a change done.
+
+	2026-08-14 additions, closing three more "prints red, exits 0" holes:
+	1. A -Focus run whose test path(s) don't match anything real recorded ~0 tests and still printed
+	   green, because $MinimumTests is zeroed for -Focus. Now checked separately: a -Focus run must
+	   record at least as many tests as paths were given.
+	2. Per-test runtime counts (the "Tests that logged runtimes" list) were printed in yellow and
+	   discarded - a previously-clean test that starts logging runtimes every run was invisible to the
+	   exit code. Now diffed against test_runtime_signature_baseline.json the same way boot/suite
+	   runtime signatures already are.
+	3. Per-test duration is now recorded (unit_test.dm's "duration" field) and diffed against
+	   test_timing_baseline.json with a generous tolerance - trend detection for the steady-state cost
+	   question the SSAIR_EXCITEDGROUPS/SUPERCONDUCTIVITY stages both parked on a manual round. Not a
+	   hard gate: CI timing is noisy, so this only flags gross regressions, not run-to-run wobble.
+
+	runtime_baseline.json was split into runtime_baseline_boot.json (boot_probe.ps1 only) and
+	runtime_baseline_suite.json (this script only) - they used to share one file despite having
+	incompatible expectations (boot-clean vs. whole-suite), so updating one from the wrong caller could
+	blind the other.
 #>
 
 [CmdletBinding()]
@@ -45,6 +63,12 @@ param(
 	[switch]$UpdateBaseline,
 	# Update the runtime-error baseline to whatever this run produced, instead of comparing against it.
 	[switch]$UpdateRuntimeBaseline,
+	# Update the per-test runtime-count baseline (which tests are expected to log runtimes, and how
+	# many) to whatever this run produced.
+	[switch]$UpdateTestRuntimeBaseline,
+	# Update the per-test timing baseline to whatever this run produced. Only meaningful after
+	# confirming a clean, representative run by hand - this is trend detection, not a hard gate.
+	[switch]$UpdateTimingBaseline,
 	# One or more test paths (e.g. /datum/unit_test/dogmos_turf_registration) to run in isolation via
 	# UNIT_TEST_FOCUS, instead of the full suite. Iteration only - see the note above.
 	[string[]]$Focus
@@ -55,7 +79,9 @@ $ErrorActionPreference = 'Stop'
 
 $GameRepo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $BaselinePath = Join-Path $PSScriptRoot 'test_baseline.json'
-$RuntimeBaselinePath = Join-Path $PSScriptRoot 'runtime_baseline.json'
+$RuntimeBaselinePath = Join-Path $PSScriptRoot 'runtime_baseline_suite.json'
+$TestRuntimeSigBaselinePath = Join-Path $PSScriptRoot 'test_runtime_signature_baseline.json'
+$TimingBaselinePath = Join-Path $PSScriptRoot 'test_timing_baseline.json'
 $ResultsPath = Join-Path $GameRepo 'data\unit_tests.json'
 $CiRuntimeLog = Join-Path $GameRepo 'data\logs\ci\runtime.log'
 $InitMarker = 'Initializations complete within'
@@ -143,6 +169,10 @@ try {
 
 	if ($all.Count -lt $MinimumTests) {
 		throw "Only $($all.Count) tests recorded (expected >= $MinimumTests). The suite was silently skipped - check the map and define syntax, do NOT trust this run."
+	}
+
+	if ($Focus -and $all.Count -lt $Focus.Count) {
+		throw "Only $($all.Count) test(s) recorded for $($Focus.Count) -Focus path(s) given. At least one path did not match a real test - check for typos. (This is exactly the silent-skip trap $MinimumTests exists to catch on unfocused runs; -Focus disables that guard, so this check stands in for it.)"
 	}
 
 	# --- Signal 2: test failures, at (name, message) granularity -----------------------------------
@@ -233,13 +263,6 @@ try {
 		Write-Host ''
 		Write-Host "runtimes:        $($sigs.Count) total, $(@($rt.All).Count) distinct"
 
-		# Per-test attribution - see the "runtimes" field RunUnitTest now records in unit_tests.json.
-		$noisy = @($all | Where-Object { $_.Value.runtimes -gt 0 } | Sort-Object { -$_.Value.runtimes })
-		if ($noisy.Count -gt 0) {
-			Write-Host 'Tests that logged runtimes:' -ForegroundColor Yellow
-			$noisy | ForEach-Object { Write-Host "  x$($_.Value.runtimes)  $($_.Name)" }
-		}
-
 		if ($rt.New.Count -gt 0) {
 			Write-Host ''
 			Write-Host 'NEW RUNTIME ERRORS:' -ForegroundColor Red
@@ -250,6 +273,91 @@ try {
 		if ($rt.Fixed.Count -gt 0) {
 			Write-Host 'No longer occurring (baseline may be stale):' -ForegroundColor Yellow
 			$rt.Fixed | ForEach-Object { Write-Host "  $_" }
+		}
+	}
+
+	# --- Signal 4: per-test runtime counts - the "runtimes" field RunUnitTest records in
+	# unit_tests.json, previously printed and discarded here without affecting the exit code. A test
+	# newly logging runtimes (even if it still "passes") or logging MORE than its baselined count is
+	# now a real regression signal, not just a yellow line. -----------------------------------------
+	$hadNewTestRuntimes = $false
+	$currentCounts = [ordered]@{}
+	foreach ($entry in ($all | Where-Object { $_.Value.runtimes -gt 0 } | Sort-Object Name)) {
+		$currentCounts[$entry.Name] = $entry.Value.runtimes
+	}
+
+	if ($UpdateTestRuntimeBaseline) {
+		ConvertTo-Json -InputObject $currentCounts | Set-Content $TestRuntimeSigBaselinePath -Encoding utf8
+		Write-Host "Per-test runtime baseline updated: $($currentCounts.Count) noisy test(s)." -ForegroundColor Yellow
+	} else {
+		$testRuntimeBaseline = [ordered]@{}
+		if (Test-Path $TestRuntimeSigBaselinePath) {
+			(Get-Content $TestRuntimeSigBaselinePath -Raw | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $testRuntimeBaseline[$_.Name] = $_.Value }
+		}
+
+		$newNoisy = @()
+		$noisier = @()
+		foreach ($name in $currentCounts.Keys) {
+			if (-not $testRuntimeBaseline.Contains($name)) {
+				$newNoisy += $name
+			} elseif ($currentCounts[$name] -gt $testRuntimeBaseline[$name]) {
+				$noisier += $name
+			}
+		}
+
+		if ($currentCounts.Count -gt 0) {
+			Write-Host ''
+			Write-Host 'Tests that logged runtimes:' -ForegroundColor Yellow
+			$currentCounts.Keys | ForEach-Object { Write-Host "  x$($currentCounts[$_])  $_" }
+		}
+		if ($newNoisy.Count -gt 0) {
+			Write-Host ''
+			Write-Host 'NEWLY NOISY (not in test_runtime_signature_baseline.json):' -ForegroundColor Red
+			$newNoisy | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+			$hadNewTestRuntimes = $true
+		}
+		if ($noisier.Count -gt 0) {
+			Write-Host ''
+			Write-Host 'MORE RUNTIMES THAN BASELINE:' -ForegroundColor Red
+			$noisier | ForEach-Object { Write-Host "  $_ : $($testRuntimeBaseline[$_]) -> $($currentCounts[$_])" -ForegroundColor Red }
+			$hadNewTestRuntimes = $true
+		}
+	}
+
+	# --- Signal 5: per-test timing - trend detection, not a hard zero-tolerance gate (CI timing is
+	# noisy). Only flags a test running at least 5x its baselined duration AND at least 2s slower in
+	# absolute terms, so ordinary run-to-run wobble on fast tests doesn't trip it. This is what makes
+	# the steady-state cost question the SSAIR_EXCITEDGROUPS/SUPERCONDUCTIVITY stages both parked on a
+	# manual round into something this script can actually catch. -----------------------------------
+	$hadTimingRegression = $false
+	$currentDurations = [ordered]@{}
+	foreach ($entry in ($all | Where-Object { $_.Value.duration -gt 0 } | Sort-Object Name)) {
+		$currentDurations[$entry.Name] = $entry.Value.duration
+	}
+
+	if ($UpdateTimingBaseline) {
+		ConvertTo-Json -InputObject $currentDurations | Set-Content $TimingBaselinePath -Encoding utf8
+		Write-Host "Timing baseline updated: $($currentDurations.Count) test(s)." -ForegroundColor Yellow
+	} elseif (Test-Path $TimingBaselinePath) {
+		$timingBaseline = [ordered]@{}
+		(Get-Content $TimingBaselinePath -Raw | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $timingBaseline[$_.Name] = $_.Value }
+
+		$slower = @()
+		foreach ($name in $currentDurations.Keys) {
+			if (-not $timingBaseline.Contains($name)) { continue }
+			$baselineDuration = [double]$timingBaseline[$name]
+			$currentDuration = [double]$currentDurations[$name]
+			$threshold = [Math]::Max($baselineDuration * 5, $baselineDuration + 20)
+			if ($currentDuration -gt $threshold) {
+				$slower += $name
+			}
+		}
+
+		if ($slower.Count -gt 0) {
+			Write-Host ''
+			Write-Host 'SIGNIFICANTLY SLOWER THAN BASELINE (>5x, >2s absolute):' -ForegroundColor Red
+			$slower | ForEach-Object { Write-Host "  $_ : $($timingBaseline[$_] / 10)s -> $($currentDurations[$_] / 10)s" -ForegroundColor Red }
+			$hadTimingRegression = $true
 		}
 	}
 
@@ -264,7 +372,7 @@ try {
 		$hadPanic = $true
 	}
 
-	if ($hadTestRegression -or $hadNewRuntimes -or $hadPanic) {
+	if ($hadTestRegression -or $hadNewRuntimes -or $hadNewTestRuntimes -or $hadTimingRegression -or $hadPanic) {
 		exit 1
 	}
 

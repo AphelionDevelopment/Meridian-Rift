@@ -338,6 +338,14 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_ffi")
 	return call_ext(loaded)(src)
 
+/// Returns: how many turfs are currently registered in Dogmos' heat graph. Meridian: DM's
+/// active_super_conductivity list (and the MC-tab "SC:" counter / TGUI conducting_size field that
+/// read its length) is deleted along with the rest of DM's superconduction system - this gives those
+/// two consumers a real number to show again instead of a hardcoded 0.
+/proc/dogmos_heat_graph_count()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_heat_graph_count_ffi")
+	return call_ext(loaded)()
+
 /datum/controller/subsystem/air/proc/process_turf_heat()
 	var/static/loaded = load_ext(DOGMOS, "byond:process_heat_notify_ffi")
 	return call_ext(loaded)(src)

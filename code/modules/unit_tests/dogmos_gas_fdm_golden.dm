@@ -32,17 +32,13 @@
 /datum/unit_test/dogmos_gas_fdm_golden
 
 /datum/unit_test/dogmos_gas_fdm_golden/Run()
-	var/turf/open/turf_a = run_loc_floor_bottom_left
-	var/turf/open/turf_b = get_step(turf_a, EAST)
-	TEST_ASSERT(istype(turf_a), "run_loc_floor_bottom_left is not an open turf - this test needs one.")
-	TEST_ASSERT(istype(turf_b), "The turf east of run_loc_floor_bottom_left is not an open turf - this test needs two real, adjacent turfs.")
-	TEST_ASSERT(turf_a in turf_b.atmos_adjacent_turfs, \
-		"turf_a and turf_b are not gas-adjacent (atmos_adjacent_turfs) - this test needs two turfs Dogmos will actually share gas between.")
+	var/list/pair = allocate_turf_pair()
+	var/turf/open/turf_a = pair[1]
+	var/turf/open/turf_b = pair[2]
 
 	var/datum/gas_mixture/air_a = turf_a.air
 	var/datum/gas_mixture/air_b = turf_b.air
 	var/original_a_o2 = air_a.get_moles(/datum/gas/oxygen)
-	var/original_b_o2 = air_b.get_moles(/datum/gas/oxygen)
 
 	// Deliberately asymmetric: triple turf_a's oxygen relative to its actual starting value.
 	air_a.set_moles(/datum/gas/oxygen, original_a_o2 * 3)
@@ -66,6 +62,3 @@
 		"turf_b's oxygen ([b_before] -> [b_after]) did not increase after sharing with higher-oxygen turf_a - gas is not flowing into the emptier turf.")
 	TEST_ASSERT(a_after > b_after, \
 		"turf_a's oxygen ([a_after]) dropped to or below turf_b's ([b_after]) after a single share step - a single GAS_DIFFUSION_CONSTANT-weighted step should not overshoot past equilibrium.")
-
-	air_a.set_moles(/datum/gas/oxygen, original_a_o2)
-	air_b.set_moles(/datum/gas/oxygen, original_b_o2)

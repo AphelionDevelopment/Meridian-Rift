@@ -176,6 +176,7 @@
 #include "dogmos_gas_overlays.dm"
 #include "dogmos_excited_groups.dm"
 #include "dogmos_highpressure_equalize.dm"
+#include "dogmos_superconduction_golden.dm"
 #include "dogmos_init_health.dm"
 #include "dogmos_load.dm"
 #include "dogmos_turf_adjacency_sync.dm"

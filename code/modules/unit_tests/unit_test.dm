@@ -134,6 +134,31 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 	allocated += instance
 	return instance
 
+/**
+ * Returns two real, adjacency-verified open turfs from the test room for atmos tests that need a
+ * genuine gas-sharing pair rather than a synthetic one - the setup three separate Dogmos tests
+ * (dogmos_gas_fdm_golden.dm, dogmos_excited_groups.dm, dogmos_highpressure_equalize.dm) hand-rolled
+ * identically before this existed.
+ *
+ * Does not itself save/restore gas state: RunUnitTest already calls restore_atmos() unconditionally
+ * after every test's Run() returns - including an early return from a failed TEST_ASSERT, not just
+ * a clean finish - which re-seeds every turf in the room from its initial_gas_mix/initial temperature.
+ * A caller does not need its own manual "restore original moles" line at the end of Run() for this
+ * reason: it would only be redundant with what already happens generically, not a safety net beyond it.
+ *
+ * Arguments:
+ * * direction - which direction from run_loc_floor_bottom_left to find the second turf. Defaults to
+ *   EAST, matching the room's actual layout (a 5x5 open interior with real cardinal neighbors).
+ */
+/datum/unit_test/proc/allocate_turf_pair(direction = EAST)
+	var/turf/open/turf_a = run_loc_floor_bottom_left
+	var/turf/open/turf_b = get_step(turf_a, direction)
+	TEST_ASSERT(istype(turf_a), "run_loc_floor_bottom_left is not an open turf - this test needs one.")
+	TEST_ASSERT(istype(turf_b), "The turf [direction] of run_loc_floor_bottom_left is not an open turf - this test needs two real, adjacent turfs.")
+	TEST_ASSERT(turf_a in turf_b.atmos_adjacent_turfs, \
+		"turf_a and turf_b are not gas-adjacent (atmos_adjacent_turfs) - this test needs two turfs Dogmos will actually share gas between.")
+	return list(turf_a, turf_b)
+
 /// Resets the air of our testing room to its default
 /datum/unit_test/proc/restore_atmos()
 	var/area/working_area = run_loc_floor_bottom_left.loc
@@ -141,7 +166,10 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 	for(var/turf/open/restore in to_restore)
 		var/datum/gas_mixture/GM = SSair.parse_gas_string(restore.initial_gas_mix, /datum/gas_mixture/turf)
 		restore.copy_air(GM)
-		restore.temperature = initial(restore.temperature)
+		// set_temperature(), not a direct var write - Dogmos owns turf temperature (TurfHeat) now, and
+		// a direct restore.temperature = ... write only touches the DM var, leaving Rust's copy stale
+		// for every subsequent test. See modular_aphelion/master_files/code/game/turfs/turf.dm.
+		restore.set_temperature(initial(restore.temperature))
 		restore.air_update_turf(update = FALSE, remove = FALSE)
 
 /datum/unit_test/proc/test_screenshot(name, icon/icon)
@@ -274,7 +302,11 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 		log_world("::error::[TEST_OUTPUT_RED("FAIL")] [test_output_desc]")
 
 	var/final_status = skip_test ? UNIT_TEST_SKIPPED : (test.succeeded ? UNIT_TEST_PASSED : UNIT_TEST_FAILED)
-	test_results[test_path] = list("status" = final_status, "message" = message, "name" = test_path, "runtimes" = runtimes_during)
+	// duration is decisecond REALTIMEOFDAY elapsed, or 0 for a skipped test (never reassigned from its
+	// raw start-timestamp value above in that branch, so it must not be reported as-is). This is what
+	// makes per-test timing-regression detection possible in tools/dogmos/run_tests.ps1 - previously
+	// duration only reached log_world() (and only when > 10 deciseconds), never this file.
+	test_results[test_path] = list("status" = final_status, "message" = message, "name" = test_path, "runtimes" = runtimes_during, "duration" = skip_test ? 0 : duration)
 
 	qdel(test)
 

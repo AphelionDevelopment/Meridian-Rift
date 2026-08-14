@@ -18,14 +18,25 @@
  * asymmetry (much smaller than the golden test's 3x seed) both guarantees the pair gets processed and
  * keeps the post-share pressure delta under the 5.0 kPa low/high-pressure split, so the pair lands in
  * low_pressure_turfs rather than being routed to the (unrelated, HIGHPRESSURE-stage) equalize channel.
+ *
+ * Asserts a processed COUNT rather than "gas actually moved on these specific turfs", which is weaker
+ * than dogmos_gas_fdm_golden.dm's real physics assertions and is a deliberate, informed limit rather
+ * than an oversight. Strengthening it was attempted during the SSAIR_SUPERCONDUCTIVITY stage and
+ * withdrawn: excited_group_processing() (groups.rs) inserts a turf into found_turfs the moment the
+ * flood-fill DISCOVERS it - before evaluating the `(max - min) >= pressure_goal` band check that then
+ * `continue`s past it - so a deliberately-seeded pressure outlier is exactly what the algorithm is
+ * designed to visit-and-exclude from the zone average. Which turfs end up merged into which zone is
+ * decided entirely inside Rust and is neither observable nor controllable from DM, so "turf_a moved"
+ * is not a property this test can assert; a version asserting it (and a looser "turf_a or turf_b
+ * moved") both failed against a working equalizer. Do not "fix" this by re-adding such an assertion
+ * without first giving Rust a way to report zone membership back.
  */
 /datum/unit_test/dogmos_excited_groups
 
 /datum/unit_test/dogmos_excited_groups/Run()
-	var/turf/open/turf_a = run_loc_floor_bottom_left
-	var/turf/open/turf_b = get_step(turf_a, EAST)
-	TEST_ASSERT(istype(turf_a), "run_loc_floor_bottom_left is not an open turf - this test needs one.")
-	TEST_ASSERT(istype(turf_b), "The turf east of run_loc_floor_bottom_left is not an open turf - this test needs two real, adjacent turfs.")
+	var/list/pair = allocate_turf_pair()
+	var/turf/open/turf_a = pair[1]
+	var/turf/open/turf_b = pair[2]
 
 	var/datum/gas_mixture/air_a = turf_a.air
 	var/original_a_o2 = air_a.get_moles(/datum/gas/oxygen)
@@ -39,8 +50,6 @@
 	var/before = SSair.num_group_turfs_processed
 	SSair.process_excited_groups_auxtools(100)
 	var/after = SSair.num_group_turfs_processed
-
-	air_a.set_moles(/datum/gas/oxygen, original_a_o2)
 
 	TEST_ASSERT(after > 0, \
 		"num_group_turfs_processed ([before] -> [after]) is not positive after seeding a low-pressure turf pair and running the equalizer - the FFI call did not process anything real.")

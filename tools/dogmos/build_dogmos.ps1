@@ -76,6 +76,13 @@ try {
 		$generated = Join-Path $DogmosRepo 'bindings.dm'
 		$procCount = (Select-String -Path $generated -Pattern '^/(proc|datum|turf)').Count
 		Write-Host "bindings.dm: $procCount bound procs"
+		# A generator that silently emits an empty/near-empty file (e.g. a broken macro attribute sweep)
+		# would otherwise only be caught by the drift diff below - and -AcceptBindings skips that diff
+		# entirely, so it would happily vendor a gutted bindings.dm. 40 is well under the real count
+		# (63 as of the SSAIR_SUPERCONDUCTIVITY cutover) but well above "something is badly broken".
+		if ($procCount -lt 40) {
+			throw "Only $procCount bound procs generated (expected several dozen). generate_binds is almost certainly broken - do not vendor this, even with -AcceptBindings."
+		}
 
 		# byondapi emits binds in inventory/link order (byondapi-rs/src/binds.rs), which is not
 		# guaranteed stable across toolchains - hence a SORTED comparison. Content drift is what we
@@ -105,23 +112,26 @@ Once the Rust side is right, re-run with -AcceptBindings to vendor the new outpu
 		}
 	}
 
-	if (-not $SkipVendor) {
-		$built = Join-Path $DogmosRepo "target\$Target\release\dogmos.dll"
-		$vendored = Join-Path $GameRepo 'dogmos.dll'
+	$built = Join-Path $DogmosRepo "target\$Target\release\dogmos.dll"
 
-		# A cargo no-op leaves a stale DLL behind and every downstream check then tests the OLD
-		# library. Compare against the newest source file and Cargo.toml, not against "did cargo
-		# print Finished" - a no-op build prints that too.
-		$newestSource = Get-ChildItem (Join-Path $DogmosRepo 'src') -Recurse -Include *.rs |
-			Sort-Object LastWriteTime -Descending | Select-Object -First 1
-		$cargoToml = Get-Item (Join-Path $DogmosRepo 'Cargo.toml')
-		$builtItem = Get-Item $built
-		foreach ($src in @($newestSource, $cargoToml)) {
-			if ($src -and $builtItem.LastWriteTime -lt $src.LastWriteTime) {
-				throw "dogmos.dll ($($builtItem.LastWriteTime)) is older than $($src.Name) ($($src.LastWriteTime)). The build did not actually rebuild - do not trust anything downstream of this."
-			}
+	# A cargo no-op leaves a stale DLL behind and every downstream check then tests the OLD library.
+	# Compare against the newest source file, Cargo.toml, and Cargo.lock, not against "did cargo print
+	# Finished" - a no-op build prints that too. This now runs regardless of -SkipVendor: it used to
+	# live inside that block, which meant -SkipVendor silently disabled the one check that would catch
+	# a stale build BEFORE the (still-run) post-build smoke test tested the wrong library.
+	$newestSource = Get-ChildItem (Join-Path $DogmosRepo 'src') -Recurse -Include *.rs |
+		Sort-Object LastWriteTime -Descending | Select-Object -First 1
+	$cargoToml = Get-Item (Join-Path $DogmosRepo 'Cargo.toml')
+	$cargoLock = Get-Item (Join-Path $DogmosRepo 'Cargo.lock') -ErrorAction SilentlyContinue
+	$builtItem = Get-Item $built
+	foreach ($src in @($newestSource, $cargoToml, $cargoLock)) {
+		if ($src -and $builtItem.LastWriteTime -lt $src.LastWriteTime) {
+			throw "dogmos.dll ($($builtItem.LastWriteTime)) is older than $($src.Name) ($($src.LastWriteTime)). The build did not actually rebuild - do not trust anything downstream of this."
 		}
+	}
 
+	if (-not $SkipVendor) {
+		$vendored = Join-Path $GameRepo 'dogmos.dll'
 		Copy-Item $built $vendored -Force
 		$builtHash = (Get-FileHash $built -Algorithm SHA256).Hash
 		$vendHash = (Get-FileHash $vendored -Algorithm SHA256).Hash

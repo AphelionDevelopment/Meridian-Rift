@@ -83,7 +83,6 @@ SUBSYSTEM_DEF(air)
 
 
 	//Special functions lists
-	var/list/turf/active_super_conductivity = list()
 	var/list/turf/open/high_pressure_delta = list()
 	var/list/atom_process = list()
 	/// Reactions which will contribute to a hotspot's size.
@@ -118,7 +117,7 @@ SUBSYSTEM_DEF(air)
 	msg += "HS:[hotspots.len]|"
 	msg += "EG:[excited_groups.len]|"
 	msg += "HP:[high_pressure_delta.len]|"
-	msg += "SC:[active_super_conductivity.len]|"
+	msg += "SC:[dogmos_heat_graph_count()]|"
 	msg += "PN:[networks.len]|"
 	msg += "AM:[atmos_machinery.len]|"
 	msg += "AO:[atom_process.len]|"
@@ -244,14 +243,15 @@ SUBSYSTEM_DEF(air)
 		currentpart = SSAIR_SUPERCONDUCTIVITY
 
 	if(currentpart == SSAIR_SUPERCONDUCTIVITY)
-		timer = TICK_USAGE_REAL
-		if(!resumed)
-			cached_cost = 0
+		// cost_superconductivity is NOT re-averaged from TICK_USAGE_REAL here, unlike every other
+		// stage: process_super_conductivity()/process_turf_heat() is fire-and-forget (see its doc
+		// comment) and returns near-instantly, so a DM-side wall-clock measurement of this call would
+		// be near-zero every cycle and would drown out Rust's own deferred EWMA write to that var
+		// (superconduct.rs, written whenever the background thread's callback actually drains) rather
+		// than reflecting real cost the way the blocking stages' measurements do.
 		process_super_conductivity(resumed)
-		cached_cost += TICK_USAGE_REAL - timer
 		if(state != SS_RUNNING)
 			return
-		cost_superconductivity = MC_AVERAGE(cost_superconductivity, TICK_DELTA_TO_MS(cached_cost))
 		resumed = FALSE
 		currentpart = SSAIR_PROCESS_ATOMS
 
@@ -283,7 +283,6 @@ SUBSYSTEM_DEF(air)
 	gas_reactions = SSair.gas_reactions
 	atmos_gen = SSair.atmos_gen
 	planetary = SSair.planetary
-	active_super_conductivity = SSair.active_super_conductivity
 	high_pressure_delta = SSair.high_pressure_delta
 	atom_process = SSair.atom_process
 	currentrun = SSair.currentrun
@@ -371,17 +370,27 @@ SUBSYSTEM_DEF(air)
 			return
 
 
+/**
+ * Turf-to-turf heat conduction is now Rust's job (process_turf_heat, aphelion-dogmos
+ * src/turfs/superconduct.rs) - a full graph sweep on a persistent background thread, not a per-turf
+ * DM walk. Unlike every other Dogmos stage in this file, this is fire-and-forget, not a
+ * budget/pause()/resume cycle:
+ * * process_turf_heat() reads SSair.wait, notifies the worker thread over a bounded(1) channel via a
+ *   non-blocking try_send, and always returns immediately - there is no "did it finish" signal to wait
+ *   on, and no remaining-budget argument to pass.
+ * * If the worker is still busy processing the previous cycle's notify, this send is silently
+ *   dropped - the next cycle's notify (0.5s later) picks it back up. This is an accepted, self-correcting
+ *   skip, not an error condition worth detecting.
+ * * SSair.cost_superconductivity is written directly by the Rust worker as its own EWMA (matching
+ *   cost_post_process/cost_equalize's existing pattern) - do not average TICK_DELTA_TO_MS(cached_cost)
+ *   into it here, that would double-account a cost this proc doesn't actually spend.
+ * * Rust's deferred to_be_destroyed = TRUE write (the melt-trigger side effect, LINDA_turf_tile.dm's
+ *   atmos_expose()/burn_turf()) rides the SAME auxcallback queue finish_turf_processing_auxtools()
+ *   already drains every cycle in process_active_turfs() (SSAIR_ACTIVETURFS) - no separate drain call
+ *   is needed here.
+ */
 /datum/controller/subsystem/air/proc/process_super_conductivity(resumed = FALSE)
-	if (!resumed)
-		src.currentrun = active_super_conductivity.Copy()
-	//cache for sanic speed (lists are references anyways)
-	var/list/currentrun = src.currentrun
-	while(currentrun.len)
-		var/turf/T = currentrun[currentrun.len]
-		currentrun.len--
-		T.super_conduct()
-		if(MC_TICK_CHECK)
-			return
+	process_turf_heat()
 
 /datum/controller/subsystem/air/proc/process_hotspots(resumed = FALSE)
 	if (!resumed)
@@ -444,18 +453,22 @@ SUBSYSTEM_DEF(air)
  *
  * What's left is every non-gas-math side effect process_cell() (LINDA_turf_tile.dm, now deleted) used
  * to produce for every active turf, none of which Rust's FDM pass knows to do on DM's behalf:
- * * consider_superconductivity(starting = TRUE) - how a newly heated open turf (e.g. from a fire)
- *   starts superconducting in the first place. Superconduction (SSAIR_SUPERCONDUCTIVITY) has not been
- *   cut over to Rust yet and still needs this trigger.
- * * archive() (via LINDA_CYCLE_ARCHIVE) - finish_superconduction()/radiate_to_spess()
- *   (LINDA_turf_tile.dm) still read temperature_archived, which nothing else refreshes now.
+ * * archive() (via LINDA_CYCLE_ARCHIVE) - archives turf.air; archived_cycle is read by this same walk's
+ *   own gate below, and by finish_turf_processing_auxtools()'s reaction pass.
  * * current_cycle - read by /obj/effect/hotspot/Initialize() (LINDA_fire.dm) to decide whether a
  *   just-spawned hotspot is still within its parent turf's current processing cycle.
  * * temperature_expose(air, temperature) - the general atom-exposure hook (COMSIG_TURF_EXPOSE,
  *   check_atmos_process()) that lets mobs/items ignite or take damage from standing in hot air, wholly
  *   separate from hotspot objects (SSAIR_HOTSPOTS) and never called by Rust's FDM/post_process().
  *
- * Known, accepted tradeoff (tracked for the SSAIR_SUPERCONDUCTIVITY cutover, not fixed here):
+ * consider_superconductivity() - the old per-turf trigger that added a turf to active_super_conductivity -
+ * is gone along with DM's own superconduction walk (SSAIR_SUPERCONDUCTIVITY cutover). Rust's heat
+ * worker (process_turf_heat, aphelion-dogmos src/turfs/superconduct.rs) scans its whole TurfHeat graph
+ * on its own schedule every cycle; it was never driven by this walk in the first place, so nothing
+ * needs to replace the trigger.
+ *
+ * Known, accepted tradeoff (still not fixed - unrelated to the SSAIR_SUPERCONDUCTIVITY cutover that
+ * resolved the note this used to carry about consider_superconductivity()):
  * active_turfs is no longer shrunk anywhere. Its old removal condition (gas-stable AND no reaction
  * AND no hotspot AND no excited group) doesn't decompose onto what Rust reports back -
  * low_pressure_turfs/high_pressure_turfs are plain counts, not turf lists, so DM has no way to ask
@@ -473,7 +486,6 @@ SUBSYSTEM_DEF(air)
 			if(T.archived_cycle < times_fired)
 				LINDA_CYCLE_ARCHIVE(T)
 			T.current_cycle = times_fired
-			T.consider_superconductivity(starting = TRUE)
 			T.temperature_expose(T.air, T.air.return_temperature())
 		process_turfs_auxtools(remaining_ms)
 
@@ -982,7 +994,7 @@ GLOBAL_LIST_EMPTY(colored_images)
 	data["active_size"] = active_turfs.len
 	data["hotspots_size"] = hotspots.len
 	data["excited_size"] = excited_groups.len
-	data["conducting_size"] = active_super_conductivity.len
+	data["conducting_size"] = dogmos_heat_graph_count()
 	data["frozen"] = can_fire
 	data["show_all"] = display_all_groups
 	data["fire_count"] = times_fired

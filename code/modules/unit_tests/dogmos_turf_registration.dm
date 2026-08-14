@@ -49,8 +49,10 @@
 		"return_temperature() is [floor.return_temperature()]K, not the 350K just registered - the turf did not actually reach Rust's TurfHeat arena (hook_register_turf/supercond_update_ref).")
 
 	// Closed/blocks_air case: hook_register_turf calls supercond_update_ref() unconditionally
-	// regardless of blocks_air, so a solid turf should still land in TurfHeat (needed for solid/solid
-	// superconduction to eventually work through Rust rather than DM's share_temperature_mutual_solid).
+	// regardless of blocks_air, so a solid turf should still land in TurfHeat - though in practice
+	// ordinary walls never do (thermal_conductivity 0 excludes them, see the SSAIR_SUPERCONDUCTIVITY
+	// cutover's plan notes), which is why solid/solid conduction was never really a distinct code path
+	// worth preserving a DM fallback for.
 	floor.blocks_air = TRUE
 	force_fresh_registration(floor, 500)
 

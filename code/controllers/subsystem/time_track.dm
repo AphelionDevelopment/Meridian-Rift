@@ -145,7 +145,7 @@ SUBSYSTEM_DEF(time_track)
 			length(SSair.hotspots),
 			length(SSair.networks),
 			length(SSair.high_pressure_delta),
-			length(SSair.active_super_conductivity),
+			dogmos_heat_graph_count(),
 			SSdbcore.all_queries_num,
 			SSdbcore.queries_active_num,
 			SSdbcore.queries_standby_num

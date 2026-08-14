@@ -46,9 +46,23 @@ from `data\unit_tests.json` - a shortcut for reading the JSON directly, nothing 
   `Get-NormalizedTestMessage`) so noise like a differing mob ref or del-count doesn't read as a new
   failure. Update with `-UpdateBaseline` **only** after confirming a failure is genuinely known/accepted
   - never as a way to make a run go green without reading what changed.
-- **`runtime_baseline.json`** - scoped to `boot_probe.ps1`'s clean-boot check specifically (expected
-  empty or near-empty), not the full test suite's runtimes (those are covered by `test_baseline.json`'s
-  message-level diffing on whichever test logged them).
+- **`runtime_baseline_boot.json`** / **`runtime_baseline_suite.json`** - runtime-error signatures, split
+  by consumer: `_boot` is `boot_probe.ps1`'s clean-boot check specifically (expected empty or
+  near-empty - a full test suite legitimately logs runtimes several baselined tests are *supposed* to
+  produce, e.g. `door_access_check`/`mob_faction`); `_suite` is `run_tests.ps1`'s own runtime-signature
+  diffing over the whole suite. These used to be one shared file - updating it from a full-suite run
+  would silently absorb dozens of suite-only signatures into the boot-clean baseline, permanently
+  blinding that check. Never edit one script to point at the other's file.
+- **`test_runtime_signature_baseline.json`** - per-test runtime-error *counts* (`run_tests.ps1`'s
+  `-UpdateTestRuntimeBaseline`), distinct from the two files above: those track runtime error
+  *messages*, this tracks *which tests* are expected to log any, and how many. A test that starts
+  logging runtimes it never used to - even if it still "passes" - is a real regression signal that used
+  to be printed and silently discarded.
+- **`test_timing_baseline.json`** - per-test duration (`run_tests.ps1`'s `-UpdateTimingBaseline`).
+  Trend detection, not a hard gate - only flags a test running at least 5x its baselined duration and
+  at least 2s slower in absolute terms, so ordinary CI noise doesn't trip it. This is what makes the
+  steady-state cost question the SSAIR_EXCITEDGROUPS/SUPERCONDUCTIVITY stages both parked on a manual
+  round into something this script can actually catch automatically.
 
 ## Known accepted noise
 
@@ -96,6 +110,6 @@ fire()-stage cutovers stop churning that tree).
 | `test_compile_check.ps1` | Fast CIBUILDING/UNIT_TESTS syntax check, no DreamDaemon |
 | `show_failure.ps1` | Print one test's current result from `data\unit_tests.json` |
 | `_common.ps1` | Shared helpers: safe log reads, runtime signature normalization, baseline diffing |
-| `test_baseline.json` / `runtime_baseline.json` | The two baselines described above |
+| `test_baseline.json`, `runtime_baseline_boot.json`, `runtime_baseline_suite.json`, `test_runtime_signature_baseline.json`, `test_timing_baseline.json` | The baselines described above |
 | `gas_api_map.md` | Phase 2's proc-by-proc DM↔Dogmos gas API mapping table |
 | `setup_rust_toolchain.ps1` | One-time machine setup for building the Rust fork |

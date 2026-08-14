@@ -4,7 +4,13 @@
  * 1. atmos_adjacent_turfs[neighbor] used to be written as a bare boolean TRUE (1). Dogmos'
  *    AdjacentFlags::from_bits_truncate only recognizes bit 0b10 (ATMOS_ADJACENT_FIRELOCK) - truncating
  *    1 silently drops it, so hook_infos would never see a real flags value. Every entry should now be a
- *    real (currently always NONE, since nothing computes firelock-adjacency yet) flags value instead.
+ *    real flags value (NONE, or DOGMOS_ADJACENT_FIRELOCK once the SSAIR_HIGHPRESSURE cutover's
+ *    atmos_adjacency_flags_with() detects a firelock on the edge) instead.
+ *
+ *    Checked as "not the bare value 1", not "always NONE": the latter was true only because firelock
+ *    detection didn't exist yet at Phase 3.0, and would have started failing for a CORRECT reason the
+ *    moment it landed - which is exactly the failure mode of a test that asserts an implementation
+ *    accident instead of the actual invariant it's meant to guard.
  * 2. conductivity_blocked_directions (read by Rust's supercond_update_adjacencies for the separate heat
  *    graph) must be recomputed by the same rebuild pass that touches atmos_adjacent_turfs (the gas
  *    graph), via the new sync_dogmos_adjacency() hook - not two independent, driftable refreshes.
@@ -26,8 +32,10 @@
 
 	for(var/turf/neighbor as anything in floor.atmos_adjacent_turfs)
 		var/flag_value = floor.atmos_adjacent_turfs[neighbor]
-		TEST_ASSERT_EQUAL(flag_value, NONE, \
-			"atmos_adjacent_turfs entry for [neighbor] = [flag_value], expected NONE (0) - no firelock-adjacency detection exists yet, so every entry should currently be flagless. A bare TRUE (1) here is the exact regression this test guards: Dogmos' AdjacentFlags::from_bits_truncate only recognizes bit 0b10 and would silently drop a boolean 1.")
+		TEST_ASSERT_NOTEQUAL(flag_value, 1, \
+			"atmos_adjacent_turfs entry for [neighbor] = 1 (bare TRUE) - Dogmos' AdjacentFlags::from_bits_truncate only recognizes bit 0b10 (DOGMOS_ADJACENT_FIRELOCK) and would silently drop this. Every entry must be a real flags value (NONE or DOGMOS_ADJACENT_FIRELOCK), never a bare boolean.")
+		TEST_ASSERT(flag_value == NONE || flag_value == DOGMOS_ADJACENT_FIRELOCK, \
+			"atmos_adjacent_turfs entry for [neighbor] = [flag_value], not a recognised AdjacentFlags value (NONE or DOGMOS_ADJACENT_FIRELOCK).")
 
 	var/expected_blocked = ALL_CARDINALS & ~floor.conductivity_directions()
 	TEST_ASSERT_EQUAL(floor.conductivity_blocked_directions, expected_blocked, \

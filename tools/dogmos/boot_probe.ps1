@@ -19,7 +19,7 @@
 	  0   booted clean, no new runtime errors
 	  1   process died (see the crash-code table below)
 	  2   timed out - init never completed within TimeoutSeconds
-	  3   booted, but logged runtime errors not in runtime_baseline.json
+	  3   booted, but logged runtime errors not in runtime_baseline_boot.json
 	  4   Dogmos wrote a panic to dogmos_panic.log (rayon can swallow a worker-thread panic even
 	      when the process survives - see src\lib.rs's diagnostic hook in the fork)
 #>
@@ -44,7 +44,7 @@ $Dm = 'C:\Program Files (x86)\BYOND\bin\dm.exe'
 $DreamDaemon = 'C:\Program Files (x86)\BYOND\bin\dreamdaemon.exe'
 $LogDir = 'boot_probe'
 $InitMarker = 'Initializations complete within'
-$RuntimeBaseline = Join-Path $PSScriptRoot 'runtime_baseline.json'
+$RuntimeBaseline = Join-Path $PSScriptRoot 'runtime_baseline_boot.json'
 
 Push-Location $GameRepo
 try {

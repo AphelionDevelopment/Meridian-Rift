@@ -69,7 +69,11 @@ The air controller is, at its core, quite simple, yet it is absolutely fundament
 8. Superconductivity
    - Moves heat through turfs that don't allow gas to pass
    - Deals with heating up the floor below windows, and some other more painful heat stuff
-   - Calls `super_conduct()` on each `/turf` in the `active_super_conductivity` list
+   - As of the SSAIR_SUPERCONDUCTIVITY cutover (Dogmos Phase 3), this is Rust's job:
+     `process_turf_heat()` fires a notify to a persistent background thread
+     (`aphelion-dogmos src/turfs/superconduct.rs`), which scans its own `TurfHeat` graph in full every
+     cycle rather than DM walking a `/turf` list. DM's own `super_conduct()`/`active_super_conductivity`
+     are deleted.
 9. Atoms
    - Processes things in the world that should know about gas changes, used to account for turfs sleeping, I'll get more into that in a bit
    - Calls `process_exposure()` on each `/atom` in the `atom_process` list
@@ -317,6 +321,12 @@ There's one more major aspect of environmental atmos to cover, and while it's no
 ![](https://raw.githubusercontent.com/tgstation/documentation-assets/main/atmos/Superconduction.png)
 
 _Figure 5.3: The death of a pug, and a visual description of what superconduction does_
+
+**Note (Dogmos Phase 3, SSAIR_SUPERCONDUCTIVITY cutover):** the DM-side walk this section describes
+(`super_conduct()`, `consider_superconductivity()`, `radiate_to_spess()`, etc.) is deleted. Rust now
+owns turf-to-turf heat conduction (`process_turf_heat`, `aphelion-dogmos src/turfs/superconduct.rs`),
+reading the same `thermal_conductivity`/`heat_capacity`/`atmos_supeconductivity` vars this section
+explains - the concepts below still apply, just implemented on Rust's side rather than DM's now.
 
 Superconduction, an odd name really, it doesn't really describe much of anything aside from something to do with heat. It gets worse, trust me.
 
