@@ -31,11 +31,6 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	var/list/baseturfs = /turf/baseturf_bottom
 
 	var/temperature = T20C
-	/// Dogmos seeds its heat-conduction graph from this at first registration (set to `temperature`
-	/// at that point, not maintained afterward - Rust owns the live value from there on). A second,
-	/// independently-drifting "initial" var would just be a second source of truth; this is written
-	/// once by whatever calls update_air_ref() first, never assigned to directly elsewhere.
-	var/initial_temperature
 	///Used for fire, if a melting temperature was reached, it will be destroyed
 	var/to_be_destroyed = 0
 	///The max temperature of the fire which it was subjected to, determines the melting point of turf
@@ -45,11 +40,6 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	// If this turf should initialize atmos adjacent turfs or not
 	// Optimization, not for setting outside of initialize
 	var/init_air = TRUE
-	/// Directions Dogmos should NOT conduct heat through - the inverse of conductivity_directions().
-	/// Kept in sync with atmos_adjacent_turfs by the same adjacency-rebuild pass, and read by Rust's
-	/// superconduction adjacency graph (supercond_update_adjacencies), which computes its neighbor set
-	/// from this bitmask rather than from atmos_adjacent_turfs (that list drives the separate gas graph).
-	var/conductivity_blocked_directions = NONE
 
 	var/list/image/blueprint_data //for the station blueprints, images of objects eg: pipes
 
@@ -198,31 +188,7 @@ GLOBAL_LIST_EMPTY(station_turfs)
 
 /// Initializes our adjacent turfs. If you want to avoid this, do not override it, instead set init_air to FALSE
 /turf/proc/Initalize_Atmos(time)
-	register_dogmos_air()
 	CALCULATE_ADJACENT_TURFS(src, NORMAL_TURF)
-
-/**
- * Registers (or re-registers) this turf with Dogmos' gas/heat graphs. Called at every point a turf's
- * air-relevant state might have changed for the first time or after a type swap: the roundstart
- * Initalize_Atmos() pass, ChangeTurf's AfterChange() hook, and StopLoadingMap()'s late-map-load
- * catch-up. blocks_air turfs still register (Rust auto-detects blocks_air and routes them to the heat
- * graph only, regardless of the flag passed here - see hook_register_turf in aphelion-dogmos
- * src/turfs.rs), so this doesn't need its own blocks_air branch beyond picking which flag to pass.
- */
-/turf/proc/register_dogmos_air()
-	if(!init_air || !DOGMOS)
-		return
-	if(isnull(initial_temperature))
-		initial_temperature = temperature
-	// Closed turfs, blocks_air turfs, and open turfs whose air hasn't been created yet (some map-load
-	// paths call AfterChange() before /turf/open/Initialize()'s create_gas_mixture() has run) all fall
-	// back to a heat-only registration - hook_register_turf's gas branch reads air's
-	// _extools_pointer_gasmixture directly and crashes on a null air, but it unconditionally calls
-	// supercond_update_ref() regardless of this flag, so heat-graph registration is always safe here.
-	// A turf that fell back for a missing air gets a real gas registration later from
-	// StopLoadingMap()'s catch-up or the next air_update_turf() call.
-	var/turf/open/as_open = isopenturf(src) ? src : null
-	update_air_ref((as_open?.air && !blocks_air) ? DOGMOS_SIMULATION_ALL : DOGMOS_SIMULATION_NONE)
 
 /turf/Destroy(force)
 	. = QDEL_HINT_IWILLGC

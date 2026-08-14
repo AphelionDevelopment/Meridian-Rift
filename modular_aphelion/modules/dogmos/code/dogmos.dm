@@ -1,3 +1,8 @@
+/// GLOB.total_runtimes as it stood the moment initialisation finished. Snapshotted by the MC
+/// (code\controllers\master.dm) so a unit test can ask "was the boot clean?" without being
+/// polluted by runtimes the tests themselves cause. See /datum/unit_test/no_runtimes_during_init.
+GLOBAL_VAR_INIT(runtimes_at_init_complete, 0)
+
 /**
  * Hands Dogmos the gas registry and the reaction table before anything can build a gas mixture.
  *
