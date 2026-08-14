@@ -1,3 +1,17 @@
+/// How many active_turfs entries process_active_turfs()'s legacy per-cycle walk (archive/current_cycle/
+/// temperature_expose/stability check) processes per fire() cycle, round-robin. Bounds the walk's own
+/// cost so it can never grow unboundedly with active_turfs size and starve the actual gas FDM call of
+/// its tick budget - the 2026-08-14 playtest regression (turfs extremely resistant to gas/heat
+/// exchange, non-functional breaches) traced to exactly this: the walk was unconditionally full-list
+/// and MC_TICK_CHECK-un-gated by design, active_turfs grew from ~1700 to ~3800 turfs over one session
+/// (it is never shrunk on its own; see the stability check this same fix adds), and the walk's own
+/// growing cost pushed TICK_USAGE past Master.current_ticklimit before the FDM call's remaining_ms was
+/// (re-)computed, so process_turfs_auxtools() received a near-zero or negative budget on most cycles
+/// despite measuring real cost. 400 keeps the worst-case walk cost well under what was observed for
+/// the full ~3800-turf list (~24ms), leaving the bulk of the tick for the FDM call regardless of how
+/// large active_turfs grows.
+#define ACTIVE_TURFS_WALK_BATCH_SIZE 400
+
 SUBSYSTEM_DEF(air)
 	name = "Atmospherics"
 	dependencies = list(
@@ -61,6 +75,9 @@ SUBSYSTEM_DEF(air)
 
 	var/list/excited_groups = list()
 	var/list/active_turfs = list()
+	/// Round-robin cursor into active_turfs for the legacy per-cycle walk (archive/current_cycle/
+	/// temperature_expose/stability check, process_active_turfs()) - see ACTIVE_TURFS_WALK_BATCH_SIZE.
+	var/active_turfs_walk_cursor = 0
 	var/list/hotspots = list()
 	var/list/networks = list()
 	var/list/rebuild_queue = list()
@@ -467,30 +484,95 @@ SUBSYSTEM_DEF(air)
  * on its own schedule every cycle; it was never driven by this walk in the first place, so nothing
  * needs to replace the trigger.
  *
- * Known, accepted tradeoff (still not fixed - unrelated to the SSAIR_SUPERCONDUCTIVITY cutover that
- * resolved the note this used to carry about consider_superconductivity()):
- * active_turfs is no longer shrunk anywhere. Its old removal condition (gas-stable AND no reaction
- * AND no hotspot AND no excited group) doesn't decompose onto what Rust reports back -
- * low_pressure_turfs/high_pressure_turfs are plain counts, not turf lists, so DM has no way to ask
- * Rust which turfs just went stable. This walk is also deliberately NOT MC_TICK_CHECK-gated: gating
- * it risks the walk consuming a growing active_turfs list's entire tick budget and starving the
- * actual gas physics below it of any time to run at all, which is worse than the walk's own cost.
+ * 2026-08-14 playtest regression, fixed here: this walk used to be unconditional (every entry, every
+ * cycle) and deliberately NOT MC_TICK_CHECK-gated, reasoning that gating it risked starving the FDM
+ * call below it of tick budget. That reasoning was backwards, and it took a real ~2.5 hour session to
+ * show why: active_turfs is never shrunk (still true - see turf_settled() below, which now actually
+ * fixes that rather than just noting it), so it grew from ~1700 to ~3800 turfs over one round, and the
+ * walk's own un-gated, un-bounded cost grew right along with it - directly inflating TICK_USAGE before
+ * `remaining_ms` was (originally) computed ONCE at the top of this proc, ahead of the walk. By the time
+ * the actual FDM call ran, TICK_USAGE had already climbed past Master.current_ticklimit most cycles,
+ * so process_turfs_auxtools() received a near-zero or negative budget - Rust's Duration::from_millis()
+ * saturates a negative float to 0, so the FDM loop's very first budget check broke it before any real
+ * diffusion happened, even though the walk itself measured real, growing cost every cycle. Symptom:
+ * turfs extremely resistant to both gas and heat exchange (heat mostly rides on gas-carried thermal
+ * energy for ordinary open-room spread, so a starved FDM breaks both), and non-functional breaches
+ * (space-adjacent sharing is also the FDM's job). Fixed two ways together:
+ * 1. The walk now processes a bounded batch per cycle (ACTIVE_TURFS_WALK_BATCH_SIZE, round-robin via
+ *    active_turfs_walk_cursor) instead of the whole list, so its cost can no longer grow unboundedly.
+ * 2. `remaining_ms` is now computed fresh immediately before EACH Rust call (not once, before the
+ *    walk), so neither call ever sees a budget that's gone stale relative to what the walk (now bounded
+ *    anyway) or the previous Rust call actually spent.
  */
 /datum/controller/subsystem/air/proc/process_active_turfs(resumed = FALSE)
-	var/remaining_ms = TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)
-
 	if(!resumed)
-		for(var/turf/open/T as anything in active_turfs)
-			if(!T)
-				continue
-			if(T.archived_cycle < times_fired)
-				LINDA_CYCLE_ARCHIVE(T)
-			T.current_cycle = times_fired
-			T.temperature_expose(T.air, T.air.return_temperature())
-		process_turfs_auxtools(remaining_ms)
+		walk_active_turfs_batch()
+		process_turfs_auxtools(TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE))
 
-	if(finish_turf_processing_auxtools(remaining_ms))
+	if(finish_turf_processing_auxtools(TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)))
 		pause() // still draining queued reactions/visuals/pressure-difference callbacks - resume next fire()
+
+/**
+ * Processes up to ACTIVE_TURFS_WALK_BATCH_SIZE entries of active_turfs, round-robin via
+ * active_turfs_walk_cursor so every turf gets visited periodically without ever walking the whole
+ * (potentially thousands-long) list in one cycle. Snapshots the slice before mutating active_turfs
+ * (turf_settled() removals below shift list indices, which would corrupt an in-progress index-based
+ * walk over the live list).
+ */
+/datum/controller/subsystem/air/proc/walk_active_turfs_batch()
+	var/list/turfs = active_turfs
+	var/turf_count = length(turfs)
+	if(!turf_count)
+		active_turfs_walk_cursor = 0
+		return
+
+	if(active_turfs_walk_cursor >= turf_count)
+		active_turfs_walk_cursor = 0
+
+	var/batch_end = min(active_turfs_walk_cursor + ACTIVE_TURFS_WALK_BATCH_SIZE, turf_count)
+	var/list/batch = turfs.Copy(active_turfs_walk_cursor + 1, batch_end + 1)
+
+	for(var/turf/open/T as anything in batch)
+		if(!T)
+			continue
+		if(T.archived_cycle < times_fired)
+			LINDA_CYCLE_ARCHIVE(T)
+		T.current_cycle = times_fired
+		T.temperature_expose(T.air, T.air.return_temperature())
+		if(turf_settled(T))
+			remove_from_active(T)
+
+	// active_turfs may have shrunk (turf_settled() removals above) since batch_end was computed against
+	// the pre-walk length - clamp instead of leaving the cursor past the new end, which would just
+	// wrap on the NEXT call anyway but would skip that check here.
+	active_turfs_walk_cursor = (batch_end >= length(active_turfs)) ? 0 : batch_end
+
+/**
+ * Whether T has actually settled: its gas no longer differs meaningfully from any gas-adjacent
+ * neighbor's (reusing gas_mixture/compare() - "true if the two mixtures are different enough for
+ * processing" per its own doc comment, the same check setup_allturfs() already uses for its roundstart
+ * stability pass), and no active hotspot is burning on it. Does NOT check air.reaction_results - that
+ * list is a cumulative, never-cleared historical record (explosion/doppler-array post-mortem data via
+ * SET_REACTION_RESULTS), not a "still reacting this cycle" flag; a turf that reacted once, ever, would
+ * never be considered settled again. An actively-reacting mixture's composition keeps diverging from
+ * its neighbors' anyway, so the compare() check below already catches it without needing a separate
+ * reaction signal. A settled turf gains nothing from continuing to occupy a slot in
+ * active_turfs - Rust's own FDM pass doesn't consume that list at all (it scans its whole registered
+ * graph independently, gated by its own per-turf should_process() check), so removing a settled turf
+ * here only stops the DM-side legacy walk's bookkeeping for it, not any actual physics. Turfs that
+ * become active again later are correctly re-added by the existing SSair.add_to_active() call sites
+ * (LINDA_system.dm, LINDA_fire.dm, canister/valve release paths) the moment something disturbs them.
+ */
+/datum/controller/subsystem/air/proc/turf_settled(turf/open/T)
+	if(T.active_hotspot)
+		return FALSE
+	for(var/turf/neighbor as anything in T.atmos_adjacent_turfs)
+		if(!isopenturf(neighbor))
+			continue
+		var/turf/open/open_neighbor = neighbor
+		if(T.air.compare(open_neighbor.air))
+			return FALSE
+	return TRUE
 
 /**
  * Pressure-equalization for stable ("low pressure") turfs is now Rust's job too
@@ -925,6 +1007,8 @@ GLOBAL_LIST_EMPTY(colored_images)
 		return gas_string
 	var/datum/atmosphere/mix = atmos_gen[gas_string]
 	return mix.gas_string
+
+#undef ACTIVE_TURFS_WALK_BATCH_SIZE
 
 /**
  * Adds a given machine to the processing system for SSAIR_ATMOSMACHINERY processing.
