@@ -172,6 +172,7 @@
 #include "dismemberment.dm"
 #include "dna_infusion.dm"
 #include "dogmos_del_cost.dm"
+#include "dogmos_gas_overlays.dm"
 #include "dogmos_init_health.dm"
 #include "dogmos_load.dm"
 #include "dogmos_turf_adjacency_sync.dm"

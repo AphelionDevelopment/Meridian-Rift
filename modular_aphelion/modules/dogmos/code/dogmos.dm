@@ -45,9 +45,39 @@ SUBSYSTEM_DEF(dogmos)
 	if(!length(SSair.dogmos_reactions))
 		stack_trace("init_dogmos_reactions() produced an empty list - Dogmos will run with no reactions at all.")
 
+	populate_gas_data_overlays()
+
 	if(!auxtools_atmos_init(GLOB.gas_data))
 		stack_trace("auxtools_atmos_init() did not report success - Dogmos may hold an incomplete gas registry.")
 		return SS_INIT_FAILURE
 
 	gases_registered = TRUE
 	return SS_INIT_SUCCESS
+
+/**
+ * Fills in GLOB.gas_data.overlays (left empty by /datum/gas_data/New(), see gas_types.dm), which
+ * Rust's update_visuals() reads to resolve which pre-baked overlay object to show for a given gas at
+ * a given plane offset and visibility state - the set_visuals() FFI callback this feeds is what turf
+ * gas rendering runs through once SSAIR_ACTIVETURFS moves to Rust.
+ *
+ * Deliberately a reference into GLOB.meta_gas_info[META_GAS_OVERLAY]'s existing per-gas overlay lists,
+ * not a second, duplicate set of /obj/effect/overlay/gas instances - meta_gas_list() (gas_mixture.dm)
+ * already built exactly the objects needed, keyed by plane offset the same way
+ * gas_mixture.dm's return_visuals() already reads them (see code/__HELPERS/_planes.dm's
+ * GET_TURF_PLANE_OFFSET for the offset+1 convention both sides agree on). Since this stores the SAME
+ * list objects rather than copies, SSmapping growing z_level_to_plane_offset for a new z-level after
+ * roundstart (code/controllers/subsystem/mapping.dm) - which appends new offset sublists onto those
+ * same META_GAS_OVERLAY lists - is automatically visible here too, with nothing further to keep in sync.
+ *
+ * Must run after GLOB.meta_gas_info exists. It does: that's a GLOBAL_LIST_INIT (gas_mixture.dm),
+ * evaluated at world load like GLOB.gas_data's own GLOBAL_DATUM_INIT - both complete before any
+ * subsystem's Initialize() runs, this subsystem's included, so there is no ordering hazard here
+ * despite the two globals initializing independently of each other.
+ */
+/datum/controller/subsystem/dogmos/proc/populate_gas_data_overlays()
+	var/list/meta_overlays = GLOB.meta_gas_info[META_GAS_OVERLAY]
+	for(var/gas_path in GLOB.gas_data.datums)
+		var/datum/gas/gas_instance = GLOB.gas_data.datums[gas_path]
+		var/list/overlay_table = meta_overlays[gas_path]
+		if(length(overlay_table))
+			GLOB.gas_data.overlays[gas_instance.id] = overlay_table
