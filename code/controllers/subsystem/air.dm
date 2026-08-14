@@ -408,20 +408,49 @@ SUBSYSTEM_DEF(air)
 		if(MC_TICK_CHECK)
 			return
 
+/**
+ * Gas sharing/reactions/visuals for active_turfs are now Rust's job (process_turfs_auxtools /
+ * finish_turf_processing_auxtools, aphelion-dogmos src/turfs/processing.rs) - Rust scans its own
+ * TurfGases graph in full every cycle rather than working off active_turfs at all, so none of the
+ * old per-turf iteration here is gas-processing anymore.
+ *
+ * What's left is every non-gas-math side effect process_cell() (LINDA_turf_tile.dm, now deleted) used
+ * to produce for every active turf, none of which Rust's FDM pass knows to do on DM's behalf:
+ * * consider_superconductivity(starting = TRUE) - how a newly heated open turf (e.g. from a fire)
+ *   starts superconducting in the first place. Superconduction (SSAIR_SUPERCONDUCTIVITY) has not been
+ *   cut over to Rust yet and still needs this trigger.
+ * * archive() (via LINDA_CYCLE_ARCHIVE) - finish_superconduction()/radiate_to_spess()
+ *   (LINDA_turf_tile.dm) still read temperature_archived, which nothing else refreshes now.
+ * * current_cycle - read by /obj/effect/hotspot/Initialize() (LINDA_fire.dm) to decide whether a
+ *   just-spawned hotspot is still within its parent turf's current processing cycle.
+ * * temperature_expose(air, temperature) - the general atom-exposure hook (COMSIG_TURF_EXPOSE,
+ *   check_atmos_process()) that lets mobs/items ignite or take damage from standing in hot air, wholly
+ *   separate from hotspot objects (SSAIR_HOTSPOTS) and never called by Rust's FDM/post_process().
+ *
+ * Known, accepted tradeoff (tracked for the SSAIR_SUPERCONDUCTIVITY cutover, not fixed here):
+ * active_turfs is no longer shrunk anywhere. Its old removal condition (gas-stable AND no reaction
+ * AND no hotspot AND no excited group) doesn't decompose onto what Rust reports back -
+ * low_pressure_turfs/high_pressure_turfs are plain counts, not turf lists, so DM has no way to ask
+ * Rust which turfs just went stable. This walk is also deliberately NOT MC_TICK_CHECK-gated: gating
+ * it risks the walk consuming a growing active_turfs list's entire tick budget and starving the
+ * actual gas physics below it of any time to run at all, which is worse than the walk's own cost.
+ */
 /datum/controller/subsystem/air/proc/process_active_turfs(resumed = FALSE)
-	//cache for sanic speed
-	var/fire_count = times_fired
-	if (!resumed)
-		src.currentrun = active_turfs.Copy()
-	//cache for sanic speed (lists are references anyways)
-	var/list/currentrun = src.currentrun
-	while(currentrun.len)
-		var/turf/open/T = currentrun[currentrun.len]
-		currentrun.len--
-		if (T)
-			T.process_cell(fire_count)
-		if (MC_TICK_CHECK)
-			return
+	var/remaining_ms = TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)
+
+	if(!resumed)
+		for(var/turf/open/T as anything in active_turfs)
+			if(!T)
+				continue
+			if(T.archived_cycle < times_fired)
+				LINDA_CYCLE_ARCHIVE(T)
+			T.current_cycle = times_fired
+			T.consider_superconductivity(starting = TRUE)
+			T.temperature_expose(T.air, T.air.return_temperature())
+		process_turfs_auxtools(remaining_ms)
+
+	if(finish_turf_processing_auxtools(remaining_ms))
+		pause() // still draining queued reactions/visuals/pressure-difference callbacks - resume next fire()
 
 /datum/controller/subsystem/air/proc/process_excited_groups(resumed = FALSE)
 	if (!resumed)

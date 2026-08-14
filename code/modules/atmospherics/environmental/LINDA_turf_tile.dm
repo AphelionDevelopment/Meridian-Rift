@@ -164,16 +164,32 @@
 
 
 /turf/open/proc/update_visuals()
+	if(!air) // 2019-05-14: was not able to get this path to fire in testing. Consider removing/looking at callers -Naksu
+		apply_visual_overlays(null)
+		return
+
+	apply_visual_overlays(air.return_visuals(src))
+
+/**
+ * Diffs new_overlay_types against the turf's currently-shown atmos_overlay_types and mutates
+ * vis_contents to match, then caches new_overlay_types as the new atmos_overlay_types. This is the
+ * DM-side half of both visuals entry points:
+ * * update_visuals() (above) computes new_overlay_types itself, synchronously, for every caller
+ *   outside the turf-processing loop (canisters, tanks, turbines, admin tools, ...).
+ * * set_visuals() (below) is Dogmos' FFI callback target once a turf has gone through Rust's gas FDM
+ *   pass (aphelion-dogmos src/turfs.rs's update_visuals) - Rust has already computed the same shape
+ *   of list via GLOB.gas_data.overlays, so this proc is the shared diff/mutate logic both feed into,
+ *   not two independent implementations of the same thing.
+ */
+/turf/open/proc/apply_visual_overlays(list/new_overlay_types)
 	var/list/atmos_overlay_types = src.atmos_overlay_types // Cache for free performance
 
-	if(!air) // 2019-05-14: was not able to get this path to fire in testing. Consider removing/looking at callers -Naksu
-		if (atmos_overlay_types)
+	if(isnull(new_overlay_types))
+		if(atmos_overlay_types)
 			for(var/overlay in atmos_overlay_types)
 				vis_contents -= overlay
 			src.atmos_overlay_types = null
 		return
-
-	var/list/new_overlay_types = air.return_visuals(src)
 
 	if (atmos_overlay_types)
 		for(var/overlay in atmos_overlay_types-new_overlay_types) //doesn't remove overlays that would only be added
@@ -188,194 +204,19 @@
 	UNSETEMPTY(new_overlay_types)
 	src.atmos_overlay_types = new_overlay_types
 
+/// Dogmos' FFI callback target (aphelion-dogmos src/turfs.rs's update_visuals) once a turf has gone
+/// through Rust's gas FDM pass - see apply_visual_overlays()'s doc comment. Called with zero args
+/// (new_overlay_types staying null) when the turf's air is invalid on the Rust side, matching
+/// update_visuals()'s own !air branch above.
+/turf/open/proc/set_visuals(list/new_overlay_types)
+	apply_visual_overlays(new_overlay_types)
+
 /proc/typecache_of_gases_with_no_overlays()
 	. = list()
 	for (var/gastype in subtypesof(/datum/gas))
 		var/datum/gas/gasvar = gastype
 		if (!initial(gasvar.gas_overlay))
 			.[gastype] = TRUE
-
-/////////////////////////////SIMULATION///////////////////////////////////
-#ifdef TRACK_MAX_SHARE
-#define LAST_SHARE_CHECK \
-	var/last_share = our_air.last_share;\
-	max_share = max(last_share, max_share);\
-	if(last_share > MINIMUM_AIR_TO_SUSPEND){\
-		our_excited_group.reset_cooldowns();\
-		cached_ticker = 0;\
-		enemy_tile.significant_share_ticker = 0;\
-	} else if(last_share > MINIMUM_MOLES_DELTA_TO_MOVE) {\
-		our_excited_group.dismantle_cooldown = 0;\
-		cached_ticker = 0;\
-		enemy_tile.significant_share_ticker = 0;\
-	}
-#else
-#define LAST_SHARE_CHECK \
-	var/last_share = our_air.last_share;\
-	if(last_share > MINIMUM_AIR_TO_SUSPEND){\
-		our_excited_group.reset_cooldowns();\
-		cached_ticker = 0;\
-		enemy_tile.significant_share_ticker = 0;\
-	} else if(last_share > MINIMUM_MOLES_DELTA_TO_MOVE) {\
-		our_excited_group.dismantle_cooldown = 0;\
-		cached_ticker = 0;\
-		enemy_tile.significant_share_ticker = 0;\
-	}
-#endif
-#ifdef TRACK_MAX_SHARE
-#define PLANET_SHARE_CHECK \
-	var/last_share = our_air.last_share;\
-	max_share = max(last_share, max_share);\
-	if(last_share > MINIMUM_AIR_TO_SUSPEND){\
-		our_excited_group.reset_cooldowns();\
-		cached_ticker = 0;\
-	} else if(last_share > MINIMUM_MOLES_DELTA_TO_MOVE) {\
-		our_excited_group.dismantle_cooldown = 0;\
-		cached_ticker = 0;\
-	}
-#else
-#define PLANET_SHARE_CHECK \
-	var/last_share = our_air.last_share;\
-	if(last_share > MINIMUM_AIR_TO_SUSPEND){\
-		our_excited_group.reset_cooldowns();\
-		cached_ticker = 0;\
-	} else if(last_share > MINIMUM_MOLES_DELTA_TO_MOVE) {\
-		our_excited_group.dismantle_cooldown = 0;\
-		cached_ticker = 0;\
-	}
-#endif
-
-/turf/proc/process_cell(fire_count)
-	SSair.remove_from_active(src)
-
-/turf/open/process_cell(fire_count)
-	if(archived_cycle < fire_count) //archive self if not already done
-		LINDA_CYCLE_ARCHIVE(src)
-
-	current_cycle = fire_count
-	var/cached_ticker = significant_share_ticker
-	cached_ticker += 1
-
-	//cache for sanic speed
-	var/list/adjacent_turfs = atmos_adjacent_turfs
-	var/datum/excited_group/our_excited_group = excited_group
-	var/our_share_coeff = 1/(LAZYLEN(adjacent_turfs) + 1)
-
-	var/datum/gas_mixture/our_air = air
-
-	var/list/share_end
-
-	#ifdef TRACK_MAX_SHARE
-	max_share = 0 //Gotta reset our tracker
-	#endif
-
-	for(var/turf/open/enemy_tile as anything in adjacent_turfs)
-		#ifdef UNIT_TESTS
-		if(!istype(enemy_tile))
-			stack_trace("closed turf inside of adjacent turfs")
-			continue
-		#endif
-
-		// This var is only rarely set, exists so turfs can request to share at the end of our sharing
-		// We need this so we can assume share is communative, which we need to do to avoid a hellish amount of garbage_collect()s
-		if(enemy_tile.run_later)
-			LAZYADD(share_end, enemy_tile)
-
-		if(fire_count <= enemy_tile.current_cycle)
-			continue
-		LINDA_CYCLE_ARCHIVE(enemy_tile)
-
-	/******************* GROUP HANDLING START *****************************************************************/
-
-		var/should_share_air = FALSE
-		var/datum/gas_mixture/enemy_air = enemy_tile.air
-
-		//cache for sanic speed
-		var/datum/excited_group/enemy_excited_group = enemy_tile.excited_group
-		//If we are both in an excited group, and they aren't the same, merge.
-		//If we are both in an excited group, and you're active, share
-		//If we pass compare, and if we're not already both in a group, lets join up
-		//If we both pass compare, add to active and share
-		if(our_excited_group && enemy_excited_group)
-			if(our_excited_group != enemy_excited_group)
-				//combine groups (this also handles updating the excited_group var of all involved turfs)
-				our_excited_group.merge_groups(enemy_excited_group)
-				our_excited_group = excited_group //update our cache
-		if(our_excited_group && enemy_excited_group && enemy_tile.excited) //If you're both excited, no need to compare right?
-			should_share_air = TRUE
-		else if(our_air.compare(enemy_air, /*cmp_archive = */ TRUE)) //Lets see if you're up for it
-			SSair.add_to_active(enemy_tile) //Add yourself young man
-			var/datum/excited_group/existing_group = our_excited_group || enemy_excited_group || new
-			if(!our_excited_group)
-				existing_group.add_turf(src)
-			if(!enemy_excited_group)
-				existing_group.add_turf(enemy_tile)
-			our_excited_group = excited_group
-			should_share_air = TRUE
-
-		//air sharing
-		if(should_share_air)
-			var/difference = our_air.share(enemy_air, our_share_coeff, 1 / (LAZYLEN(enemy_tile.atmos_adjacent_turfs) + 1))
-			if(difference)
-				if(difference > 0)
-					consider_pressure_difference(enemy_tile, difference)
-				else
-					enemy_tile.consider_pressure_difference(src, -difference)
-			//This acts effectivly as a very slow timer, the max deltas of the group will slowly lower until it breaksdown, they then pop up a bit, and fall back down until irrelevant
-			LAST_SHARE_CHECK
-
-
-	/******************* GROUP HANDLING FINISH *********************************************************************/
-
-	if (planetary_atmos) //share our air with the "atmosphere" "above" the turf
-		var/datum/gas_mixture/planetary_mix = SSair.planetary[initial_gas_mix]
-		// archive ourself again so we don't accidentally share more gas than we currently have
-		LINDA_CYCLE_ARCHIVE(src)
-		if(our_air.compare(planetary_mix, /*cmp_archive = */ TRUE))
-			if(!our_excited_group)
-				var/datum/excited_group/new_group = new
-				new_group.add_turf(src)
-				our_excited_group = excited_group
-			// shares 4/5 of our difference in moles with the atmosphere
-			our_air.share(planetary_mix, 0.8, 0.8)
-			// temperature share with the atmosphere with an inflated heat capacity to simulate faster sharing with a large atmosphere.
-			// Dogmos' temperature_share dispatches on total arg count: 3 args (src, sharer, coeff) shares
-			// against a live mixture and writes back to it; 4 args (src, coeff, temp, heat_capacity) shares
-			// against raw values with no mixture and no write-back. planetary_mix is immutable and can never
-			// be written to anyway, so the 4-arg raw form is both correct and what's actually needed here -
-			// the old 4-arg DM call passed a mixture AND override values together, a combination Dogmos
-			// doesn't support because it was never meaningful: the write-back target was always immutable.
-			our_air.temperature_share(OPEN_HEAT_TRANSFER_COEFFICIENT, planetary_mix.return_temperature(), planetary_mix.heat_capacity() * 5)
-			// No reset needed: planetary_mix is mark_immutable()'d at construction (immutable_mixtures.dm),
-			// so unlike the old system it can never have drifted from its canonical state to begin with.
-			PLANET_SHARE_CHECK
-
-	for(var/turf/open/enemy_tile as anything in share_end)
-		var/datum/gas_mixture/enemy_mix = enemy_tile.air
-		archive()
-		// We share 100% of our mix in this step. Let's jive
-		var/difference = our_air.share(enemy_mix, 1, 1)
-		LAST_SHARE_CHECK
-		if(!difference)
-			continue
-		if(difference > 0)
-			consider_pressure_difference(enemy_tile, difference)
-		else
-			enemy_tile.consider_pressure_difference(src, difference)
-
-	var/reacting = our_air.react(src)
-	if(our_excited_group)
-		our_excited_group.turf_reactions |= reacting //Adds the flag to turf_reactions so excited groups can check for them before dismantling.
-
-	update_visuals()
-	if(!consider_superconductivity(starting = TRUE) && !active_hotspot && !(reacting & (REACTING | STOP_REACTIONS)))
-		if(!our_excited_group) //If nothing of interest is happening, kill the active turf
-			SSair.remove_from_active(src) //This will kill any connected excited group, be careful (This broke atmos for 4 years)
-		if(cached_ticker > EXCITED_GROUP_DISMANTLE_CYCLES) //If you're stalling out, take a rest
-			SSair.sleep_active_turf(src)
-
-	significant_share_ticker = cached_ticker //Save our changes
-	temperature_expose(our_air, our_air.return_temperature())
 
 //////////////////////////SPACEWIND/////////////////////////////
 
@@ -712,5 +553,3 @@ Then we space some of our heat, and think about if we should stop conducting.
 	sharer.temperature -= heat / sharer.heat_capacity
 
 
-#undef LAST_SHARE_CHECK
-#undef PLANET_SHARE_CHECK
