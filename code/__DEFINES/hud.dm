@@ -54,6 +54,7 @@
 #define HUD_MOB_THROW "mob_throw"
 #define HUD_MOB_HUNGER "mob_hunger"
 #define HUD_MOB_STAMINA "mob_stamina"
+#define HUD_MOB_RUN_STAMINA "mob_run_stamina"
 #define HUD_MOB_SPACESUIT "mob_spacesuit"
 #define HUD_MOB_COMBO "mob_combo"
 #define HUD_MOB_RESIST "mob_resist"
@@ -262,6 +263,7 @@
 #define ui_hunger "EAST-1:2,CENTER:21"
 #define ui_spacesuit "EAST-1:28,CENTER-4:14"
 #define ui_stamina "EAST-1:28,CENTER-3:14"
+#define ui_run_stamina "EAST-1:2,CENTER-1:19"
 
 //Pop-up inventory
 #define ui_shoes "WEST+1:8,SOUTH:5"

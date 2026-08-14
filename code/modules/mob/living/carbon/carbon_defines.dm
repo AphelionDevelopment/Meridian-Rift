@@ -1,5 +1,7 @@
 /mob/living/carbon
 	abstract_type = /mob/living/carbon
+	// Walking is the free default pace, running is the deliberate choice.
+	move_intent = MOVE_INTENT_WALK
 	default_blood_volume = BLOOD_VOLUME_NORMAL
 	gender = MALE
 	pressure_resistance = 15

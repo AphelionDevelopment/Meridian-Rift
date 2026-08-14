@@ -67,6 +67,22 @@
 	var/mod = CONFIG_GET(number/movedelay/run_delay)
 	multiplicative_slowdown = isnum(mod)? mod : initial(multiplicative_slowdown)
 
+/// Move delay removed on top of the configured run delay, while on run intent.
+#define RUN_SPEED_BONUS -0.2
+/// Move delay removed on top of the configured walk delay, while on walk intent - now the default pace.
+#define WALK_SPEED_BONUS -1.6
+
+/// Speedup applied while on run intent.
+/datum/movespeed_modifier/run_pace
+	multiplicative_slowdown = RUN_SPEED_BONUS
+
+/// Speedup applied while on walk intent.
+/datum/movespeed_modifier/walk_pace
+	multiplicative_slowdown = WALK_SPEED_BONUS
+
+#undef RUN_SPEED_BONUS
+#undef WALK_SPEED_BONUS
+
 /datum/movespeed_modifier/turf_slowdown
 	movetypes = GROUND
 	blacklisted_movetypes = (FLYING|FLOATING)

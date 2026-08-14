@@ -1126,6 +1126,13 @@ INITIALIZE_IMMEDIATE(/atom/movable/screen) // I hate this place
 	icon_state = "stamina0"
 	screen_loc = ui_stamina
 
+/// Shows how much running stamina the mob has left. Reuses the stamina bar's icon states -
+/// same bar shape and colour steps, different meaning and screen slot.
+/atom/movable/screen/run_stamina
+	name = "running stamina"
+	icon_state = "stamina_full"
+	screen_loc = ui_run_stamina
+
 #define HUNGER_STATE_FAT 5
 #define HUNGER_STATE_FULL 4
 #define HUNGER_STATE_FINE 3

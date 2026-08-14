@@ -1,3 +1,8 @@
+/// Volume multiplier on a walking mob's footsteps. Walking is quieter than running, not silent.
+#define WALK_FOOTSTEP_VOLUME_MULT 0.65
+/// Hearing range adjustment on a walking mob's footsteps.
+#define WALK_FOOTSTEP_RANGE_ADJUSTMENT -2
+
 ///Footstep element. Plays footsteps at parents location when it is appropriate.
 /datum/element/footstep
 	element_flags = ELEMENT_DETACH_ON_HOST_DESTROY|ELEMENT_BESPOKE
@@ -79,8 +84,7 @@
 			playsound(turf, sound, 15 * volume, falloff_distance = 1, vary = sound_vary)
 		return
 
-	if(iscarbon(source) && source.move_intent == MOVE_INTENT_WALK)
-		return // stealth
+	// Walking is the default pace now, so it is quieted below rather than silenced.
 
 	steps_for_living[source] += 1
 	var/steps = steps_for_living[source]
@@ -197,6 +201,11 @@
 		volume_multiplier = 0.6
 		range_adjustment = -2
 
+	// Walking still steps, just softer, and stacks with light step.
+	if(source.move_intent == MOVE_INTENT_WALK)
+		volume_multiplier *= WALK_FOOTSTEP_VOLUME_MULT
+		range_adjustment += WALK_FOOTSTEP_RANGE_ADJUSTMENT
+
 	// list returned by playsound() filled by client mobs who heard the footstep. given to play_fov_effect()
 	var/list/heard_clients
 	var/picked_sound = pick(footstep_sounds[1])
@@ -234,3 +243,6 @@
 		return
 
 	playsound(source_loc, footstep_sounds, 50, falloff_distance = 1, vary = sound_vary)
+
+#undef WALK_FOOTSTEP_VOLUME_MULT
+#undef WALK_FOOTSTEP_RANGE_ADJUSTMENT
