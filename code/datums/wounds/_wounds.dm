@@ -785,17 +785,25 @@
  *
  * Field treatment counts: a splinted fracture or a bandaged cut is a tier quieter than an untreated
  * one, so a medic can put someone back on their feet without a surgeon. The injury itself is
- * unchanged, and hurts in full again once the gauze comes off.
+ * unchanged, and hurts in full again once the treatment comes off or runs out.
  */
 /datum/wound/proc/get_pain_factor()
 	if(!pain_factor || !pain_eased_by_treatment || isnull(limb))
 		return pain_factor
 
-	// Anything wrapped or splinted counts; get_splint_factor() is below 1 only when something is on the limb.
-	if(limb.get_splint_factor() < 1)
-		return PAIN_FACTOR_TIER_BELOW(pain_factor)
+	return is_field_treated() ? PAIN_FACTOR_TIER_BELOW(pain_factor) : pain_factor
 
-	return pain_factor
+/**
+ * Whether something a medic could do in the field is currently quieting this injury.
+ *
+ * Partial treatment counts, so this asks whether anything is being done rather than whether the
+ * injury is dealt with. Wound types with a treatment of their own that leaves no mark on the limb
+ * override this and add it.
+ */
+/datum/wound/proc/is_field_treated()
+	// Wrapping and splinting both live in the gauze slot; get_splint_factor() is below 1 only while
+	// something is on the limb. A tourniquet is the field answer for anything bleeding.
+	return limb.get_splint_factor() < 1 || !isnull(LAZYACCESS(limb.applied_items, LIMB_ITEM_TOURNIQUET))
 
 /// Returns what string is displayed when a limb that has sustained this wound is examined
 /// (This is examining the LIMB ITSELF, when it's not attached to someone.)

@@ -42,25 +42,20 @@
 	var/damage_amount = damage
 	// Plates are the armour model for mob combat. One stops everything up to its tolerance outright.
 	// See [/obj/item/armor_plate/proc/take_impact].
-	var/obj/item/armor_plate/stopping_plate = (armour_flag && !forced) ? get_covering_plate(damagetype, armour_flag, def_zone) : null
-	var/plate_owns_hit = stopping_plate || (
-		armour_flag \
-		&& !forced \
-		&& (damagetype == BRUTE || damagetype == BURN) \
-		&& has_plate_carrier_covering(def_zone)
-	)
+	var/obj/item/clothing/plate_carrier = (armour_flag && !forced) ? get_plate_carrier(damagetype, armour_flag, def_zone) : null
+	var/obj/item/armor_plate/stopping_plate = plate_carrier?.get_answering_plate(armour_flag)
 	if(stopping_plate)
 		damage_amount -= stopping_plate.take_impact(src, damage, def_zone, wound_bonus, attack_direction, attacking_item, wound_clothing)
+	// A carrier that answered this attack replaces the percentage for it: everything up to its plate's
+	// tolerance was stopped outright, and what got past arrives as though nothing were worn. Worn
+	// armour still decides an uncovered hit. An empty carrier, or one with a mismatched or spent
+	// plate, owns its covered hit but stops none of it, so that hit is fully penetrating.
+	if(!forced && isnull(plate_carrier))
+		damage_amount *= ((100 - blocked) / 100)
 	// What the attack put into this body, before the body's own multipliers decide what it does to it.
+	// Nothing is taken off forced damage, so there this is the whole hit.
 	var/delivered_damage = damage_amount
 	if(!forced)
-		// A plate that answered this attack replaces the percentage for it: everything up to its
-		// tolerance was stopped outright, and what got past arrives as though nothing were worn. Worn
-		// armour still decides an uncovered hit. An empty carrier, or one with a mismatched or spent
-		// plate, owns its covered hit but stops none of it, so that hit is fully penetrating.
-		if(!plate_owns_hit)
-			damage_amount *= ((100 - blocked) / 100)
-		delivered_damage = damage_amount
 		damage_amount *= get_incoming_damage_modifier(damage_amount, damagetype, def_zone, sharpness, attack_direction, attacking_item)
 	if(damage_amount <= 0)
 		return 0

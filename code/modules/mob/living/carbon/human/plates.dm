@@ -11,6 +11,21 @@
  */
 
 /**
+ * The plate carrier standing between an attack and a bodypart, if there is one.
+ *
+ * The single traversal every other question here is asked through. A carrier owns its covered hit
+ * whether or not it has anything to stop it with, which is what suppresses the percentage model;
+ * whether the hit is actually stopped is [/obj/item/clothing/proc/get_answering_plate]'s business.
+ *
+ * Arguments:
+ * * damagetype - One of the damage types. Only [BRUTE] and [BURN] meet a plate.
+ * * armour_flag - The attack's armour flag, e.g. [BULLET] or [LASER].
+ * * def_zone - Bodypart or zone the attack landed on.
+ */
+/mob/living/proc/get_plate_carrier(damagetype, armour_flag, def_zone)
+	return null
+
+/**
  * The working plate covering a bodypart against this sort of attack, if there is one.
  *
  * Arguments:
@@ -19,11 +34,10 @@
  * * def_zone - Bodypart or zone the attack landed on.
  */
 /mob/living/proc/get_covering_plate(damagetype, armour_flag, def_zone)
-	return null
+	RETURN_TYPE(/obj/item/armor_plate)
 
-/// Whether a plate carrier covers this zone, even if it is empty or its plate cannot stop the attack.
-/mob/living/proc/has_plate_carrier_covering(def_zone)
-	return FALSE
+	var/obj/item/clothing/carrier = get_plate_carrier(damagetype, armour_flag, def_zone)
+	return carrier?.get_answering_plate(armour_flag)
 
 /**
  * Whether a plate stops a hit outright, so that none of it reaches the body.
@@ -46,7 +60,9 @@
 	var/obj/item/armor_plate/covering = get_covering_plate(damagetype, armour_flag, def_zone)
 	return !isnull(covering) && damage <= covering.get_tolerance()
 
-/mob/living/carbon/human/get_covering_plate(damagetype, armour_flag, def_zone)
+/mob/living/carbon/human/get_plate_carrier(damagetype, armour_flag, def_zone)
+	RETURN_TYPE(/obj/item/clothing)
+
 	if(damagetype != BRUTE && damagetype != BURN)
 		return null
 	if(isnull(def_zone))
@@ -56,40 +72,18 @@
 	if(isnull(hit_part))
 		return null
 
+	var/obj/item/clothing/helmet = plate_carrier_covers_part(head, hit_part) ? head : null
+	var/obj/item/clothing/suit = plate_carrier_covers_part(wear_suit, hit_part) ? wear_suit : null
+
 	// Helmet before suit, since the only zone both could claim is a head the suit has a hood over.
-	return get_plate_from(head, hit_part, armour_flag) || get_plate_from(wear_suit, hit_part, armour_flag)
-
-/mob/living/carbon/human/has_plate_carrier_covering(def_zone)
-	if(isnull(def_zone))
-		return FALSE
-
-	var/obj/item/bodypart/hit_part = isbodypart(def_zone) ? def_zone : get_bodypart(check_zone(def_zone))
-	if(isnull(hit_part))
-		return FALSE
-
-	return plate_carrier_covers_part(head, hit_part) || plate_carrier_covers_part(wear_suit, hit_part)
+	// A carrier holding a plate that answers this attack wins outright; failing that either will do,
+	// as neither is going to stop anything.
+	if(helmet?.get_answering_plate(armour_flag))
+		return helmet
+	if(suit?.get_answering_plate(armour_flag))
+		return suit
+	return helmet || suit
 
 /// Whether this item is a plate carrier worn over the bodypart. A carrier needs a working plate to protect it.
 /mob/living/carbon/human/proc/plate_carrier_covers_part(obj/item/clothing/carrier, obj/item/bodypart/hit_part)
 	return carrier?.accepts_armor_plates && (carrier.body_parts_covered & hit_part.body_part)
-
-/**
- * The plate in one worn item, if it has one that covers this part and cares about this attack.
- *
- * A spent plate, or one of the wrong sort for the attack, does not stop the hit. The fitted plate
- * still occupies the carrier, so the hit lands unarmoured rather than falling back to percentages.
- *
- * Arguments:
- * * carrier - The worn item that might hold a plate.
- * * hit_part - The bodypart the attack landed on.
- * * armour_flag - The attack's armour flag.
- */
-/mob/living/carbon/human/proc/get_plate_from(obj/item/clothing/carrier, obj/item/bodypart/hit_part, armour_flag)
-	RETURN_TYPE(/obj/item/armor_plate)
-
-	var/obj/item/armor_plate/fitted = carrier?.fitted_plate
-	if(isnull(fitted) || !fitted.is_working() || !fitted.stops_attack(armour_flag))
-		return null
-	if(!(carrier.body_parts_covered & hit_part.body_part))
-		return null
-	return fitted

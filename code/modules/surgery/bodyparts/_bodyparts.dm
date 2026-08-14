@@ -1879,6 +1879,8 @@
 	applying_item.forceMove(src)
 	LAZYSET(applied_items, category, applying_item)
 	SEND_SIGNAL(applying_item, COMSIG_ITEM_APPLIED_TO_LIMB, src)
+	// Field treatment quiets this limb's injuries by a tier. See [/datum/wound/proc/is_field_treated].
+	owner?.mark_pain_dirty()
 	return TRUE
 
 /obj/item/bodypart/Exited(atom/movable/gone, direction)
@@ -1888,6 +1890,7 @@
 			continue
 		LAZYREMOVE(applied_items, category)
 		SEND_SIGNAL(gone, COMSIG_ITEM_UNAPPLIED_FROM_LIMB, src)
+		owner?.mark_pain_dirty()
 
 /**
  * Get how splinted this bodypart is based on applied items

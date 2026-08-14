@@ -1,3 +1,12 @@
+// How fast a bruise fades, in seconds of recovery per second elapsed. Rest and immobilisation are the
+// only two things that speed it along; there is nothing here for a surgeon to do.
+/// Recovery a bruise makes on its own.
+#define BRUISE_REGEN_RATE_BASE 1
+/// Extra recovery for staying off the limb.
+#define BRUISE_REGEN_RATE_RESTING 1
+/// Extra recovery from a wrap or splint, in proportion to how well it holds the limb still.
+#define BRUISE_REGEN_RATE_SPLINTED 2
+
 /// Nonlethal blunt trauma that heals with rest.
 /datum/wound/bruise
 	name = "Bruise"
@@ -9,10 +18,10 @@
 	// Never lethal, so a bruise must never be the injury that opens a part up to overflow.
 	allows_overflow = FALSE
 
-	/// How many process ticks of rest this bruise needs before it fades.
-	var/regen_ticks_needed
+	/// How much recovery this bruise needs before it fades, which is seconds of untended rest.
+	var/regen_seconds_needed
 	/// How far along it currently is.
-	var/regen_ticks_current = 0
+	var/regen_progress = 0
 	/// Temporary pain spiked each time the limb is used.
 	var/use_pain
 
@@ -29,13 +38,14 @@
 /datum/wound/bruise/handle_process(seconds_per_tick, times_fired)
 	. = ..()
 
-	// Bruises fade on their own, faster while lying down or splinted.
-	regen_ticks_current += 1
+	// Bruises fade on their own, faster while lying down or splinted. get_splint_factor() is below 1
+	// only while something is wrapped around the limb, and the better the wrap the lower it goes.
+	var/regen_per_second = BRUISE_REGEN_RATE_BASE + (BRUISE_REGEN_RATE_SPLINTED * (1 - limb.get_splint_factor()))
 	if(victim.body_position == LYING_DOWN)
-		regen_ticks_current += 1
-	regen_ticks_current += 1 - limb.get_splint_factor()
+		regen_per_second += BRUISE_REGEN_RATE_RESTING
 
-	if(regen_ticks_current < regen_ticks_needed)
+	regen_progress += regen_per_second * seconds_per_tick
+	if(regen_progress < regen_seconds_needed)
 		return
 
 	to_chat(victim, span_green("The bruising on your [limb.plaintext_zone] has faded."))
@@ -97,7 +107,7 @@
 	pain_factor = PAIN_FACTOR_LIGHT
 	threshold_penalty = 10
 	status_effect_type = /datum/status_effect/wound/bruise/moderate
-	regen_ticks_needed = 60
+	regen_seconds_needed = 120
 
 /datum/wound_pregen_data/bruise/minor
 	abstract = FALSE
@@ -122,7 +132,7 @@
 	limp_chance = 30
 	threshold_penalty = 20
 	status_effect_type = /datum/status_effect/wound/bruise/severe
-	regen_ticks_needed = 150
+	regen_seconds_needed = 300
 	use_pain = 5
 
 /datum/wound_pregen_data/bruise/deep
@@ -148,7 +158,7 @@
 	limp_chance = 50
 	threshold_penalty = 30
 	status_effect_type = /datum/status_effect/wound/bruise/critical
-	regen_ticks_needed = 320
+	regen_seconds_needed = 640
 	use_pain = 10
 
 /datum/wound_pregen_data/bruise/contusion
@@ -163,3 +173,7 @@
 	id = "deepbruise"
 /datum/status_effect/wound/bruise/critical
 	id = "contusion"
+
+#undef BRUISE_REGEN_RATE_BASE
+#undef BRUISE_REGEN_RATE_RESTING
+#undef BRUISE_REGEN_RATE_SPLINTED

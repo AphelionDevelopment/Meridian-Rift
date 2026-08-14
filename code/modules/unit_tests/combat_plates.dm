@@ -57,7 +57,7 @@
 	empty_carrier.equip_to_slot(empty_vest, ITEM_SLOT_OCLOTHING)
 	var/obj/item/bodypart/unplated_chest = empty_carrier.get_bodypart(BODY_ZONE_CHEST)
 	TEST_ASSERT(isnull(empty_carrier.get_covering_plate(BRUTE, MELEE, unplated_chest)), "An empty carrier should have no covering plate")
-	TEST_ASSERT(empty_carrier.has_plate_carrier_covering(unplated_chest), "An empty carrier should still own hits on the zones it covers")
+	TEST_ASSERT_EQUAL(empty_carrier.get_plate_carrier(BRUTE, MELEE, unplated_chest), empty_vest, "An empty carrier should still own hits on the zones it covers")
 
 	var/unplated_damage = empty_carrier.apply_damage(30, BRUTE, unplated_chest, blocked = 50, wound_bonus = CANT_WOUND, armour_flag = MELEE)
 	TEST_ASSERT_EQUAL(unplated_damage, 30, \

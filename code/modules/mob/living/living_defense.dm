@@ -1,36 +1,37 @@
 
-/mob/living/proc/run_armor_check(def_zone = null, attack_flag = MELEE, absorb_text = null, soften_text = null, armour_penetration, penetrated_text, silent=FALSE, weak_against_armour = FALSE)
+/**
+ * How much of an attack this mob's worn percentage armour takes off, as a percentage.
+ *
+ * Only decides hits an armour plate does not answer; see [/mob/living/proc/get_plate_carrier].
+ *
+ * Arguments:
+ * * def_zone - Bodypart or zone the attack landed on.
+ * * attack_flag - The attack's armour flag, e.g. [BULLET] or [LASER].
+ * * absorb_text - Replaces the message for armour that stopped the hit entirely.
+ * * soften_text - Replaces the message for armour that only reduced it.
+ * * armour_penetration - Ignored. Damage is the only penetration stat there is, so an attack gets
+ * past armour by carrying more than it can take rather than by discounting it. Kept in the signature
+ * because every caller in the codebase still passes one, several of them positionally.
+ * * penetrated_text - Ignored, for the same reason: nothing penetrates percentage armour any more.
+ * * silent - Report nothing to the wearer.
+ * * weak_against_armour - Whether armour counts for extra against this attack.
+ */
+/mob/living/proc/run_armor_check(def_zone = null, attack_flag = MELEE, absorb_text = null, soften_text = null, armour_penetration, penetrated_text, silent = FALSE, weak_against_armour = FALSE)
 	SEND_SIGNAL(src, COMSIG_MOB_RUN_ARMOR) //NOVA EDIT ADDITION
-
-	// Plates use damage as penetration. Atoms still use percentage armour penetration.
-	armour_penetration = 0
 
 	var/our_armor = getarmor(def_zone, attack_flag)
 
 	if(our_armor <= 0)
 		return our_armor
-	if(weak_against_armour && our_armor >= 0)
+	if(weak_against_armour)
 		our_armor *= ARMOR_WEAKENED_MULTIPLIER
 	if(silent)
-		return max(0, PENETRATE_ARMOUR(our_armor, armour_penetration))
+		return our_armor
 
-	//the if "armor" check is because this is used for everything on /living, including humans
-	if(armour_penetration)
-		our_armor = max(PENETRATE_ARMOUR(our_armor, armour_penetration), 0)
-		if(penetrated_text)
-			to_chat(src, span_userdanger("[penetrated_text]"))
-		else
-			to_chat(src, span_userdanger("Your armor was penetrated!"))
-	else if(our_armor >= 100)
-		if(absorb_text)
-			to_chat(src, span_notice("[absorb_text]"))
-		else
-			to_chat(src, span_notice("Your armor absorbs the blow!"))
+	if(our_armor >= 100)
+		to_chat(src, span_notice("[absorb_text || "Your armor absorbs the blow!"]"))
 	else
-		if(soften_text)
-			to_chat(src, span_warning("[soften_text]"))
-		else
-			to_chat(src, span_warning("Your armor softens the blow!"))
+		to_chat(src, span_warning("[soften_text || "Your armor softens the blow!"]"))
 	return our_armor
 
 /mob/living/proc/getarmor(def_zone, type)

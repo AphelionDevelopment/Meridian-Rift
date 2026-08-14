@@ -238,6 +238,22 @@
 	/// The plate this carrier starts with. Set to null for carriers that should spawn empty.
 	var/initial_armor_plate = /obj/item/armor_plate/ballistic
 
+/**
+ * This carrier's plate, if it is in any state to answer an attack.
+ *
+ * A spent plate, or one of the wrong sort for the attack, does not stop the hit. The fitted plate
+ * still occupies the carrier, so the hit lands unarmoured rather than falling back to percentages.
+ *
+ * Arguments:
+ * * armour_flag - The attack's armour flag, e.g. [BULLET] or [LASER].
+ */
+/obj/item/clothing/proc/get_answering_plate(armour_flag)
+	RETURN_TYPE(/obj/item/armor_plate)
+
+	if(isnull(fitted_plate) || !fitted_plate.is_working() || !fitted_plate.stops_attack(armour_flag))
+		return null
+	return fitted_plate
+
 /obj/item/clothing/suit/armor
 	accepts_armor_plates = TRUE
 
