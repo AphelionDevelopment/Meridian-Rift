@@ -12,6 +12,12 @@
 /// large active_turfs grows.
 #define ACTIVE_TURFS_WALK_BATCH_SIZE 400
 
+/// Dogmos Kennel slow mode's cadence half (payload half is in /datum/dogmos_kennel/ui_data()): how
+/// many fire() cycles between UI pushes while kennel_slow_mode is on. 4 cycles at the default 0.5s
+/// wait is ~2s between updates - frequent enough to feel live, infrequent enough that N simultaneous
+/// viewers don't multiply real per-cycle push cost the way pushing every cycle would.
+#define KENNEL_SLOW_MODE_PUSH_INTERVAL 4
+
 SUBSYSTEM_DEF(air)
 	name = "Atmospherics"
 	dependencies = list(
@@ -50,6 +56,90 @@ SUBSYSTEM_DEF(air)
 	/// Whether Dogmos' katmos pressure equalizer runs as part of the gas FDM pass. Turned on as of the
 	/// SSAIR_HIGHPRESSURE cutover - see process_high_pressure_delta() for the consumer.
 	var/equalize_enabled = TRUE
+	/// Whether a space-adjacent turf's heat loss uses real Stefan-Boltzmann blackbody radiation (T^4
+	/// scaling - physically correct, but weak near room temperature and only aggressive at high
+	/// temperatures, ~57x slower than the alternative at a representative 400K) or a fake vacuum sink
+	/// (linear conductive-style sharing against a fixed large capacity - not physical, but fast and
+	/// legible for players; matches this codebase's pre-Dogmos LINDA behavior). Read fresh by Rust on
+	/// every process_turf_heat() trigger (aphelion-dogmos src/turfs/superconduct.rs) - safe to flip
+	/// live, no rebuild needed. Defaults to the physically-correct behavior.
+	var/realistic_space_radiation = TRUE
+	/// Dogmos Kennel (code/controllers/subsystem/dogmos_kennel.dm): shared, defaults ON per explicit
+	/// request. Gates the kennel UI's payload (recent_*/overlay tables only serialized when FALSE) and
+	/// push cadence (every 4th fire() cycle instead of every cycle when TRUE) together, so multiple
+	/// simultaneous viewers don't multiply real per-cycle cost. One shared value, not a per-viewer flag -
+	/// see the datum's own doc comment for why that matters. Unused until the recording infrastructure
+	/// (Phase 2) and cadence gating (Phase 4) land; only read/written for now.
+	var/kennel_slow_mode = TRUE
+	/// Round-robin cursor for the cadence half of kennel_slow_mode - see KENNEL_SLOW_MODE_PUSH_INTERVAL
+	/// and the SStgui.update_uis(GLOB.dogmos_kennel) call site in fire().
+	var/kennel_push_cursor = 0
+	/// Dogmos Kennel: recent notable fire groups (code/controllers/subsystem/dogmos_kennel_events.dm),
+	/// newest first, capped at KENNEL_EVENT_HISTORY_CAP. Recorded once per group's lifecycle, when a
+	/// /datum/hot_group with peak_size >= kennel_fire_group_notable_size is about to be deleted.
+	var/list/recent_fire_groups = list()
+	/// Dogmos Kennel: recent high-cost reaction/process samples. Populated by
+	/// kennel_record_reaction_cost() when kennel_profile_reactions is on.
+	var/list/recent_high_cost_zones = list()
+	/// Dogmos Kennel: the one Dogmos toggle with real per-call Rust-side overhead when on - gates
+	/// Instant::now()/elapsed() timing around every react_by_id() call in react_hook() (aphelion-dogmos
+	/// src/lib.rs). Read fresh on every reaction (same "no rebuild needed to flip live" pattern as
+	/// realistic_space_radiation) - safe to flip live. Defaults OFF, unlike every other Kennel toggle.
+	var/kennel_profile_reactions = FALSE
+	/// Minimum single react_by_id() call duration (ms) for kennel_profile_reactions to record it into
+	/// recent_high_cost_zones. Read fresh by Rust alongside kennel_profile_reactions. A single reaction
+	/// call is simple arithmetic on one gas mixture - sub-millisecond even for a large room - so this
+	/// stays well below 1ms; the previous default of 4 was roughly three orders of magnitude above
+	/// anything a real reaction call costs and made the feature untriggerable in practice (found via
+	/// live playtest 2026-08-15).
+	var/kennel_high_cost_ms_threshold = 0.5
+	/// Dogmos Kennel: recent explosions, from COMSIG_GLOB_EXPLOSION.
+	var/list/recent_explosions = list()
+	/// Dogmos Kennel: recent reactions whose amount crossed kennel_reaction_magnitude_threshold.
+	var/list/recent_reactions_of_interest = list()
+	/// Dogmos Kennel: FIFO of turfs currently showing the breach overlay (kennel_mark_overlay_recent()),
+	/// capped at KENNEL_OVERLAY_RECENT_CAP.
+	var/list/kennel_overlay_breach_turfs = list()
+	/// As kennel_overlay_breach_turfs, for the high-cost-zone overlay.
+	var/list/kennel_overlay_high_cost_turfs = list()
+	/// As kennel_overlay_breach_turfs, for the reaction-of-interest overlay.
+	var/list/kennel_overlay_reaction_turfs = list()
+	/// Dogmos Kennel: recent hull breaches, from handle_decompression_floor_rip().
+	var/list/recent_breaches = list()
+	/// Dogmos Kennel: pinned/auto-flagged atmos machinery and canisters. Not a ring buffer like the
+	/// recent_* lists above - entries persist until manually unpinned or an auto-pin's expiry passes
+	/// (pruned lazily on read, see kennel_prune_expired_pins()). Each entry is
+	/// list("ref"=REF, "name"=..., "area"=..., "reason"=..., "pinned_at"=round_timestamp(), "expires"=
+	/// world.time+duration or null for a manual, non-expiring pin).
+	var/list/structures_of_interest = list()
+	/// Dogmos Kennel: REF(machine) -> its turf at pin time, for the structure overlay only - DM-internal
+	/// bookkeeping, never sent to ui_data(). Lets kennel_unpin_structure()/kennel_prune_expired_pins()
+	/// hide the overlay without re-locate()-ing an admin-suppliable ref.
+	var/list/kennel_pinned_turfs = list()
+	/// Dogmos Kennel: per-machine process_atmos() cost EWMA, keyed by REF(machine) rather than the
+	/// machine itself so this doesn't hold a hard reference past the machine's real lifetime. Not
+	/// pruned when a machine is destroyed (an acceptable, bounded, slow-growing amount of stale-key
+	/// clutter for a dev tool - the alternative, a var on the universal /obj/machinery base type, is
+	/// broader surface than this atmos-specific feature needs). See check_kennel_machine_cost()
+	/// (code/controllers/subsystem/dogmos_kennel_events.dm).
+	var/list/kennel_machine_cost_ewma = list()
+	/// Minimum peak group size (hotspot count) for a fire group to be recorded into
+	/// recent_fire_groups when it's deleted - keeps single-tile flare-ups out of the list.
+	var/kennel_fire_group_notable_size = 5
+	/// Minimum reaction amount (SET_REACTION_RESULTS' units - moles reacted, roughly) for a reaction to
+	/// be recorded into recent_reactions_of_interest. A single-cycle plasma fire burns
+	/// plasma_moles/PLASMA_BURN_RATE_DELTA (=9) moles at most, so an ordinary room fire peaks in the
+	/// 20-80 range and decays from there - the previous default of 500 was far above what any normal
+	/// fire ever produces and made the feature untriggerable in practice (found via live playtest
+	/// 2026-08-15).
+	var/kennel_reaction_magnitude_threshold = 20
+	/// Minimum per-machine process_atmos() cost (ms, single call) for that machine to be auto-pinned
+	/// into structures_of_interest.
+	var/kennel_machine_cost_ms_threshold = 2
+	/// How long an auto-pin (explosion cause, breach-adjacent, or high-cost machine) stays in
+	/// structures_of_interest before kennel_prune_expired_pins() removes it. Manual admin pins never
+	/// expire (their "expires" field is null).
+	var/kennel_auto_pin_duration = 10 MINUTES
 	/// Ratio of a turf's gas shared with its planetary atmosphere per FDM cycle. Mirrors Rust's own
 	/// internal GAS_DIFFUSION_CONSTANT (1/8) so DM's declared default matches what Rust would fall
 	/// back to if this var didn't exist at all. Read by Rust; unused until SSAIR_ACTIVETURFS cuts over.
@@ -156,8 +246,10 @@ SUBSYSTEM_DEF(air)
 	setup_atmos_machinery()
 	setup_pipenets()
 	setup_turf_visuals()
+	setup_kennel_overlays()
 	process_adjacent_rebuild()
 	atmos_handbooks_init()
+	RegisterSignal(SSdcs, COMSIG_GLOB_EXPLOSION, PROC_REF(on_kennel_explosion))
 	return SS_INIT_SUCCESS
 
 
@@ -287,6 +379,16 @@ SUBSYSTEM_DEF(air)
 	currentpart = SSAIR_PIPENETS
 	SStgui.update_uis(SSair) //Lightning fast debugging motherfucker
 
+	// Cadence half of Kennel slow mode (payload half is in /datum/dogmos_kennel/ui_data()): pushed every
+	// cycle when off, every KENNEL_SLOW_MODE_PUSH_INTERVAL-th cycle when on (~2s at wait = 0.5s) via a
+	// small round-robin cursor, so multiple simultaneous viewers don't multiply real per-cycle push cost.
+	if(!kennel_slow_mode)
+		SStgui.update_uis(GLOB.dogmos_kennel)
+	else
+		kennel_push_cursor = (kennel_push_cursor + 1) % KENNEL_SLOW_MODE_PUSH_INTERVAL
+		if(!kennel_push_cursor)
+			SStgui.update_uis(GLOB.dogmos_kennel)
+
 /datum/controller/subsystem/air/Recover()
 	excited_groups = SSair.excited_groups
 	active_turfs = SSair.active_turfs
@@ -381,8 +483,10 @@ SUBSYSTEM_DEF(air)
 		currentrun.len--
 		if(!M)
 			atmos_machinery -= M
+		var/kennel_tick_start = TICK_USAGE
 		if(M.process_atmos(wait * 0.1) == PROCESS_KILL)
 			stop_processing_machine(M)
+		check_kennel_machine_cost(M, TICK_USAGE_TO_MS(kennel_tick_start))
 		if(MC_TICK_CHECK)
 			return
 
@@ -539,6 +643,7 @@ SUBSYSTEM_DEF(air)
 			LINDA_CYCLE_ARCHIVE(T)
 		T.current_cycle = times_fired
 		T.temperature_expose(T.air, T.air.return_temperature())
+		check_kennel_reaction_of_interest(T)
 		if(turf_settled(T))
 			remove_from_active(T)
 
@@ -1079,8 +1184,28 @@ GLOBAL_LIST_EMPTY(colored_images)
 	data["hotspots_size"] = hotspots.len
 	data["excited_size"] = excited_groups.len
 	data["conducting_size"] = dogmos_heat_graph_count()
+	// The excited_groups table above only ever reflects setup_allturfs()'s roundstart snapshot -
+	// Rust's per-cycle equalization (SSAIR_EXCITEDGROUPS/SSAIR_HIGHPRESSURE) doesn't create or update
+	// DM /datum/excited_group objects, so that table goes stale/empty within moments of roundstart and
+	// was giving admins nothing to look at during the 2026-08-14 playtest regression - this is what
+	// would have shown, at a glance, that Rust's per-cycle passes were doing essentially no real work
+	// that entire round (every one of these sat at 0 for ~2000s).
+	data["low_pressure_turfs"] = low_pressure_turfs
+	data["high_pressure_turfs"] = high_pressure_turfs
+	data["group_turfs_processed"] = num_group_turfs_processed
+	data["equalize_processed"] = num_equalize_processed
+	data["space_boundary_size"] = dogmos_space_boundary_count()
+	data["dogmos_costs"] = list(
+		"turfs" = cost_turfs,
+		"groups" = cost_groups,
+		"highpressure" = cost_highpressure,
+		"equalize" = cost_equalize,
+		"superconductivity" = cost_superconductivity,
+		"post_process" = cost_post_process,
+	)
 	data["frozen"] = can_fire
 	data["show_all"] = display_all_groups
+	data["realistic_space_radiation"] = realistic_space_radiation
 	data["fire_count"] = times_fired
 	#ifdef TRACK_MAX_SHARE
 	data["display_max"] = TRUE
@@ -1102,6 +1227,9 @@ GLOBAL_LIST_EMPTY(colored_images)
 			usr.forceMove(target)
 		if("toggle-freeze")
 			can_fire = !can_fire
+			return TRUE
+		if("toggle_realistic_space_radiation")
+			realistic_space_radiation = !realistic_space_radiation
 			return TRUE
 		if("toggle_show_group")
 			var/datum/excited_group/group = locate(params["group"])

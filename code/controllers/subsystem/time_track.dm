@@ -71,6 +71,18 @@ SUBSYSTEM_DEF(time_track)
 			"air_network_count",
 			"air_delta_count",
 			"air_superconductive_count",
+			// Meridian: excited_groups/high_pressure_delta above are DM-side lists that go stale or
+			// sit empty between samples post-Dogmos-cutover (excited_groups is a roundstart-only
+			// snapshot; high_pressure_delta drains within the same cycle it's populated) - they were
+			// the reason a real gap (space turfs never registering, see space.dm) read as "Rust doing
+			// nothing all round" when it wasn't, and equally could mask (or falsely indicate) an actual
+			// slowdown. These are Rust's own per-cycle counters instead - see SSair.ui_data()/the Atmos
+			// Control Panel, which surfaces the same set live.
+			"air_low_pressure_count",
+			"air_high_pressure_count",
+			"air_group_processed",
+			"air_equalize_processed",
+			"air_space_boundary_count",
 			"all_queries",
 			"queries_active",
 			"queries_standby"
@@ -146,6 +158,11 @@ SUBSYSTEM_DEF(time_track)
 			length(SSair.networks),
 			length(SSair.high_pressure_delta),
 			dogmos_heat_graph_count(),
+			SSair.low_pressure_turfs,
+			SSair.high_pressure_turfs,
+			SSair.num_group_turfs_processed,
+			SSair.num_equalize_processed,
+			dogmos_space_boundary_count(),
 			SSdbcore.all_queries_num,
 			SSdbcore.queries_active_num,
 			SSdbcore.queries_standby_num

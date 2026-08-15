@@ -37,7 +37,12 @@ $csvFile = Get-ChildItem $LogDir -Filter 'perf-*.csv' | Select-Object -First 1
 if ($csvFile) {
 	$csv = Import-Csv $csvFile.FullName
 	$atmosCostCols = @('air_turf_cost', 'air_eg_cost', 'air_highpressure_cost', 'air_hotspots_cost', 'air_superconductivity_cost', 'air_pipenets_cost')
-	$atmosCountCols = @('air_turf_count', 'air_eg_count', 'air_hotspot_count', 'air_delta_count', 'air_superconductive_count')
+	# air_eg_count/air_delta_count are stale DM-list lengths (excited_groups is a roundstart-only
+	# snapshot post-cutover; high_pressure_delta drains within the cycle it's populated) - kept for
+	# backward compatibility with older logs, but air_low_pressure_count/air_high_pressure_count/
+	# air_group_processed/air_equalize_processed are Rust's own real per-cycle counters and are what
+	# actually answers "is Dogmos doing real work" (added 2026-08-15, absent from logs before that).
+	$atmosCountCols = @('air_turf_count', 'air_eg_count', 'air_hotspot_count', 'air_delta_count', 'air_superconductive_count', 'air_low_pressure_count', 'air_high_pressure_count', 'air_group_processed', 'air_equalize_processed', 'air_space_boundary_count')
 
 	Write-Host ''
 	Write-Host "--- Atmos MC telemetry ($($csv.Count) samples, time $($csv[0].time) to $($csv[-1].time)) ---" -ForegroundColor Cyan

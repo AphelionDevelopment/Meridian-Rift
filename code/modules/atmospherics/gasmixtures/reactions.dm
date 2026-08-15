@@ -314,6 +314,20 @@
 
 	. |= REACTING | VOLATILE_REACTION
 
+/**
+ * Finishes what aphelion-dogmos src/reaction/aphelion.rs's plasma_fire() started: the moles/energy
+ * math above is a faithful Rust port (Phase 4, aphelion_reactions), but reaction_results needs a real
+ * typepath key (this reaction's own /datum/gas_reaction/plasmafire, read via SSair.hotspot_reactions'
+ * per-instance keying in LINDA_fire.dm's perform_exposure()) and hotspot_expose needs an istype() check
+ * Rust has no cheap way to do - both stay DM-side rather than being reimplemented in Rust. Called once,
+ * at the very end, with numbers Rust already computed.
+ */
+/proc/dogmos_aphelion_plasmafire_finish(datum/gas_mixture/air, datum/holder, fire_amount, temperature)
+	air.reaction_results[/datum/gas_reaction/plasmafire] = fire_amount
+	var/turf/open/location = holder
+	if(istype(location) && temperature > FIRE_MINIMUM_TEMPERATURE_TO_EXIST)
+		location.hotspot_expose(temperature, CELL_VOLUME)
+
 
 /**
  * Hydrogen combustion:
@@ -367,6 +381,13 @@
 			location.hotspot_expose(temperature, CELL_VOLUME)
 
 	. |= REACTING | VOLATILE_REACTION
+
+/// See dogmos_aphelion_plasmafire_finish() - same idea, for /datum/gas_reaction/h2fire's Rust port.
+/proc/dogmos_aphelion_h2fire_finish(datum/gas_mixture/air, datum/holder, burned_fuel, temperature)
+	air.reaction_results[/datum/gas_reaction/h2fire] = burned_fuel
+	var/turf/open/location = holder
+	if(istype(location) && temperature > FIRE_MINIMUM_TEMPERATURE_TO_EXIST)
+		location.hotspot_expose(temperature, CELL_VOLUME)
 
 
 /**
@@ -432,6 +453,23 @@
 
 	. |= REACTING | VOLATILE_REACTION
 
+/// See dogmos_aphelion_plasmafire_finish() - same idea, for /datum/gas_reaction/tritfire's Rust port.
+/// Location resolution (pipenet vs. plain atom) and radiation_pulse both stay DM-side: the former needs
+/// istype()/isatom() introspection, the latter is a rare, non-hot-path random event not worth porting.
+/proc/dogmos_aphelion_tritfire_finish(datum/gas_mixture/air, datum/holder, burned_fuel, energy_released, volume, temperature)
+	air.reaction_results[/datum/gas_reaction/tritfire] = burned_fuel
+	var/turf/open/location
+	if(istype(holder, /datum/pipeline))
+		var/datum/pipeline/pipenet = holder
+		location = pick(pipenet.members)
+	else if(isatom(holder))
+		location = holder
+
+	if(location && burned_fuel > TRITIUM_RADIATION_MINIMUM_MOLES && energy_released > TRITIUM_RADIATION_RELEASE_THRESHOLD * (volume / CELL_VOLUME) ** ATMOS_RADIATION_VOLUME_EXP && prob(10))
+		radiation_pulse(location, max_range = min(sqrt(burned_fuel) / TRITIUM_RADIATION_RANGE_DIVISOR, GAS_REACTION_MAXIMUM_RADIATION_PULSE_RANGE), threshold = TRITIUM_RADIATION_THRESHOLD)
+
+	if(istype(location) && temperature > FIRE_MINIMUM_TEMPERATURE_TO_EXIST)
+		location.hotspot_expose(temperature, CELL_VOLUME)
 
 
 /**
@@ -502,6 +540,20 @@
 			location.hotspot_expose(temperature, CELL_VOLUME)
 
 	. |= REACTING | VOLATILE_REACTION
+
+/**
+ * See dogmos_aphelion_plasmafire_finish() - same idea, for /datum/gas_reaction/freonfire's Rust port.
+ * original_temperature is the pre-reaction reading (hot_ice formation's check, matching the DM
+ * original's use of its own pre-reaction `temperature` local); temperature is the post-reaction one
+ * (hotspot_expose's check) - these can differ enough to matter since the reaction itself changes it.
+ */
+/proc/dogmos_aphelion_freonfire_finish(datum/gas_mixture/air, datum/holder, fire_amount, original_temperature, temperature)
+	air.reaction_results[/datum/gas_reaction/freonfire] = fire_amount
+	if(original_temperature < HOT_ICE_FORMATION_MAXIMUM_TEMPERATURE && original_temperature > HOT_ICE_FORMATION_MINIMUM_TEMPERATURE && prob(HOT_ICE_FORMATION_PROB) && isturf(holder))
+		new /obj/item/stack/sheet/hot_ice(holder)
+	var/turf/open/location = holder
+	if(istype(location) && temperature < FREON_MAXIMUM_BURN_TEMPERATURE)
+		location.hotspot_expose(temperature, CELL_VOLUME)
 
 
 // N2O

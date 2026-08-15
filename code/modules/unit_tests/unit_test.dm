@@ -159,6 +159,60 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 		"turf_a and turf_b are not gas-adjacent (atmos_adjacent_turfs) - this test needs two turfs Dogmos will actually share gas between.")
 	return list(turf_a, turf_b)
 
+/**
+ * Re-registers a turf so Rust picks up locally-modified thermal_conductivity/heat_capacity/blocks_air,
+ * then rebuilds its adjacency so the heat graph reflects the current blocks_air state.
+ * TurfHeat::insert_turf refreshes conductivity/capacity on an already-present node (it deliberately
+ * preserves temperature), so a plain re-register is enough here - no zero-then-restore removal cycle
+ * needed (that's a different case, see dogmos_turf_registration.dm's force_fresh_registration(), which
+ * tests fresh-insert seeding specifically and is not a duplicate of this).
+ *
+ * Shared by every Dogmos heat-conduction test that needs a real, non-gas-adjacent heat edge - was
+ * hand-rolled identically as a local `resync()` proc in both dogmos_superconduction_golden.dm and
+ * dogmos_infinite_heat_capacity_conduction.dm before this existed. See either file's doc comment for
+ * why a plain gas-adjacent pair (what allocate_turf_pair() guarantees) never conducts heat at all.
+ */
+/datum/unit_test/proc/resync_turf_for_dogmos(turf/open/target)
+	target.register_dogmos_air()
+	target.immediate_calculate_adjacent_turfs()
+
+/**
+ * Converts the turf `direction` of interior into real /turf/open/space via ChangeTurf - the same
+ * machinery a real hull breach uses (place_on_top/ChangeTurf always calls the new turf's Initialize()
+ * and AfterChange()), not a synthetic shortcut. Shared by every Dogmos test that needs a real breach
+ * neighbor - was hand-rolled near-identically in dogmos_space_boundary_registration.dm and
+ * dogmos_breach_radiative_cooling.dm before this existed.
+ *
+ * Returns list(vacuum_neighbor, original_type). Callers MUST pass original_type to
+ * restore_neighbor_from_space() in their Destroy(), unconditionally (not just on a clean Run()
+ * finish) - a TEST_ASSERT abort partway through Run() would otherwise leave a real space turf sitting
+ * in the shared test room for every test that runs after.
+ */
+/datum/unit_test/proc/convert_neighbor_to_space(turf/open/interior, direction = EAST)
+	var/turf/neighbor_loc = get_step(interior, direction)
+	TEST_ASSERT(istype(neighbor_loc, /turf/open), \
+		"The turf [direction] of the interior turf is not an open turf - this test needs a real neighbor to convert to space.")
+	var/original_type = neighbor_loc.type
+
+	// CHANGETURF_RECALC_ADJACENT: without it, AfterChange() queues the adjacency recompute into
+	// adjacent_rebuild for SSair.fire() to pick up later instead of running it immediately - callers
+	// need the edge to exist synchronously, right after this returns.
+	var/turf/open/space/vacuum_neighbor = neighbor_loc.ChangeTurf(/turf/open/space, flags = CHANGETURF_INHERIT_AIR | CHANGETURF_RECALC_ADJACENT)
+	TEST_ASSERT(istype(vacuum_neighbor), \
+		"ChangeTurf to /turf/open/space did not produce a space turf - test setup is broken, not the thing under test.")
+	TEST_ASSERT(interior in vacuum_neighbor.atmos_adjacent_turfs, \
+		"The interior turf and its new space neighbor are not gas-adjacent - test setup is broken, not the thing under test.")
+	return list(vacuum_neighbor, original_type)
+
+/// Restores whatever convert_neighbor_to_space() replaced. Safe to call unconditionally from Destroy() -
+/// a null/empty original_type (never converted, or already restored) is a no-op.
+/datum/unit_test/proc/restore_neighbor_from_space(turf/open/interior, original_type, direction = EAST)
+	if(!original_type || !istype(interior))
+		return
+	var/turf/neighbor_loc = get_step(interior, direction)
+	if(istype(neighbor_loc, /turf/open/space))
+		neighbor_loc.ChangeTurf(original_type, flags = CHANGETURF_INHERIT_AIR | CHANGETURF_RECALC_ADJACENT)
+
 /// Resets the air of our testing room to its default
 /datum/unit_test/proc/restore_atmos()
 	var/area/working_area = run_loc_floor_bottom_left.loc

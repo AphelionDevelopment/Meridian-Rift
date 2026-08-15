@@ -39,14 +39,6 @@
  */
 /datum/unit_test/dogmos_superconduction_golden
 
-/// Re-registers a turf so Rust picks up locally-modified thermal_conductivity/heat_capacity, then
-/// rebuilds its adjacency so the heat graph reflects the current blocks_air state. TurfHeat::insert_turf
-/// refreshes those two fields on an already-present node (it deliberately preserves temperature), so a
-/// plain re-register is enough here - no zero-then-restore removal cycle needed.
-/datum/unit_test/dogmos_superconduction_golden/proc/resync(turf/open/target)
-	target.register_dogmos_air()
-	target.immediate_calculate_adjacent_turfs()
-
 /datum/unit_test/dogmos_superconduction_golden/Run()
 	var/list/pair = allocate_turf_pair()
 	var/turf/open/turf_a = pair[1]
@@ -55,8 +47,8 @@
 	turf_a.heat_capacity = SUPERCONDUCTION_TEST_HEAT_CAPACITY
 	turf_b.heat_capacity = SUPERCONDUCTION_TEST_HEAT_CAPACITY
 	turf_b.blocks_air = TRUE
-	resync(turf_a)
-	resync(turf_b)
+	resync_turf_for_dogmos(turf_a)
+	resync_turf_for_dogmos(turf_b)
 
 	TEST_ASSERT(!(turf_b in turf_a.atmos_adjacent_turfs), \
 		"turf_b is still gas-adjacent to turf_a after being marked blocks_air - the heat edge this test depends on only exists for NON-gas-adjacent neighbors, so the setup did not take.")
@@ -95,12 +87,12 @@
 		var/turf/open/turf_b = get_step(turf_a, EAST)
 		turf_a.heat_capacity = initial(turf_a.heat_capacity)
 		turf_a.set_temperature(T20C)
-		resync(turf_a)
+		resync_turf_for_dogmos(turf_a)
 		if(istype(turf_b))
 			turf_b.blocks_air = initial(turf_b.blocks_air)
 			turf_b.heat_capacity = initial(turf_b.heat_capacity)
 			turf_b.set_temperature(T20C)
-			resync(turf_b)
+			resync_turf_for_dogmos(turf_b)
 	return ..()
 
 #undef SUPERCONDUCTION_TEST_HEAT_CAPACITY

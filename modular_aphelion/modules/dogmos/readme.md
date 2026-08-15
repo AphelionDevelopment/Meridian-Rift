@@ -31,6 +31,13 @@ subsystem and the one runtime-tracking global are the two pieces with no atmos-t
 - `modular_aphelion/master_files/code/game/turfs/open/_open.dm`: `/turf/open/Initalize_Atmos()` (chains
   to the base override above via `..()`, since core's `/turf/open/Initalize_Atmos()` does not call
   `..()` itself and this needed to run before it).
+- `modular_aphelion/master_files/code/game/turfs/open/space/space.dm`: `/turf/open/space/register_dogmos_air()`,
+  `/turf/open/space/sync_dogmos_adjacency()` - space turfs skip Initalize_Atmos() entirely (see
+  space_EXPENSIVE.dm), so the base register_dogmos_air()'s init_air gate meant no space turf ever
+  registered into Dogmos, which meant gas never diffused into space and katmos breach detection never
+  had a neighbor to find. These overrides register one specific space turf on demand, the moment
+  either side's adjacency plumbing actually touches it (DOGMOS_SIMULATION_SPACE_BOUNDARY, see
+  dogmos_defines.dm and hook_register_turf in aphelion-dogmos/src/turfs.rs).
 
 ### Defines:
 

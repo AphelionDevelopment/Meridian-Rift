@@ -1,38 +1,23 @@
 /**
- * Verifies that the Dogmos native library loads and answers across the FFI boundary.
+ * Verifies that every gas and reaction was handed to Dogmos during SSair init.
  *
- * This is the Phase 0 gate for the atmospherics port: it proves the library is present,
- * that BYOND can resolve it, and that a call_ext round-trip returns a usable value.
+ * Test suite streamlining pass (2026-08-15): this file used to also hold a separate `dogmos_load` test
+ * (the Phase 0 gate - proving the library resolves and a bare call_ext round-trip works). Phase 0 is now
+ * solidly proven: `boot_probe.ps1` already independently verifies the game boots with 0 runtime errors
+ * before the suite even runs (which cannot happen if the library failed to load), and every assertion
+ * below requires a working, answering FFI just to reach SSdogmos.gases_registered - a load failure would
+ * fail loudly and immediately right here, not silently. `dogmos_load`'s own value had become fully
+ * subsumed; removed rather than kept as a second, narrower copy of the same "does Dogmos answer" proof.
+ * Its one cheap, genuinely-standalone check (does __detect_dogmos() resolve a library name at all) is
+ * kept below as this test's first line, since a load failure landing on line 1 with a distinct message
+ * is worth the one-liner.
  */
-/datum/unit_test/dogmos_load
-
-/datum/unit_test/dogmos_load/Run()
-	var/library = __detect_dogmos()
-	TEST_ASSERT(istext(library), "__detect_dogmos() returned no library name, got: [isnull(library) ? "null" : library]")
-
-	// Runs the library initialisers as a side effect - see the comment on this proc.
-	var/callbacks_finished = process_atmos_callbacks(0)
-	TEST_ASSERT(isnum(callbacks_finished), "process_atmos_callbacks() did not return a number across the FFI boundary, got: [isnull(callbacks_finished) ? "null" : callbacks_finished]")
-
-	var/mix_count = SSair.get_amt_gas_mixes()
-	TEST_ASSERT(isnum(mix_count), "SSair.get_amt_gas_mixes() did not return a number across the FFI boundary, got: [isnull(mix_count) ? "null" : mix_count]")
-
-	var/max_mixes = SSair.get_max_gas_mixes()
-	TEST_ASSERT(isnum(max_mixes), "SSair.get_max_gas_mixes() did not return a number across the FFI boundary, got: [isnull(max_mixes) ? "null" : max_mixes]")
-	TEST_ASSERT(max_mixes >= mix_count, "Dogmos reports fewer total gas mixtures ([max_mixes]) than attached ones ([mix_count])")
-
-	// All of the above proves Dogmos ANSWERS. None of it proves it STORES anything - a call that
-	// always returns a number, including a wrong one, would still pass. Round-trip a real value.
-	var/datum/gas_mixture/probe = allocate(/datum/gas_mixture)
-	probe.set_volume(CELL_VOLUME)
-	probe.set_moles(/datum/gas/oxygen, 5)
-	TEST_ASSERT_EQUAL(round(probe.get_moles(/datum/gas/oxygen), 0.0001), 5, "A value written across the FFI did not read back - the library answers but does not store.")
-	TEST_ASSERT_EQUAL(round(probe.return_volume(), 0.01), CELL_VOLUME, "set_volume()/return_volume() did not round-trip.")
-
-/// Verifies that every gas and reaction was handed to Dogmos during SSair init.
 /datum/unit_test/dogmos_registration
 
 /datum/unit_test/dogmos_registration/Run()
+	var/library = __detect_dogmos()
+	TEST_ASSERT(istext(library), "__detect_dogmos() returned no library name, got: [isnull(library) ? "null" : library]")
+
 	// The Defect-1 assertion, stated directly: SSdogmos must initialise before anything that could
 	// build a gas mixture. init_order is assigned by the MC in a single increasing sweep across all
 	// init stages (code\controllers\master.dm), so a plain numeric comparison is meaningful here.

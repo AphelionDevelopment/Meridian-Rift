@@ -2,6 +2,26 @@
 #define CONSTRUCTION_PANEL_OPEN 2 //Circuit panel exposed for removal or securing
 #define DEFAULT_STEP_TIME 20 /// default time for each step
 #define REACTIVATION_DELAY (3 SECONDS) // Delay on reactivation, used to prevent dumb crowbar things. Just trust me
+/// Meridian: how often an idle firelock re-checks check_atmos() on its own accord, not just reactively
+/// off COMSIG_TURF_EXPOSE/COMSIG_TURF_CALCULATED_ADJACENT_ATMOS. Dogmos' katmos equalizer (aphelion-dogmos
+/// src/turfs/katmos.rs) can settle a room into a STABLE-but-still-hazardous pressure/temperature reading
+/// far faster than the old per-tick DM diffusion this threshold logic was written against - once a turf
+/// stops changing relative to its neighbors, turf_settled() (code/controllers/subsystem/air.dm) drops it
+/// from SSair.active_turfs, and COMSIG_TURF_EXPOSE simply stops firing there, even though the room may
+/// still be well past WARNING_HIGH_PRESSURE/WARNING_LOW_PRESSURE. A firelock never learns the danger
+/// persisted. This periodic self-check is independent of active_turfs entirely, so it catches that case
+/// regardless of how quickly (or whether) the room ever "unsettles" again.
+#define FIRELOCK_ATMOS_RECHECK_INTERVAL (4 SECONDS)
+/// Meridian: minimum time an alarm stays active once triggered before process_results() is allowed to
+/// deactivate it again. Dogmos reports pressure/temperature live and unsmoothed straight from Rust
+/// (return_pressure()/return_temperature(), code/__DEFINES/dogmos_bindings.dm) with no DM-side archiving
+/// the way most other atmos reads get - a room converging on a WARNING_HIGH_PRESSURE/WARNING_LOW_PRESSURE
+/// threshold can report a value on the "clear" side for one read and the "alarm" side for the next,
+/// repeatedly, while it settles. Without a hold, process_results()'s single-threshold, no-hysteresis
+/// check flips start_activation_process()/start_deactivation_process() every time it crosses - the
+/// reported "open-close-open-close" flapping. This doesn't change WHEN a firelock first closes (that's
+/// still instant), only how soon it's allowed to re-open after.
+#define FIRELOCK_MIN_ALARM_HOLD (2 SECONDS)
 
 /obj/machinery/door/firedoor
 	name = "firelock"
@@ -23,6 +43,10 @@
 	interaction_flags_machine = INTERACT_MACHINE_WIRES_IF_OPEN | INTERACT_MACHINE_ALLOW_SILICON | INTERACT_MACHINE_OPEN_SILICON | INTERACT_MACHINE_REQUIRES_SILICON | INTERACT_MACHINE_OPEN
 	can_open_with_hands = FALSE
 	COOLDOWN_DECLARE(activation_cooldown)
+	/// See FIRELOCK_ATMOS_RECHECK_INTERVAL.
+	COOLDOWN_DECLARE(atmos_recheck_cooldown)
+	/// See FIRELOCK_MIN_ALARM_HOLD.
+	COOLDOWN_DECLARE(alarm_min_hold)
 
 	///X offset for the overlay lights, so that they line up with the thin border firelocks
 	var/light_xoffset = 0
@@ -97,6 +121,7 @@
 	RegisterSignal(src, COMSIG_MERGER_REMOVING, PROC_REF(merger_removing))
 	GetMergeGroup(merger_id, merger_typecache)
 	register_adjacent_turfs()
+	START_PROCESSING(SSmachines, src)
 
 	if(alarm_type) // Fucking subtypes fucking mappers fucking hhhhhhhh
 		start_activation_process(alarm_type)
@@ -110,10 +135,31 @@
 	return
 
 /obj/machinery/door/firedoor/Destroy()
+	STOP_PROCESSING(SSmachines, src)
 	remove_from_areas()
 	unregister_adjacent_turfs(loc)
 	QDEL_NULL(soundloop)
 	return ..()
+
+/**
+ * Periodic, active_turfs-independent atmos re-check - see FIRELOCK_ATMOS_RECHECK_INTERVAL. Cheap: at
+ * most 5 turf reads (this turf + 4 cardinal neighbors, the same set register_adjacent_turfs() already
+ * watches reactively), gated to once every FIRELOCK_ATMOS_RECHECK_INTERVAL regardless of how often
+ * SSmachines actually calls process().
+ */
+/obj/machinery/door/firedoor/process(seconds_per_tick)
+	if(!COOLDOWN_FINISHED(src, atmos_recheck_cooldown))
+		return
+	COOLDOWN_START(src, atmos_recheck_cooldown, FIRELOCK_ATMOS_RECHECK_INTERVAL)
+	var/turf/our_turf = get_turf(src)
+	if(!our_turf)
+		return
+	process_results(our_turf)
+	for(var/dir in GLOB.cardinals)
+		var/turf/checked_turf = get_step(our_turf, dir)
+		if(!checked_turf || !isopenturf(checked_turf))
+			continue
+		process_results(checked_turf)
 
 /obj/machinery/door/firedoor/examine(mob/user)
 	. = ..()
@@ -317,6 +363,8 @@
 		issue_turfs -= checked_turf
 		if(length(issue_turfs) && alarm_type != FIRELOCK_ALARM_TYPE_GENERIC)
 			return
+		if(!COOLDOWN_FINISHED(src, alarm_min_hold)) // still within FIRELOCK_MIN_ALARM_HOLD - see its define comment
+			return
 		alarm_type = null
 		if(!ignore_alarms)
 			start_deactivation_process()
@@ -377,6 +425,7 @@
 		return
 	active = TRUE
 	alarm_type = code
+	COOLDOWN_START(src, alarm_min_hold, FIRELOCK_MIN_ALARM_HOLD)
 	reset_reopen_pending = FALSE // NOVA EDIT ADDITION - AESTHETICS - clear any leftover suppression from a previous reset, we're genuinely alarmed again
 	add_as_source()
 	correct_state()

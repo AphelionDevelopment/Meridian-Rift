@@ -285,6 +285,16 @@
 /turf/proc/handle_decompression_floor_rip(amount)
 	if(amount < DECOMPRESSION_FLOOR_RIP_MIN_MOLES)
 		return
+	var/area/breach_area = get_area(src)
+	SSair.record_kennel_event(SSair.recent_breaches, list(
+		"time" = round_timestamp(),
+		"jump_to" = REF(src),
+		"area" = breach_area ? breach_area.name : null,
+		"moles_lost" = round(amount, 0.1),
+	))
+	for(var/obj/machinery/breach_adjacent_machine in src)
+		SSair.kennel_pin_structure(breach_adjacent_machine, "breach-adjacent", SSair.kennel_auto_pin_duration)
+	SSair.kennel_mark_overlay_recent(SSair.kennel_overlay_breach_turfs, KENNEL_OVERLAY_BREACH, src)
 	ScrapeAway(1, flags = CHANGETURF_INHERIT_AIR)
 
 #undef DECOMPRESSION_FLOOR_RIP_MIN_MOLES

@@ -4,6 +4,11 @@
 	plane = FLOOR_PLANE
 	///negative for faster, positive for slower
 	var/slowdown = 0
+	/// Dogmos Kennel (code/controllers/subsystem/dogmos_kennel_events.dm): last-seen value per reaction
+	/// type from air.reaction_results, so check_kennel_reaction_of_interest() can tell a genuinely new
+	/// reaction result from air.reaction_results' cumulative, never-cleared old entries. Null until this
+	/// turf's first reaction - LAZYACCESS/LAZYSET only, never read/written directly.
+	var/list/kennel_last_reaction_results
 
 	var/footstep = null
 	var/barefootstep = null

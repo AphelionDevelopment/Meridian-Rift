@@ -12,6 +12,12 @@
 /// Pass to update_air_ref() to remove/unregister a turf from Dogmos' gas graph entirely (any negative
 /// value works per hook_register_turf's `flag >= 0` check, but this name documents intent at call sites).
 #define DOGMOS_SIMULATION_NONE -1
+/// Sentinel (not a real SimulationFlags bit) for /turf/open/space/register_dogmos_air() to pass to
+/// update_air_ref(). Registers the turf as a present-but-never-processed, immutable gas-graph node
+/// instead of a normal SIMULATION_ALL turf - see hook_register_turf's SPACE_BOUNDARY_FLAG handling
+/// (aphelion-dogmos src/turfs.rs) for why space needs this rather than the ordinary path. Must stay
+/// numerically distinct from every real SimulationFlags value and from DOGMOS_SIMULATION_NONE.
+#define DOGMOS_SIMULATION_SPACE_BOUNDARY -2
 
 /// AdjacentFlags bit written into atmos_adjacent_turfs list values, consumed by
 /// __update_auxtools_turf_adjacency_info(). Matches Rust's AdjacentFlags::ATMOS_ADJACENT_FIRELOCK.

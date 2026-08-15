@@ -163,6 +163,20 @@
  * so it reflects the adjacency change too, then a single hook call refreshes both Rust-side graphs
  * (hook_infos reads atmos_adjacent_turfs for the gas graph, then unconditionally chains into
  * supercond_update_adjacencies for the heat graph - see aphelion-dogmos src/turfs.rs).
+ *
+ * Meridian: also re-registers via register_dogmos_air() - found 2026-08-15, a real Tier-3-reported bug
+ * ("rooms exposed to a breach don't get colder"). supercond_update_adjacencies() (above) only refreshes
+ * this turf's heat-graph EDGES; ThermalInfo.adjacent_to_space - what actually gates blackbody radiation
+ * in Rust - is a separate field, only (re-)populated by supercond_update_ref(), which is reached
+ * exclusively through hook_register_turf() (i.e. register_dogmos_air()/update_air_ref()), never through
+ * this adjacency-sync path. A hull breach changes an INTERIOR turf's adjacency (its neighbor becoming
+ * space) via exactly this proc, called from the wall's own immediate_calculate_adjacent_turfs() - the
+ * interior turf itself never gets Initialize()/AfterChange() called again, so without this, its
+ * should_conduct_to_space() reading from turf creation (always FALSE back then) would never update, and
+ * the room would never radiate heat to space no matter how long the breach stayed open.
+ * register_dogmos_air() is idempotent (insert_turf()/supercond_update_ref() both overwrite in place),
+ * and this proc only fires on structural adjacency changes, not every tick, so the extra FFI round trip
+ * is not a hot-path concern.
  */
 /turf/proc/sync_dogmos_adjacency()
 	// init_air turfs (space, see register_dogmos_air()) never register via update_air_ref() in the
@@ -175,6 +189,7 @@
 		return
 	conductivity_blocked_directions = ALL_CARDINALS & ~conductivity_directions()
 	__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
+	register_dogmos_air()
 
 /**
  * returns a list of adjacent turfs that can share air with this one.

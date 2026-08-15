@@ -16,27 +16,20 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:equalize_hook_ffi")
 	return call_ext(loaded)(src, remaining)
 
-/// Updates adjacency infos for turfs, only use this in immediateupdateturfs.
-///
-/// Meridian: max_x/max_y are passed in from DM (world.maxx/world.maxy) rather than fetched here via
-/// FFI - byondapi's generic read_number_id/Byond_ReadVarByStrId does not work against the World
-/// value type for its built-in intrinsic properties (maxx/maxy are not stored in the regular var
-/// table the way user-declared datum vars are), so a self-fetch inside supercond_update_adjacencies
-/// always failed with "Attempt to interpret non-number value as number". DM has these trivially as
-/// native properties, so passing them through avoids the broken read path entirely.
-/turf/proc/__update_auxtools_turf_adjacency_info(max_x, max_y)
-	var/static/loaded = load_ext(DOGMOS, "byond:hook_infos_ffi")
-	return call_ext(loaded)(src, max_x, max_y)
-
-/// Returns: null. Updates turf air infos, whether the turf is closed, is space or a regular turf, or even a planet turf is decided here.
-/turf/proc/update_air_ref(flag)
-	var/static/loaded = load_ext(DOGMOS, "byond:hook_register_turf_ffi")
-	return call_ext(loaded)(src, flag)
-
 /// Args: (holder). Runs all reactions on this gas mixture. Holder is used by the reactions, and can be any arbitrary datum or null.
 /// Underscored because DM keeps a `react()` wrapper of its own, carrying behaviour Dogmos has no
 /// equivalent for: the hypernoblium oppression gate that stops all reactions before any are
 /// considered, the reaction_results bookkeeping, and COMSIG_GASMIX_REACTED.
+///
+/// Meridian: Dogmos Kennel high-cost-zone profiling. SSair.kennel_profile_reactions is read fresh on
+/// every call (same "no rebuild needed to flip live" pattern as blackbody_enabled,
+/// turfs/superconduct.rs) rather than cached - this is the one Dogmos Kennel toggle with real per-call
+/// Rust-side overhead, so it defaults off and the entire Instant::now()/elapsed() path is skipped
+/// unless explicitly enabled. A reaction whose single react_by_id() call meets or exceeds
+/// kennel_high_cost_ms_threshold calls SSair.kennel_record_reaction_cost() directly - not queued
+/// through auxcallback, because react_hook already only ever runs on the main DM thread (either a
+/// direct DM `air.react()` call, or the queued callback post_process() already routes through,
+/// turfs/processing.rs) - no second hop needed.
 /datum/gas_mixture/proc/__react(holder)
 	var/static/loaded = load_ext(DOGMOS, "byond:react_hook_ffi")
 	return call_ext(loaded)(src, holder)
@@ -287,25 +280,25 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:atmos_callback_handle_ffi")
 	return call_ext(loaded)(remaining)
 
-/// Returns: If this cycle is interrupted by overtiming or not. Starts a processing excited groups cycle, does nothing if process_turfs isn't ran.
-/datum/controller/subsystem/air/proc/process_excited_groups_auxtools(remaining)
-	var/static/loaded = load_ext(DOGMOS, "byond:groups_hook_ffi")
-	return call_ext(loaded)(src, remaining)
+/turf/return_temperature()
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_ffi")
+	return call_ext(loaded)(src)
 
-/// Returns: If this cycle is interrupted by overtiming or not. Calls all outstanding callbacks created by other processes, usually ones that can't run on other threads and only the main thread.
-/datum/controller/subsystem/air/proc/finish_turf_processing_auxtools(time_remaining)
-	var/static/loaded = load_ext(DOGMOS, "byond:finish_process_turfs_ffi")
-	return call_ext(loaded)(time_remaining)
-
-/// Returns: If this cycle is interrupted by overtiming or not. Starts a processing turfs cycle.
-/datum/controller/subsystem/air/proc/process_turfs_auxtools(remaining)
-	var/static/loaded = load_ext(DOGMOS, "byond:process_turf_hook_ffi")
-	return call_ext(loaded)(src, remaining)
-
-/// Returns: If a processing thread is running or not.
-/datum/controller/subsystem/air/proc/thread_running()
-	var/static/loaded = load_ext(DOGMOS, "byond:thread_running_hook_ffi")
+/// Returns: how many turfs are currently registered in Dogmos' heat graph. Meridian: DM's
+/// active_super_conductivity list (and the MC-tab "SC:" counter / TGUI conducting_size field that
+/// read its length) is deleted along with the rest of DM's superconduction system - this gives those
+/// two consumers a real number to show again instead of a hardcoded 0.
+/proc/dogmos_heat_graph_count()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_heat_graph_count_ffi")
 	return call_ext(loaded)()
+
+/datum/controller/subsystem/air/proc/process_turf_heat()
+	var/static/loaded = load_ext(DOGMOS, "byond:process_heat_notify_ffi")
+	return call_ext(loaded)(src)
+
+/turf/proc/__set_temperature(arg_temp)
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_set_ffi")
+	return call_ext(loaded)(src, arg_temp)
 
 /// For registering gases, do not touch this.
 /proc/_auxtools_register_gas(gas)
@@ -334,23 +327,51 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:hook_init_ffi")
 	return call_ext(loaded)(gas_data)
 
-/turf/return_temperature()
-	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_ffi")
-	return call_ext(loaded)(src)
+/// Updates adjacency infos for turfs, only use this in immediateupdateturfs.
+///
+/// Meridian: max_x/max_y are passed in from DM (world.maxx/world.maxy) rather than fetched here via
+/// FFI - byondapi's generic read_number_id/Byond_ReadVarByStrId does not work against the World
+/// value type for its built-in intrinsic properties (maxx/maxy are not stored in the regular var
+/// table the way user-declared datum vars are), so a self-fetch inside supercond_update_adjacencies
+/// always failed with "Attempt to interpret non-number value as number". DM has these trivially as
+/// native properties, so passing them through avoids the broken read path entirely.
+/turf/proc/__update_auxtools_turf_adjacency_info(max_x, max_y)
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_infos_ffi")
+	return call_ext(loaded)(src, max_x, max_y)
 
-/// Returns: how many turfs are currently registered in Dogmos' heat graph. Meridian: DM's
-/// active_super_conductivity list (and the MC-tab "SC:" counter / TGUI conducting_size field that
-/// read its length) is deleted along with the rest of DM's superconduction system - this gives those
-/// two consumers a real number to show again instead of a hardcoded 0.
-/proc/dogmos_heat_graph_count()
-	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_heat_graph_count_ffi")
+/// Returns: null. Updates turf air infos, whether the turf is closed, is space or a regular turf, or even a planet turf is decided here.
+/turf/proc/update_air_ref(flag)
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_register_turf_ffi")
+	return call_ext(loaded)(src, flag)
+
+/// Returns: how many space-boundary turfs are currently registered - i.e. how many specific space
+/// turfs some interior turf has discovered as a neighbor and registered on demand via the
+/// SPACE_BOUNDARY_FLAG path in hook_register_turf(). These are the only gas-graph nodes registered
+/// with empty SimulationFlags (every other registration in this codebase passes SIMULATION_ALL), so
+/// filtering on !enabled() identifies them precisely. Atmos Control Panel telemetry - lets an admin
+/// see at a glance that breach detection has real neighbors to work with, instead of the gap this
+/// counts existing silently the way it did until the 2026-08-14 playtest surfaced it.
+/proc/dogmos_space_boundary_count()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_space_boundary_count_ffi")
 	return call_ext(loaded)()
 
-/datum/controller/subsystem/air/proc/process_turf_heat()
-	var/static/loaded = load_ext(DOGMOS, "byond:process_heat_notify_ffi")
-	return call_ext(loaded)(src)
+/// Returns: If this cycle is interrupted by overtiming or not. Starts a processing excited groups cycle, does nothing if process_turfs isn't ran.
+/datum/controller/subsystem/air/proc/process_excited_groups_auxtools(remaining)
+	var/static/loaded = load_ext(DOGMOS, "byond:groups_hook_ffi")
+	return call_ext(loaded)(src, remaining)
 
-/turf/proc/__set_temperature(arg_temp)
-	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_set_ffi")
-	return call_ext(loaded)(src, arg_temp)
+/// Returns: If this cycle is interrupted by overtiming or not. Calls all outstanding callbacks created by other processes, usually ones that can't run on other threads and only the main thread.
+/datum/controller/subsystem/air/proc/finish_turf_processing_auxtools(time_remaining)
+	var/static/loaded = load_ext(DOGMOS, "byond:finish_process_turfs_ffi")
+	return call_ext(loaded)(time_remaining)
+
+/// Returns: If this cycle is interrupted by overtiming or not. Starts a processing turfs cycle.
+/datum/controller/subsystem/air/proc/process_turfs_auxtools(remaining)
+	var/static/loaded = load_ext(DOGMOS, "byond:process_turf_hook_ffi")
+	return call_ext(loaded)(src, remaining)
+
+/// Returns: If a processing thread is running or not.
+/datum/controller/subsystem/air/proc/thread_running()
+	var/static/loaded = load_ext(DOGMOS, "byond:thread_running_hook_ffi")
+	return call_ext(loaded)()
 
