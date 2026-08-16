@@ -16,37 +16,68 @@
 #>
 
 [CmdletBinding()]
-param()
+param(
+	# Seconds to allow DreamMaker to compile before treating it as a hung compiler process.
+	[int]$TimeoutSeconds = 300,
+	# DreamMaker executable, resolved as a relative path or command on PATH.
+	[string]$DmPath = 'dm.exe'
+)
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '_common.ps1')
+
+if ($TimeoutSeconds -le 0) { throw '-TimeoutSeconds must be greater than zero.' }
 
 $GameRepo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$Dm = 'C:\Program Files (x86)\BYOND\bin\dm.exe'
+$Dm = Resolve-ToolPath $DmPath 'DreamMaker'
 $ScratchDme = 'tgstation.synccheck.dme'
+$compileProc = $null
+$stdout = Join-Path $env:TEMP ("dogmos_compile_check_{0}_{1}.out" -f $PID, ([guid]::NewGuid().ToString('N')))
+$stderr = Join-Path $env:TEMP ("dogmos_compile_check_{0}_{1}.err" -f $PID, ([guid]::NewGuid().ToString('N')))
+$exitCode = 1
 
 Push-Location $GameRepo
 try {
 	Copy-Item 'tgstation.dme' $ScratchDme -Force
 	try {
 		Write-Host '=== Compiling with -DCBT -DCIBUILDING (syntax check only, no DreamDaemon) ===' -ForegroundColor Cyan
-		$output = & $Dm '-DCBT' '-DCIBUILDING' $ScratchDme 2>&1
-		$output | ForEach-Object { Write-Host $_ }
-		$result = $output | Select-String 'errors,' | Select-Object -Last 1
-
-		if ($result -notmatch '^\s*tgstation\.synccheck\.dmb - 0 errors') {
-			Write-Host ''
-			Write-Host 'Compile failed - see the error(s) above.' -ForegroundColor Red
-			exit 1
+		Remove-Item $stdout, $stderr -ErrorAction SilentlyContinue
+		$compileProc = Start-Process -FilePath $Dm -ArgumentList @('-DCBT', '-DCIBUILDING', $ScratchDme) `
+			-WorkingDirectory $GameRepo -NoNewWindow -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+		$compileProc | Wait-Process -Timeout $TimeoutSeconds -ErrorAction SilentlyContinue
+		$timedOut = -not $compileProc.HasExited
+		if ($timedOut) {
+			$compileProc | Stop-Process -Force -ErrorAction SilentlyContinue
+			$compileProc | Wait-Process -Timeout 5 -ErrorAction SilentlyContinue
 		}
 
-		Write-Host ''
-		Write-Host 'Clean compile under CIBUILDING/UNIT_TESTS.' -ForegroundColor Green
-		exit 0
+		$compileOutput = @((Read-LogSafely $stdout), (Read-LogSafely $stderr)) -join "`n"
+		$compileOutput -split "`r?`n" | Where-Object { $_ } | ForEach-Object { Write-Host $_ }
+		$result = $compileOutput -split "`r?`n" | Select-String 'errors,' | Select-Object -Last 1
+		$compileExit = if ($timedOut) { $null } else { $compileProc.ExitCode }
+
+		if ($timedOut) {
+			Write-Host ''
+			Write-Host "Compile timed out after ${TimeoutSeconds}s." -ForegroundColor Red
+		} elseif ($compileExit -ne 0 -or $result -notmatch '^\s*tgstation\.synccheck\.dmb - 0 errors') {
+			Write-Host ''
+			Write-Host 'Compile failed - see the error(s) above.' -ForegroundColor Red
+		} else {
+			Write-Host ''
+			Write-Host 'Clean compile under CIBUILDING/UNIT_TESTS.' -ForegroundColor Green
+			$exitCode = 0
+		}
 	} finally {
+		if ($null -ne $compileProc -and -not $compileProc.HasExited) {
+			$compileProc | Stop-Process -Force -ErrorAction SilentlyContinue
+		}
 		Remove-Item $ScratchDme -ErrorAction SilentlyContinue
 		Remove-Item 'tgstation.synccheck.dmb' -ErrorAction SilentlyContinue
 		Remove-Item 'tgstation.synccheck.rsc' -ErrorAction SilentlyContinue
+		Remove-Item $stdout, $stderr -ErrorAction SilentlyContinue
 	}
 } finally {
 	Pop-Location
 }
+
+exit $exitCode

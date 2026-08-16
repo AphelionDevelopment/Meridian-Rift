@@ -1,4 +1,4 @@
-https://github.com/AphelionDevelopment/Meridian-Rift/pull/
+This module is maintained as part of the Dogmos integration branch.
 
 ## Dogmos gas registration subsystem
 
@@ -14,8 +14,8 @@ comment on the subsystem for why. Also carries `runtimes_at_init_complete`, a sn
 The rest of the Dogmos/atmos-FFI integration lives in `code/` proper (declared fork-owned in
 `tools/dogmos/`, not modularized - see the plan doc referenced in `project-dogmos-integration` memory
 for why the atmos tree itself is a boundary declaration rather than per-file modularization). This
-subsystem and the one runtime-tracking global are the two pieces with no atmos-tree dependency and no
-`.dme` include-order constraint, so they moved here.
+subsystem, its Dogmos configuration vars, and the runtime-tracking global are the pieces with no
+atmos-tree dependency and no `.dme` include-order constraint, so they moved here.
 
 ### TG Proc/File Changes:
 
@@ -24,7 +24,8 @@ subsystem and the one runtime-tracking global are the two pieces with no atmos-t
 ### Modular Overrides:
 
 - `modular_aphelion/modules/dogmos/code/dogmos.dm`: `SUBSYSTEM_DEF(dogmos)` (new subsystem, not an
-  override of anything TG), `GLOBAL_VAR_INIT(runtimes_at_init_complete)`.
+  override of anything TG), `GLOBAL_VAR_INIT(runtimes_at_init_complete)`, and the SSair temperature,
+  Equalize-profile, and superconductivity telemetry vars.
 - `modular_aphelion/master_files/code/game/turfs/turf.dm`: `/turf/var/initial_temperature`,
   `/turf/var/conductivity_blocked_directions`, `/turf/Initalize_Atmos()`, `/turf/proc/register_dogmos_air()`,
   `/turf/proc/set_temperature()`.
@@ -41,7 +42,9 @@ subsystem and the one runtime-tracking global are the two pieces with no atmos-t
 
 ### Defines:
 
-- N/A
+- `code/__DEFINES/dogmos_defines.dm`: hand-maintained FFI constants plus the blocked-turf temperature
+  authority and Equalize performance-profile values. This remains a core include because generated
+  bindings and core atmos files consume it before modular files are loaded.
 
 ### Included files that are not contained in this module:
 

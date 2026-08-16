@@ -300,6 +300,10 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_set_ffi")
 	return call_ext(loaded)(src, arg_temp)
 
+/turf/proc/__dogmos_heat_temperature()
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_dogmos_heat_temperature_ffi")
+	return call_ext(loaded)(src)
+
 /// For registering gases, do not touch this.
 /proc/_auxtools_register_gas(gas)
 	var/static/loaded = load_ext(DOGMOS, "byond:hook_register_gas_ffi")

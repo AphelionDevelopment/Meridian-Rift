@@ -44,12 +44,32 @@
  * instead of needing one at each of the six sites, and gives one place to enforce validation instead
  * of six. Named distinctly from the raw __set_temperature() FFI bind so this can own the clean name.
  *
- * init_air turfs (space, see register_dogmos_air()) never register into TurfHeat, so calling the raw
- * FFI setter on one would error - mirrors /turf/open/space/TakeTemperature()'s existing no-op
- * override, so a converted call site keeps the same space-turf immunity it always had.
+ * The DM-side var is always updated, including when Dogmos is unavailable or a turf has not yet
+ * registered into TurfHeat. The Rust setter is a safe no-op for an unregistered turf, so map-load
+ * ordering cannot turn a compatibility write into a runtime.
  */
 /turf/proc/set_temperature(new_temp)
-	if(!init_air || !DOGMOS)
-		return
-	__set_temperature(new_temp)
 	temperature = new_temp
+	if(DOGMOS && init_air)
+		__set_temperature(new_temp)
+
+/**
+ * Returns the registered Dogmos TurfHeat temperature, or null when this turf has no heat-graph node
+ * or the registered value is not finite. Unlike return_temperature(), this proc never fabricates a
+ * numeric value for an unregistered turf, so callers can safely fall back to the DM turf var.
+ */
+/turf/proc/dogmos_heat_temperature()
+	return __dogmos_heat_temperature()
+
+/**
+ * Returns the temperature authority selected for blocked turfs. Open turfs that admit gas continue
+ * using their gas-mixture GetTemperature() path; blocked turfs use this selector instead. The Rust
+ * authority is intentionally conditional because registration is not guaranteed during every map-load
+ * hook.
+ */
+/turf/proc/get_dogmos_blocked_temperature()
+	if(DOGMOS && SSair.dogmos_blocked_turf_temperature_authority == DOGMOS_TEMPERATURE_AUTHORITY_RUST)
+		var/rust_temperature = dogmos_heat_temperature()
+		if(!isnull(rust_temperature))
+			return rust_temperature
+	return temperature

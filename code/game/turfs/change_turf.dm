@@ -312,7 +312,25 @@ GLOBAL_LIST_INIT(blacklisted_automated_baseturfs, typecacheof(list(
 		// path (it's a direct FFI write, not a re-registration), so this re-syncs the heat graph to this
 		// fresh turf's own, correctly-initialized temperature - the same "route through the real setter"
 		// idea already applied to Assimilate_Air() below.
+		//
+		// Guarded on `air` existing: register_dogmos_air() (called above via ..()) falls back to
+		// DOGMOS_SIMULATION_NONE - not a real TurfHeat insert - when AfterChange() runs before
+		// /turf/open/Initialize()'s create_gas_mixture() has (turf.dm's own documented edge case for
+		// some map-load paths, e.g. a map module loaded from another atom's own Initialize() via
+		// /obj/modular_map_root/interlink). A real registration follows later from that same doc
+		// comment's "StopLoadingMap()'s catch-up or the next air_update_turf() call" - which seeds a
+		// fresh temperature correctly on its own, since that's a genuinely new TurfHeat insert. Calling
+		// set_temperature() unconditionally here crashed with "turf that is not registered in TurfHeat"
+		// on exactly that path (found live via dm-mcp, 2026-08-16) - set_temperature()'s own
+		// init_air/DOGMOS guard doesn't catch this, since both are true; the turf just isn't in Rust's
+		// map yet.
+		/* // APHELION EDIT REMOVAL START - DOGMOS
 		set_temperature(temperature)
+		*/ // APHELION EDIT REMOVAL END
+		// APHELION EDIT ADDITION START - DOGMOS
+		if(air)
+			set_temperature(temperature)
+		// APHELION EDIT ADDITION END
 	else if(!(flags & CHANGETURF_INHERIT_AIR))
 		Assimilate_Air()
 

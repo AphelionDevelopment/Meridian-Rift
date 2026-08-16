@@ -33,7 +33,7 @@
 			environment_temperature = local_turf.liquids.temp
 		//NOVA EDIT END
 		else if(local_turf.blocks_air)
-			environment_temperature = local_turf.temperature
+			environment_temperature = local_turf.get_dogmos_blocked_temperature() // APHELION EDIT CHANGE - ORIGINAL: environment_temperature = local_turf.temperature
 		else
 			var/turf/open/open_local = local_turf
 			environment_temperature = open_local.GetTemperature()

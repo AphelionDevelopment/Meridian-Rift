@@ -18,6 +18,15 @@
 
 [CmdletBinding()]
 param(
+	# Override the sibling fork location when the repositories are not adjacent checkouts.
+	[string]$DogmosRepo,
+	# Override the game checkout when invoking this script from a different working tree.
+	[string]$GameRepo = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)),
+	# byondapi-sys currently requires the 32-bit MSVC target used by BYOND's native DLL loader.
+	[string]$Target = 'i686-pc-windows-msvc',
+	# BYOND executables, resolved by boot_probe as relative paths or commands on PATH.
+	[string]$DmPath = 'dm.exe',
+	[string]$DreamDaemonPath = 'dreamdaemon.exe',
 	# Skip regenerating bindings.dm. Faster when only the DM side changed.
 	[switch]$SkipBindings,
 	# Skip copying dogmos.dll into the game repo.
@@ -31,9 +40,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$DogmosRepo = 'C:\Users\Zoe\Documents\GitHub\aphelion-dogmos'
-$GameRepo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$Target = 'i686-pc-windows-msvc'
+if (-not $GameRepo) {
+	$GameRepo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+}
+if (-not $DogmosRepo) {
+	$DogmosRepo = Join-Path (Split-Path -Parent $GameRepo) 'aphelion-dogmos'
+}
 
 # The tool shell may predate the toolchain install, so rebuild the environment from the registry.
 $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
@@ -146,7 +158,7 @@ finally {
 if (-not $SkipSmoke) {
 	Write-Host ''
 	Write-Host '=== Post-build smoke test ===' -ForegroundColor Cyan
-	& (Join-Path $PSScriptRoot 'boot_probe.ps1')
+	& (Join-Path $PSScriptRoot 'boot_probe.ps1') -DmPath $DmPath -DreamDaemonPath $DreamDaemonPath
 	if ($LASTEXITCODE -ne 0) { throw "Post-build smoke test failed (boot_probe exit $LASTEXITCODE). The library built, but the game does not boot with it." }
 }
 

@@ -22,3 +22,14 @@
 /// AdjacentFlags bit written into atmos_adjacent_turfs list values, consumed by
 /// __update_auxtools_turf_adjacency_info(). Matches Rust's AdjacentFlags::ATMOS_ADJACENT_FIRELOCK.
 #define DOGMOS_ADJACENT_FIRELOCK (1<<1)
+
+/// Selects the legacy DM turf temperature for blocked-turf consumers.
+#define DOGMOS_TEMPERATURE_AUTHORITY_DM 0
+/// Selects the registered Dogmos TurfHeat temperature for blocked-turf consumers, falling back to DM
+/// when a turf has no heat-graph node.
+#define DOGMOS_TEMPERATURE_AUTHORITY_RUST 1
+
+/// Runs FDM pressure diffusion without Katmos whole-zone equalization.
+#define DOGMOS_EQUALIZE_PROFILE_FDM_ONLY 0
+/// Runs the current Katmos whole-zone equalizer after FDM pressure diffusion.
+#define DOGMOS_EQUALIZE_PROFILE_FAST_ZONE 1

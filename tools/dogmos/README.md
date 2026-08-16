@@ -24,6 +24,10 @@ boot_probe.ps1                                   # does it boot clean, with real
 run_tests.ps1                                    # full suite - required before calling anything done
 ```
 
+The probes resolve DreamMaker and DreamDaemon from `PATH` by default. If BYOND is not on `PATH`, pass
+`-DmPath`/`-DreamDaemonPath` as needed; relative paths are resolved from the invoking shell, and no
+developer-specific installation path is embedded in the repository.
+
 `test_compile_check.ps1` exists because a plain `dm.exe tgstation.dme` never even sees files under
 `code/modules/unit_tests/` - they're CIBUILDING-only. A syntax error there is otherwise invisible until
 `run_tests.ps1`'s own compile step, ~10-12 minutes later once the full DreamDaemon run has already
@@ -36,6 +40,22 @@ behave, not that nothing else regressed. Always finish with a full run.
 
 `show_failure.ps1 -TestPath /datum/unit_test/whatever` prints one test's current status/message/runtimes
 from `data\unit_tests.json` - a shortcut for reading the JSON directly, nothing more.
+
+## Meridian MCP integration
+
+`meridian-mcp-launch.cmd` is the project-owned stdio bridge for the maintained Meridian MCP checkout.
+Configure the MCP client to invoke `cmd.exe /d /c` with this launcher and provide
+`MERIDIAN_MCP_REPO` in the client's environment. `DM_MCP_REPO` remains accepted as a migration alias
+when the canonical variable is absent. The launcher resolves `target/release/meridian-mcp.exe` from
+that checkout and forwards the MCP streams without writing diagnostic text to stdout. This keeps the
+local checkout path in client-local configuration instead of tracked repository files and works
+around clients that cannot spawn a release binary directly from a user-local directory.
+
+Use Meridian MCP for DreamMaker source navigation, type/proc inspection, source-backed definitions,
+map queries, compiler diagnostics, and live DreamDaemon output. The `dm_*` tool names remain stable
+for compatibility with existing clients and workflows. Keep the deterministic PowerShell and Rust
+harnesses as the authoritative verification path; Meridian MCP is an investigation and diagnosis
+layer, not a replacement for those gates.
 
 ## The baseline files
 

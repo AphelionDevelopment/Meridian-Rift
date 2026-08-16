@@ -185,6 +185,7 @@
 #include "dogmos_infinite_heat_capacity_conduction.dm"
 #include "dogmos_assimilate_air_temperature_sync.dm"
 #include "dogmos_ignore_air_temperature_reset.dm"
+#include "dogmos_temperature_authority.dm"
 #include "dogmos_kennel_record_event.dm"
 #include "dogmos_kennel_reactions_of_interest.dm"
 #include "dogmos_kennel_structures.dm"

@@ -94,6 +94,13 @@ type Data = {
   group_turfs_processed: number;
   equalize_processed: number;
   space_boundary_size: number;
+  heat_telemetry: {
+    graph_nodes: number;
+    edge_attempts: number;
+    edges_applied: number;
+    lock_contention: number;
+    registration_changes: number;
+  };
   dogmos_costs: DogmosCosts;
   frozen: BooleanLike;
   show_all: BooleanLike;
@@ -242,6 +249,19 @@ const OverviewPanel = (props) => {
               </LabeledList.Item>
               <LabeledList.Item label="Group / Equalize Processed">
                 {data.group_turfs_processed} / {data.equalize_processed}
+              </LabeledList.Item>
+              <LabeledList.Item label="Heat Graph Nodes">
+                {data.heat_telemetry.graph_nodes}
+              </LabeledList.Item>
+              <LabeledList.Item label="Heat Edges (attempted / applied)">
+                {data.heat_telemetry.edge_attempts} /{' '}
+                {data.heat_telemetry.edges_applied}
+              </LabeledList.Item>
+              <LabeledList.Item label="Heat Lock Contention">
+                {data.heat_telemetry.lock_contention}
+              </LabeledList.Item>
+              <LabeledList.Item label="Heat Registration Changes">
+                {data.heat_telemetry.registration_changes}
               </LabeledList.Item>
             </LabeledList>
           </Stack.Item>

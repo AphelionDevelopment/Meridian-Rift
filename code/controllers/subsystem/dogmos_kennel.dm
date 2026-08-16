@@ -57,6 +57,13 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 	data["group_turfs_processed"] = SSair.num_group_turfs_processed
 	data["equalize_processed"] = SSair.num_equalize_processed
 	data["space_boundary_size"] = dogmos_space_boundary_count()
+	data["heat_telemetry"] = list(
+		"graph_nodes" = SSair.dogmos_heat_graph_nodes,
+		"edge_attempts" = SSair.dogmos_heat_edge_attempts,
+		"edges_applied" = SSair.dogmos_heat_edges_applied,
+		"lock_contention" = SSair.dogmos_heat_lock_contention,
+		"registration_changes" = SSair.dogmos_heat_registration_changes,
+	)
 	data["dogmos_costs"] = list(
 		"turfs" = SSair.cost_turfs,
 		"groups" = SSair.cost_groups,

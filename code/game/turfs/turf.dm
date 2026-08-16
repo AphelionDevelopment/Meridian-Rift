@@ -776,7 +776,7 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	. = heat_capacity
 
 /turf/proc/GetTemperature()
-	. = temperature
+	. = blocks_air ? get_dogmos_blocked_temperature() : temperature // APHELION EDIT CHANGE - ORIGINAL: . = temperature
 
 /turf/proc/TakeTemperature(temp)
 	// set_temperature(), not a direct var write - a blocks_air turf (e.g. a wall an H/E pipe runs

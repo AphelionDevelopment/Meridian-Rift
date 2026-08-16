@@ -35,7 +35,11 @@ Write-Host "=== Round log analysis: $LogDir ===" -ForegroundColor Cyan
 # --- 1. Perf CSV: atmos cost/count trend --------------------------------------------------------
 $csvFile = Get-ChildItem $LogDir -Filter 'perf-*.csv' | Select-Object -First 1
 if ($csvFile) {
-	$csv = Import-Csv $csvFile.FullName
+	$csv = @(Import-Csv $csvFile.FullName)
+	if ($csv.Count -eq 0) {
+		Write-Host ''
+		Write-Host "Perf CSV is empty: $($csvFile.FullName)" -ForegroundColor Yellow
+	} else {
 	$atmosCostCols = @('air_turf_cost', 'air_eg_cost', 'air_highpressure_cost', 'air_hotspots_cost', 'air_superconductivity_cost', 'air_pipenets_cost')
 	# air_eg_count/air_delta_count are stale DM-list lengths (excited_groups is a roundstart-only
 	# snapshot post-cutover; high_pressure_delta drains within the cycle it's populated) - kept for
@@ -56,10 +60,16 @@ if ($csvFile) {
 		$isCount = $col -in $atmosCountCols
 
 		$growthNote = ''
-		if ($isCount -and $first -gt 0) {
-			$growthPct = (($last - $first) / $first) * 100
-			if ($growthPct -gt 20) {
+		if ($isCount) {
+			$everDecreased = $false
+			for ($i = 1; $i -lt $values.Count; $i++) {
+				if ($values[$i] -lt $values[$i - 1]) { $everDecreased = $true; break }
+			}
+			$growthPct = if ($first -gt 0) { (($last - $first) / $first) * 100 } else { $null }
+			if ($null -ne $growthPct -and $growthPct -gt 20 -and -not $everDecreased) {
 				$growthNote = " -- MONOTONIC GROWTH: never shrinks over the session, this list is a known unbounded-cost risk"
+			} elseif ($null -ne $growthPct -and $growthPct -gt 20) {
+				$growthNote = " -- NET GROWTH, but the series decreased at least once"
 			}
 		}
 
@@ -82,6 +92,7 @@ if ($csvFile) {
 			Write-Host "  air_turf_count is not monotonically growing this session." -ForegroundColor Green
 		}
 	}
+	}
 } else {
 	Write-Host ''
 	Write-Host "No perf-*.csv found in $LogDir - MC telemetry unavailable for this round." -ForegroundColor Yellow
@@ -91,7 +102,7 @@ if ($csvFile) {
 $runtimeLog = Join-Path $LogDir 'runtime.log'
 if (Test-Path $runtimeLog) {
 	$pattern = 'dogmos|atmos|turf.*(gas|heat)|superconduct|TurfHeat|TurfGases'
-	$hits = Select-String -Path $runtimeLog -Pattern $pattern -CaseSensitive:$false
+	$hits = @(Select-String -Path $runtimeLog -Pattern $pattern -CaseSensitive:$false)
 	Write-Host ''
 	Write-Host "--- runtime.log: atmos-relevant lines ($($hits.Count)) ---" -ForegroundColor Cyan
 	if ($hits.Count -gt 0) {

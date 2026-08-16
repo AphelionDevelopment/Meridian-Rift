@@ -10,17 +10,63 @@
 # runtime.log is held open by DreamDaemon while it's running. Get-Content can fail on the lock;
 # open it explicitly for shared read instead of failing outright.
 function Read-LogSafely([string]$Path) {
-	if (-not (Test-Path $Path)) { return '' }
+	if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return '' }
 	try {
 		$fs = [System.IO.File]::Open($Path, 'Open', 'Read', 'ReadWrite')
 		try {
 			$reader = New-Object System.IO.StreamReader($fs)
-			return $reader.ReadToEnd()
+			try {
+				return $reader.ReadToEnd()
+			} finally {
+				$reader.Dispose()
+			}
 		} finally {
 			$fs.Dispose()
 		}
 	} catch {
 		return ''
+	}
+}
+
+# Read a JSON artifact with an actionable error instead of letting ConvertFrom-Json report only a
+# parser offset. Empty files commonly mean the producer crashed before writing its final output.
+function Read-JsonSafely([string]$Path) {
+	if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
+	$text = Read-LogSafely $Path
+	if (-not $text -or -not $text.Trim()) {
+		throw "JSON artifact is empty: $Path"
+	}
+	try {
+		return $text | ConvertFrom-Json
+	} catch {
+		throw "JSON artifact is malformed: $Path ($($_.Exception.Message))"
+	}
+}
+
+# Resolve a developer-supplied executable path or a command on PATH. Project tooling must not
+# encode a machine-specific installation path; callers can pass a relative checkout path when a
+# tool is vendored, or configure PATH for system-installed tools such as BYOND.
+function Resolve-ToolPath([string]$Path, [string]$Label) {
+	if (-not $Path) { throw "$Label path is empty." }
+	if (Test-Path -LiteralPath $Path -PathType Leaf) {
+		return (Resolve-Path -LiteralPath $Path).Path
+	}
+	$command = Get-Command $Path -CommandType Application -ErrorAction SilentlyContinue
+	if ($command) { return $command.Source }
+	throw "$Label not found: $Path. Put it on PATH or pass a valid relative/absolute path."
+}
+
+# Capture the process IDs that existed before a probe so timeout cleanup cannot kill an unrelated
+# server owned by another task or by the developer. Child DreamDaemon processes are identified by
+# name after the run starts and only newly-created IDs are eligible for cleanup.
+function Get-ProcessIds([string[]]$Names) {
+	return @(Get-Process -Name $Names -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id)
+}
+
+function Stop-NewProcesses([string[]]$Names, [int[]]$ExistingIds) {
+	$newProcesses = @(Get-Process -Name $Names -ErrorAction SilentlyContinue | Where-Object { $ExistingIds -notcontains $_.Id })
+	foreach ($process in $newProcesses) {
+		$process | Stop-Process -Force -ErrorAction SilentlyContinue
 	}
 }
 
@@ -62,7 +108,7 @@ function Get-NormalizedTestMessage([string]$Message) {
 function Compare-ToBaseline($Signatures, [string]$BaselinePath) {
 	$known = @()
 	if (Test-Path $BaselinePath) {
-		$parsed = Get-Content $BaselinePath -Raw | ConvertFrom-Json
+		$parsed = Read-JsonSafely $BaselinePath
 		$known = @($parsed)
 	}
 	$counts = @($Signatures | Group-Object | ForEach-Object { [pscustomobject]@{ Sig = $_.Name; Count = $_.Count } })

@@ -19,6 +19,43 @@ function Update-SessionPath {
 	$env:Path = "$machine;$user"
 }
 
+function Invoke-Checked([string]$FilePath, [string[]]$Arguments) {
+	& $FilePath @Arguments
+	if ($LASTEXITCODE -ne 0) {
+		throw "$FilePath failed with exit code $LASTEXITCODE"
+	}
+}
+
+function Find-VisualStudioBuildTools {
+	$vswhere = Get-Command vswhere.exe -ErrorAction SilentlyContinue
+	if ($vswhere) {
+		$installationPath = & $vswhere.Source -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+		if ($LASTEXITCODE -eq 0 -and $installationPath) { return $installationPath | Select-Object -First 1 }
+	}
+	$programFilesX86 = [Environment]::GetEnvironmentVariable('ProgramFiles(x86)')
+	if ($programFilesX86) {
+		$candidate = Join-Path $programFilesX86 'Microsoft Visual Studio\2022\BuildTools'
+		if (Test-Path -LiteralPath $candidate -PathType Container) { return $candidate }
+	}
+	return $null
+}
+
+function Find-LlvmBin {
+	$clang = Get-Command clang.exe -ErrorAction SilentlyContinue
+	if ($clang) { return Split-Path -Parent $clang.Source }
+	$llvmHome = [Environment]::GetEnvironmentVariable('LLVM_HOME')
+	if ($llvmHome) {
+		$candidate = Join-Path $llvmHome 'bin'
+		if (Test-Path -LiteralPath (Join-Path $candidate 'clang.exe') -PathType Leaf) { return $candidate }
+	}
+	$programFiles = [Environment]::GetEnvironmentVariable('ProgramFiles')
+	if ($programFiles) {
+		$candidate = Join-Path $programFiles 'LLVM\bin'
+		if (Test-Path -LiteralPath (Join-Path $candidate 'clang.exe') -PathType Leaf) { return $candidate }
+	}
+	return $null
+}
+
 Write-Host '=== Dogmos Rust toolchain setup ===' -ForegroundColor Cyan
 
 if (-not (Test-Installed 'winget')) {
@@ -26,35 +63,35 @@ if (-not (Test-Installed 'winget')) {
 }
 
 # 1. MSVC C++ build tools - provides the linker for the *-pc-windows-msvc targets.
-if (Test-Path 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools') {
+if (Find-VisualStudioBuildTools) {
 	Write-Host '[skip] VS 2022 Build Tools already present.'
 } else {
 	Write-Host '[install] VS 2022 Build Tools (C++ workload). This is a large download.'
-	winget install --id Microsoft.VisualStudio.2022.BuildTools --accept-package-agreements --accept-source-agreements --override '--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended'
+	Invoke-Checked 'winget' @('install', '--id', 'Microsoft.VisualStudio.2022.BuildTools', '--accept-package-agreements', '--accept-source-agreements', '--override', '--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended')
 }
 
 # 2. LLVM - bindgen (pulled in by byondapi-sys) needs libclang.
-if (Test-Path 'C:\Program Files\LLVM\bin\clang.exe') {
+if (Find-LlvmBin) {
 	Write-Host '[skip] LLVM already present.'
 } else {
 	Write-Host '[install] LLVM'
-	winget install --id LLVM.LLVM --accept-package-agreements --accept-source-agreements
+	Invoke-Checked 'winget' @('install', '--id', 'LLVM.LLVM', '--accept-package-agreements', '--accept-source-agreements')
 }
 
 # 3. rustup
 Update-SessionPath
 if (Test-Installed 'rustup') {
 	Write-Host '[skip] rustup already present; updating.'
-	rustup update
+	Invoke-Checked 'rustup' @('update')
 } else {
 	Write-Host '[install] rustup'
-	winget install --id Rustlang.Rustup --accept-package-agreements --accept-source-agreements
+	Invoke-Checked 'winget' @('install', '--id', 'Rustlang.Rustup', '--accept-package-agreements', '--accept-source-agreements')
 	Update-SessionPath
 }
 
 # 4. LIBCLANG_PATH, machine scope so TGS/CI shells see it too.
-$libclang = 'C:\Program Files\LLVM\bin'
-if (Test-Path $libclang) {
+$libclang = Find-LlvmBin
+if ($libclang) {
 	[Environment]::SetEnvironmentVariable('LIBCLANG_PATH', $libclang, 'Machine')
 	$env:LIBCLANG_PATH = $libclang
 	Write-Host "[env] LIBCLANG_PATH = $libclang"
@@ -64,15 +101,15 @@ if (Test-Path $libclang) {
 
 # 5. The 32-bit target. BYOND, rust_g and dreamluau are all i686 here.
 Update-SessionPath
-rustup default stable
-rustup target add i686-pc-windows-msvc
+Invoke-Checked 'rustup' @('default', 'stable')
+Invoke-Checked 'rustup' @('target', 'add', 'i686-pc-windows-msvc')
 
 Write-Host ''
 Write-Host '=== Verification ===' -ForegroundColor Cyan
 rustup --version
 cargo --version
 rustc --version
-if (Test-Path "$libclang\clang.exe") { & "$libclang\clang.exe" --version }
+if ($libclang) { & (Join-Path $libclang 'clang.exe') --version }
 Write-Host ''
 Write-Host 'Installed targets:'
 rustup target list --installed

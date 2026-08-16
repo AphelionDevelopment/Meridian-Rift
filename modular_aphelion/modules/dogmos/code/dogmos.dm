@@ -3,6 +3,28 @@
 /// polluted by runtimes the tests themselves cause. See /datum/unit_test/no_runtimes_during_init.
 GLOBAL_VAR_INIT(runtimes_at_init_complete, 0)
 
+/datum/controller/subsystem/air
+	/// Selects the temperature source used by blocked-turf consumers. Open-turf consumers retain their
+	/// gas-mixture GetTemperature() contract; RUST falls back to the DM turf var when no TurfHeat node
+	/// is registered.
+	var/dogmos_blocked_turf_temperature_authority = DOGMOS_TEMPERATURE_AUTHORITY_RUST
+	/// Selects whether pressure processing stops after FDM diffusion or also sends high-pressure turfs
+	/// through Katmos' whole-zone equalizer. This is the flamethrower-sensitive timing choice; it is
+	/// deliberately separate from equalize_enabled, which remains the master switch.
+	var/dogmos_equalize_performance_profile = DOGMOS_EQUALIZE_PROFILE_FAST_ZONE
+	/// Number of heat-graph nodes observed by the most recently completed Dogmos heat cycle.
+	var/dogmos_heat_graph_nodes = 0
+	/// Number of unique undirected heat edges considered by the most recently completed heat cycle.
+	var/dogmos_heat_edge_attempts = 0
+	/// Number of unique heat edges whose accumulated deltas were applied in the most recent cycle.
+	var/dogmos_heat_edges_applied = 0
+	/// Number of node writes that found an existing temperature lock before taking the blocking write
+	/// lock in the most recent cycle. This is diagnostic contention, not a skipped-edge count.
+	var/dogmos_heat_lock_contention = 0
+	/// Number of heat-graph node insertions/removals observed since the previous completed heat cycle;
+	/// re-registration of an existing node is intentionally not counted.
+	var/dogmos_heat_registration_changes = 0
+
 /**
  * Hands Dogmos the gas registry and the reaction table before anything can build a gas mixture.
  *

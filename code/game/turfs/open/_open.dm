@@ -506,7 +506,7 @@
 	. = air.heat_capacity()
 
 /turf/open/GetTemperature()
-	. = air.return_temperature()
+	. = blocks_air ? get_dogmos_blocked_temperature() : air.return_temperature() // APHELION EDIT CHANGE - ORIGINAL: . = air.return_temperature()
 
 /turf/open/TakeTemperature(temp)
 	air.set_temperature(air.return_temperature() + temp)

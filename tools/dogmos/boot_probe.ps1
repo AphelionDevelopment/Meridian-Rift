@@ -28,6 +28,10 @@
 param(
 	# Seconds to wait for the "Initializations complete" marker before concluding the boot hung.
 	[int]$TimeoutSeconds = 220,
+	# DreamMaker executable, resolved as a relative path or command on PATH.
+	[string]$DmPath = 'dm.exe',
+	# DreamDaemon executable, resolved as a relative path or command on PATH.
+	[string]$DreamDaemonPath = 'dreamdaemon.exe',
 	# Skip the DM compile and boot whatever .dmb is already built.
 	[switch]$SkipCompile,
 	# Record whatever runtime-error signatures this run produced as the new baseline, instead of
@@ -40,32 +44,35 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_common.ps1')
 
 $GameRepo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$Dm = 'C:\Program Files (x86)\BYOND\bin\dm.exe'
-$DreamDaemon = 'C:\Program Files (x86)\BYOND\bin\dreamdaemon.exe'
+$Dm = Resolve-ToolPath $DmPath 'DreamMaker'
+$DreamDaemon = Resolve-ToolPath $DreamDaemonPath 'DreamDaemon'
 $LogDir = 'boot_probe'
 $InitMarker = 'Initializations complete within'
 $RuntimeBaseline = Join-Path $PSScriptRoot 'runtime_baseline_boot.json'
 
 Push-Location $GameRepo
+$proc = $null
+$existingRuntimeProcessIds = @()
+$stdout = Join-Path $env:TEMP ("dogmos_boot_probe_{0}_{1}.out" -f $PID, ([guid]::NewGuid().ToString('N')))
+$stderr = Join-Path $env:TEMP ("dogmos_boot_probe_{0}_{1}.err" -f $PID, ([guid]::NewGuid().ToString('N')))
 try {
 	if (-not $SkipCompile) {
 		Write-Host '=== Compiling ===' -ForegroundColor Cyan
 		$compile = & $Dm tgstation.dme 2>&1
 		$result = $compile | Select-String 'errors,' | Select-Object -Last 1
 		Write-Host $result
-		if ($result -notmatch '^\s*tgstation\.dmb - 0 errors') {
+		if ($LASTEXITCODE -ne 0 -or $result -notmatch '^\s*tgstation\.dmb - 0 errors') {
 			throw 'Compile failed - fix that before probing the boot.'
 		}
 	}
 
-	$stdout = Join-Path $env:TEMP 'dogmos_boot_probe_out.txt'
-	$stderr = Join-Path $env:TEMP 'dogmos_boot_probe_err.txt'
 	Remove-Item $stdout, $stderr -ErrorAction SilentlyContinue
 	Remove-Item (Join-Path $GameRepo "data\logs\$LogDir") -Recurse -Force -ErrorAction SilentlyContinue
 	# A panic from a PRIOR run must never be attributed to this one.
 	Remove-Item (Join-Path $GameRepo 'dogmos_panic.log') -ErrorAction SilentlyContinue
 
 	Write-Host "=== Booting (up to ${TimeoutSeconds}s, polling for '$InitMarker') ===" -ForegroundColor Cyan
+	$existingRuntimeProcessIds = Get-ProcessIds @('dreamdaemon', 'dreammaker')
 	$proc = Start-Process -FilePath $DreamDaemon `
 		-ArgumentList 'tgstation.dmb', '-close', '-trusted', '-verbose', '-params', "log-directory=$LogDir" `
 		-NoNewWindow -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
@@ -76,7 +83,7 @@ try {
 	while ((Get-Date) -lt $deadline) {
 		if ($proc.HasExited) { $outcome = 'DIED'; break }
 		if ((Read-LogSafely $runtimeLog) -match [regex]::Escape($InitMarker)) { $outcome = 'INITIALISED'; break }
-		Start-Sleep -Milliseconds 2000
+		Start-Sleep -Milliseconds 200
 	}
 
 	# Stop BEFORE reading logs for real, so buffered writes land and nothing holds the file open.
@@ -160,5 +167,12 @@ try {
 	exit $exitCode
 }
 finally {
+	if ($null -ne $proc -and -not $proc.HasExited) {
+		$proc | Stop-Process -Force -ErrorAction SilentlyContinue
+	}
+	if ($existingRuntimeProcessIds.Count -gt 0) {
+		Stop-NewProcesses @('dreamdaemon', 'dreammaker') $existingRuntimeProcessIds
+	}
+	Remove-Item $stdout, $stderr -ErrorAction SilentlyContinue
 	Pop-Location
 }

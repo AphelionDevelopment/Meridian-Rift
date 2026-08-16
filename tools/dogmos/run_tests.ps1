@@ -77,6 +77,16 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_common.ps1')
 
+if ($TimeoutSeconds -le 0) { throw '-TimeoutSeconds must be greater than zero.' }
+if ($MinimumTests -lt 0) { throw '-MinimumTests cannot be negative.' }
+if ($Focus) {
+	$Focus = @($Focus | Sort-Object -Unique)
+	$invalidFocus = @($Focus | Where-Object { $_ -notmatch '^/[^\s]+$' })
+	if ($invalidFocus.Count -gt 0) {
+		throw "Invalid -Focus path(s): $($invalidFocus -join ', '). Focus values must be absolute DM type paths."
+	}
+}
+
 $GameRepo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $BaselinePath = Join-Path $PSScriptRoot 'test_baseline.json'
 $RuntimeBaselinePath = Join-Path $PSScriptRoot 'runtime_baseline_suite.json'
@@ -94,6 +104,8 @@ $UNIT_TEST_FAILED = 1
 
 Push-Location $GameRepo
 $originalDmeBytes = $null
+$build = $null
+$existingRuntimeProcessIds = @()
 try {
 	if ($Focus) {
 		Write-Host "=== -Focus: restricting this run to $($Focus.Count) test(s) ===" -ForegroundColor Yellow
@@ -125,8 +137,9 @@ try {
 	Write-Host "=== Running dm-test on runtimestation_minimal (timeout ${TimeoutSeconds}s) ===" -ForegroundColor Cyan
 
 	# Start-Process + Wait-Process so a hang is a failure instead of a blocked terminal. build.bat
-	# spawns DreamDaemon as a child process; killing just the batch leaves DreamDaemon running, so
-	# both get swept on timeout.
+	# spawns DreamDaemon and may leave DreamMaker running while compiling; killing just the batch
+	# leaves those children running, so all three get swept on timeout.
+	$existingRuntimeProcessIds = Get-ProcessIds @('dm', 'dreamdaemon', 'dreammaker')
 	$build = Start-Process -FilePath 'cmd.exe' -PassThru -NoNewWindow -ArgumentList @(
 		'/c', 'tools\build\build.bat', 'dm-test',
 		'--define=MINIMAL_CENTCOM', '--define=SKIP_LAVALAND', '--define=SKIP_SPACE_LEVELS'
@@ -134,7 +147,7 @@ try {
 	$build | Wait-Process -Timeout $TimeoutSeconds -ErrorAction SilentlyContinue
 	$timedOut = -not $build.HasExited
 	if ($timedOut) {
-		Get-Process dreamdaemon, dreammaker -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+		Stop-NewProcesses @('dm', 'dreamdaemon', 'dreammaker') $existingRuntimeProcessIds
 		$build | Stop-Process -Force -ErrorAction SilentlyContinue
 	}
 	$buildExit = if ($timedOut) { 'TIMEOUT' } else { $build.ExitCode }
@@ -163,7 +176,7 @@ try {
 		Write-Host 'clean_run.lk present: no test failures and no runtimes at all.' -ForegroundColor Green
 	}
 
-	$results = Get-Content $ResultsPath -Raw | ConvertFrom-Json
+	$results = Read-JsonSafely $ResultsPath
 	$all = @($results.PSObject.Properties)
 	Write-Host "Tests recorded: $($all.Count)"
 
@@ -171,8 +184,11 @@ try {
 		throw "Only $($all.Count) tests recorded (expected >= $MinimumTests). The suite was silently skipped - check the map and define syntax, do NOT trust this run."
 	}
 
-	if ($Focus -and $all.Count -lt $Focus.Count) {
-		throw "Only $($all.Count) test(s) recorded for $($Focus.Count) -Focus path(s) given. At least one path did not match a real test - check for typos. (This is exactly the silent-skip trap $MinimumTests exists to catch on unfocused runs; -Focus disables that guard, so this check stands in for it.)"
+	if ($Focus) {
+		$missingFocus = @($Focus | Where-Object { $all.Name -notcontains $_ })
+		if ($missingFocus.Count -gt 0) {
+			throw "-Focus path(s) did not match a recorded test: $($missingFocus -join ', '). Check for typos."
+		}
 	}
 
 	# --- Signal 2: test failures, at (name, message) granularity -----------------------------------
@@ -190,7 +206,7 @@ try {
 
 	$baseline = [ordered]@{}
 	if (Test-Path $BaselinePath) {
-		$parsed = Get-Content $BaselinePath -Raw | ConvertFrom-Json
+		$parsed = Read-JsonSafely $BaselinePath
 		# Old format was a bare array of test names with no message. Accept it as "message unknown" so
 		# a first run against the old baseline still reports sensibly instead of erroring.
 		if ($parsed -is [array]) {
@@ -292,7 +308,7 @@ try {
 	} else {
 		$testRuntimeBaseline = [ordered]@{}
 		if (Test-Path $TestRuntimeSigBaselinePath) {
-			(Get-Content $TestRuntimeSigBaselinePath -Raw | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $testRuntimeBaseline[$_.Name] = $_.Value }
+			(Read-JsonSafely $TestRuntimeSigBaselinePath).PSObject.Properties | ForEach-Object { $testRuntimeBaseline[$_.Name] = $_.Value }
 		}
 
 		$newNoisy = @()
@@ -340,7 +356,7 @@ try {
 		Write-Host "Timing baseline updated: $($currentDurations.Count) test(s)." -ForegroundColor Yellow
 	} elseif (Test-Path $TimingBaselinePath) {
 		$timingBaseline = [ordered]@{}
-		(Get-Content $TimingBaselinePath -Raw | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $timingBaseline[$_.Name] = $_.Value }
+		(Read-JsonSafely $TimingBaselinePath).PSObject.Properties | ForEach-Object { $timingBaseline[$_.Name] = $_.Value }
 
 		$slower = @()
 		foreach ($name in $currentDurations.Keys) {
@@ -383,6 +399,12 @@ try {
 	}
 }
 finally {
+	if ($null -ne $build -and -not $build.HasExited) {
+		$build | Stop-Process -Force -ErrorAction SilentlyContinue
+	}
+	if ($existingRuntimeProcessIds.Count -gt 0) {
+		Stop-NewProcesses @('dm', 'dreamdaemon', 'dreammaker') $existingRuntimeProcessIds
+	}
 	if ($null -ne $originalDmeBytes) {
 		[System.IO.File]::WriteAllBytes($DmeFile, $originalDmeBytes)
 	}

@@ -14,6 +14,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '_common.ps1')
 
 $GameRepo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $ResultsPath = Join-Path $GameRepo 'data\unit_tests.json'
@@ -23,8 +24,9 @@ if (-not (Test-Path $ResultsPath)) {
 	exit 1
 }
 
-$json = Get-Content $ResultsPath -Raw | ConvertFrom-Json
-$entry = $json.$TestPath
+$json = Read-JsonSafely $ResultsPath
+$property = $json.PSObject.Properties[$TestPath]
+$entry = if ($property) { $property.Value } else { $null }
 
 if (-not $entry) {
 	Write-Warning "No entry for '$TestPath' in $ResultsPath - check the path is exact (case-sensitive type path, e.g. /datum/unit_test/dogmos_turf_registration)."
