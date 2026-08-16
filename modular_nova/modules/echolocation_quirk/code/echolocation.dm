@@ -74,7 +74,7 @@
 
 	return /datum/quirk/echolocation::name in preferences.all_quirks
 
-/datum/preference/color/echolocation_outline/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/color/echolocation_outline/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 // Client preference for whether we display the echolocation overlay or not
@@ -89,5 +89,5 @@
 
 	return /datum/quirk/echolocation::name in preferences.all_quirks
 
-/datum/preference/toggle/echolocation_overlay/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/toggle/echolocation_overlay/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return

@@ -1,5 +1,5 @@
 /**
- * playsound_if_pref is similar to `playsound` but it does not pass through walls, doesn't play for ghosts, and checks for prefs.
+ * playsound_if_pref is similar to `playsound` but it doesn't play for ghosts, and checks for prefs.
  * This is useful if we have something like the organic interface content, which everyone may not want to hear.
  *
  * source - Origin of sound.
@@ -12,6 +12,7 @@
  * channel - The channel the sound is played at.
  * pressure_affected - Whether or not difference in pressure affects the sound (E.g. if you can hear in space).
  * falloff_distance - Distance at which falloff begins. Sound is at peak volume (in regards to falloff) aslong as it is in this range.
+ * ignore_walls - Whether or not the sound can pass through walls.
  * pref_to_check - the path of the pref that we want to check - defaults to /datum/preference/toggle/erp/sex_toy_sounds
  */
 /proc/playsound_if_pref(
@@ -26,6 +27,7 @@
 	pressure_affected = TRUE,
 	falloff_distance = SOUND_DEFAULT_FALLOFF_DISTANCE,
 	use_reverb = TRUE,
+	ignore_walls = FALSE,
 	pref_to_check = /datum/preference/toggle/erp/sex_toy_sounds,
 )
 	if(isarea(source))
@@ -44,14 +46,25 @@
 	var/turf/above_turf = GET_TURF_ABOVE(turf_source)
 	var/turf/below_turf = GET_TURF_BELOW(turf_source)
 
-	var/list/listeners = get_hearers_in_view(maxdistance, turf_source)
+	var/list/listeners
 	. = list()//output everything that successfully heard the sound
 
-	if(above_turf && istransparentturf(above_turf))
-		listeners += get_hearers_in_view(maxdistance, above_turf)
+	if(ignore_walls)
+		listeners = get_hearers_in_range(maxdistance, turf_source)
 
-	if(below_turf && istransparentturf(turf_source))
-		listeners += get_hearers_in_view(maxdistance, below_turf)
+		if(above_turf && istransparentturf(above_turf))
+			listeners += get_hearers_in_range(maxdistance, above_turf)
+
+		if(below_turf && istransparentturf(turf_source))
+			listeners += get_hearers_in_range(maxdistance, below_turf)
+	else
+		listeners = get_hearers_in_view(maxdistance, turf_source)
+
+		if(above_turf && istransparentturf(above_turf))
+			listeners += get_hearers_in_view(maxdistance, above_turf)
+
+		if(below_turf && istransparentturf(turf_source))
+			listeners += get_hearers_in_view(maxdistance, below_turf)
 
 	for(var/mob/listening_mob in listeners)
 		var/checked_pref = listening_mob?.client?.prefs?.read_preference(pref_to_check)
@@ -92,5 +105,6 @@
 		pressure_affected = pressure_affected,
 		falloff_distance = falloff_distance,
 		use_reverb = use_reverb,
+		ignore_walls = ignore_walls,
 		pref_to_check = pref_to_check
 	)

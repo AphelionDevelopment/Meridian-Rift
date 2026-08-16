@@ -73,7 +73,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	var/hearted_until
 	///What outfit typepaths we've favorited in the SelectEquipment menu
 	var/list/favorite_outfits = list()
-	var/list/favorite_verbs = list()
+	var/list/favorite_verbs = list() // APHELION EDIT ADDITION
 
 	/// A preview of the current character
 	var/atom/movable/screen/map_view/char_preview/character_preview_view
@@ -661,8 +661,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 		if (preference.type in do_not_apply)
 			continue
 
-		preference.apply_to_human(character, read_preference(preference.type), src) // NOVA EDIT CHANGE - ORIGINAL: preference.apply_to_human(character, read_preference(preference.type))
-
+		preference.apply_to_human(character, read_preference(preference.type), src)
 	// NOVA EDIT ADDITION START - middleware apply human prefs
 	for (var/datum/preference_middleware/preference_middleware as anything in middleware)
 		preference_middleware.apply_to_human(character, src, visuals_only = visuals_only)

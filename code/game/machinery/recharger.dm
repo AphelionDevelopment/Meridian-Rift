@@ -14,6 +14,8 @@
 	var/using_power = FALSE
 	/// List of items that can be recharged
 	var/static/list/allowed_devices = typecacheof(list(
+		/obj/item/stock_parts/power_store/cell/microfusion, //NOVA EDIT ADDITION
+		/obj/item/gun/microfusion, // NOVA EDIT ADDITION
 		/obj/item/gun/energy,
 		/obj/item/melee/baton/security,
 		/obj/item/ammo_box/magazine/recharge,
@@ -103,6 +105,21 @@
 		if(!energy_gun.can_charge)
 			to_chat(user, span_notice("Your gun has no external power connector."))
 			return ITEM_INTERACT_BLOCKING
+	//NOVA EDIT ADDITION START
+
+	if (istype(tool, /obj/item/gun/microfusion))
+		var/obj/item/gun/microfusion/microfusion_gun = tool
+		if(microfusion_gun.cell?.chargerate <= 0)
+			to_chat(user, span_notice("[microfusion_gun] cannot be recharged!"))
+			return ITEM_INTERACT_BLOCKING
+
+	if (istype(tool, /obj/item/stock_parts/power_store/cell/microfusion))
+		var/obj/item/stock_parts/power_store/cell/microfusion/inserting_cell = tool
+		if(inserting_cell.chargerate <= 0)
+			to_chat(user, span_notice("[inserting_cell] cannot be recharged!"))
+			return ITEM_INTERACT_BLOCKING
+
+	//NOVA EDIT ADDITION END
 	user.transferItemToLoc(tool, src)
 	return ITEM_INTERACT_SUCCESS
 
@@ -155,6 +172,11 @@
 			if(charging_cell.charge >= charging_cell.maxcharge) //Inserted thing is at max charge/ammo, notify those around us
 				playsound(src, 'sound/machines/ping.ogg', 30, TRUE)
 				say("[charging] has finished recharging!")
+				// Modular computers (mainly PDAs) can remain on and drain their cell while charging.
+				// Unless we stop, the computer will constantly spam the finished recharging message.
+				if(istype(charging, /obj/item/modular_computer))
+					update_appearance()
+					return PROCESS_KILL
 			else
 				using_power = TRUE
 		update_appearance()

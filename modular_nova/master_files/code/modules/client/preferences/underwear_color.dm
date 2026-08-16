@@ -19,7 +19,7 @@
 	savefile_identifier = PREFERENCE_CHARACTER
 	category = PREFERENCE_CATEGORY_SUPPLEMENTAL_FEATURES
 
-/datum/preference/color/socks_color/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/color/socks_color/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.socks_color = value
 
 /datum/preference/color/socks_color/is_accessible(datum/preferences/preferences)
@@ -35,7 +35,7 @@
 	savefile_identifier = PREFERENCE_CHARACTER
 	category = PREFERENCE_CATEGORY_SUPPLEMENTAL_FEATURES
 
-/datum/preference/color/bra_color/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/color/bra_color/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.bra_color = value
 
 /datum/preference/color/bra_color/is_accessible(datum/preferences/preferences)

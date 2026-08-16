@@ -10,7 +10,7 @@
 	var/passed_initial_check = ..(preferences)
 	return passed_initial_check
 
-/datum/preference/numeric/body_size/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/numeric/body_size/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.dna.features["body_size"] = value
 
 /datum/preference/numeric/body_size/create_default_value()

@@ -20,6 +20,7 @@
 /obj/projectile/bullet/c27_54cesarzowa
 	name = ".27-54 Cesarzowa piercing bullet"
 	damage = 15
+	speed = 1.8
 	armour_penetration = 30
 	wound_bonus = -20
 	exposed_wound_bonus = 20 // if we're hitting exposed, the negative should be canceled by the exposure? maybe? probably.

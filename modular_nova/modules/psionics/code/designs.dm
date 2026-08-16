@@ -1,7 +1,6 @@
 /datum/design/cyberimp_psionic_limiter
 	name = "Psionic Limiter Implant"
 	desc = "A subdermal regulator that suppresses dangerous psionic potential until removed."
-	id = "ci-psionic-limiter"
 	build_type = PROTOLATHE | MECHFAB
 	construction_time = 6 SECONDS
 	materials = list(
@@ -19,7 +18,6 @@
 
 /datum/design/psionic_dampener_cuffs
 	name = "Psionic Dampener Cuffs"
-	id = "psionic_dampener_cuffs"
 	build_type = PROTOLATHE | AWAY_LATHE
 	materials = list(
 		/datum/material/iron = SMALL_MATERIAL_AMOUNT * 5,
@@ -34,7 +32,6 @@
 
 /datum/design/psionic_nullification_headband
 	name = "Psionic Nullification Headband"
-	id = "psionic_nullification_headband"
 	build_type = PROTOLATHE | AWAY_LATHE
 	materials = list(
 		/datum/material/iron = SMALL_MATERIAL_AMOUNT * 3,
@@ -49,7 +46,6 @@
 
 /datum/design/psionic_resonance_scanner
 	name = "Psionic Resonance Scanner"
-	id = "psionic_resonance_scanner"
 	build_type = PROTOLATHE | AWAY_LATHE
 	materials = list(
 		/datum/material/iron = SMALL_MATERIAL_AMOUNT * 3,
@@ -64,7 +60,6 @@
 
 /datum/design/psionic_reality_anchor
 	name = "Miniature Reality Anchor"
-	id = "psionic_reality_anchor"
 	build_type = PROTOLATHE
 	construction_time = 10 SECONDS
 	materials = list(

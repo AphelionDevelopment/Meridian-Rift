@@ -34,5 +34,5 @@
 
 	return data
 
-/datum/preference/choiced/unusual_biochemistry/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/unusual_biochemistry/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return

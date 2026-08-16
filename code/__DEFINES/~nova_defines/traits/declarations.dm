@@ -49,9 +49,6 @@
 // Trait sources
 #define TRAIT_GHOSTROLE "ghostrole"
 
-/// One can breath under water, you get me?
-#define TRAIT_WATER_BREATHING "water_breathing"
-
 /// Trait to assign to pets who've already had a space treat to prevent double-feeding
 #define TRAIT_PET_SPACE_TREAT "space_pet_treat"
 

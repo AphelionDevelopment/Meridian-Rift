@@ -8,12 +8,24 @@ GLOBAL_DATUM_INIT(food_prefs_menu, /datum/food_prefs_menu, new)
 
 // Hahahaha, it LIVES!
 
+/**
+ * Whether food preferences will actually do anything for this character.
+ *
+ * On top of the species check, a Hemophage's corrupted tongue is inserted after preferences are
+ * applied and hardcodes its own liked foodtypes, so anything set here would be silently discarded.
+ */
+/datum/preferences/proc/food_preferences_allowed()
+	var/species_type = read_preference(/datum/preference/choiced/species)
+	var/datum/species/species = GLOB.species_prototypes[species_type]
+	if(!species.allows_food_preferences())
+		return FALSE
+
+	return !(/datum/quirk/hemophage::name in all_quirks)
+
 /datum/preference_middleware/food/apply_to_human(mob/living/carbon/human/target, datum/preferences/preferences, visuals_only = FALSE)
 	if(!length(preferences.food_preferences) || isdummy(target))
 		return
-	var/species_type = preferences.read_preference(/datum/preference/choiced/species)
-	var/datum/species/species = GLOB.species_prototypes[species_type]
-	if(!species.allows_food_preferences())
+	if(!preferences.food_preferences_allowed())
 		return
 
 	var/counts = GLOB.food_prefs_menu.count_valid_prefs(preferences)
@@ -112,16 +124,13 @@ GLOBAL_DATUM_INIT(food_prefs_menu, /datum/food_prefs_menu, new)
 /datum/food_prefs_menu/ui_data(mob/user)
 	var/datum/preferences/preferences = user.client.prefs
 
-	var/species_type = preferences.read_preference(/datum/preference/choiced/species)
-	var/datum/species/species = GLOB.species_prototypes[species_type]
-
 	var/counts = count_valid_prefs(preferences)
 
 	var/list/data = list(
 		"selection" = preferences.food_preferences,
 		"enabled" = preferences.food_preferences["enabled"],
 		"invalid" = is_food_invalid(counts),
-		"race_disabled" = !species.allows_food_preferences(),
+		"race_disabled" = !preferences.food_preferences_allowed(),
 		"limits" = list(
 			"max_liked" = MAXIMUM_LIKES,
 			"min_disliked" = MINIMUM_REQUIRED_DISLIKES,
