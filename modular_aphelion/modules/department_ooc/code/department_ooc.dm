@@ -206,26 +206,16 @@ GAME_VERB_DESC(/client, department_ooc, "Department OOC", "Speak on one of the O
 	var/list/listeners = list()
 	for(var/mob/iterated_mob as anything in GLOB.player_list)
 		var/client/iterated_client = iterated_mob.client
-		if(isnull(iterated_client))
-			continue
-		if(!iterated_client.holder?.deadmined)
+		if(iterated_client.holder && !iterated_client.holder.deadmined)
 			listeners[iterated_client] = TRUE
-
-	// Deadminned admins are skipped above, so pick them back up if they are on the channel themselves.
-	if(channel.is_antag_channel)
-		for(var/datum/mind/antag_mind as anything in get_antag_minds(/datum/antagonist))
-			if(!antag_mind.current || !antag_mind.current.client || isnewplayer(antag_mind.current))
-				continue
-			listeners[antag_mind.current.client] = TRUE
-
-	if(channel.department_flags)
-		for(var/mob/iterated_mob as anything in GLOB.player_list)
-			var/client/iterated_client = iterated_mob.client
-			if(isnull(iterated_client))
-				continue
-			var/datum/job/job = iterated_mob.mind?.assigned_role
-			if(job && (job.departments_bitflags & channel.department_flags))
-				listeners[iterated_client] = TRUE
+			continue
+		var/datum/job/job = iterated_mob.mind?.assigned_role
+		if(channel.department_flags && (job?.departments_bitflags & channel.department_flags))
+			listeners[iterated_client] = TRUE
+			continue
+		if(channel.is_antag_channel && iterating_mob.is_antag())
+			listeners[iterated_client] = TRUE
+			continue
 
 	for(var/client/iterated_client as anything in listeners)
 		to_chat(iterated_client, span_oocplain("<b>The [channel.id] channel has been globally [channel.allowed ? "enabled" : "disabled"].</b>"))
