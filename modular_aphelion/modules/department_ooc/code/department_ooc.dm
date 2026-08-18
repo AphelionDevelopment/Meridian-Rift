@@ -194,14 +194,12 @@ GAME_VERB_DESC(/client, department_ooc, "Department OOC", "Speak on one of the O
  */
 /proc/toggle_department_ooc(channel_key, toggle = null)
 	var/datum/department_ooc_channel/channel = GLOB.department_ooc_channels[channel_key]
-	if(!channel)
+	if(isnull(channel))
 		return
-	if(toggle != null)
-		if(toggle == channel.allowed)
-			return
-		channel.allowed = toggle
-	else
+	if(isnull(toggle))
 		channel.allowed = !channel.allowed
+		return
+	channel.allowed = toggle
 
 	// Carried over from the SOOC and AOOC verbs this replaces: the announcement is deliberately
 	// server-wide rather than channel-only, so nobody is left talking into a dead channel.
