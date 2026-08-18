@@ -17,7 +17,7 @@ GAME_VERB_DESC(/client, notify_admins, "Notify Admins", "Ask staff to come and o
 		to_chat(src, span_warning("You can notify the admins again in [DisplayTimeText(COOLDOWN_TIMELEFT(src, notify_admins_cooldown))]."))
 		return
 
-	if(isnull(mob))
+	if(isnewplayer(mob))
 		return
 
 	COOLDOWN_START(src, notify_admins_cooldown, ADMIN_NOTIFY_COOLDOWN)
