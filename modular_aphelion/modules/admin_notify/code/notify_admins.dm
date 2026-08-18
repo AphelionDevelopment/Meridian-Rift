@@ -3,10 +3,11 @@
 /// How long the Notify Admins hotkey has to be held down before it fires.
 #define ADMIN_NOTIFY_HOLD_TIME (2 SECONDS)
 
-/// Timer id for the hotkey's hold delay. Hung off the client so it dies with them on disconnect.
-/client/var/notify_admins_hold_timer
-/// World time at which this client may use Notify Admins again. Driven by the COOLDOWN_* macros.
-/client/var/notify_admins_cooldown = 0
+/client
+	/// Timer id for the hotkey's hold delay. Hung off the client so it dies with them on disconnect.
+	var/notify_admins_hold_timer
+	/// World time at which this client may use Notify Admins again. Driven by the COOLDOWN_* macros.
+	COOLDOWN_DECLARE(notify_admins_cooldown)
 
 GAME_VERB_DESC(/client, notify_admins, "Notify Admins", "Ask staff to come and observe what is happening to you.", "OOC")
 	if(is_banned_from(ckey, list(BAN_ADMIN_NOTIFY)))
