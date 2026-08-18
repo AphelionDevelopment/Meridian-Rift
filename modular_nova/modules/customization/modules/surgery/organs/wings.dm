@@ -16,6 +16,8 @@
 	var/granted_flight
 
 /obj/item/organ/wings/custom
+	bodypart_overlay = /datum/bodypart_overlay/mutant/wings
+	flight_level = WINGS_FLIGHTLESS
 
 /datum/bodypart_overlay/mutant/wings
 	color_source = ORGAN_COLOR_OVERRIDE
@@ -236,20 +238,26 @@
 /datum/bodypart_overlay/mutant/wings/functional/locked/original_color/override_color(rgb_value)
 	return COLOR_WHITE // We want to keep those wings as their original color, because it looks better.
 
-/obj/item/organ/wings/functional
-	bodypart_overlay = /datum/bodypart_overlay/mutant/wings/functional/locked
-
-/obj/item/organ/wings/functional/angel
+/obj/item/organ/wings/angel
 	bodypart_overlay = /datum/bodypart_overlay/mutant/wings/functional/original_color
 
-/obj/item/organ/wings/functional/dragon
+/obj/item/organ/wings/dragon
 	bodypart_overlay = /datum/bodypart_overlay/mutant/wings/functional
 
-/obj/item/organ/wings/functional/moth
+/obj/item/organ/wings/robotic
+	bodypart_overlay = /datum/bodypart_overlay/mutant/wings/functional
+
+/obj/item/organ/wings/slime
+	bodypart_overlay = /datum/bodypart_overlay/mutant/wings/functional
+
+/obj/item/organ/wings/skeleton
+	bodypart_overlay = /datum/bodypart_overlay/mutant/wings/functional/locked
+
+/obj/item/organ/wings/fly
+	bodypart_overlay = /datum/bodypart_overlay/mutant/wings/functional/locked
+
+/obj/item/organ/wings/mothra
 	bodypart_overlay = /datum/bodypart_overlay/mutant/wings/functional/locked/original_color
 
-/obj/item/organ/wings/functional/robotic
-	bodypart_overlay = /datum/bodypart_overlay/mutant/wings/functional
-
-/obj/item/organ/wings/functional/slime
-	bodypart_overlay = /datum/bodypart_overlay/mutant/wings/functional
+/obj/item/organ/wings/megamoth
+	bodypart_overlay = /datum/bodypart_overlay/mutant/wings/functional/locked/original_color
