@@ -210,12 +210,23 @@
 		return
 	operating = TRUE
 	var/turf/previousturf = get_turf(src)
+	// APHELION EDIT ADDITION START - DOGMOS
+	var/directional_start_tiles = 0
+	if(SSair.flamethrower_directional_spread && length(turflist) > 2 && turflist[1] == previousturf)
+		directional_start_tiles = DOGMOS_FLAMETHROWER_DIRECTIONAL_START_TILES
+	// APHELION EDIT ADDITION END
 	for(var/turf/T in turflist)
 		if(T == previousturf)
 			continue //so we don't burn the tile we be standin on
 		var/list/turfs_sharing_with_prev = previousturf.get_atmos_adjacent_turfs(alldir=1)
 		if(!(T in turfs_sharing_with_prev))
 			break
+		// APHELION EDIT ADDITION START - DOGMOS
+		if(directional_start_tiles)
+			directional_start_tiles--
+			previousturf = T
+			continue
+		// APHELION EDIT ADDITION END
 		if(igniter)
 			igniter.ignite_turf(src,T)
 		else
@@ -235,7 +246,10 @@
 		air_transfer.set_moles(/datum/gas/plasma, moles)
 	target.assume_air(air_transfer)
 	//Burn it based on transferred gas
-	target.hotspot_expose((tank_mix.return_temperature()*2) + 380,500)
+	var/hotspot_exposure_volume = DOGMOS_FLAMETHROWER_HOTSPOT_EXPOSURE_VOLUME
+	if(!SSair.flamethrower_directional_spread)
+		hotspot_exposure_volume = DOGMOS_FLAMETHROWER_LEGACY_HOTSPOT_EXPOSURE_VOLUME
+	target.hotspot_expose((tank_mix.return_temperature()*2) + 380, hotspot_exposure_volume) // APHELION EDIT CHANGE - ORIGINAL: target.hotspot_expose((tank_mix.return_temperature()*2) + 380,500)
 	//location.hotspot_expose(1000,500,1)
 
 /obj/item/flamethrower/Initialize(mapload)

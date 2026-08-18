@@ -1,30 +1,5 @@
-/**
- * Regression test for a real bug reported via live playtest (2026-08-15): Thunderdome/holodeck resets
- * occasionally leave hot-spots inside the reset arena, invisible to a plain gas-content check and only
- * fixable by the Fix Air admin verb (which happens to call turf-level set_temperature() directly).
- *
- * This is a DIFFERENT bug from - and survives - the earlier Assimilate_Air() temperature-sync fix
- * (dogmos_assimilate_air_temperature_sync.dm): that fix only applies to ChangeTurf() calls that actually
- * run Assimilate_Air(), i.e. ones without CHANGETURF_IGNORE_AIR/CHANGETURF_INHERIT_AIR. But the real
- * map-template loader used by holodeck/Thunderdome resets (parsed_map/build_coordinate,
- * code/modules/mapping/reader.dm:958) places turfs with CHANGETURF_DEFER_CHANGE, then finalizes them in
- * a later batch pass with `T.AfterChange(CHANGETURF_IGNORE_AIR)` (reader.dm:358) - deliberately skipping
- * Assimilate_Air() so a real map load uses each turf's own fresh air instead of blending with whatever
- * was next to it before. register_dogmos_air() still runs unconditionally in the base AfterChange()
- * though, and BYOND turf refs are stable across ChangeTurf() (the same coordinate slot is reused, not a
- * fresh allocation - verified directly via REF(src) before/after during this investigation). So if this
- * exact ref was already registered in Dogmos' heat graph before the reset (e.g. an old, still-hot
- * Thunderdome arena tile), register_dogmos_air() hits Rust's "already present" branch
- * (TurfHeat::insert_turf, aphelion-dogmos src/turfs/superconduct.rs) - which deliberately leaves
- * temperature untouched on that branch, by design, for ordinary live re-registration. Left alone, a
- * reset turf's heat-graph copy silently keeps whatever temperature the arena had before resetting,
- * forever. Fixed by having AfterChange()'s CHANGETURF_IGNORE_AIR branch call set_temperature() (a direct
- * FFI write, bypassing insert_turf's preserve-on-update path entirely) to resync the heat graph to the
- * fresh turf's own temperature.
- *
- * Replicates the real map-loader sequence exactly (ChangeTurf with CHANGETURF_DEFER_CHANGE, then a
- * separate, later AfterChange(CHANGETURF_IGNORE_AIR) call) rather than a single ChangeTurf call, since
- * that split is what makes this bug distinct from the already-fixed Assimilate_Air case.
+/** Regression coverage for resetting TurfHeat temperature on CHANGETURF_IGNORE_AIR.
+ * It follows the deferred ChangeTurf/AfterChange sequence used by map-template loading.
  */
 /datum/unit_test/dogmos_ignore_air_temperature_reset
 	var/original_type

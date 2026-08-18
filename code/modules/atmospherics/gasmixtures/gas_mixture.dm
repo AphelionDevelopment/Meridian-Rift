@@ -1,36 +1,19 @@
-/*
-Gas storage and math for this mixture live in Dogmos (Rust), reached over FFI through
-_extools_pointer_gasmixture. There is no `moles` list and no `temperature` var on this datum -
-`get_moles()`/`set_moles()`/`get_gases()` and `return_temperature()`/`set_temperature()` are the only
-way to touch gas amounts and heat. Archived variables and the whole archive()/share() consistency
-model are also gone; Dogmos does its own internal double-buffering during turf processing instead.
-
-See tools/dogmos/gas_api_map.md for the full proc-by-proc mapping this file was rewritten from.
-*/
+/* Dogmos owns gas storage and math in Rust; this datum preserves the DM API. */
 
 GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 
 /datum/gas_mixture
-	/// Static list of gas meta data like heat capacity (initialized globally). Unrelated to Dogmos;
-	/// this is DM-side type metadata (names, icons, specific heats), not per-mixture gas amounts.
+	/// DM-side gas metadata such as names, icons, and specific heats.
 	var/static/list/gas_meta
-	/// Dogmos' handle to this mixture's slot in its gas arena. Do not read or write this directly.
+	/// Dogmos arena handle. Do not read or write this directly.
 	var/_extools_pointer_gasmixture
-	/// Seeds Dogmos' internal volume at registration. Transient - only read once, by New().
-	/// There is no persistent `volume` var: an earlier version of this file kept one for DM-side
-	/// reads, on the assumption that reassignment was rare enough to patch at each call site by
-	/// hand. That assumption was wrong - a full audit found 20+ real reassignment sites across the
-	/// codebase, all silently able to desync Dogmos' internal volume from what DM believed, which
-	/// corrupts every pressure/heat-capacity calculation downstream with no compile error to catch
-	/// it. Routing all access through return_volume()/set_volume(), same as temperature, makes that
-	/// desync structurally impossible instead of something to keep hunting for.
+	/// Initial volume passed to Dogmos during registration.
 	var/initial_volume = CELL_VOLUME
 	/// The last tick this gas mixture shared on. A counter that turfs use to manage activity
 	var/last_share = 0
 	/// Tells us what reactions have happened in our gasmix. Assoc list of reaction - moles reacted pair.
 	var/list/reaction_results
-	/// When this gas mixture was last touched by pipeline processing
-	/// I am sorry
+	/// When this gas mixture was last touched by pipeline processing.
 	var/pipeline_cycle = -1
 
 /datum/gas_mixture/New(volume)
@@ -46,26 +29,13 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 		__gasmixture_unregister()
 	return ..()
 
-/// Turf mixtures never report zero heat capacity even when empty - a literal vacuum still has some
-/// resistance to temperature change, or every space tile would flicker to absolute zero from a
-/// single stray joule. The base type has no such floor. The Dogmos-provided heat_capacity() bind
-/// supplies the base behaviour; this override only adds the floor.
+/// Turf mixtures retain a non-zero vacuum heat capacity.
 /datum/gas_mixture/turf/heat_capacity()
 	return ..() || HEAT_CAPACITY_VACUUM
 
-/// Resolves a gas identifier to Dogmos' native string form. DM identifies gases by typepath
-/// everywhere (`/datum/gas/oxygen`, via GAS_META, meta_gas_info, gas_reactions, and effectively
-/// every call site in this codebase); Dogmos indexes gases by the interned string on `/datum/gas/id`
-/// (`"o2"`) and cannot resolve a bare typepath itself - BYOND typepath constants aren't readable
-/// through the FFI var-read the way a live instance is. Every gas_mixture proc that takes a gas
-/// identifier and crosses into Dogmos routes through here once, so callers can keep using typepaths.
+/// Converts a DM gas typepath to Dogmos' string identifier.
 /proc/gas_string_id(gas_id)
-	// One-shot tripwire: a gas id crossing into Dogmos before SSdogmos has registered the gas table
-	// means Rust will reject it and the caller silently gets nothing (see dogmos.dm for why this can
-	// happen and why it matters). stack_trace rather than CRASH, because CRASHing here takes down
-	// whatever is initialising instead of naming it; and once rather than per-call, because the
-	// failing case historically was every turf on the station - tens of thousands of identical
-	// stack traces in runtime.log otherwise.
+	// Warn once if a gas crosses the FFI before the registry is ready.
 	if(!SSdogmos?.gases_registered)
 		var/static/warned_before_registration = FALSE
 		if(!warned_before_registration)
@@ -76,37 +46,31 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 		return gas_id
 	return GLOB.meta_gas_info[META_GAS_ID][gas_id]
 
-///Update archived versions of variables. Returns: 1 in all cases
+/// Keeps the legacy archive API available; Dogmos archives during turf processing.
 /datum/gas_mixture/proc/archive()
 	return TRUE //Dogmos archives internally during turf processing; nothing for DM to do here
 
-/// Args: (gas_id). Returns: the amount of substance of the given gas, in moles. Accepts either a
-/// gas typepath or Dogmos' native string id.
+/// Returns the moles for a gas typepath or Dogmos string id.
 /datum/gas_mixture/proc/get_moles(gas_id)
 	return __get_moles(gas_string_id(gas_id))
 
-/// Args: (gas_id, moles). Sets the amount of substance of the given gas, in moles. Accepts either a
-/// gas typepath or Dogmos' native string id.
+/// Sets the moles for a gas typepath or Dogmos string id.
 /datum/gas_mixture/proc/set_moles(gas_id, amt_val)
 	return __set_moles(gas_string_id(gas_id), amt_val)
 
-/// Args: (gas_id, moles). Adjusts the given gas's amount by the given amount, e.g. (GAS_O2, -0.1)
-/// will remove 0.1 moles of oxygen. Accepts either a gas typepath or Dogmos' native string id.
+/// Adjusts a gas amount; accepts a typepath or Dogmos string id.
 /datum/gas_mixture/proc/adjust_moles(id_val, num_val)
 	return __adjust_moles(gas_string_id(id_val), num_val)
 
-/// Args: (gas_id, moles, temp). As adjust_moles(), treating the added gas as if it is at the given
-/// temperature. Accepts either a gas typepath or Dogmos' native string id.
+/// Adjusts a gas amount at a supplied temperature.
 /datum/gas_mixture/proc/adjust_moles_temp(id_val, num_val, temp_val)
 	return __adjust_moles_temp(gas_string_id(id_val), num_val, temp_val)
 
-/// Args: (gas_id). Returns the heat capacity from the given gas, in J/K. Accepts either a gas
-/// typepath or Dogmos' native string id.
+/// Returns a gas's heat capacity.
 /datum/gas_mixture/proc/partial_heat_capacity(gas_id)
 	return __partial_heat_capacity(gas_string_id(gas_id))
 
-/// Args: (gas_id_1, amount_1, gas_id_2, amount_2, ...). As adjust_moles(), but with variadic
-/// arguments. Each gas id accepts either a typepath or Dogmos' native string id.
+/// Adjusts multiple gases from alternating gas ids and amounts.
 /datum/gas_mixture/proc/adjust_multi(...)
 	var/list/args_copy = args.Copy()
 	for(var/i in 1 to args_copy.len step 2)
@@ -114,9 +78,7 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 	args_copy.Insert(1, src)
 	return __adjust_multi(arglist(args_copy))
 
-/// Returns the typepaths of every gas present in the mixture. Dogmos' native return shape is a list
-/// of string ids; every DM call site expects typepaths (GAS_META, meta_gas_info and friends are all
-/// keyed by path), so this translates on the way out.
+/// Returns the typepaths of all gases present in the mixture.
 /datum/gas_mixture/proc/get_gases()
 	var/list/ids = __get_gases()
 	var/list/paths = new/list(length(ids))
@@ -126,7 +88,7 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 
 ///Merges all air from giver into self. Deletes giver. Returns: 1 if we are mutable, 0 otherwise
 /datum/gas_mixture/proc/merge(datum/gas_mixture/giver)
-	if(!giver)
+	if(is_immutable() || !giver)
 		return FALSE
 	__merge(giver)
 	SEND_SIGNAL(src, COMSIG_GASMIX_MERGED)
@@ -248,11 +210,7 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 /// If we don't retain this, we will get negative moles. Don't do it
 /// Returns: amount of gas exchanged (+ if sharer received)
 /datum/gas_mixture/proc/share(datum/gas_mixture/sharer, our_coeff, sharer_coeff)
-	// Archived-value consistency (share() reading a snapshot from before ANY turf shared this tick,
-	// so order-of-operations doesn't matter) no longer exists - both sides now read live values.
-	// This is an accepted consequence of Phase 2 removing archives; turf-to-turf sharing itself moves
-	// to Dogmos entirely in Phase 3, so this proc's remaining callers are non-turf equipment
-	// (closets, morgue trays, transit tubes, passive vents, Nova's liquid_controller).
+	// Remaining callers are non-turf equipment; turf sharing is handled by Dogmos.
 	var/list/our_gases = get_gases()
 	var/list/sharer_gases = sharer.get_gases()
 	var/list/gas_list = our_gases | sharer_gases
@@ -327,9 +285,10 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 ///Performs various reactions such as combustion and fabrication
 ///Returns: 1 if any reaction took place; 0 otherwise
 /datum/gas_mixture/proc/react(datum/holder)
-	//Requirement gating (temperature bounds, per-gas minimums) is now done by Dogmos itself from
-	//SSair.dogmos_reactions - see init_dogmos_reactions() in reactions.dm. Only the hypernoblium
-	//oppression gate has no Dogmos equivalent and must stay here, checked before anything reacts.
+	if(is_immutable())
+		return NO_REACTION
+
+	// Keep this cheap wrapper gate for direct DM callers; the native hook mirrors it for Dogmos callers.
 	if(get_moles(/datum/gas/hypernoblium) >= REACTION_OPPRESSION_THRESHOLD && return_temperature() > REACTION_OPPRESSION_MIN_TEMP)
 		return STOP_REACTIONS
 
@@ -568,10 +527,7 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 	atmos_contents += temperature_str
 	return atmos_contents.Join(";")
 
-/// Reconstructs an assoc list of gas id -> moles for this mixture. There is no equivalent single
-/// Dogmos call - get_gases() only returns keys - so this pays one FFI round-trip per gas present.
-/// Only use where something genuinely needs the whole mixture as a list (e.g. values_dot/values_sum);
-/// a targeted get_moles(gas_id) is always cheaper for a handful of known gases.
+/// Reconstructs a gas-id-to-moles list; targeted get_moles() calls are cheaper for known gases.
 /datum/gas_mixture/proc/get_moles_list()
 	var/list/snapshot = list()
 	for(var/gas_id in get_gases())

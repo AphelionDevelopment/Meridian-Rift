@@ -1,26 +1,9 @@
-/**
- * Verifies the aphelion_reactions Rust port (aphelion-dogmos src/reaction/aphelion.rs) of this
- * codebase's own fire reactions actually fires and produces the right byproducts - not just that a
- * counter moved. Specifically checks for the water_vapor byproduct plasmafire (non-supersaturated
- * branch), h2fire, and tritfire produce in this codebase's DM formulas: citadel_reactions, the other
- * available native-Rust reaction set, drops that byproduct entirely and implements a completely
- * different "trit bomb" model for tritfire - confirmed 2026-08-15 by reading both side by side. A test
- * that only checked "some gas changed" would pass against either implementation and miss that
- * divergence entirely, so this checks the specific byproduct set this codebase's DM math actually
- * produces. freonfire is checked too, as the one ENDOTHERMIC reaction in the set (temperature should
- * decrease, not increase).
- *
- * Uses freestanding gas_mixture instances rather than turfs - react() works on any registered mixture,
- * and a bare mixture avoids needing to seed/restore a turf's temperature and gas contents around this
- * test (see restore_atmos()'s existing rationale for why that matters when tests share a room).
- */
+/** Verifies native fire reactions and their codebase-specific byproducts. */
 /datum/unit_test/dogmos_aphelion_reactions
 
 /datum/unit_test/dogmos_aphelion_reactions/Run()
 	var/datum/gas_mixture/plasma_air = new(CELL_VOLUME)
-	// o2/plasma = 4, well under PLASMA_OXYGEN_FULLBURN (10) - the non-supersaturated branch, which
-	// this codebase's DM formula splits into CO2 (75%) and water_vapor (25%). citadel_reactions'
-	// equivalent branch produces CO2 only.
+	// Stay below PLASMA_OXYGEN_FULLBURN to exercise the water-vapor branch.
 	plasma_air.set_moles(/datum/gas/plasma, 50)
 	plasma_air.set_moles(/datum/gas/oxygen, 200)
 	plasma_air.set_temperature(PLASMA_MINIMUM_BURN_TEMPERATURE + 500)

@@ -1,6 +1,0 @@
-﻿[
-    "runtime error: /mob/living/carbon/human/consistent instance, which is supposed to only be in the contents of a spatial grid cell at coords: (N, N, N), was in the contents of N spatial grid cell but it was inside the area handled by another grid cell! within the contents of a cell at coords: (N, N, N).",
-    "runtime error: Cannot execute null.request().",
-    "runtime error: Cannot read null.mode",
-    "runtime error: No spawn area detected for Mafia!"
-]

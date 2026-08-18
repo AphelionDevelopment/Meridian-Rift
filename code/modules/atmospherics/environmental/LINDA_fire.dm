@@ -425,7 +425,7 @@
 				"jump_to" = target_turf ? REF(target_turf) : null,
 				"area" = group_area ? group_area.name : null,
 				"peak_size" = peak_size,
-			))
+			), target_turf)
 		qdel(src)
 		return
 

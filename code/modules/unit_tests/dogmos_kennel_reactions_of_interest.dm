@@ -1,12 +1,4 @@
-/**
- * Dogmos Kennel: check_kennel_reaction_of_interest() reads air.reaction_results, which per
- * turf_settled()'s own doc comment (air.dm) is cumulative and never cleared - an entry's key survives
- * forever once a reaction has fired there once. Without T.kennel_last_reaction_results as a
- * last-seen-value cache, a turf that reacted once above threshold would be re-recorded into
- * recent_reactions_of_interest every single time this walk revisits it, even if nothing new happened.
- * Covers three cases directly: below threshold (never recorded), above threshold the first time
- * (recorded once), and an unchanged value on a later call (NOT re-recorded).
- */
+/** Verifies thresholded reaction history records only changed values. */
 /datum/unit_test/dogmos_kennel_reactions_of_interest
 	var/original_threshold
 	var/list/original_bucket

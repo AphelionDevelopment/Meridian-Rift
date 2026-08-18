@@ -1,14 +1,4 @@
-/**
- * Dogmos Kennel Phase 3: kennel_profile_reactions gates real Rust-side timing around every
- * react_by_id() call (react_hook, aphelion-dogmos src/lib.rs) - reads the toggle fresh, same
- * "no rebuild needed to flip live" pattern as realistic_space_radiation/blackbody_enabled. Runs a real
- * plasmafire reaction (same seed as dogmos_aphelion_reactions.dm) against a real turf holder, with the
- * threshold set to 0 so any nonzero call duration trips it, and checks the recorded entry's fields -
- * not just that SOMETHING was recorded.
- *
- * Covers the toggle itself directly: profiling OFF must record nothing, even with an identical reaction
- * and a threshold of 0 - the record path only exists because profiling turned it on.
- */
+/** Verifies the opt-in Rust reaction profiler reaches Kennel telemetry. */
 /datum/unit_test/dogmos_kennel_reaction_profiling
 	var/original_profile_reactions
 	var/original_threshold

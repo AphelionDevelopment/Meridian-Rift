@@ -1,12 +1,4 @@
-/**
- * Initialisation must be runtime-free.
- *
- * This is the broadest possible canary for the 2026-08-13 init-order bug: that boot logged 63+
- * runtime errors before a single unit test ever ran, and nothing in the suite noticed, because
- * every existing test only observes state well after init completes. GLOB.runtimes_at_init_complete
- * is snapshotted once, in master.dm, at the exact point this test cares about - see the comment
- * there for why it isn't read live from GLOB.total_runtimes.
- */
+/** Verifies that initialization completes without runtime errors. */
 /datum/unit_test/no_runtimes_during_init
 
 /datum/unit_test/no_runtimes_during_init/Run()

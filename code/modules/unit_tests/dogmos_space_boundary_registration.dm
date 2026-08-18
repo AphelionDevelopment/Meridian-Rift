@@ -1,19 +1,4 @@
-/**
- * Verifies the fix for the 2026-08-14 playtest regression (breaches pulled nothing, gas never
- * diffused into space): space turfs never registered into Dogmos at all, because
- * /turf/open/space/Initialize() skips Initalize_Atmos() entirely and the base register_dogmos_air()
- * early-returns on !init_air - so a station turf's edge to a real space neighbor was silently dropped
- * by Rust's adjacency sync (TurfGases::update_adjacencies() skips any neighbor id it never registered).
- * See modular_aphelion/master_files/code/game/turfs/open/space/space.dm for the fix's two overrides.
- *
- * Converts a real test-room neighbor into /turf/open/space via ChangeTurf - the same machinery a real
- * hull breach uses (place_on_top/ChangeTurf always calls the new turf's Initialize() and
- * AfterChange(), matching how this actually gets exercised in play, not a synthetic shortcut) - then
- * asserts both that the space turf actually registered (dogmos_space_boundary_count() increases) and
- * that gas measurably left the interior turf after a real FDM cycle. Checking only the counter would
- * repeat the exact mistake C4 already fixed once in this codebase (dogmos_turf_adjacency_sync.dm): a
- * registered-but-inert node would still move the counter without proving diffusion actually works.
- */
+/** Verifies that a discovered space neighbor registers and receives diffused gas. */
 /datum/unit_test/dogmos_space_boundary_registration
 	/// The EAST neighbor's original type, so Destroy() can restore it even if Run() aborts partway
 	/// through via a TEST_ASSERT failure.
@@ -36,9 +21,7 @@
 	TEST_ASSERT(dogmos_space_boundary_count() > before_boundary_count, \
 		"dogmos_space_boundary_count() did not increase after a real space neighbor was discovered as an adjacent turf - the space turf did not register into Dogmos' gas graph (see the register_dogmos_air() override on /turf/open/space).")
 
-	// Fixed, generous budgets rather than SSair.process_active_turfs()'s real tick-budget calculation -
-	// same reasoning as dogmos_gas_fdm_golden.dm: that budget can be near-zero deep into a long suite
-	// run, which would make this test flaky for a reason unrelated to what it's actually checking.
+	// Use a fixed budget so suite timing cannot starve this focused cycle.
 	SSair.process_turfs_auxtools(100)
 	SSair.finish_turf_processing_auxtools(100)
 

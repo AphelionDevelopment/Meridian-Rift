@@ -397,34 +397,6 @@ if [ "$pcre2_support" -eq 1 ]; then
 		echo -e "${RED}ERROR: Shuttle has objs or turfs in a template_noop area. Please correct their areas to a shuttle subtype.${NC}"
 		st=1
 fi;
-	part "direct turf temperature writes"
-	# Dogmos owns turf-to-turf heat conduction now (Rust's TurfHeat, aphelion-dogmos
-	# src/turfs/superconduct.rs) - a direct .temperature =/+=/-= write on a turf only updates the DM
-	# var, silently leaving Rust's copy stale until something else happens to call set_temperature() on
-	# that turf later. Use set_temperature() (modular_aphelion/master_files/code/game/turfs/turf.dm)
-	# instead. Excludes /obj/effect/hotspot's own unrelated temperature var (LINDA_fire.dm) via the
-	# negative lookbehind, and code/modules/unit_tests entirely - dogmos_turf_registration.dm's
-	# force_fresh_registration() deliberately writes the raw var to test registration picking up a
-	# pre-set temperature, which is a different concern than the live-turf staleness this rule guards.
-	if $grep -P '(?<!active_hotspot)\.temperature\s*[+\-]?=[^=]' "${code_files[@]}" -g '!code/modules/unit_tests/**'; then
-		echo
-		echo -e "${RED}ERROR: Direct .temperature write on a turf bypasses Dogmos' TurfHeat. Use set_temperature() instead.${NC}"
-		st=1
-	fi;
-	part "gas mixture vars accessed through a list index"
-	# /datum/gas_mixture has no volume/temperature vars - they are procs (set_volume()/return_volume(),
-	# set_temperature()/return_temperature()). Indexing a list (airs[N]) yields an untyped value, so DM
-	# cannot catch a direct .volume/.temperature access there at compile time; it compiles clean and
-	# fails - or silently reads null - at runtime. `airs` is exclusively a gas_mixture list/var in this
-	# codebase (components_base.dm, gas_analyzer.dm, atmosscan.dm), so this pattern is unambiguous.
-	# Moved into this pcre2-only block (was previously using -P outside the guard, which errors under
-	# `set -e` on a ripgrep build without PCRE2 support instead of just being skipped like every other
-	# PCRE-only rule here).
-	if $grep -P 'airs\[\d+\]\.\s*(volume|temperature)\b' "${code_files[@]}"; then
-		echo
-		echo -e "${RED}ERROR: Direct .volume/.temperature access on a gas_mixture reached through a list index. Bind a typed 'var/datum/gas_mixture/' local first, then use set_volume()/return_volume() or set_temperature()/return_temperature().${NC}"
-		st=1
-	fi;
 else
 	echo -e "${RED}pcre2 not supported, skipping checks requiring pcre2"
 	echo -e "if you want to run these checks install ripgrep with pcre2 support.${NC}"

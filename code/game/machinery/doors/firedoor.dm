@@ -1,26 +1,10 @@
 #define CONSTRUCTION_NO_CIRCUIT 1 //Empty frame, can safely weld apart or install circuit
 #define CONSTRUCTION_PANEL_OPEN 2 //Circuit panel exposed for removal or securing
 #define DEFAULT_STEP_TIME 20 /// default time for each step
-#define REACTIVATION_DELAY (3 SECONDS) // Delay on reactivation, used to prevent dumb crowbar things. Just trust me
-/// Meridian: how often an idle firelock re-checks check_atmos() on its own accord, not just reactively
-/// off COMSIG_TURF_EXPOSE/COMSIG_TURF_CALCULATED_ADJACENT_ATMOS. Dogmos' katmos equalizer (aphelion-dogmos
-/// src/turfs/katmos.rs) can settle a room into a STABLE-but-still-hazardous pressure/temperature reading
-/// far faster than the old per-tick DM diffusion this threshold logic was written against - once a turf
-/// stops changing relative to its neighbors, turf_settled() (code/controllers/subsystem/air.dm) drops it
-/// from SSair.active_turfs, and COMSIG_TURF_EXPOSE simply stops firing there, even though the room may
-/// still be well past WARNING_HIGH_PRESSURE/WARNING_LOW_PRESSURE. A firelock never learns the danger
-/// persisted. This periodic self-check is independent of active_turfs entirely, so it catches that case
-/// regardless of how quickly (or whether) the room ever "unsettles" again.
+#define REACTIVATION_DELAY (3 SECONDS) // Prevents repeated crowbar reactivation.
+/// How often an idle firelock re-checks atmos pressure and temperature.
 #define FIRELOCK_ATMOS_RECHECK_INTERVAL (4 SECONDS)
-/// Meridian: minimum time an alarm stays active once triggered before process_results() is allowed to
-/// deactivate it again. Dogmos reports pressure/temperature live and unsmoothed straight from Rust
-/// (return_pressure()/return_temperature(), code/__DEFINES/dogmos_bindings.dm) with no DM-side archiving
-/// the way most other atmos reads get - a room converging on a WARNING_HIGH_PRESSURE/WARNING_LOW_PRESSURE
-/// threshold can report a value on the "clear" side for one read and the "alarm" side for the next,
-/// repeatedly, while it settles. Without a hold, process_results()'s single-threshold, no-hysteresis
-/// check flips start_activation_process()/start_deactivation_process() every time it crosses - the
-/// reported "open-close-open-close" flapping. This doesn't change WHEN a firelock first closes (that's
-/// still instant), only how soon it's allowed to re-open after.
+/// Minimum alarm duration to prevent threshold flapping during pressure settling.
 #define FIRELOCK_MIN_ALARM_HOLD (2 SECONDS)
 
 /obj/machinery/door/firedoor
@@ -330,12 +314,12 @@
 	if(!environment)
 		CRASH("We tried to check a gas_mixture that doesn't exist for its firetype, what are you DOING")
 
-	var/pressure = environment?.return_pressure() //NOVA EDIT ADDITION - Micro optimisation
-	if(environment.return_temperature() >= FIRE_MINIMUM_TEMPERATURE_TO_EXIST || pressure > WARNING_HIGH_PRESSURE) //NOVA EDIT CHANGE ADDITION - ORIGINAL: if(environment.temperature >= FIRE_MINIMUM_TEMPERATURE_TO_EXIST)
+	var/pressure = environment.return_pressure() // APHELION EDIT ADDITION - Cache pressure for both checks.
+	if(environment.return_temperature() >= FIRE_MINIMUM_TEMPERATURE_TO_EXIST || pressure > WARNING_HIGH_PRESSURE) // APHELION EDIT CHANGE - ORIGINAL: if(environment.temperature >= FIRE_MINIMUM_TEMPERATURE_TO_EXIST)
 		return FIRELOCK_ALARM_TYPE_HOT
 	if(environment.get_moles(/datum/gas/antinoblium) > MINIMUM_MOLE_COUNT)
 		return FIRELOCK_ALARM_TYPE_HOT
-	if(environment.return_temperature() <= BODYTEMP_COLD_DAMAGE_LIMIT || pressure < WARNING_LOW_PRESSURE) //NOVA EDIT CHANGE ADDITION - ORIGINAL: if(environment.temperature <= BODYTEMP_COLD_DAMAGE_LIMIT)
+	if(environment.return_temperature() <= BODYTEMP_COLD_DAMAGE_LIMIT || pressure < WARNING_LOW_PRESSURE) // APHELION EDIT CHANGE - ORIGINAL: if(environment.temperature <= BODYTEMP_COLD_DAMAGE_LIMIT)
 		return FIRELOCK_ALARM_TYPE_COLD
 	return
 

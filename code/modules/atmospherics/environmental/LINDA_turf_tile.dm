@@ -27,10 +27,7 @@
 	var/pressure_difference = 0
 	///Where the difference come from (from higher pressure to lower pressure)
 	var/pressure_direction = 0
-	/// Scratch var Dogmos' katmos equalizer (explosively_depressurize(), aphelion-dogmos
-	/// src/turfs/katmos.rs) uses while flood-filling a hull breach to track which space turf a given
-	/// turf's lost air is ultimately draining toward. Written and read back entirely on the Rust side
-	/// within a single equalize pass - nothing on the DM side needs to read it.
+	/// Scratch target written by Dogmos while tracing a hull breach's path to space.
 	var/turf/pressure_specific_target
 
 	///Excited group we are part of
@@ -168,17 +165,7 @@
 
 	apply_visual_overlays(air.return_visuals(src))
 
-/**
- * Diffs new_overlay_types against the turf's currently-shown atmos_overlay_types and mutates
- * vis_contents to match, then caches new_overlay_types as the new atmos_overlay_types. This is the
- * DM-side half of both visuals entry points:
- * * update_visuals() (above) computes new_overlay_types itself, synchronously, for every caller
- *   outside the turf-processing loop (canisters, tanks, turbines, admin tools, ...).
- * * set_visuals() (below) is Dogmos' FFI callback target once a turf has gone through Rust's gas FDM
- *   pass (aphelion-dogmos src/turfs.rs's update_visuals) - Rust has already computed the same shape
- *   of list via GLOB.gas_data.overlays, so this proc is the shared diff/mutate logic both feed into,
- *   not two independent implementations of the same thing.
- */
+/** Applies the gas-overlay diff produced by DM or Dogmos and caches the result. */
 /turf/open/proc/apply_visual_overlays(list/new_overlay_types)
 	var/list/atmos_overlay_types = src.atmos_overlay_types // Cache for free performance
 
@@ -202,10 +189,7 @@
 	UNSETEMPTY(new_overlay_types)
 	src.atmos_overlay_types = new_overlay_types
 
-/// Dogmos' FFI callback target (aphelion-dogmos src/turfs.rs's update_visuals) once a turf has gone
-/// through Rust's gas FDM pass - see apply_visual_overlays()'s doc comment. Called with zero args
-/// (new_overlay_types staying null) when the turf's air is invalid on the Rust side, matching
-/// update_visuals()'s own !air branch above.
+/// Receives the overlay list computed by Dogmos' gas-processing callback.
 /turf/open/proc/set_visuals(list/new_overlay_types)
 	apply_visual_overlays(new_overlay_types)
 
@@ -272,8 +256,8 @@
 		lock = locate(/obj/machinery/door/firedoor) in adjacent
 	lock?.start_activation_process(FIRELOCK_ALARM_TYPE_GENERIC)
 
-/**
- * Called by Dogmos' katmos equalizer once per turf that a hull breach's flood-fill actually drained air
+/* // APHELION EDIT REMOVAL START - DOGMOS
+ * Called by Dogmos' katmos equalizer when a hull breach's flood-fill actually drained air
  * from (aphelion-dogmos src/turfs/katmos.rs explosively_depressurize(), amount = the neighbor's moles
  * just before it was pulled toward space). This codebase has no prior "decompression damages the floor"
  * mechanic - ScrapeAway() (baseturfs.dm) is the existing general-purpose "strip this turf down to its
@@ -281,9 +265,12 @@
  * inventing a parallel one. Gated on amount so an ordinary, minor pressure settle doesn't rip up every
  * floor tile it touches - only a turf that actually lost a meaningful fraction of a standard cell's
  * worth of gas counts as violent enough.
- */
+*/ // APHELION EDIT REMOVAL END
+// APHELION EDIT ADDITION START - DOGMOS
+/** Damages a breach-mouth floor when Dogmos reports a meaningful gas loss. */
+// APHELION EDIT ADDITION END
 /turf/proc/handle_decompression_floor_rip(amount)
-	if(amount < DECOMPRESSION_FLOOR_RIP_MIN_MOLES)
+	if(amount < DECOMPRESSION_FLOOR_RIP_MIN_MOLES || !isfloorturf(src) || decompression_floor_rip_resistant) // APHELION EDIT CHANGE - ORIGINAL: if(amount < DECOMPRESSION_FLOOR_RIP_MIN_MOLES)
 		return
 	var/area/breach_area = get_area(src)
 	SSair.record_kennel_event(SSair.recent_breaches, list(
@@ -291,10 +278,19 @@
 		"jump_to" = REF(src),
 		"area" = breach_area ? breach_area.name : null,
 		"moles_lost" = round(amount, 0.1),
-	))
+	), src)
 	for(var/obj/machinery/breach_adjacent_machine in src)
 		SSair.kennel_pin_structure(breach_adjacent_machine, "breach-adjacent", SSair.kennel_auto_pin_duration)
 	SSair.kennel_mark_overlay_recent(SSair.kennel_overlay_breach_turfs, KENNEL_OVERLAY_BREACH, src)
+	// APHELION EDIT ADDITION START - DOGMOS
+	if(SSair.kennel_decompression_feedback_available(src))
+		visible_message(
+			span_danger("The hull tears open as pressure rips away the floor!"),
+			span_userdanger("The floor tears open under the pressure!"),
+			span_hear("You hear a violent rush of escaping air!"),
+		)
+		playsound(src, 'sound/effects/space_wind.ogg', 50, TRUE)
+	// APHELION EDIT ADDITION END
 	ScrapeAway(1, flags = CHANGETURF_INHERIT_AIR)
 
 #undef DECOMPRESSION_FLOOR_RIP_MIN_MOLES
@@ -483,4 +479,3 @@
 		if(isspaceturf(get_step(src, direction)))
 			return TRUE
 	return FALSE
-

@@ -1,11 +1,4 @@
-/**
- * Regression coverage for the compiler-invisible `airs[N].volume` class of bug (see
- * reference-dogmos-byondapi memory / the Phase 2 remediation plan): `airs` is `var/list/datum/gas_mixture/airs`,
- * so indexing it yields an untyped value and DM cannot type-check a member access through it. That let two
- * real sites silently read null instead of the intended gas volume until Dogmos's stricter FFI made the
- * failure loud. Both sites were fixed by binding a typed local; these tests exercise the real UI code paths
- * (ui_data()/ui_act()) rather than re-testing the fix's own logic in isolation.
- */
+/** Regression coverage for typed gas-mixture volume access in the HFR UI. */
 
 /// Covers the HFR interface's `cooling_volume` read (ui_data) and write (ui_act) sites in hfr_parts.dm.
 /datum/unit_test/hfr_cooling_volume_ui

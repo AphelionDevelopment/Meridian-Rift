@@ -156,35 +156,13 @@
 
 	update_adjacent_pollutants() //NOVA EDIT ADDITION //Atmos adjacency could unlock/block adjacent pollutants, this is dirty flags anyway so its fine having it here
 
-/**
- * Keeps Dogmos' two independent adjacency graphs (gas, heat) current for this turf. atmos_adjacent_turfs
- * (mutated just before this is called) drives the gas graph directly; conductivity_blocked_directions -
- * the inverse of conductivity_directions(), which itself reads atmos_adjacent_turfs - is recomputed here
- * so it reflects the adjacency change too, then a single hook call refreshes both Rust-side graphs
- * (hook_infos reads atmos_adjacent_turfs for the gas graph, then unconditionally chains into
- * supercond_update_adjacencies for the heat graph - see aphelion-dogmos src/turfs.rs).
- *
- * Meridian: also re-registers via register_dogmos_air() - found 2026-08-15, a real Tier-3-reported bug
- * ("rooms exposed to a breach don't get colder"). supercond_update_adjacencies() (above) only refreshes
- * this turf's heat-graph EDGES; ThermalInfo.adjacent_to_space - what actually gates blackbody radiation
- * in Rust - is a separate field, only (re-)populated by supercond_update_ref(), which is reached
- * exclusively through hook_register_turf() (i.e. register_dogmos_air()/update_air_ref()), never through
- * this adjacency-sync path. A hull breach changes an INTERIOR turf's adjacency (its neighbor becoming
- * space) via exactly this proc, called from the wall's own immediate_calculate_adjacent_turfs() - the
- * interior turf itself never gets Initialize()/AfterChange() called again, so without this, its
- * should_conduct_to_space() reading from turf creation (always FALSE back then) would never update, and
- * the room would never radiate heat to space no matter how long the breach stayed open.
- * register_dogmos_air() is idempotent (insert_turf()/supercond_update_ref() both overwrite in place),
- * and this proc only fires on structural adjacency changes, not every tick, so the extra FFI round trip
- * is not a hot-path concern.
+/** Refreshes Dogmos' gas and heat adjacency graphs after a structural change.
+ * Re-registration is required because a breach changes the heat graph's space-boundary flag as well
+ * as its edges. This runs only on adjacency changes, not on the processing hot path.
  */
 /turf/proc/sync_dogmos_adjacency()
-	// init_air turfs (space, see register_dogmos_air()) never register via update_air_ref() in the
-	// first place - calling the adjacency hook on an id Rust never inserted is what caused the
-	// "non-number value" crash reading world.maxx inside supercond_update_adjacencies, since it's
-	// downstream of an id lookup that was never valid to begin with. SSair.initialized is NOT checked
-	// here (unlike register_dogmos_air()'s callers): this proc is called from inside
-	// setup_allturfs()'s bulk roundstart pass, which runs before SSair.initialized flips true.
+	// Space is not registered through the normal air path. The adjacency hook is also called during
+	// map setup, before SSair.initialized is true.
 	if(!init_air || !DOGMOS)
 		return
 	conductivity_blocked_directions = ALL_CARDINALS & ~conductivity_directions()
@@ -229,7 +207,7 @@
 	return adjacent_turfs
 
 /atom/proc/air_update_turf(update = FALSE, remove = FALSE)
-	if(!SSair.initialized) // I'm sorry for polutting user code, I'll do 10 hail giacom's
+	if(!SSair.initialized)
 		return
 	var/turf/local_turf = get_turf(loc)
 	if(!local_turf)
@@ -246,12 +224,9 @@
  * * remove - Are you removing an active turf (Read wall), or adding one
 */
 /turf/air_update_turf(update = FALSE, remove = FALSE)
-	if(!SSair.initialized) // I'm sorry for polutting user code, I'll do 10 hail giacom's
+	if(!SSair.initialized)
 		return
-	// Broad catch-up: this proc is the existing "something about this turf's atmos changed" entry
-	// point, called from many sites (assume_air, remove_air, ChangeTurf-adjacent code...). Any turf
-	// whose register_dogmos_air() call fell back to heat-only earlier (air not created yet at the
-	// time) gets a real gas registration the next time anything routes through here.
+	// Retry registration for turfs whose air datum was not ready during map setup.
 	register_dogmos_air()
 	if(update)
 		immediate_calculate_adjacent_turfs()

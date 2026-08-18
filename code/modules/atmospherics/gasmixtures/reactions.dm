@@ -39,24 +39,9 @@
 
 	return priority_reactions
 
-/**
- * Flattens the nested reaction table into the shape Dogmos reads, and stamps each reaction with a
- * Dogmos-facing priority and requirements list.
- *
- * Dogmos wants a flat list of reaction datums, each carrying a numeric `priority` and a
- * `min_requirements` list keyed by gas id string. /tg/ instead groups reactions by their major gas
- * and by one of four priority groups, so we translate rather than restructure - DM's own react()
- * keeps using the nested table until turf processing lands.
- *
- * Two constraints drive the priority numbering:
- * * Dogmos stores reactions in a map keyed by priority and **silently discards duplicates**, so
- *   every priority must be unique.
- * * Dogmos iterates reactions from highest priority to lowest, the opposite of /tg/'s ascending
- *   priority groups. Counting down from the total therefore reproduces /tg/'s order exactly,
- *   including the order within a group.
- *
+/** Flattens DM's reaction groups into Dogmos' unique, reverse-ordered priorities.
  * Arguments:
- * * priority_reactions - the nested gas id -> priority group -> reactions table from init_gas_reactions().
+ * * priority_reactions - the grouped reaction table from init_gas_reactions().
  */
 /proc/init_dogmos_reactions(list/priority_reactions)
 	var/list/by_group = list(list(), list(), list(), list())
@@ -314,14 +299,7 @@
 
 	. |= REACTING | VOLATILE_REACTION
 
-/**
- * Finishes what aphelion-dogmos src/reaction/aphelion.rs's plasma_fire() started: the moles/energy
- * math above is a faithful Rust port (Phase 4, aphelion_reactions), but reaction_results needs a real
- * typepath key (this reaction's own /datum/gas_reaction/plasmafire, read via SSair.hotspot_reactions'
- * per-instance keying in LINDA_fire.dm's perform_exposure()) and hotspot_expose needs an istype() check
- * Rust has no cheap way to do - both stay DM-side rather than being reimplemented in Rust. Called once,
- * at the very end, with numbers Rust already computed.
- */
+/** Applies DM-side reaction bookkeeping after Rust computes plasma combustion. */
 /proc/dogmos_aphelion_plasmafire_finish(datum/gas_mixture/air, datum/holder, fire_amount, temperature)
 	air.reaction_results[/datum/gas_reaction/plasmafire] = fire_amount
 	var/turf/open/location = holder

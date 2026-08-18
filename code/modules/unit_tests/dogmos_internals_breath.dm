@@ -1,12 +1,4 @@
-/**
- * Reported 2026-08-15: internals tanks causing suffocation "even with contents, at normal tunings on
- * spawn." lungs.dm's existing lungs_sanity test already proves check_breath() itself is correct given a
- * manually-constructed breath - it never exercises the internals-tank sourcing path
- * (breathe() -> get_breath_from_internal() -> tank.remove_air_volume() -> tank.remove_air()), which is
- * the actual reported failure point. This calls that path directly with a stock, fully-populated
- * internals tank (no manual mole seeding - "normal tunings on spawn" means whatever populate_gas()
- * actually produces) and checks the resulting breath is enough to avoid suffocation.
- */
+/** Verifies that a populated internals tank supplies a breathable breath. */
 /datum/unit_test/dogmos_internals_breath
 
 /datum/unit_test/dogmos_internals_breath/Run()

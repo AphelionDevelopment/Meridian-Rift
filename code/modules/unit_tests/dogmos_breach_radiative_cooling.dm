@@ -1,29 +1,4 @@
-/**
- * General regression guard for a real Tier-3-reported bug (2026-08-15): "rooms exposed to a breach
- * don't get colder." Checks that a hot interior turf's heat-graph temperature (return_temperature())
- * actually drops after a real process_turf_heat() cycle once its neighbor becomes space, via whichever
- * combination of Rust's cooling mechanisms end up responsible - NOT a precise test of any one of them.
- *
- * Investigated 2026-08-15: `ThermalInfo.adjacent_to_space` (aphelion-dogmos src/turfs/superconduct.rs) -
- * the flag that gates blackbody radiation specifically - is only ever populated by
- * supercond_update_ref(), reached exclusively through register_dogmos_air()/update_air_ref().
- * sync_dogmos_adjacency()'s own refresh (supercond_update_adjacencies) only touches heat-graph EDGES, a
- * separate Rust structure - so without register_dogmos_air() also running from sync_dogmos_adjacency()
- * (see LINDA_system.dm, fixed alongside this test), a breach's interior turf never gets
- * adjacent_to_space refreshed from its roundstart FALSE. That's a real, fixed gap - but a
- * deliberate-break run proved this test does NOT discriminate it: superconduct.rs's "share w/ air" step
- * (~line 392) unconditionally equilibrates a turf's heat-graph temperature toward its OWN gas mixture's
- * temperature whenever that gas mixture is registered and enabled, regardless of adjacent_to_space -
- * and since the interior turf's gas is already cooling via ordinary FDM mixing with the vacuum neighbor
- * (space registration, fixed earlier in this integration), that alone was enough to pass this test with
- * the adjacent_to_space fix disabled. Kept as a real regression guard for "does cooling happen at all,"
- * not as proof of the specific fix - a precise blackbody-only test would need to isolate a turf with no
- * gas registered at all, which isn't representative of a real breach anyway.
- *
- * Sets up an interior turf that is never itself touched by ChangeTurf, converts its neighbor into space
- * via ChangeTurf (the same mechanism a real breach uses), and confirms the interior turf's temperature
- * actually drops after a real process_turf_heat() cycle - not just that some registration counter moved.
- */
+/** Verifies that a hot interior turf cools after its neighbor becomes space. */
 /datum/unit_test/dogmos_breach_radiative_cooling
 	/// The EAST neighbor's original type, so Destroy() can restore it even if Run() aborts partway
 	/// through via a TEST_ASSERT failure.

@@ -1,16 +1,4 @@
-/**
- * The outstanding Phase 2 milestone gate: /datum/gas_mixture/Del() now makes an FFI call
- * (__gasmixture_unregister()) that pre-Dogmos gas mixtures never had to pay. create_and_destroy
- * already establishes gas_mixture never hard-deletes (leaks), which is qualitative evidence Del()
- * isn't broken, but says nothing about its actual per-instance cost. This measures it directly against
- * a plain, feature-less datum baseline going through the exact same del() call, since no real
- * pre-Dogmos timing number exists to compare against (the game couldn't boot to measure one until the
- * Phase 2 remediation work landed).
- *
- * del() is called directly rather than qdel() - qdel()'s own instrumentation
- * (SSgarbage.items[type].destroy_time) times /datum/Destroy(), which gas_mixture does not override;
- * the FFI teardown lives in Del(), which only fires on the actual destructor call.
- */
+/** Bounds gas-mixture teardown cost, including arena unregistration. */
 /datum/unit_test/dogmos_del_cost
 
 /datum/unit_test/dogmos_del_cost/Run()

@@ -1,21 +1,4 @@
-/**
- * Phase 3.0: turf registration was never actually wired up before this - update_air_ref() and
- * __update_auxtools_turf_adjacency_info() existed as working generated bindings, but nothing in DM
- * called either of them, so Rust's TurfGases/TurfHeat graphs were empty at runtime. This is the first
- * real FFI round-trip proving register_dogmos_air() (turf.dm) actually reaches Rust: seed a known
- * temperature, force a genuinely fresh registration, and read it back through return_temperature() -
- * a value that matches what was just seeded (rather than the 102/300 no-arena fallbacks in
- * aphelion-dogmos src/turfs/superconduct.rs's hook_turf_temperature, or a stale prior value) proves
- * the turf actually reached Rust's TurfHeat arena, not just that the DM-side call didn't error.
- *
- * The test turf (run_loc_floor_bottom_left) is already registered from roundstart boot, so a naive
- * re-registration wouldn't prove anything: TurfHeat::insert_turf only refreshes
- * thermal_conductivity/heat_capacity/adjacent_to_space on an already-present node - it deliberately
- * does NOT reset temperature (so a live turf's evolving temperature survives routine re-registration,
- * e.g. on ChangeTurf). To actually observe a fresh insert, thermal_conductivity/heat_capacity are
- * zeroed first, forcing supercond_update_ref's insert-vs-remove branch to remove the turf from
- * TurfHeat, before registering again with real values.
- */
+/** Verifies a fresh turf registration reaches Rust and preserves the seeded temperature. */
 /datum/unit_test/dogmos_turf_registration
 
 /datum/unit_test/dogmos_turf_registration/proc/force_fresh_registration(turf/target, test_temperature)

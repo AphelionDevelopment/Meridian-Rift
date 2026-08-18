@@ -134,21 +134,8 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 	allocated += instance
 	return instance
 
-/**
- * Returns two real, adjacency-verified open turfs from the test room for atmos tests that need a
- * genuine gas-sharing pair rather than a synthetic one - the setup three separate Dogmos tests
- * (dogmos_gas_fdm_golden.dm, dogmos_excited_groups.dm, dogmos_highpressure_equalize.dm) hand-rolled
- * identically before this existed.
- *
- * Does not itself save/restore gas state: RunUnitTest already calls restore_atmos() unconditionally
- * after every test's Run() returns - including an early return from a failed TEST_ASSERT, not just
- * a clean finish - which re-seeds every turf in the room from its initial_gas_mix/initial temperature.
- * A caller does not need its own manual "restore original moles" line at the end of Run() for this
- * reason: it would only be redundant with what already happens generically, not a safety net beyond it.
- *
- * Arguments:
- * * direction - which direction from run_loc_floor_bottom_left to find the second turf. Defaults to
- *   EAST, matching the room's actual layout (a 5x5 open interior with real cardinal neighbors).
+/** Returns two adjacent open turfs from the shared atmos test room.
+ * Arguments: * direction - direction from run_loc_floor_bottom_left for the second turf.
  */
 /datum/unit_test/proc/allocate_turf_pair(direction = EAST)
 	var/turf/open/turf_a = run_loc_floor_bottom_left
@@ -159,34 +146,13 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 		"turf_a and turf_b are not gas-adjacent (atmos_adjacent_turfs) - this test needs two turfs Dogmos will actually share gas between.")
 	return list(turf_a, turf_b)
 
-/**
- * Re-registers a turf so Rust picks up locally-modified thermal_conductivity/heat_capacity/blocks_air,
- * then rebuilds its adjacency so the heat graph reflects the current blocks_air state.
- * TurfHeat::insert_turf refreshes conductivity/capacity on an already-present node (it deliberately
- * preserves temperature), so a plain re-register is enough here - no zero-then-restore removal cycle
- * needed (that's a different case, see dogmos_turf_registration.dm's force_fresh_registration(), which
- * tests fresh-insert seeding specifically and is not a duplicate of this).
- *
- * Shared by every Dogmos heat-conduction test that needs a real, non-gas-adjacent heat edge - was
- * hand-rolled identically as a local `resync()` proc in both dogmos_superconduction_golden.dm and
- * dogmos_infinite_heat_capacity_conduction.dm before this existed. See either file's doc comment for
- * why a plain gas-adjacent pair (what allocate_turf_pair() guarantees) never conducts heat at all.
- */
+/** Re-registers a turf and rebuilds its Dogmos heat-graph adjacency. */
 /datum/unit_test/proc/resync_turf_for_dogmos(turf/open/target)
 	target.register_dogmos_air()
 	target.immediate_calculate_adjacent_turfs()
 
-/**
- * Converts the turf `direction` of interior into real /turf/open/space via ChangeTurf - the same
- * machinery a real hull breach uses (place_on_top/ChangeTurf always calls the new turf's Initialize()
- * and AfterChange()), not a synthetic shortcut. Shared by every Dogmos test that needs a real breach
- * neighbor - was hand-rolled near-identically in dogmos_space_boundary_registration.dm and
- * dogmos_breach_radiative_cooling.dm before this existed.
- *
- * Returns list(vacuum_neighbor, original_type). Callers MUST pass original_type to
- * restore_neighbor_from_space() in their Destroy(), unconditionally (not just on a clean Run()
- * finish) - a TEST_ASSERT abort partway through Run() would otherwise leave a real space turf sitting
- * in the shared test room for every test that runs after.
+/** Converts an adjacent turf to space and returns list(vacuum_neighbor, original_type).
+ * Restore the original type from Destroy(), including after failed assertions.
  */
 /datum/unit_test/proc/convert_neighbor_to_space(turf/open/interior, direction = EAST)
 	var/turf/neighbor_loc = get_step(interior, direction)
@@ -194,9 +160,7 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 		"The turf [direction] of the interior turf is not an open turf - this test needs a real neighbor to convert to space.")
 	var/original_type = neighbor_loc.type
 
-	// CHANGETURF_RECALC_ADJACENT: without it, AfterChange() queues the adjacency recompute into
-	// adjacent_rebuild for SSair.fire() to pick up later instead of running it immediately - callers
-	// need the edge to exist synchronously, right after this returns.
+	// Rebuild adjacency synchronously so the new edge exists when the test continues.
 	var/turf/open/space/vacuum_neighbor = neighbor_loc.ChangeTurf(/turf/open/space, flags = CHANGETURF_INHERIT_AIR | CHANGETURF_RECALC_ADJACENT)
 	TEST_ASSERT(istype(vacuum_neighbor), \
 		"ChangeTurf to /turf/open/space did not produce a space turf - test setup is broken, not the thing under test.")
@@ -356,10 +320,7 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 		log_world("::error::[TEST_OUTPUT_RED("FAIL")] [test_output_desc]")
 
 	var/final_status = skip_test ? UNIT_TEST_SKIPPED : (test.succeeded ? UNIT_TEST_PASSED : UNIT_TEST_FAILED)
-	// duration is decisecond REALTIMEOFDAY elapsed, or 0 for a skipped test (never reassigned from its
-	// raw start-timestamp value above in that branch, so it must not be reported as-is). This is what
-	// makes per-test timing-regression detection possible in tools/dogmos/run_tests.ps1 - previously
-	// duration only reached log_world() (and only when > 10 deciseconds), never this file.
+	// Record elapsed duration for timing checks; skipped tests report zero.
 	test_results[test_path] = list("status" = final_status, "message" = message, "name" = test_path, "runtimes" = runtimes_during, "duration" = skip_test ? 0 : duration)
 
 	qdel(test)

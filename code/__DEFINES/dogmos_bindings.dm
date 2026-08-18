@@ -16,41 +16,12 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:equalize_hook_ffi")
 	return call_ext(loaded)(src, remaining)
 
-/// Args: (holder). Runs all reactions on this gas mixture. Holder is used by the reactions, and can be any arbitrary datum or null.
-/// Underscored because DM keeps a `react()` wrapper of its own, carrying behaviour Dogmos has no
-/// equivalent for: the hypernoblium oppression gate that stops all reactions before any are
-/// considered, the reaction_results bookkeeping, and COMSIG_GASMIX_REACTED.
-///
-/// Meridian: Dogmos Kennel high-cost-zone profiling. SSair.kennel_profile_reactions is read fresh on
-/// every call (same "no rebuild needed to flip live" pattern as blackbody_enabled,
-/// turfs/superconduct.rs) rather than cached - this is the one Dogmos Kennel toggle with real per-call
-/// Rust-side overhead, so it defaults off and the entire Instant::now()/elapsed() path is skipped
-/// unless explicitly enabled. A reaction whose single react_by_id() call meets or exceeds
-/// kennel_high_cost_ms_threshold calls SSair.kennel_record_reaction_cost() directly - not queued
-/// through auxcallback, because react_hook already only ever runs on the main DM thread (either a
-/// direct DM `air.react()` call, or the queued callback post_process() already routes through,
-/// turfs/processing.rs) - no second hop needed.
-/datum/gas_mixture/proc/__react(holder)
-	var/static/loaded = load_ext(DOGMOS, "byond:react_hook_ffi")
-	return call_ext(loaded)(src, holder)
-
-/// Returns: true if the two mixtures are different enough for processing, false otherwise.
-/datum/gas_mixture/proc/compare(other)
-	var/static/loaded = load_ext(DOGMOS, "byond:compare_hook_ffi")
-	return call_ext(loaded)(src, other)
-
 /// Clears the gas mixture my removing all of its gases.
 /datum/gas_mixture/proc/clear()
 	var/static/loaded = load_ext(DOGMOS, "byond:clear_hook_ffi")
 	return call_ext(loaded)(src)
 
-/// Returns: whether the mix has been marked immutable.
-///
-/// Meridian: added because remove_into/remove_ratio_into do not themselves check immutability -
-/// only merge and copy_from_mutable do - so removing gas from an immutable mixture (e.g. a space
-/// tile) would silently deplete it over time. DM's __remove/__remove_ratio wrappers check this
-/// first and return an inexhaustible copy instead of draining space, matching upstream tg's
-/// `/datum/gas_mixture/immutable/space/remove()` behaviour.
+/// Returns whether the mix has been marked immutable.
 /datum/gas_mixture/proc/is_immutable()
 	var/static/loaded = load_ext(DOGMOS, "byond:is_immutable_hook_ffi")
 	return call_ext(loaded)(src)
@@ -179,6 +150,16 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:merge_hook_ffi")
 	return call_ext(loaded)(src, giver)
 
+/// Returns: the mix's thermal energy, the product of the mixture's heat capacity and its temperature.
+/datum/gas_mixture/proc/thermal_energy()
+	var/static/loaded = load_ext(DOGMOS, "byond:thermal_energy_hook_ffi")
+	return call_ext(loaded)(src)
+
+/// Returns: the mix's volume, in liters.
+/datum/gas_mixture/proc/return_volume()
+	var/static/loaded = load_ext(DOGMOS, "byond:return_volume_hook_ffi")
+	return call_ext(loaded)(src)
+
 /// Returns: true. Parses gas strings like "o2=2500;plasma=5000;TEMP=370" and turns src mixes into the parsed gas mixture, invalid patterns will be ignored
 /datum/gas_mixture/proc/__auxtools_parse_gas_string(string)
 	var/static/loaded = load_ext(DOGMOS, "byond:parse_gas_string_ffi")
@@ -229,15 +210,20 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:adjust_heat_hook_ffi")
 	return call_ext(loaded)(src, temp)
 
-/// Returns: the mix's thermal energy, the product of the mixture's heat capacity and its temperature.
-/datum/gas_mixture/proc/thermal_energy()
-	var/static/loaded = load_ext(DOGMOS, "byond:thermal_energy_hook_ffi")
-	return call_ext(loaded)(src)
+/// Args: (holder). Runs all reactions on this gas mixture. Holder is used by the reactions, and can be any arbitrary datum or null.
+/// Underscored because the DM `react()` wrapper retains reaction_results bookkeeping and
+/// COMSIG_GASMIX_REACTED, while this hook also enforces the shared Hypernoblium gate for native calls.
+///
+/// Optional profiling reads its toggle on each call and records slow reactions directly on the DM
+/// thread, avoiding callback overhead when profiling is disabled.
+/datum/gas_mixture/proc/__react(holder)
+	var/static/loaded = load_ext(DOGMOS, "byond:react_hook_ffi")
+	return call_ext(loaded)(src, holder)
 
-/// Returns: the mix's volume, in liters.
-/datum/gas_mixture/proc/return_volume()
-	var/static/loaded = load_ext(DOGMOS, "byond:return_volume_hook_ffi")
-	return call_ext(loaded)(src)
+/// Returns: true if the two mixtures are different enough for processing, false otherwise.
+/datum/gas_mixture/proc/compare(other)
+	var/static/loaded = load_ext(DOGMOS, "byond:compare_hook_ffi")
+	return call_ext(loaded)(src, other)
 
 /// Returns: the mix's temperature, in kelvins.
 /datum/gas_mixture/proc/return_temperature()
@@ -275,6 +261,20 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:register_gasmixture_hook_ffi")
 	return call_ext(loaded)(src)
 
+/// Stops Dogmos' asynchronous worker, drains callbacks that can no longer run during world
+/// teardown, and releases the Rust-side gas, turf, and heat arenas. This is idempotent because BYOND
+/// can reach more than one shutdown path during a hard restart.
+/proc/dogmos_shutdown()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_shutdown_hook_ffi")
+	return call_ext(loaded)()
+
+/// Returns the number of callbacks rejected because the main-thread callback queue was already
+/// closed. A live server should keep this at zero; a non-zero value identifies teardown ordering
+/// that attempted to enqueue work after callback processing had stopped.
+/proc/dogmos_callback_enqueue_failures()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_callback_enqueue_failures_ffi")
+	return call_ext(loaded)()
+
 /// Args: (ms). Runs callbacks until time limit is reached. If time limit is omitted, runs all callbacks.
 /proc/process_atmos_callbacks(remaining)
 	var/static/loaded = load_ext(DOGMOS, "byond:atmos_callback_handle_ffi")
@@ -284,10 +284,15 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_ffi")
 	return call_ext(loaded)(src)
 
-/// Returns: how many turfs are currently registered in Dogmos' heat graph. Meridian: DM's
-/// active_super_conductivity list (and the MC-tab "SC:" counter / TGUI conducting_size field that
-/// read its length) is deleted along with the rest of DM's superconduction system - this gives those
-/// two consumers a real number to show again instead of a hardcoded 0.
+/// Returns the cumulative number of heat-graph insertions and removals since the DLL initialized.
+/// This is intentionally monotonic: the per-cycle registration counter is delivered through the
+/// asynchronous callback queue and can be zero when a perf sample races that callback, while this
+/// direct atomic read cannot lose a completed registration event to queue timing.
+/proc/dogmos_heat_registration_total()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_heat_registration_total_ffi")
+	return call_ext(loaded)()
+
+/// Returns the number of registered turfs in the heat graph.
 /proc/dogmos_heat_graph_count()
 	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_heat_graph_count_ffi")
 	return call_ext(loaded)()
@@ -314,31 +319,24 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:finalize_gas_refs_ffi")
 	return call_ext(loaded)()
 
-/// For updating reaction informations for auxmos, only call this when it is changed.
+/// Refreshes the reaction cache after DM changes the reaction table.
 /datum/controller/subsystem/air/proc/auxtools_update_reactions()
 	var/static/loaded = load_ext(DOGMOS, "byond:update_reactions_ffi")
 	return call_ext(loaded)()
 
-/// Returns: the number of reactions Dogmos accepted at init. Meridian: exists purely so DM can
-/// assert across the FFI that the reaction table actually crossed, rather than only that DM built
-/// one - see /datum/unit_test/dogmos_registration.
+/// Returns the number of reactions accepted during initialization.
 /proc/dogmos_reaction_count()
 	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_reaction_count_ffi")
 	return call_ext(loaded)()
 
-/// Registers gases, and get reaction infos for auxmos, only call when ssair is initing.
+/// Registers gases and loads the reaction table during SSair initialization.
 /proc/auxtools_atmos_init(gas_data)
 	var/static/loaded = load_ext(DOGMOS, "byond:hook_init_ffi")
 	return call_ext(loaded)(gas_data)
 
 /// Updates adjacency infos for turfs, only use this in immediateupdateturfs.
 ///
-/// Meridian: max_x/max_y are passed in from DM (world.maxx/world.maxy) rather than fetched here via
-/// FFI - byondapi's generic read_number_id/Byond_ReadVarByStrId does not work against the World
-/// value type for its built-in intrinsic properties (maxx/maxy are not stored in the regular var
-/// table the way user-declared datum vars are), so a self-fetch inside supercond_update_adjacencies
-/// always failed with "Attempt to interpret non-number value as number". DM has these trivially as
-/// native properties, so passing them through avoids the broken read path entirely.
+/// The map bounds are passed from DM because World intrinsic properties are not regular FFI vars.
 /turf/proc/__update_auxtools_turf_adjacency_info(max_x, max_y)
 	var/static/loaded = load_ext(DOGMOS, "byond:hook_infos_ffi")
 	return call_ext(loaded)(src, max_x, max_y)
@@ -348,13 +346,7 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:hook_register_turf_ffi")
 	return call_ext(loaded)(src, flag)
 
-/// Returns: how many space-boundary turfs are currently registered - i.e. how many specific space
-/// turfs some interior turf has discovered as a neighbor and registered on demand via the
-/// SPACE_BOUNDARY_FLAG path in hook_register_turf(). These are the only gas-graph nodes registered
-/// with empty SimulationFlags (every other registration in this codebase passes SIMULATION_ALL), so
-/// filtering on !enabled() identifies them precisely. Atmos Control Panel telemetry - lets an admin
-/// see at a glance that breach detection has real neighbors to work with, instead of the gap this
-/// counts existing silently the way it did until the 2026-08-14 playtest surfaced it.
+/// Returns the number of on-demand space-boundary nodes in the gas graph.
 /proc/dogmos_space_boundary_count()
 	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_space_boundary_count_ffi")
 	return call_ext(loaded)()
@@ -378,4 +370,3 @@
 /datum/controller/subsystem/air/proc/thread_running()
 	var/static/loaded = load_ext(DOGMOS, "byond:thread_running_hook_ffi")
 	return call_ext(loaded)()
-

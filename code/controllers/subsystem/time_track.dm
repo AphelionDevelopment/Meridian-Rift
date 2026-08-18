@@ -71,18 +71,24 @@ SUBSYSTEM_DEF(time_track)
 			"air_network_count",
 			"air_delta_count",
 			"air_superconductive_count",
-			// Meridian: excited_groups/high_pressure_delta above are DM-side lists that go stale or
-			// sit empty between samples post-Dogmos-cutover (excited_groups is a roundstart-only
-			// snapshot; high_pressure_delta drains within the same cycle it's populated) - they were
-			// the reason a real gap (space turfs never registering, see space.dm) read as "Rust doing
-			// nothing all round" when it wasn't, and equally could mask (or falsely indicate) an actual
-			// slowdown. These are Rust's own per-cycle counters instead - see SSair.ui_data()/the Atmos
-			// Control Panel, which surfaces the same set live.
+			// APHELION EDIT ADDITION START - DOGMOS
+			"air_heat_edge_attempts",
+			"air_heat_edges_applied",
+			"air_heat_lock_contention",
+			"air_heat_registration_changes",
+			"air_heat_registration_total",
+			// APHELION EDIT ADDITION END
+			// Use Rust's per-cycle counters; the legacy DM lists are stale between samples.
 			"air_low_pressure_count",
 			"air_high_pressure_count",
 			"air_group_processed",
 			"air_equalize_processed",
 			"air_space_boundary_count",
+			// APHELION EDIT ADDITION START - DOGMOS
+			"air_equalize_enabled",
+			"air_equalize_performance_profile",
+			"air_realistic_space_radiation",
+			// APHELION EDIT ADDITION END
 			"all_queries",
 			"queries_active",
 			"queries_standby"
@@ -158,11 +164,23 @@ SUBSYSTEM_DEF(time_track)
 			length(SSair.networks),
 			length(SSair.high_pressure_delta),
 			dogmos_heat_graph_count(),
+			// APHELION EDIT ADDITION START - DOGMOS
+			SSair.dogmos_heat_edge_attempts,
+			SSair.dogmos_heat_edges_applied,
+			SSair.dogmos_heat_lock_contention,
+			SSair.dogmos_heat_registration_changes,
+			dogmos_heat_registration_total(),
+			// APHELION EDIT ADDITION END
 			SSair.low_pressure_turfs,
 			SSair.high_pressure_turfs,
 			SSair.num_group_turfs_processed,
 			SSair.num_equalize_processed,
 			dogmos_space_boundary_count(),
+			// APHELION EDIT ADDITION START - DOGMOS
+			SSair.equalize_enabled,
+			SSair.dogmos_equalize_performance_profile,
+			SSair.realistic_space_radiation,
+			// APHELION EDIT ADDITION END
 			SSdbcore.all_queries_num,
 			SSdbcore.queries_active_num,
 			SSdbcore.queries_standby_num

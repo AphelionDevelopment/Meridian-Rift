@@ -1,57 +1,25 @@
-This module is maintained as part of the Dogmos integration branch.
+# Dogmos
 
-## Dogmos gas registration subsystem
+Module ID: `DOGMOS`
 
-Module ID: DOGMOS
+This module initializes the Rust atmospherics library before turf construction and provides the
+Dogmos-specific subsystem state and turf hooks that do not belong in the atmospherics core.
 
-### Description:
+## Contents
 
-`SUBSYSTEM_DEF(dogmos)` hands the Dogmos (Rust) atmospherics library its gas registry and reaction
-table at `INITSTAGE_EARLY`, before any turf builds its air. It cannot live in SSair - see the doc
-comment on the subsystem for why. Also carries `runtimes_at_init_complete`, a snapshot used by
-`/datum/unit_test/no_runtimes_during_init` to assert a clean boot.
+- `code/dogmos.dm`: Dogmos subsystem and integration state.
+- `master_files/code/game/turfs/`: turf registration, temperature authority, adjacency, and space
+  boundary overrides.
+- `tgui/packages/tgui/interfaces/DogmosKennel/docs/`: Markdown source for the Kennel's About,
+  Glossary, and Credits tabs.
 
-The rest of the Dogmos/atmos-FFI integration lives in `code/` proper (declared fork-owned in
-`tools/dogmos/`, not modularized - see the plan doc referenced in `project-dogmos-integration` memory
-for why the atmos tree itself is a boundary declaration rather than per-file modularization). This
-subsystem, its Dogmos configuration vars, and the runtime-tracking global are the pieces with no
-atmos-tree dependency and no `.dme` include-order constraint, so they moved here.
+The station-safe `/obj/item/clothing/glasses/meson/engine/dogmos` is research-buildable. Its modes
+include breach alerts and reaction profiles backed by Kennel overlays. The `/admin` subtype adds
+high-cost reaction profiling, structure pins, the full overlay set, and area-blueprint imaging; it
+is not a station research design.
 
-### TG Proc/File Changes:
+Related core includes are `code/__DEFINES/dogmos_defines.dm` and
+`code/__DEFINES/dogmos_bindings.dm`; they must remain in core for include-order compatibility.
 
-- N/A
-
-### Modular Overrides:
-
-- `modular_aphelion/modules/dogmos/code/dogmos.dm`: `SUBSYSTEM_DEF(dogmos)` (new subsystem, not an
-  override of anything TG), `GLOBAL_VAR_INIT(runtimes_at_init_complete)`, and the SSair temperature,
-  Equalize-profile, and superconductivity telemetry vars.
-- `modular_aphelion/master_files/code/game/turfs/turf.dm`: `/turf/var/initial_temperature`,
-  `/turf/var/conductivity_blocked_directions`, `/turf/Initalize_Atmos()`, `/turf/proc/register_dogmos_air()`,
-  `/turf/proc/set_temperature()`.
-- `modular_aphelion/master_files/code/game/turfs/open/_open.dm`: `/turf/open/Initalize_Atmos()` (chains
-  to the base override above via `..()`, since core's `/turf/open/Initalize_Atmos()` does not call
-  `..()` itself and this needed to run before it).
-- `modular_aphelion/master_files/code/game/turfs/open/space/space.dm`: `/turf/open/space/register_dogmos_air()`,
-  `/turf/open/space/sync_dogmos_adjacency()` - space turfs skip Initalize_Atmos() entirely (see
-  space_EXPENSIVE.dm), so the base register_dogmos_air()'s init_air gate meant no space turf ever
-  registered into Dogmos, which meant gas never diffused into space and katmos breach detection never
-  had a neighbor to find. These overrides register one specific space turf on demand, the moment
-  either side's adjacency plumbing actually touches it (DOGMOS_SIMULATION_SPACE_BOUNDARY, see
-  dogmos_defines.dm and hook_register_turf in aphelion-dogmos/src/turfs.rs).
-
-### Defines:
-
-- `code/__DEFINES/dogmos_defines.dm`: hand-maintained FFI constants plus the blocked-turf temperature
-  authority and Equalize performance-profile values. This remains a core include because generated
-  bindings and core atmos files consume it before modular files are loaded.
-
-### Included files that are not contained in this module:
-
-- `code/__DEFINES/dogmos_bindings.dm`, `code/__DEFINES/dogmos_defines.dm`: must stay in core - both
-  are included before `modular_aphelion` in `tgstation.dme`, and core atmos files consume their macros.
-
-### Credits:
-
-- Ported from `code/controllers/subsystem/dogmos.dm` as part of the Phase 3 `AGENTS.md` compliance
-  pass. Original authorship: the Dogmos integration work.
+The remaining gas and turf processing implementation stays in the core atmospherics files because it
+must preserve their include order and existing call sites.

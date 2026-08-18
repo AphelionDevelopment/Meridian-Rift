@@ -1,17 +1,4 @@
-/**
- * Verifies that every gas and reaction was handed to Dogmos during SSair init.
- *
- * Test suite streamlining pass (2026-08-15): this file used to also hold a separate `dogmos_load` test
- * (the Phase 0 gate - proving the library resolves and a bare call_ext round-trip works). Phase 0 is now
- * solidly proven: `boot_probe.ps1` already independently verifies the game boots with 0 runtime errors
- * before the suite even runs (which cannot happen if the library failed to load), and every assertion
- * below requires a working, answering FFI just to reach SSdogmos.gases_registered - a load failure would
- * fail loudly and immediately right here, not silently. `dogmos_load`'s own value had become fully
- * subsumed; removed rather than kept as a second, narrower copy of the same "does Dogmos answer" proof.
- * Its one cheap, genuinely-standalone check (does __detect_dogmos() resolve a library name at all) is
- * kept below as this test's first line, since a load failure landing on line 1 with a distinct message
- * is worth the one-liner.
- */
+/** Verifies that gas and reaction registries reach Dogmos during SSair initialization. */
 /datum/unit_test/dogmos_registration
 
 /datum/unit_test/dogmos_registration/Run()

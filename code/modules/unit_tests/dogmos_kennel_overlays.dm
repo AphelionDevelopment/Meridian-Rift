@@ -1,10 +1,4 @@
-/**
- * Dogmos Kennel Phase 4: kennel_mark_overlay_recent() keeps at most KENNEL_OVERLAY_RECENT_CAP distinct
- * turfs lit per event-based overlay category, evicting the oldest (by vis_contents, the actual visible
- * effect - not just an internal counter) once the cap is exceeded. Also covers that re-marking an
- * already-tracked turf moves it to the front instead of creating a duplicate tracker entry - which
- * would otherwise let a single hot location silently eat the whole cap on itself.
- */
+/** Verifies bounded Kennel event overlays and refresh behavior. */
 /datum/unit_test/dogmos_kennel_overlays
 	var/list/original_tracker
 	var/list/marked_turfs

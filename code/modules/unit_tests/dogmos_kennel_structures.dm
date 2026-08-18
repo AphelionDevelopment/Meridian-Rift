@@ -1,9 +1,4 @@
-/**
- * Dogmos Kennel: kennel_pin_structure()/kennel_unpin_structure()/kennel_prune_expired_pins(). Covers
- * three properties directly: re-pinning an already-pinned target updates it in place rather than
- * duplicating the entry, an expiring auto-pin is actually removed once its deadline passes, and a
- * manual pin (expires = null) survives pruning regardless of how much time passes.
- */
+/** Verifies Kennel pin refresh, expiry, and manual-pin retention. */
 /datum/unit_test/dogmos_kennel_structures
 	var/list/original_list
 

@@ -1,16 +1,4 @@
-/**
- * FFI round-trip for /turf/proc/set_temperature() (modular_aphelion/master_files/code/game/turfs/turf.dm),
- * the wrapper added in Phase 3 so every DM call site that used to write /turf/var/temperature directly
- * can push the value through to Dogmos' heat-conduction graph instead of silently going stale there.
- *
- * Does not attempt to exercise the raw __set_temperature() bind's NaN/infinite-rejection or
- * not-registered-in-TurfHeat error paths directly - both return Err from Rust, which propagates as an
- * uncaught DM exception rather than something a TEST_ASSERT can cleanly observe, and forcing either
- * deliberately risks aborting the rest of the suite rather than just this test. Both are covered by
- * construction instead: register_dogmos_air() (see dogmos_turf_registration.dm) already establishes
- * that any turf with nonzero thermal_conductivity/heat_capacity registers into TurfHeat, and the
- * wrapper never passes anything but a plain DM number through.
- */
+/** Verifies that the turf temperature wrapper updates Rust's heat graph. */
 /datum/unit_test/dogmos_turf_temperature_setter
 
 /datum/unit_test/dogmos_turf_temperature_setter/Run()

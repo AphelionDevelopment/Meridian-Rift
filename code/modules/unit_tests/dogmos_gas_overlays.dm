@@ -1,14 +1,4 @@
-/**
- * GLOB.gas_data.overlays (populated by SSdogmos's populate_gas_data_overlays(),
- * modular_aphelion/modules/dogmos/code/dogmos.dm) is what Rust's update_visuals() reads to resolve
- * gas overlay objects for the set_visuals() FFI callback - the sole DM-side plumbing for a real,
- * previously-flagged mismatch: upstream auxmos expects a 2-level table (GAS_ID -> VIS_FACTOR), but
- * this codebase renders multiz z-levels' gas overlays on different planes, so the real table is
- * 3-level (GAS_ID -> PLANE_OFFSET+1 -> VIS_FACTOR). Both the Rust read side
- * (aphelion-dogmos src/turfs.rs's update_visuals) and this DM population code were written together
- * to agree on that shape - this test is the DM-side half of confirming they actually do, checking the
- * exact structure Rust indexes into rather than just "did population run without erroring."
- */
+/** Verifies the multiz gas-overlay table consumed by Rust visual updates. */
 /datum/unit_test/dogmos_gas_overlays
 
 /datum/unit_test/dogmos_gas_overlays/Run()

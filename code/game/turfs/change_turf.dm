@@ -284,6 +284,9 @@ GLOBAL_LIST_INIT(blacklisted_automated_baseturfs, typecacheof(list(
 //If you modify this function, ensure it works correctly with lateloaded map templates.
 /turf/proc/AfterChange(flags, oldType) //called after a turf has been replaced in ChangeTurf()
 	levelupdate()
+	// APHELION EDIT ADDITION START - DOGMOS
+	mark_dogmos_turf_replacement()
+	// APHELION EDIT ADDITION END
 	register_dogmos_air()
 	if(flags & CHANGETURF_RECALC_ADJACENT)
 		immediate_calculate_adjacent_turfs()
@@ -296,34 +299,9 @@ GLOBAL_LIST_INIT(blacklisted_automated_baseturfs, typecacheof(list(
 	..()
 	RemoveLattice()
 	if(flags & CHANGETURF_IGNORE_AIR)
-		// A deferred map-load finalization pass (reader.dm's parsed_map/build_coordinate - what
-		// holodeck/Thunderdome resets use among other map loads) calls this with IGNORE_AIR specifically
-		// to skip Assimilate_Air()'s neighbor-blending: a real map load should use each turf's own fresh
-		// air, not average with whatever used to be next to it. But BYOND turf refs are stable across
-		// ChangeTurf() (the same coordinate slot is reused, not a fresh allocation - confirmed via
-		// REF(src) before/after), so if this exact ref was already registered in Dogmos' heat graph
-		// before the reset (e.g. an old, still-hot Thunderdome arena tile), register_dogmos_air() above
-		// hits Rust's "already present" branch (TurfHeat::insert_turf, aphelion-dogmos
-		// src/turfs/superconduct.rs) - which deliberately leaves temperature untouched on that branch, by
-		// design, for ordinary live re-registration. Left alone, a reset turf's heat-graph copy silently
-		// keeps whatever temperature the arena had before resetting, forever - exactly the "hot-spots
-		// survive a Thunderdome reset" symptom (fixed only by the Fix Air admin verb, which happens to
-		// call set_temperature() directly). set_temperature() bypasses insert_turf's preserve-on-update
-		// path (it's a direct FFI write, not a re-registration), so this re-syncs the heat graph to this
-		// fresh turf's own, correctly-initialized temperature - the same "route through the real setter"
-		// idea already applied to Assimilate_Air() below.
-		//
-		// Guarded on `air` existing: register_dogmos_air() (called above via ..()) falls back to
-		// DOGMOS_SIMULATION_NONE - not a real TurfHeat insert - when AfterChange() runs before
-		// /turf/open/Initialize()'s create_gas_mixture() has (turf.dm's own documented edge case for
-		// some map-load paths, e.g. a map module loaded from another atom's own Initialize() via
-		// /obj/modular_map_root/interlink). A real registration follows later from that same doc
-		// comment's "StopLoadingMap()'s catch-up or the next air_update_turf() call" - which seeds a
-		// fresh temperature correctly on its own, since that's a genuinely new TurfHeat insert. Calling
-		// set_temperature() unconditionally here crashed with "turf that is not registered in TurfHeat"
-		// on exactly that path (found live via dm-mcp, 2026-08-16) - set_temperature()'s own
-		// init_air/DOGMOS guard doesn't catch this, since both are true; the turf just isn't in Rust's
-		// map yet.
+		// IGNORE_AIR reuses turf references. An existing TurfHeat node preserves temperature during
+		// re-registration, so reset it through the setter; unregistered map-load turfs are registered
+		// later and must wait for that registration.
 		/* // APHELION EDIT REMOVAL START - DOGMOS
 		set_temperature(temperature)
 		*/ // APHELION EDIT REMOVAL END
@@ -363,18 +341,7 @@ GLOBAL_LIST_INIT(blacklisted_automated_baseturfs, typecacheof(list(
 	for(var/id in total.get_gases())
 		total.set_moles(id, total.get_moles(id) / turflen)
 
-	// Meridian: turf.set_temperature() (not a direct var write, and not just total.set_temperature()
-	// above) - `total` here is a /datum/gas_mixture, and setting ITS temperature only ever touched
-	// Dogmos' gas-mixture-level temperature field, a completely separate Rust structure from the
-	// turf's own heat-graph copy (TurfHeat/ThermalInfo, what return_temperature()/blackbody radiation/
-	// superconduction all actually read). Without this, a freshly-placed turf's GAS kept the new
-	// assimilated (possibly neighbor-contaminated) temperature while its HEAT-GRAPH copy silently kept
-	// whatever it was seeded with at registration - a real, confirmed 2026-08-15 bug: repeatedly
-	// resetting a holodeck arena (ChangeTurf without CHANGETURF_INHERIT_AIR/IGNORE_AIR, which routes
-	// through here) left some turfs "retaining and releasing heat" after reset, invisible to a plain
-	// gas-content check and only fixable by the Fix Air admin verb, which happens to call turf-level
-	// set_temperature() directly. This isn't holodeck-specific - Assimilate_Air() runs on ANY
-	// ChangeTurf without those flags (construction, deconstruction, floor placement generally).
+	// Keep the averaged gas temperature and the turf's separate TurfHeat temperature synchronized.
 	for(var/turf/open/turf in turf_list)
 		turf.air.copy_from(total)
 		turf.set_temperature(total.return_temperature())

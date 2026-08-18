@@ -1,24 +1,4 @@
-/**
- * Phase 3.0's adjacency-rebuild wiring fixed two things at once, both regression-tested here:
- *
- * 1. atmos_adjacent_turfs[neighbor] used to be written as a bare boolean TRUE (1). Dogmos'
- *    AdjacentFlags::from_bits_truncate only recognizes bit 0b10 (ATMOS_ADJACENT_FIRELOCK) - truncating
- *    1 silently drops it, so hook_infos would never see a real flags value. Every entry should now be a
- *    real flags value (NONE, or DOGMOS_ADJACENT_FIRELOCK once the SSAIR_HIGHPRESSURE cutover's
- *    atmos_adjacency_flags_with() detects a firelock on the edge) instead.
- *
- *    Checked as "not the bare value 1", not "always NONE": the latter was true only because firelock
- *    detection didn't exist yet at Phase 3.0, and would have started failing for a CORRECT reason the
- *    moment it landed - which is exactly the failure mode of a test that asserts an implementation
- *    accident instead of the actual invariant it's meant to guard.
- * 2. conductivity_blocked_directions (read by Rust's supercond_update_adjacencies for the separate heat
- *    graph) must be recomputed by the same rebuild pass that touches atmos_adjacent_turfs (the gas
- *    graph), via the new sync_dogmos_adjacency() hook - not two independent, driftable refreshes.
- *
- * Real multi-turf layout (the unit test room and its neighbors), not a synthetic one - this is
- * specifically about whether a genuine adjacency rebuild produces correct data, not about the
- * bookkeeping in isolation.
- */
+/** Verifies adjacency flags and heat-graph refresh on a real multi-turf layout. */
 /datum/unit_test/dogmos_turf_adjacency_sync
 
 /datum/unit_test/dogmos_turf_adjacency_sync/Run()

@@ -38,9 +38,9 @@
 	/// Alist of procs to always run, in the form gas_id -> proc_path
 	var/alist/breathe_always = alist()
 
-	/// Gas mixture to breath out when we're done processing a breath
-	/// Will get emptied out when it's all done
-	var/datum/gas_mixture/immutable/breath_out
+	/// Mutable scratch mixture for gases exhaled during breath processing.
+	// APHELION EDIT CHANGE - ORIGINAL: var/datum/gas_mixture/immutable/breath_out
+	var/datum/gas_mixture/breath_out
 
 	//Breath damage
 	//These thresholds are checked against what amounts to total_mix_pressure * (gas_type_mols/total_mols)
@@ -167,10 +167,7 @@
 	. = ..()
 	// This is very "manual" I realize, but it's useful to ensure cleanup for gases we're removing happens
 	// Avoids stuck alerts and such
-	// Constructed lazily rather than at proc-local static init - a proc-local var/static with a
-	// new() initializer can evaluate before Dogmos registration is safe, silently leaving
-	// _extools_pointer_gasmixture unset (see the empty_breath guard below and space_gas in
-	// code/game/turfs/open/space/space.dm for the same hazard).
+	// Lazy construction ensures Dogmos is initialized before the fallback registers.
 	var/static/datum/gas_mixture/immutable/dummy
 	if(isnull(dummy))
 		dummy = new(BREATH_VOLUME)
@@ -606,8 +603,7 @@
 
 	// If the breath is falsy or "null", we can use the backup empty_breath.
 	if(!breath)
-		// Lazily constructed - see the identical guard in life.dm's check_breath() and space_gas
-		// in code/game/turfs/open/space/space.dm for why `= new` at declaration is unsafe here.
+		// Lazy construction ensures Dogmos is initialized before the fallback registers.
 		var/static/datum/gas_mixture/immutable/empty_breath
 		if(isnull(empty_breath))
 			empty_breath = new(BREATH_VOLUME)

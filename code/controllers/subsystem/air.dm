@@ -1,21 +1,7 @@
-/// How many active_turfs entries process_active_turfs()'s legacy per-cycle walk (archive/current_cycle/
-/// temperature_expose/stability check) processes per fire() cycle, round-robin. Bounds the walk's own
-/// cost so it can never grow unboundedly with active_turfs size and starve the actual gas FDM call of
-/// its tick budget - the 2026-08-14 playtest regression (turfs extremely resistant to gas/heat
-/// exchange, non-functional breaches) traced to exactly this: the walk was unconditionally full-list
-/// and MC_TICK_CHECK-un-gated by design, active_turfs grew from ~1700 to ~3800 turfs over one session
-/// (it is never shrunk on its own; see the stability check this same fix adds), and the walk's own
-/// growing cost pushed TICK_USAGE past Master.current_ticklimit before the FDM call's remaining_ms was
-/// (re-)computed, so process_turfs_auxtools() received a near-zero or negative budget on most cycles
-/// despite measuring real cost. 400 keeps the worst-case walk cost well under what was observed for
-/// the full ~3800-turf list (~24ms), leaving the bulk of the tick for the FDM call regardless of how
-/// large active_turfs grows.
+/// Number of active turfs visited per fire cycle by the legacy maintenance walk.
 #define ACTIVE_TURFS_WALK_BATCH_SIZE 400
 
-/// Dogmos Kennel slow mode's cadence half (payload half is in /datum/dogmos_kennel/ui_data()): how
-/// many fire() cycles between UI pushes while kennel_slow_mode is on. 4 cycles at the default 0.5s
-/// wait is ~2s between updates - frequent enough to feel live, infrequent enough that N simultaneous
-/// viewers don't multiply real per-cycle push cost the way pushing every cycle would.
+/// Fire cycles between shared Dogmos Kennel UI updates while slow mode is enabled.
 #define KENNEL_SLOW_MODE_PUSH_INTERVAL 4
 
 SUBSYSTEM_DEF(air)
@@ -42,125 +28,80 @@ SUBSYSTEM_DEF(air)
 	var/cost_atmos_machinery = 0
 	var/cost_rebuilds = 0
 	var/cost_adjacent = 0
-	/// Cost of Dogmos' post_process() pass (reactions + visuals dispatch after a gas FDM cycle).
-	/// Read/written by process_turfs_auxtools (aphelion-dogmos src/turfs/processing.rs) - unused
-	/// until SSAIR_ACTIVETURFS cuts over to Rust.
+	/// Cost of Dogmos' post_process() pass.
 	var/cost_post_process = 0
-	/// Cost of Dogmos' katmos pressure-equalization pass. Read/written by
-	/// process_turf_equalize_auxtools (src/turfs/katmos.rs) - unused until SSAIR_HIGHPRESSURE cuts over.
+	/// Cost of Dogmos' Katmos equalization pass.
 	var/cost_equalize = 0
 
-	/// Max FDM (finite-difference gas diffusion) iterations per process_turfs_auxtools call. Read by
-	/// Rust (src/turfs/processing.rs); unused until SSAIR_ACTIVETURFS cuts over.
+	/// Maximum FDM iterations per Dogmos processing call.
 	var/share_max_steps = 1
-	/// Whether Dogmos' katmos pressure equalizer runs as part of the gas FDM pass. Turned on as of the
-	/// SSAIR_HIGHPRESSURE cutover - see process_high_pressure_delta() for the consumer.
+	/// Whether the Katmos pressure equalizer runs after FDM.
 	var/equalize_enabled = TRUE
-	/// Whether a space-adjacent turf's heat loss uses real Stefan-Boltzmann blackbody radiation (T^4
-	/// scaling - physically correct, but weak near room temperature and only aggressive at high
-	/// temperatures, ~57x slower than the alternative at a representative 400K) or a fake vacuum sink
-	/// (linear conductive-style sharing against a fixed large capacity - not physical, but fast and
-	/// legible for players; matches this codebase's pre-Dogmos LINDA behavior). Read fresh by Rust on
-	/// every process_turf_heat() trigger (aphelion-dogmos src/turfs/superconduct.rs) - safe to flip
-	/// live, no rebuild needed. Defaults to the physically-correct behavior.
+	/// Whether space-adjacent heat loss uses blackbody radiation instead of the gameplay sink.
 	var/realistic_space_radiation = TRUE
-	/// Dogmos Kennel (code/controllers/subsystem/dogmos_kennel.dm): shared, defaults ON per explicit
-	/// request. Gates the kennel UI's payload (recent_*/overlay tables only serialized when FALSE) and
-	/// push cadence (every 4th fire() cycle instead of every cycle when TRUE) together, so multiple
-	/// simultaneous viewers don't multiply real per-cycle cost. One shared value, not a per-viewer flag -
-	/// see the datum's own doc comment for why that matters. Unused until the recording infrastructure
-	/// (Phase 2) and cadence gating (Phase 4) land; only read/written for now.
+	// APHELION EDIT ADDITION START - DOGMOS
+	/// Whether flamethrowers use directional ignition spread.
+	var/flamethrower_directional_spread = TRUE
+	// APHELION EDIT ADDITION END
+	/// Whether the Kennel UI uses its reduced payload and update cadence.
 	var/kennel_slow_mode = TRUE
-	/// Round-robin cursor for the cadence half of kennel_slow_mode - see KENNEL_SLOW_MODE_PUSH_INTERVAL
-	/// and the SStgui.update_uis(GLOB.dogmos_kennel) call site in fire().
+	/// Round-robin cursor for Kennel UI updates.
 	var/kennel_push_cursor = 0
-	/// Dogmos Kennel: recent notable fire groups (code/controllers/subsystem/dogmos_kennel_events.dm),
-	/// newest first, capped at KENNEL_EVENT_HISTORY_CAP. Recorded once per group's lifecycle, when a
-	/// /datum/hot_group with peak_size >= kennel_fire_group_notable_size is about to be deleted.
+	/// Recent notable fire groups, newest first.
 	var/list/recent_fire_groups = list()
-	/// Dogmos Kennel: recent high-cost reaction/process samples. Populated by
-	/// kennel_record_reaction_cost() when kennel_profile_reactions is on.
+	/// Recent high-cost reaction samples.
 	var/list/recent_high_cost_zones = list()
-	/// Dogmos Kennel: the one Dogmos toggle with real per-call Rust-side overhead when on - gates
-	/// Instant::now()/elapsed() timing around every react_by_id() call in react_hook() (aphelion-dogmos
-	/// src/lib.rs). Read fresh on every reaction (same "no rebuild needed to flip live" pattern as
-	/// realistic_space_radiation) - safe to flip live. Defaults OFF, unlike every other Kennel toggle.
+	/// Whether reaction calls are timed for high-cost Kennel entries.
 	var/kennel_profile_reactions = FALSE
-	/// Minimum single react_by_id() call duration (ms) for kennel_profile_reactions to record it into
-	/// recent_high_cost_zones. Read fresh by Rust alongside kennel_profile_reactions. A single reaction
-	/// call is simple arithmetic on one gas mixture - sub-millisecond even for a large room - so this
-	/// stays well below 1ms; the previous default of 4 was roughly three orders of magnitude above
-	/// anything a real reaction call costs and made the feature untriggerable in practice (found via
-	/// live playtest 2026-08-15).
+	/// Minimum reaction duration, in milliseconds, for a high-cost entry.
 	var/kennel_high_cost_ms_threshold = 0.5
-	/// Dogmos Kennel: recent explosions, from COMSIG_GLOB_EXPLOSION.
+	/// Recent explosions.
 	var/list/recent_explosions = list()
-	/// Dogmos Kennel: recent reactions whose amount crossed kennel_reaction_magnitude_threshold.
+	/// Recent reactions above the configured magnitude.
 	var/list/recent_reactions_of_interest = list()
-	/// Dogmos Kennel: FIFO of turfs currently showing the breach overlay (kennel_mark_overlay_recent()),
-	/// capped at KENNEL_OVERLAY_RECENT_CAP.
+	/// Recent turfs showing breach overlays.
 	var/list/kennel_overlay_breach_turfs = list()
-	/// As kennel_overlay_breach_turfs, for the high-cost-zone overlay.
+	/// Recent turfs showing high-cost overlays.
 	var/list/kennel_overlay_high_cost_turfs = list()
-	/// As kennel_overlay_breach_turfs, for the reaction-of-interest overlay.
+	/// Recent turfs showing reaction overlays.
 	var/list/kennel_overlay_reaction_turfs = list()
-	/// Dogmos Kennel: recent hull breaches, from handle_decompression_floor_rip().
+	/// Recent hull breaches.
 	var/list/recent_breaches = list()
-	/// Dogmos Kennel: pinned/auto-flagged atmos machinery and canisters. Not a ring buffer like the
-	/// recent_* lists above - entries persist until manually unpinned or an auto-pin's expiry passes
-	/// (pruned lazily on read, see kennel_prune_expired_pins()). Each entry is
-	/// list("ref"=REF, "name"=..., "area"=..., "reason"=..., "pinned_at"=round_timestamp(), "expires"=
-	/// world.time+duration or null for a manual, non-expiring pin).
+	// APHELION EDIT ADDITION START - DOGMOS
+	/// Last player-facing decompression feedback time, keyed by area REF or z-level fallback.
+	var/list/kennel_breach_feedback_times = list()
+	// APHELION EDIT ADDITION END
+	/// Atmos machinery pinned for inspection; automatic pins expire, manual pins do not.
 	var/list/structures_of_interest = list()
-	/// Dogmos Kennel: REF(machine) -> its turf at pin time, for the structure overlay only - DM-internal
-	/// bookkeeping, never sent to ui_data(). Lets kennel_unpin_structure()/kennel_prune_expired_pins()
-	/// hide the overlay without re-locate()-ing an admin-suppliable ref.
+	/// REF(turf) -> weakref for recent Kennel event jump targets.
+	var/list/kennel_jump_targets = list()
+	/// Number of retained event rows using each jump target ref.
+	var/list/kennel_jump_target_counts = list()
+	/// REF(machine) -> weakref to the turf used for its structure overlay.
 	var/list/kennel_pinned_turfs = list()
-	/// Dogmos Kennel: per-machine process_atmos() cost EWMA, keyed by REF(machine) rather than the
-	/// machine itself so this doesn't hold a hard reference past the machine's real lifetime. Not
-	/// pruned when a machine is destroyed (an acceptable, bounded, slow-growing amount of stale-key
-	/// clutter for a dev tool - the alternative, a var on the universal /obj/machinery base type, is
-	/// broader surface than this atmos-specific feature needs). See check_kennel_machine_cost()
-	/// (code/controllers/subsystem/dogmos_kennel_events.dm).
+	/// Per-machine process cost EWMA, keyed by REF(machine).
 	var/list/kennel_machine_cost_ewma = list()
-	/// Minimum peak group size (hotspot count) for a fire group to be recorded into
-	/// recent_fire_groups when it's deleted - keeps single-tile flare-ups out of the list.
+	/// Minimum peak fire-group size to record.
 	var/kennel_fire_group_notable_size = 5
-	/// Minimum reaction amount (SET_REACTION_RESULTS' units - moles reacted, roughly) for a reaction to
-	/// be recorded into recent_reactions_of_interest. A single-cycle plasma fire burns
-	/// plasma_moles/PLASMA_BURN_RATE_DELTA (=9) moles at most, so an ordinary room fire peaks in the
-	/// 20-80 range and decays from there - the previous default of 500 was far above what any normal
-	/// fire ever produces and made the feature untriggerable in practice (found via live playtest
-	/// 2026-08-15).
+	/// Minimum reaction magnitude to record.
 	var/kennel_reaction_magnitude_threshold = 20
-	/// Minimum per-machine process_atmos() cost (ms, single call) for that machine to be auto-pinned
-	/// into structures_of_interest.
+	/// Minimum process_atmos() cost, in milliseconds, for auto-pinning.
 	var/kennel_machine_cost_ms_threshold = 2
-	/// How long an auto-pin (explosion cause, breach-adjacent, or high-cost machine) stays in
-	/// structures_of_interest before kennel_prune_expired_pins() removes it. Manual admin pins never
-	/// expire (their "expires" field is null).
+	/// Lifetime of automatic structure pins.
 	var/kennel_auto_pin_duration = 10 MINUTES
-	/// Ratio of a turf's gas shared with its planetary atmosphere per FDM cycle. Mirrors Rust's own
-	/// internal GAS_DIFFUSION_CONSTANT (1/8) so DM's declared default matches what Rust would fall
-	/// back to if this var didn't exist at all. Read by Rust; unused until SSAIR_ACTIVETURFS cuts over.
+	/// Fraction shared with planetary atmosphere per FDM cycle.
 	var/planet_share_ratio = 0.125
-	/// How many turfs Dogmos' last gas FDM pass flagged as low pressure (stable, camera-eligible for
-	/// excited-group processing). Write-only telemetry from Rust; unused until SSAIR_ACTIVETURFS
-	/// cuts over.
+	/// Turfs last flagged as low pressure by Dogmos.
 	var/low_pressure_turfs = 0
-	/// As low_pressure_turfs, for turfs flagged high pressure (feeds katmos equalization once
-	/// equalize_enabled is on). Write-only telemetry from Rust.
+	/// Turfs last flagged as high pressure by Dogmos.
 	var/high_pressure_turfs = 0
-	/// Pressure delta threshold Dogmos' excited-group processor treats as "converged enough to stop".
-	/// Read by Rust (src/turfs/groups.rs); unused until SSAIR_EXCITEDGROUPS cuts over.
+	/// Pressure delta at which Dogmos considers a group converged.
 	var/excited_group_pressure_goal = 0.5
-	/// How many turfs Dogmos' last excited-group pass processed. Write-only telemetry from Rust.
+	/// Turfs processed by the last excited-group pass.
 	var/num_group_turfs_processed = 0
-	/// Ceiling on how many turfs a single katmos equalize pass will touch before bailing, to bound
-	/// worst-case cost on a large pressure event. Read by Rust (src/turfs/katmos.rs); unused until
-	/// SSAIR_HIGHPRESSURE cuts over.
+	/// Maximum turfs touched by one Katmos equalization pass.
 	var/equalize_hard_turf_limit = 2000
-	/// How many turfs Dogmos' last katmos equalize pass processed. Write-only telemetry from Rust.
+	/// Turfs processed by the last Katmos equalization pass.
 	var/num_equalize_processed = 0
 
 	var/list/excited_groups = list()
@@ -483,6 +424,7 @@ SUBSYSTEM_DEF(air)
 		currentrun.len--
 		if(!M)
 			atmos_machinery -= M
+			continue
 		var/kennel_tick_start = TICK_USAGE
 		if(M.process_atmos(wait * 0.1) == PROCESS_KILL)
 			stop_processing_machine(M)
@@ -491,25 +433,7 @@ SUBSYSTEM_DEF(air)
 			return
 
 
-/**
- * Turf-to-turf heat conduction is now Rust's job (process_turf_heat, aphelion-dogmos
- * src/turfs/superconduct.rs) - a full graph sweep on a persistent background thread, not a per-turf
- * DM walk. Unlike every other Dogmos stage in this file, this is fire-and-forget, not a
- * budget/pause()/resume cycle:
- * * process_turf_heat() reads SSair.wait, notifies the worker thread over a bounded(1) channel via a
- *   non-blocking try_send, and always returns immediately - there is no "did it finish" signal to wait
- *   on, and no remaining-budget argument to pass.
- * * If the worker is still busy processing the previous cycle's notify, this send is silently
- *   dropped - the next cycle's notify (0.5s later) picks it back up. This is an accepted, self-correcting
- *   skip, not an error condition worth detecting.
- * * SSair.cost_superconductivity is written directly by the Rust worker as its own EWMA (matching
- *   cost_post_process/cost_equalize's existing pattern) - do not average TICK_DELTA_TO_MS(cached_cost)
- *   into it here, that would double-account a cost this proc doesn't actually spend.
- * * Rust's deferred to_be_destroyed = TRUE write (the melt-trigger side effect, LINDA_turf_tile.dm's
- *   atmos_expose()/burn_turf()) rides the SAME auxcallback queue finish_turf_processing_auxtools()
- *   already drains every cycle in process_active_turfs() (SSAIR_ACTIVETURFS) - no separate drain call
- *   is needed here.
- */
+/** Requests the asynchronous Rust heat-graph worker; it does not consume SSair's tick budget. */
 /datum/controller/subsystem/air/proc/process_super_conductivity(resumed = FALSE)
 	process_turf_heat()
 
@@ -528,29 +452,7 @@ SUBSYSTEM_DEF(air)
 		if(MC_TICK_CHECK)
 			return
 
-/**
- * Real pressure equalization for "high pressure" turfs (the FDM pass's other output set, alongside
- * SSAIR_EXCITEDGROUPS's low_pressure_turfs) is now Rust's job too - process_turf_equalize_auxtools
- * (aphelion-dogmos src/turfs/katmos.rs) runs a monstermos-style flood-fill/redistribution pass instead
- * of the naive single-cell diffusion step the gas FDM pass would otherwise have done for these turfs
- * (equalize_enabled gates that off - see process_turf_hook in processing.rs). This also activates
- * katmos's hull-breach handling (explosively_depressurize()): the DM-side of that -
- * consider_firelocks() and handle_decompression_floor_rip(), LINDA_turf_tile.dm - plus firelock-edge
- * detection (atmos_adjacency_flags_with(), LINDA_system.dm) were added alongside this cutover, real
- * feature work rather than a stub, per Zoe's call.
- *
- * high_pressure_movements() (the "spacewind" push-movables-around mechanic) is UNCHANGED and needs no
- * porting: both the FDM's own non-equalize branch and katmos's finalize step ultimately call the same
- * existing /turf/open/proc/consider_pressure_difference(), which is what populates high_pressure_delta
- * below. Note the one-cycle latency this introduces: consider_pressure_difference calls made by katmos
- * are queued auxcallbacks (auxcallback::byond_callback_sender), drained by
- * finish_turf_processing_auxtools() - which only runs once per fire() cycle, in the earlier
- * SSAIR_ACTIVETURFS stage. So a pressure-difference callback queued by THIS cycle's equalize pass
- * (which runs after ACTIVETURFS) isn't drained until next cycle's ACTIVETURFS call, and the movables
- * push it produces lags by one fire() cycle (0.5s). Accepted, not fixed - the whole port is already
- * eventually-consistent across fire() stages, and this is a bounded, self-correcting one-cycle delay,
- * not a starvation risk.
- */
+/** Runs Rust's pressure equalizer, then drains any queued DM pressure movements. */
 /datum/controller/subsystem/air/proc/process_high_pressure_delta(resumed = FALSE)
 	if(!resumed)
 		var/remaining_ms = TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)
@@ -561,52 +463,17 @@ SUBSYSTEM_DEF(air)
 	while (high_pressure_delta.len)
 		var/turf/open/T = high_pressure_delta[high_pressure_delta.len]
 		high_pressure_delta.len--
+		// APHELION EDIT ADDITION START - DOGMOS
+		if(!T)
+			continue
+		// APHELION EDIT ADDITION END
 		T.high_pressure_movements()
 		T.pressure_difference = 0
 		if(MC_TICK_CHECK)
 			return
 
-/**
- * Gas sharing/reactions/visuals for active_turfs are now Rust's job (process_turfs_auxtools /
- * finish_turf_processing_auxtools, aphelion-dogmos src/turfs/processing.rs) - Rust scans its own
- * TurfGases graph in full every cycle rather than working off active_turfs at all, so none of the
- * old per-turf iteration here is gas-processing anymore.
- *
- * What's left is every non-gas-math side effect process_cell() (LINDA_turf_tile.dm, now deleted) used
- * to produce for every active turf, none of which Rust's FDM pass knows to do on DM's behalf:
- * * archive() (via LINDA_CYCLE_ARCHIVE) - archives turf.air; archived_cycle is read by this same walk's
- *   own gate below, and by finish_turf_processing_auxtools()'s reaction pass.
- * * current_cycle - read by /obj/effect/hotspot/Initialize() (LINDA_fire.dm) to decide whether a
- *   just-spawned hotspot is still within its parent turf's current processing cycle.
- * * temperature_expose(air, temperature) - the general atom-exposure hook (COMSIG_TURF_EXPOSE,
- *   check_atmos_process()) that lets mobs/items ignite or take damage from standing in hot air, wholly
- *   separate from hotspot objects (SSAIR_HOTSPOTS) and never called by Rust's FDM/post_process().
- *
- * consider_superconductivity() - the old per-turf trigger that added a turf to active_super_conductivity -
- * is gone along with DM's own superconduction walk (SSAIR_SUPERCONDUCTIVITY cutover). Rust's heat
- * worker (process_turf_heat, aphelion-dogmos src/turfs/superconduct.rs) scans its whole TurfHeat graph
- * on its own schedule every cycle; it was never driven by this walk in the first place, so nothing
- * needs to replace the trigger.
- *
- * 2026-08-14 playtest regression, fixed here: this walk used to be unconditional (every entry, every
- * cycle) and deliberately NOT MC_TICK_CHECK-gated, reasoning that gating it risked starving the FDM
- * call below it of tick budget. That reasoning was backwards, and it took a real ~2.5 hour session to
- * show why: active_turfs is never shrunk (still true - see turf_settled() below, which now actually
- * fixes that rather than just noting it), so it grew from ~1700 to ~3800 turfs over one round, and the
- * walk's own un-gated, un-bounded cost grew right along with it - directly inflating TICK_USAGE before
- * `remaining_ms` was (originally) computed ONCE at the top of this proc, ahead of the walk. By the time
- * the actual FDM call ran, TICK_USAGE had already climbed past Master.current_ticklimit most cycles,
- * so process_turfs_auxtools() received a near-zero or negative budget - Rust's Duration::from_millis()
- * saturates a negative float to 0, so the FDM loop's very first budget check broke it before any real
- * diffusion happened, even though the walk itself measured real, growing cost every cycle. Symptom:
- * turfs extremely resistant to both gas and heat exchange (heat mostly rides on gas-carried thermal
- * energy for ordinary open-room spread, so a starved FDM breaks both), and non-functional breaches
- * (space-adjacent sharing is also the FDM's job). Fixed two ways together:
- * 1. The walk now processes a bounded batch per cycle (ACTIVE_TURFS_WALK_BATCH_SIZE, round-robin via
- *    active_turfs_walk_cursor) instead of the whole list, so its cost can no longer grow unboundedly.
- * 2. `remaining_ms` is now computed fresh immediately before EACH Rust call (not once, before the
- *    walk), so neither call ever sees a budget that's gone stale relative to what the walk (now bounded
- *    anyway) or the previous Rust call actually spent.
+/** Runs the Rust gas pass while retaining DM exposure callbacks and a bounded legacy walk.
+ * Compute each Rust budget after the walk so it reflects current tick usage.
  */
 /datum/controller/subsystem/air/proc/process_active_turfs(resumed = FALSE)
 	if(!resumed)
@@ -616,13 +483,7 @@ SUBSYSTEM_DEF(air)
 	if(finish_turf_processing_auxtools(TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)))
 		pause() // still draining queued reactions/visuals/pressure-difference callbacks - resume next fire()
 
-/**
- * Processes up to ACTIVE_TURFS_WALK_BATCH_SIZE entries of active_turfs, round-robin via
- * active_turfs_walk_cursor so every turf gets visited periodically without ever walking the whole
- * (potentially thousands-long) list in one cycle. Snapshots the slice before mutating active_turfs
- * (turf_settled() removals below shift list indices, which would corrupt an in-progress index-based
- * walk over the live list).
- */
+/** Processes a bounded round-robin batch without iterating the live list while removing entries. */
 /datum/controller/subsystem/air/proc/walk_active_turfs_batch()
 	var/list/turfs = active_turfs
 	var/turf_count = length(turfs)
@@ -637,7 +498,7 @@ SUBSYSTEM_DEF(air)
 	var/list/batch = turfs.Copy(active_turfs_walk_cursor + 1, batch_end + 1)
 
 	for(var/turf/open/T as anything in batch)
-		if(!T)
+		if(!T || !T.air)
 			continue
 		if(T.archived_cycle < times_fired)
 			LINDA_CYCLE_ARCHIVE(T)
@@ -647,27 +508,10 @@ SUBSYSTEM_DEF(air)
 		if(turf_settled(T))
 			remove_from_active(T)
 
-	// active_turfs may have shrunk (turf_settled() removals above) since batch_end was computed against
-	// the pre-walk length - clamp instead of leaving the cursor past the new end, which would just
-	// wrap on the NEXT call anyway but would skip that check here.
+	// Removals may have shortened the list since batch_end was computed.
 	active_turfs_walk_cursor = (batch_end >= length(active_turfs)) ? 0 : batch_end
 
-/**
- * Whether T has actually settled: its gas no longer differs meaningfully from any gas-adjacent
- * neighbor's (reusing gas_mixture/compare() - "true if the two mixtures are different enough for
- * processing" per its own doc comment, the same check setup_allturfs() already uses for its roundstart
- * stability pass), and no active hotspot is burning on it. Does NOT check air.reaction_results - that
- * list is a cumulative, never-cleared historical record (explosion/doppler-array post-mortem data via
- * SET_REACTION_RESULTS), not a "still reacting this cycle" flag; a turf that reacted once, ever, would
- * never be considered settled again. An actively-reacting mixture's composition keeps diverging from
- * its neighbors' anyway, so the compare() check below already catches it without needing a separate
- * reaction signal. A settled turf gains nothing from continuing to occupy a slot in
- * active_turfs - Rust's own FDM pass doesn't consume that list at all (it scans its whole registered
- * graph independently, gated by its own per-turf should_process() check), so removing a settled turf
- * here only stops the DM-side legacy walk's bookkeeping for it, not any actual physics. Turfs that
- * become active again later are correctly re-added by the existing SSair.add_to_active() call sites
- * (LINDA_system.dm, LINDA_fire.dm, canister/valve release paths) the moment something disturbs them.
- */
+/** Returns TRUE when a turf has no active hotspot and matches its open neighbors. */
 /datum/controller/subsystem/air/proc/turf_settled(turf/open/T)
 	if(T.active_hotspot)
 		return FALSE
@@ -679,27 +523,7 @@ SUBSYSTEM_DEF(air)
 			return FALSE
 	return TRUE
 
-/**
- * Pressure-equalization for stable ("low pressure") turfs is now Rust's job too
- * (process_excited_groups_auxtools, aphelion-dogmos src/turfs/groups.rs) - it consumes the
- * low_pressure_turfs set Rust's own gas FDM pass (process_turfs_auxtools, SSAIR_ACTIVETURFS) already
- * produced this cycle via an internal channel, flood-fills outward from each seed turf while pressure
- * stays within excited_group_pressure_goal, and snaps every turf in the resulting group directly to
- * the merged average - the same "converged region, stop diffusing incrementally, snap to average" idea
- * /datum/excited_group/proc/self_breakdown() used to implement in DM, just run every cycle instead of
- * after a stability cooldown.
- *
- * /datum/excited_group's breakdown/dismantle mechanism is intentionally NOT ported here (see the Phase
- * 3 plan's "Excited groups" section) - it was a pure perf optimization for DM's naive per-tick pairwise
- * diffusion, which no longer runs. The datum itself stays alive only for setup_allturfs()'s roundstart
- * active-turf discovery pass, unrelated to this per-tick stage.
- *
- * Rust's low_pressure_turfs channel is taken (consumed) whole on each call - if a pass is interrupted
- * by overtiming partway through a batch, whatever it hasn't reached yet is simply dropped rather than
- * resumed, since the channel is already empty for any later call this cycle. Accepted, katmos-native
- * "best effort within budget" behavior, not a bug: a skipped equalization self-corrects on the very
- * next gas FDM cycle, which produces a fresh low_pressure_turfs set.
- */
+/** Runs Rust's low-pressure equalizer within the current tick budget. */
 /datum/controller/subsystem/air/proc/process_excited_groups(resumed = FALSE)
 	var/remaining_ms = TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)
 	if(process_excited_groups_auxtools(remaining_ms))
@@ -1184,12 +1008,7 @@ GLOBAL_LIST_EMPTY(colored_images)
 	data["hotspots_size"] = hotspots.len
 	data["excited_size"] = excited_groups.len
 	data["conducting_size"] = dogmos_heat_graph_count()
-	// The excited_groups table above only ever reflects setup_allturfs()'s roundstart snapshot -
-	// Rust's per-cycle equalization (SSAIR_EXCITEDGROUPS/SSAIR_HIGHPRESSURE) doesn't create or update
-	// DM /datum/excited_group objects, so that table goes stale/empty within moments of roundstart and
-	// was giving admins nothing to look at during the 2026-08-14 playtest regression - this is what
-	// would have shown, at a glance, that Rust's per-cycle passes were doing essentially no real work
-	// that entire round (every one of these sat at 0 for ~2000s).
+	// The legacy excited_groups snapshot is not updated by Rust; expose live counters below instead.
 	data["low_pressure_turfs"] = low_pressure_turfs
 	data["high_pressure_turfs"] = high_pressure_turfs
 	data["group_turfs_processed"] = num_group_turfs_processed
@@ -1217,14 +1036,21 @@ GLOBAL_LIST_EMPTY(colored_images)
 
 /datum/controller/subsystem/air/ui_act(action, list/params, datum/tgui/ui, datum/ui_state/state)
 	. = ..()
-	if(. || !check_rights_for(usr.client, R_DEBUG))
+	var/mob/user = usr
+	if(. || !user?.client || !check_rights_for(user.client, R_DEBUG))
 		return
 	switch(action)
 		if("move-to-target")
-			var/turf/target = locate(params["spot"])
-			if(!target)
+			var/turf/target
+			for(var/datum/excited_group/group as anything in excited_groups)
+				if(!length(group.turf_list))
+					continue
+				target = locate(params["spot"]) in group.turf_list
+				if(target)
+					break
+			if(!target || !user)
 				return
-			usr.forceMove(target)
+			user.forceMove(target)
 		if("toggle-freeze")
 			can_fire = !can_fire
 			return TRUE
@@ -1252,7 +1078,7 @@ GLOBAL_LIST_EMPTY(colored_images)
 					group.hide_turfs()
 			return TRUE
 		if("toggle_user_display")
-			var/mob/user = ui.user
+			user = ui.user
 			user.hud_used.atmos_debug_overlays = !user.hud_used.atmos_debug_overlays
 			if(user.hud_used.atmos_debug_overlays)
 				user.client.images += GLOB.colored_images

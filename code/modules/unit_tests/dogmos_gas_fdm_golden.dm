@@ -1,34 +1,4 @@
-/**
- * The real correctness check for the SSAIR_ACTIVETURFS cutover to Rust's gas FDM
- * (process_turfs_auxtools/finish_turf_processing_auxtools, aphelion-dogmos src/turfs/processing.rs,
- * called from SSair.process_active_turfs(), code/controllers/subsystem/air.dm). station_turf_has_air
- * already confirms a single settled floor holds a sane atmosphere, but says nothing about whether
- * sharing BETWEEN two different turfs actually still happens correctly - this seeds two adjacent
- * turfs with deliberately asymmetric oxygen, runs one real FDM cycle, and checks the physical
- * invariants any correct diffusion step must satisfy: total moles conserved, gas flows from the
- * fuller turf to the emptier one, and a single share step doesn't overshoot into reversing which
- * turf has more.
- *
- * Deliberately checks invariants rather than an exact hand-computed value - replicating Rust's FDM
- * arithmetic (GAS_DIFFUSION_CONSTANT-weighted merge across every neighbor, not just the pair under
- * test) by hand in DM risks the test itself being wrong in a way that either false-fails or, worse,
- * false-passes by both sides sharing the same mistake.
- *
- * Does NOT check "total moles across just turf_a and turf_b conserved" - that isn't actually a valid
- * invariant here. The unit test room has more than two turfs, and Rust's FDM scans its whole
- * registered graph every cycle, not just the pair under test - turf_a and turf_b each have other
- * neighbors participating in the same share pass, so gas measurably leaves this two-turf slice
- * without leaving the room (confirmed: an earlier version of this test asserted exact 2-turf
- * conservation and failed for exactly this reason, not because sharing was wrong).
- *
- * Calls process_turfs_auxtools()/finish_turf_processing_auxtools() directly with a fixed, generous
- * time budget rather than going through SSair.process_active_turfs()'s real
- * Master.current_ticklimit - TICK_USAGE calculation - confirmed the hard way: deep into a long test
- * suite, that budget can be near-zero or negative by the time this test's turn comes up (whatever
- * the current tick has already spent), so Rust's FDM gets Duration::from_millis(0) and correctly
- * does nothing in exactly one step. That's the tick-budgeting working as designed, not a bug - it
- * just makes SSair.process_active_turfs() itself unsuitable for a deterministic single-cycle test.
- */
+/** Verifies gas conservation and directional flow across one real FDM step. */
 /datum/unit_test/dogmos_gas_fdm_golden
 
 /datum/unit_test/dogmos_gas_fdm_golden/Run()

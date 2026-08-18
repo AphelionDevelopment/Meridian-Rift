@@ -1,66 +1,38 @@
-/// GLOB.total_runtimes as it stood the moment initialisation finished. Snapshotted by the MC
-/// (code\controllers\master.dm) so a unit test can ask "was the boot clean?" without being
-/// polluted by runtimes the tests themselves cause. See /datum/unit_test/no_runtimes_during_init.
+/// Runtime count captured after subsystem initialization.
 GLOBAL_VAR_INIT(runtimes_at_init_complete, 0)
 
 /datum/controller/subsystem/air
-	/// Selects the temperature source used by blocked-turf consumers. Open-turf consumers retain their
-	/// gas-mixture GetTemperature() contract; RUST falls back to the DM turf var when no TurfHeat node
-	/// is registered.
+	/// Temperature source used by blocked-turf consumers.
 	var/dogmos_blocked_turf_temperature_authority = DOGMOS_TEMPERATURE_AUTHORITY_RUST
-	/// Selects whether pressure processing stops after FDM diffusion or also sends high-pressure turfs
-	/// through Katmos' whole-zone equalizer. This is the flamethrower-sensitive timing choice; it is
-	/// deliberately separate from equalize_enabled, which remains the master switch.
+	/// Pressure-processing profile used after FDM diffusion.
 	var/dogmos_equalize_performance_profile = DOGMOS_EQUALIZE_PROFILE_FAST_ZONE
-	/// Number of heat-graph nodes observed by the most recently completed Dogmos heat cycle.
+	/// Heat-graph nodes observed by the most recent completed cycle.
 	var/dogmos_heat_graph_nodes = 0
-	/// Number of unique undirected heat edges considered by the most recently completed heat cycle.
+	/// Unique heat edges considered by the most recent cycle.
 	var/dogmos_heat_edge_attempts = 0
-	/// Number of unique heat edges whose accumulated deltas were applied in the most recent cycle.
+	/// Unique heat edges applied by the most recent cycle.
 	var/dogmos_heat_edges_applied = 0
-	/// Number of node writes that found an existing temperature lock before taking the blocking write
-	/// lock in the most recent cycle. This is diagnostic contention, not a skipped-edge count.
+	/// Temperature writes that waited for a lock in the most recent cycle.
 	var/dogmos_heat_lock_contention = 0
-	/// Number of heat-graph node insertions/removals observed since the previous completed heat cycle;
-	/// re-registration of an existing node is intentionally not counted.
+	/// Heat-graph insertions and removals since the previous completed cycle.
 	var/dogmos_heat_registration_changes = 0
 
-/**
- * Hands Dogmos the gas registry and the reaction table before anything can build a gas mixture.
- *
- * This cannot live in SSair. SSair depends on SSmapping and SSatoms (see air.dm), so it initialises
- * *after* every turf has already run /turf/open/Initialize -> create_gas_mixture ->
- * SSair.parse_gas_string -> set_moles. With no gases registered, Rust rejects every id, and - worse -
- * parse_gas_string caches the half-built canonical mixture in SSair.strings_to_mix *before*
- * populating it, so the empty mix is served to every turf for the rest of the round even once
- * registration succeeds. Registration therefore has to happen in its own subsystem, at
- * INITSTAGE_EARLY, which the MC guarantees runs before all of INITSTAGE_MAIN.
- *
- * Nothing here touches mapload or atoms: init_gas_reactions() and init_dogmos_reactions() only read
- * GLOB.meta_gas_info and subtypesof(), and auxtools_atmos_init() reads GLOB.gas_data plus
- * SSair.dogmos_reactions off the global. All three exist before any subsystem Initialize() runs -
- * do NOT try to move this into PreInit() instead, GLOB does not exist yet at that point
- * (see master.dm, GLOB is created after every subsystem's PreInit() has already run).
- */
+/** Initializes Dogmos' gas registry before turfs create gas mixtures. */
 SUBSYSTEM_DEF(dogmos)
 	name = "Dogmos"
 	init_stage = INITSTAGE_EARLY
 	ss_flags = SS_NO_FIRE
-	/// SSair also names us in its own dependencies (self-documentation at the read site); this pair
-	/// is what actually forces us ahead of mapload and atom init.
+	/// Subsystems that must wait for Dogmos initialization.
 	dependents = list(
 		/datum/controller/subsystem/mapping,
 		/datum/controller/subsystem/atoms,
 	)
 
-	/// TRUE once auxtools_atmos_init() has returned successfully. Read by gas_string_id() as a
-	/// one-shot tripwire: any gas id crossing into Dogmos while this is FALSE means something
-	/// initialised too early and will be silently rejected by Rust.
+	/// TRUE after the Rust gas registry initializes successfully.
 	var/gases_registered = FALSE
 
 /datum/controller/subsystem/dogmos/Initialize()
-	// Owned by SSair at runtime; built here because Dogmos reads dogmos_reactions off the global
-	// during auxtools_atmos_init() and there is no second chance to hand it over.
+	// Build the reaction table before the Rust registry starts.
 	SSair.gas_reactions = init_gas_reactions()
 	SSair.dogmos_reactions = init_dogmos_reactions(SSair.gas_reactions)
 
@@ -76,26 +48,14 @@ SUBSYSTEM_DEF(dogmos)
 	gases_registered = TRUE
 	return SS_INIT_SUCCESS
 
-/**
- * Fills in GLOB.gas_data.overlays (left empty by /datum/gas_data/New(), see gas_types.dm), which
- * Rust's update_visuals() reads to resolve which pre-baked overlay object to show for a given gas at
- * a given plane offset and visibility state - the set_visuals() FFI callback this feeds is what turf
- * gas rendering runs through once SSAIR_ACTIVETURFS moves to Rust.
- *
- * Deliberately a reference into GLOB.meta_gas_info[META_GAS_OVERLAY]'s existing per-gas overlay lists,
- * not a second, duplicate set of /obj/effect/overlay/gas instances - meta_gas_list() (gas_mixture.dm)
- * already built exactly the objects needed, keyed by plane offset the same way
- * gas_mixture.dm's return_visuals() already reads them (see code/__HELPERS/_planes.dm's
- * GET_TURF_PLANE_OFFSET for the offset+1 convention both sides agree on). Since this stores the SAME
- * list objects rather than copies, SSmapping growing z_level_to_plane_offset for a new z-level after
- * roundstart (code/controllers/subsystem/mapping.dm) - which appends new offset sublists onto those
- * same META_GAS_OVERLAY lists - is automatically visible here too, with nothing further to keep in sync.
- *
- * Must run after GLOB.meta_gas_info exists. It does: that's a GLOBAL_LIST_INIT (gas_mixture.dm),
- * evaluated at world load like GLOB.gas_data's own GLOBAL_DATUM_INIT - both complete before any
- * subsystem's Initialize() runs, this subsystem's included, so there is no ordering hazard here
- * despite the two globals initializing independently of each other.
- */
+/** Stops Dogmos workers and releases its Rust-side arenas. */
+/datum/controller/subsystem/dogmos/Shutdown()
+	if(gases_registered)
+		dogmos_shutdown()
+	gases_registered = FALSE
+	return ..()
+
+/** Shares gas overlay lists with Dogmos' visual callback. */
 /datum/controller/subsystem/dogmos/proc/populate_gas_data_overlays()
 	var/list/meta_overlays = GLOB.meta_gas_info[META_GAS_OVERLAY]
 	for(var/gas_path in GLOB.gas_data.datums)
@@ -103,3 +63,143 @@ SUBSYSTEM_DEF(dogmos)
 		var/list/overlay_table = meta_overlays[gas_path]
 		if(length(overlay_table))
 			GLOB.gas_data.overlays[gas_instance.id] = overlay_table
+
+/// Reinforced floors keep their surface during Dogmos decompression events.
+/turf/open/floor/engine
+	decompression_floor_rip_resistant = TRUE
+
+/turf/open/floor/plating/reinforced
+	decompression_floor_rip_resistant = TRUE
+
+#define DOGMOS_GOGGLE_MODE_NONE ""
+#define DOGMOS_GOGGLE_MODE_MESON "meson"
+#define DOGMOS_GOGGLE_MODE_TRAY "t-ray"
+#define DOGMOS_GOGGLE_MODE_PIPE_CONNECTABLE "connectable"
+#define DOGMOS_GOGGLE_MODE_ATMOS_THERMAL "atmospheric-thermal"
+#define DOGMOS_GOGGLE_MODE_AREA_BLUEPRINTS "area-blueprints"
+
+/** Station-safe atmospheric imaging goggles for Dogmos work. */
+/obj/item/clothing/glasses/meson/engine/dogmos
+	name = "Dogmos atmospheric imaging goggles"
+	desc = "Engineering goggles with meson, T-ray, pipe-connection, thermal, breach-alert, and reaction-profile modes."
+	range = 3
+	modes = list(
+		DOGMOS_GOGGLE_MODE_NONE,
+		DOGMOS_GOGGLE_MODE_MESON,
+		DOGMOS_GOGGLE_MODE_TRAY,
+		DOGMOS_GOGGLE_MODE_PIPE_CONNECTABLE,
+		DOGMOS_GOGGLE_MODE_ATMOS_THERMAL,
+		DOGMOS_GOGGLE_MODE_BREACHES,
+		DOGMOS_GOGGLE_MODE_REACTIONS,
+	)
+
+/** Returns the Kennel overlay categories represented by the current mode. */
+/obj/item/clothing/glasses/meson/engine/dogmos/proc/dogmos_overlay_categories()
+	switch(mode)
+		if(DOGMOS_GOGGLE_MODE_BREACHES)
+			return list(KENNEL_OVERLAY_BREACH)
+		if(DOGMOS_GOGGLE_MODE_REACTIONS)
+			return list(KENNEL_OVERLAY_REACTION)
+		if(DOGMOS_GOGGLE_MODE_HIGH_COST)
+			return list(KENNEL_OVERLAY_HIGH_COST)
+		if(DOGMOS_GOGGLE_MODE_STRUCTURES)
+			return list(KENNEL_OVERLAY_STRUCTURE)
+		if(DOGMOS_GOGGLE_MODE_ALL)
+			return list(
+				KENNEL_OVERLAY_BREACH,
+				KENNEL_OVERLAY_HIGH_COST,
+				KENNEL_OVERLAY_REACTION,
+				KENNEL_OVERLAY_STRUCTURE,
+			)
+	return list()
+
+/** Returns all category images selected by the current goggles mode. */
+/obj/item/clothing/glasses/meson/engine/dogmos/proc/dogmos_overlay_images()
+	var/list/selected_images = list()
+	for(var/category in dogmos_overlay_categories())
+		selected_images += GLOB.kennel_overlay_images_by_category[category]
+	return selected_images
+
+/** Synchronizes the selected Kennel overlay images with the current wearer. */
+/obj/item/clothing/glasses/meson/engine/dogmos/proc/update_dogmos_overlay_images()
+	var/mob/living/carbon/human/wearer = loc
+	if(!istype(wearer) || wearer.glasses != src || !wearer.client)
+		return
+	if(!wearer.hud_used?.atmos_debug_overlays)
+		wearer.client.images -= GLOB.kennel_overlay_images
+	wearer.client.images |= dogmos_overlay_images()
+
+/// Shows the selected Kennel overlays when these goggles enter the eye slot.
+/obj/item/clothing/glasses/meson/engine/dogmos/equipped(mob/living/user, slot)
+	. = ..()
+	if(slot & ITEM_SLOT_EYES)
+		update_dogmos_overlay_images()
+
+/// Removes goggles-owned Kennel overlays when the wearer drops them.
+/obj/item/clothing/glasses/meson/engine/dogmos/dropped(mob/living/user)
+	if(user?.client && !user.hud_used?.atmos_debug_overlays)
+		user.client.images -= GLOB.kennel_overlay_images
+	return ..()
+
+/// Removes goggles-owned Kennel overlays before the item is deleted.
+/obj/item/clothing/glasses/meson/engine/dogmos/Destroy()
+	var/mob/living/carbon/human/wearer = loc
+	if(istype(wearer) && wearer.client && !wearer.hud_used?.atmos_debug_overlays)
+		wearer.client.images -= GLOB.kennel_overlay_images
+	return ..()
+
+/// Refreshes the selected Kennel overlays after the inherited mode switch.
+/obj/item/clothing/glasses/meson/engine/dogmos/toggle_mode(mob/user, voluntary)
+	var/mob/living/carbon/human/wearer = loc
+	if(istype(wearer) && wearer.client && !wearer.hud_used?.atmos_debug_overlays)
+		wearer.client.images -= GLOB.kennel_overlay_images
+	. = ..()
+	update_dogmos_overlay_images()
+
+/obj/item/clothing/glasses/meson/engine/dogmos/update_icon_state()
+	. = ..()
+	switch(mode)
+		if(DOGMOS_GOGGLE_MODE_BREACHES, DOGMOS_GOGGLE_MODE_REACTIONS, DOGMOS_GOGGLE_MODE_HIGH_COST, DOGMOS_GOGGLE_MODE_STRUCTURES, DOGMOS_GOGGLE_MODE_ALL)
+			icon_state = inhand_icon_state = worn_icon_state = "trayson-atmospheric-thermal"
+
+/** Administrative atmospheric imaging goggles with the complete Dogmos debugging set. */
+/obj/item/clothing/glasses/meson/engine/dogmos/admin
+	name = "Dogmos administrative imaging goggles"
+	desc = "Administrative goggles with the complete engineering and Kennel overlay set, including area-blueprint imaging."
+	range = 7
+	modes = list(
+		DOGMOS_GOGGLE_MODE_NONE,
+		DOGMOS_GOGGLE_MODE_MESON,
+		DOGMOS_GOGGLE_MODE_TRAY,
+		DOGMOS_GOGGLE_MODE_PIPE_CONNECTABLE,
+		DOGMOS_GOGGLE_MODE_ATMOS_THERMAL,
+		DOGMOS_GOGGLE_MODE_BREACHES,
+		DOGMOS_GOGGLE_MODE_REACTIONS,
+		DOGMOS_GOGGLE_MODE_HIGH_COST,
+		DOGMOS_GOGGLE_MODE_STRUCTURES,
+		DOGMOS_GOGGLE_MODE_ALL,
+		DOGMOS_GOGGLE_MODE_AREA_BLUEPRINTS,
+	)
+
+/datum/design/dogmos_goggles
+	name = "Dogmos Atmospheric Imaging Goggles"
+	desc = "Engineering goggles tuned for Dogmos troubleshooting without administrative area-blueprint access."
+	id = "dogmos_goggles"
+	build_type = PROTOLATHE | AWAY_LATHE
+	materials = list(
+		/datum/material/iron = SMALL_MATERIAL_AMOUNT * 5,
+		/datum/material/glass = SMALL_MATERIAL_AMOUNT * 5,
+		/datum/material/plasma = SMALL_MATERIAL_AMOUNT,
+	)
+	build_path = /obj/item/clothing/glasses/meson/engine/dogmos
+	category = list(
+		RND_CATEGORY_EQUIPMENT + RND_SUBCATEGORY_EQUIPMENT_ENGINEERING,
+	)
+	departmental_flags = DEPARTMENT_BITFLAG_ENGINEERING
+
+#undef DOGMOS_GOGGLE_MODE_NONE
+#undef DOGMOS_GOGGLE_MODE_MESON
+#undef DOGMOS_GOGGLE_MODE_TRAY
+#undef DOGMOS_GOGGLE_MODE_PIPE_CONNECTABLE
+#undef DOGMOS_GOGGLE_MODE_ATMOS_THERMAL
+#undef DOGMOS_GOGGLE_MODE_AREA_BLUEPRINTS

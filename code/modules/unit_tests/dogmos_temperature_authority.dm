@@ -1,11 +1,4 @@
-/**
- * Verifies that blocked turfs can select their live temperature authority without allowing an
- * unregistered heat-graph read to turn into a fabricated 102K value.
- *
- * Open turfs keep their gas-mixture temperature contract. This test deliberately uses an open turf
- * whose `blocks_air` flag makes it a heat-only Dogmos registration, which is the disputed case from
- * the branch review: Rust's heat graph can move while the legacy DM turf var remains unchanged.
- */
+/** Verifies the configured temperature authority for blocked turfs. */
 /datum/unit_test/dogmos_temperature_authority
 
 /datum/unit_test/dogmos_temperature_authority/Run()

@@ -1,16 +1,4 @@
-/**
- * Correctness check for the SSAIR_HIGHPRESSURE cutover to Rust's katmos pressure equalizer
- * (process_turf_equalize_auxtools, aphelion-dogmos src/turfs/katmos.rs, called from
- * SSair.process_high_pressure_delta(), code/controllers/subsystem/air.dm). Confirms the FFI plumbing
- * genuinely does real work (num_equalize_processed becomes positive) rather than just returning a
- * number, the same false-passable-assertion class Phase 2's remediation flagged.
- *
- * Seeds a MUCH larger asymmetry than dogmos_gas_fdm_golden.dm's 3x - that test deliberately stays
- * under the FDM's 5.0 kPa low/high-pressure split so the pair lands in low_pressure_turfs (feeding
- * SSAIR_EXCITEDGROUPS instead). This test needs the opposite: a delta big enough to clear that
- * threshold after one share step, so the pair lands in high_pressure_turfs and actually reaches the
- * katmos equalize channel this proc is meant to exercise.
- */
+/** Verifies that the high-pressure path reaches Katmos and redistributes gas. */
 /datum/unit_test/dogmos_highpressure_equalize
 
 /datum/unit_test/dogmos_highpressure_equalize/Run()

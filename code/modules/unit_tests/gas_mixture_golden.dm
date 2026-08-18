@@ -8,8 +8,7 @@
  * the failure modes that swap silently: an inverted ratio, a swapped argument, lost clamping, or a
  * changed return shape.
  *
- * When these move onto Dogmos in Phase 2 they must pass unchanged. If one has to be edited to pass,
- * that edit is a behaviour change and needs to be a deliberate, recorded decision.
+ * Changes to the expected values are behavior changes and need explicit review.
  */
 
 /// Builds a standard-atmosphere mixture: O2 + N2 at T20C in one cell's worth of volume.
@@ -133,3 +132,4 @@
 	oppressed.set_moles(/datum/gas/oxygen, 100)
 	oppressed.set_temperature(FIRE_MINIMUM_TEMPERATURE_TO_EXIST + 100)
 	TEST_ASSERT_EQUAL(oppressed.react(null), STOP_REACTIONS, "Hypernoblium above the oppression threshold should stop all reactions")
+	TEST_ASSERT_EQUAL(oppressed.__react(null), STOP_REACTIONS, "Dogmos' direct reaction hook must enforce Hypernoblium oppression")

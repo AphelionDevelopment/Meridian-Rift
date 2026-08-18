@@ -1,23 +1,5 @@
-/**
- * Dogmos Kennel - the master control panel for the Dogmos subsystem/integration, intended to supersede
- * (not replace outright - see the atmos_control admin verb, kept alongside this one until parity is
- * confirmed) the Atmos Control Panel. "Dogmos Kennel" is the permanent name, not a placeholder to be
- * dropped later.
- *
- * Backed by its own persistent singleton datum rather than a second ui_interact() entry point on SSair:
- * SStgui.get_open_ui(user, src_object) matches an open UI by (user, src_object) ONLY, ignoring the
- * interface string - src_object.open_uis is one flat list per object, not partitioned by interface. A
- * second SSair interface would let a user with the OLD "AtmosControlPanel" already open have this
- * panel's try_update_ui() silently find and reuse that same UI instance (and vice versa), breaking
- * "supersede but not replace" during the transition where both must be independently openable. This
- * datum is a thin facade over that problem, not a second source of truth: all real state still lives on
- * SSair (cost_*, realistic_space_radiation, equalize_enabled, and everything this file adds), matching
- * how every existing piece of Dogmos telemetry/toggle already lives there.
- *
- * Persistent (created once via GLOBAL_DATUM_INIT, never new()'d per-open like /datum/dynamic_panel) so
- * one open_uis list serves every simultaneous viewer, and so kennel_slow_mode is one shared value
- * everyone observes together - a real shared cost control, not N independent per-viewer flags.
- */
+/** Shared admin panel for Dogmos telemetry and controls. State remains on SSair so all viewers see the
+ * same values while this facade stays independent from AtmosControlPanel. */
 GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 
 /datum/dogmos_kennel
@@ -32,21 +14,7 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 		ui.set_autoupdate(FALSE)
 		ui.open()
 
-/**
- * Everything the Overview tab needs, read straight off SSair.
- *
- * Deliberately does NOT expose SSair.excited_groups (unlike AtmosControlPanel.jsx, which still shows
- * it for its own users): per that datum's own doc comment, Rust's per-cycle equalization
- * (SSAIR_EXCITEDGROUPS/SSAIR_HIGHPRESSURE) never creates or updates /datum/excited_group objects, so
- * both the per-zone table AND the group count are frozen at whatever setup_allturfs() produced at
- * roundstart - not "rarely updated," genuinely inert for the rest of the round. A "live master control
- * panel" showing a headline number that never moves is actively misleading, not merely stale, so this
- * was removed here rather than "integrated" - there's real live substitutes for the same underlying
- * question (is equalization doing anything) already below: low_pressure_turfs/high_pressure_turfs/
- * group_turfs_processed/equalize_processed, all genuine per-cycle Rust telemetry. Re-adding a per-zone
- * breakdown for real would need Rust to report zone membership back to DM, which doesn't exist today -
- * see dogmos_excited_groups.dm's own doc comment for why that isn't a small addition.
- */
+/** Returns live Dogmos telemetry and bounded Kennel histories for the Overview tab. */
 /datum/dogmos_kennel/ui_data(mob/user)
 	var/list/data = list()
 	data["active_size"] = SSair.active_turfs.len
@@ -63,6 +31,7 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 		"edges_applied" = SSair.dogmos_heat_edges_applied,
 		"lock_contention" = SSair.dogmos_heat_lock_contention,
 		"registration_changes" = SSair.dogmos_heat_registration_changes,
+		"callback_enqueue_failures" = dogmos_callback_enqueue_failures(),
 	)
 	data["dogmos_costs"] = list(
 		"turfs" = SSair.cost_turfs,
@@ -78,39 +47,39 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 	data["fire_count"] = SSair.times_fired
 	data["showing_user"] = user.hud_used.atmos_debug_overlays
 	data["kennel_slow_mode"] = SSair.kennel_slow_mode
+	// APHELION EDIT ADDITION START - DOGMOS
+	data["flamethrower_directional_spread"] = SSair.flamethrower_directional_spread
+	data["event_counts"] = list(
+		"fire_groups" = length(SSair.recent_fire_groups),
+		"high_cost_zones" = length(SSair.recent_high_cost_zones),
+		"explosions" = length(SSair.recent_explosions),
+		"reactions_of_interest" = length(SSair.recent_reactions_of_interest),
+		"breaches" = length(SSair.recent_breaches),
+	)
+	// APHELION EDIT ADDITION END
 
-	// Slow mode (default ON) gates payload as well as push cadence (see the cadence half in
-	// SSair.fire()): the five recent_* tables, structures_of_interest, and the machinery browse list
-	// are the only genuinely variable-cost part of this panel's data - everything above is exactly what
-	// the old Atmos Control Panel already computed every cycle. Sent as real empty lists rather than
-	// omitted keys when slow mode is on, so the frontend never has to guard against an absent key.
+	// Slow mode gates only the potentially large machinery browse.
 	SSair.kennel_prune_expired_pins()
-	if(SSair.kennel_slow_mode)
-		data["recent_fire_groups"] = list()
-		data["recent_high_cost_zones"] = list()
-		data["recent_explosions"] = list()
-		data["recent_reactions_of_interest"] = list()
-		data["recent_breaches"] = list()
-		data["structures_of_interest"] = list()
-	else
-		data["recent_fire_groups"] = SSair.recent_fire_groups
-		data["recent_high_cost_zones"] = SSair.recent_high_cost_zones
-		data["recent_explosions"] = SSair.recent_explosions
-		data["recent_reactions_of_interest"] = SSair.recent_reactions_of_interest
-		data["recent_breaches"] = SSair.recent_breaches
-		data["structures_of_interest"] = SSair.structures_of_interest
+	data["recent_fire_groups"] = SSair.recent_fire_groups
+	data["recent_explosions"] = SSair.recent_explosions
+	data["recent_high_cost_zones"] = SSair.recent_high_cost_zones
+	data["recent_reactions_of_interest"] = SSair.recent_reactions_of_interest
+	data["recent_breaches"] = SSair.recent_breaches
+	data["structures_of_interest"] = SSair.structures_of_interest
 
+	if(!SSair.kennel_slow_mode)
 		// Every registered atmos machine/canister, for manually pinning one not already auto-flagged -
-		// this list can be large (thousands of pipe segments on a full map), so it only exists at all
-		// alongside the rest of the expensive payload, never while slow mode is on.
+		// this list can be large (thousands of pipe segments on a full map), so it only exists while
+		// slow mode is off.
 		var/list/browse = list()
-		for(var/obj/machinery/candidate as anything in SSair.atmos_machinery)
-			if(!candidate)
+		for(var/candidate as anything in SSair.atmos_machinery)
+			if(!istype(candidate, /obj/machinery))
 				continue
-			var/area/candidate_area = get_area(candidate)
+			var/obj/machinery/machine = candidate
+			var/area/candidate_area = get_area(machine)
 			browse += list(list(
-				"ref" = REF(candidate),
-				"name" = candidate.name,
+				"ref" = REF(machine),
+				"name" = machine.name,
 				"area" = candidate_area ? candidate_area.name : null,
 			))
 		data["atmos_machinery_browse"] = browse
@@ -124,14 +93,15 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 
 /datum/dogmos_kennel/ui_act(action, list/params, datum/tgui/ui, datum/ui_state/state)
 	. = ..()
-	if(. || !check_rights_for(usr.client, R_DEBUG))
+	var/mob/user = usr
+	if(. || !user?.client || !check_rights_for(user.client, R_DEBUG))
 		return
 	switch(action)
 		if("move-to-target")
-			var/turf/target = locate(params["spot"])
-			if(!target)
+			var/turf/target = SSair.resolve_kennel_jump_target(params["spot"])
+			if(!target || !user)
 				return
-			usr.forceMove(target)
+			user.forceMove(target)
 		if("toggle-freeze")
 			SSair.can_fire = !SSair.can_fire
 			return TRUE
@@ -141,6 +111,11 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 		if("toggle_equalize_enabled")
 			SSair.equalize_enabled = !SSair.equalize_enabled
 			return TRUE
+		// APHELION EDIT ADDITION START - DOGMOS
+		if("toggle_flamethrower_directional_spread")
+			SSair.flamethrower_directional_spread = !SSair.flamethrower_directional_spread
+			return TRUE
+		// APHELION EDIT ADDITION END
 		if("toggle_kennel_slow_mode")
 			SSair.kennel_slow_mode = !SSair.kennel_slow_mode
 			return TRUE
@@ -148,7 +123,7 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 			SSair.kennel_profile_reactions = !SSair.kennel_profile_reactions
 			return TRUE
 		if("toggle_user_display")
-			var/mob/user = ui.user
+			user = ui.user
 			user.hud_used.atmos_debug_overlays = !user.hud_used.atmos_debug_overlays
 			if(user.hud_used.atmos_debug_overlays)
 				user.client.images += GLOB.colored_images
@@ -156,6 +131,13 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 			else
 				user.client.images -= GLOB.colored_images
 				user.client.images -= GLOB.kennel_overlay_images
+				// APHELION EDIT ADDITION START - DOGMOS
+				if(ishuman(user))
+					var/mob/living/carbon/human/human_user = user
+					var/obj/item/clothing/glasses/meson/engine/dogmos/dogmos_goggles = human_user.glasses
+					if(istype(dogmos_goggles))
+						user.client.images |= dogmos_goggles.dogmos_overlay_images()
+				// APHELION EDIT ADDITION END
 			return TRUE
 		if("kennel_pin")
 			var/obj/machinery/target = locate(params["ref"]) in SSair.atmos_machinery

@@ -80,9 +80,7 @@ GLOBAL_LIST_INIT(atmos_adjacent_savings, list(0,0))
 //Use this to see if a turf is fully blocked or not, think windows or firelocks. Fails with 1x1 non full tile windows, but it's not worth the cost.
 #define TURF_SHARES(T) (LAZYLEN(T.atmos_adjacent_turfs))
 
-// Meridian: no longer archives turf.temperature_archived - that var existed only for DM's own
-// superconduction system (radiate_to_spess()/share_temperature_mutual_solid(),
-// LINDA_turf_tile.dm), which is deleted now that Dogmos owns turf-to-turf heat conduction.
+// Rust owns turf-to-turf heat conduction, so only the gas archive remains here.
 #define LINDA_CYCLE_ARCHIVE(turf)\
 	turf.air.archive();\
 	turf.archived_cycle = SSair.times_fired;

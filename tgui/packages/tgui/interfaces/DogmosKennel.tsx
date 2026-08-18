@@ -19,6 +19,11 @@ import { createSearch } from 'tgui-core/string';
 
 import { useBackend } from '../backend';
 import { Window } from '../layouts';
+import { MarkdownRenderer } from './MarkdownViewer';
+
+import aboutContent from './DogmosKennel/docs/about.md';
+import creditsContent from './DogmosKennel/docs/credits.md';
+import glossaryContent from './DogmosKennel/docs/glossary.md';
 
 type DogmosCosts = {
   turfs: number;
@@ -31,14 +36,14 @@ type DogmosCosts = {
 
 type FireGroupEntry = {
   time: string;
-  jump_to: string;
+  jump_to: string | null;
   area: string;
   peak_size: number;
 };
 
 type HighCostZoneEntry = {
   time: string;
-  jump_to: string;
+  jump_to: string | null;
   area: string;
   reaction: string;
   cost_ms: number;
@@ -46,7 +51,7 @@ type HighCostZoneEntry = {
 
 type ExplosionEntry = {
   time: string;
-  jump_to: string;
+  jump_to: string | null;
   area: string;
   devastation_range: number;
   heavy_impact_range: number;
@@ -57,7 +62,7 @@ type ExplosionEntry = {
 
 type ReactionOfInterestEntry = {
   time: string;
-  jump_to: string;
+  jump_to: string | null;
   area: string;
   reaction: string;
   amount: number;
@@ -65,7 +70,7 @@ type ReactionOfInterestEntry = {
 
 type BreachEntry = {
   time: string;
-  jump_to: string;
+  jump_to: string | null;
   area: string;
   moles_lost: number;
 };
@@ -100,6 +105,7 @@ type Data = {
     edges_applied: number;
     lock_contention: number;
     registration_changes: number;
+    callback_enqueue_failures: number;
   };
   dogmos_costs: DogmosCosts;
   frozen: BooleanLike;
@@ -109,6 +115,14 @@ type Data = {
   fire_count: number;
   showing_user: BooleanLike;
   kennel_slow_mode: BooleanLike;
+  flamethrower_directional_spread: BooleanLike;
+  event_counts: {
+    fire_groups: number;
+    high_cost_zones: number;
+    explosions: number;
+    reactions_of_interest: number;
+    breaches: number;
+  };
   recent_fire_groups: FireGroupEntry[];
   recent_high_cost_zones: HighCostZoneEntry[];
   recent_explosions: ExplosionEntry[];
@@ -126,16 +140,27 @@ type Data = {
 enum TABS {
   Overview = 'Overview',
   'Fire Groups' = 'Fire Groups',
+  Profiling = 'Profiling',
   'High-Cost Zones' = 'High-Cost Zones',
   Explosions = 'Explosions',
-  'Reactions of Interest' = 'Reactions of Interest',
-  'Structures/Machines' = 'Structures/Machines',
   Breaches = 'Breaches',
+  'Structures/Machines' = 'Structures/Machines',
+  About = 'About',
+  Glossary = 'Glossary',
+  Credits = 'Credits',
 }
 
-// Same good/average/bad banding tgui-core's own ControllerOverview (the MC panel) uses for subsystem
-// cost bars, scaled down to Dogmos' actual per-stage ms range - a full 0.5s-wait cycle rarely spends
-// more than a couple of ms in any one stage, so "bad" here means genuinely worth a look, not just busy.
+type EventCountKey = keyof Data['event_counts'];
+
+const TAB_EVENT_COUNT_KEYS: Partial<Record<TABS, EventCountKey>> = {
+  [TABS['Fire Groups']]: 'fire_groups',
+  [TABS['High-Cost Zones']]: 'high_cost_zones',
+  [TABS.Explosions]: 'explosions',
+  [TABS.Profiling]: 'reactions_of_interest',
+  [TABS.Breaches]: 'breaches',
+};
+
+// Cost bands match the MC panel, scaled to Dogmos' per-stage millisecond range.
 const STAGE_COST_RANGES = {
   good: [0, 4.99],
   average: [5, 9.99],
@@ -150,11 +175,7 @@ type StageCostRowProps = {
   inactiveTooltip?: string;
 };
 
-/// One row per Dogmos fire() stage - mirrors the MC panel's SubsystemRow (status icon + named
-/// progress bar), swapping the generic play/pause icon for a paw print colored by the same
-/// good/average/bad banding as the bar itself. `active={false}` (a stage gated off, e.g. Equalize
-/// while equalize_enabled is off) greys the icon out rather than color-grading a cost that isn't
-/// really running.
+/// Displays one Dogmos stage cost with its activity state and severity band.
 const StageCostRow = (props: StageCostRowProps) => {
   const { label, cost, active, inactiveTooltip } = props;
   const color = !active ? 'grey' : cost >= 10 ? 'bad' : cost >= 5 ? 'average' : 'good';
@@ -178,50 +199,49 @@ const StageCostRow = (props: StageCostRowProps) => {
   );
 };
 
+const KennelControls = () => {
+  const { act, data } = useBackend<Data>();
+  return (
+    <Section
+      title="Kennel Controls"
+      buttons={
+        <>
+          <Button
+            icon={data.frozen ? 'play' : 'pause'}
+            color={data.frozen ? 'bad' : 'good'}
+            onClick={() => act('toggle-freeze')}
+          >
+            {data.frozen ? 'Frozen' : 'Running'}
+          </Button>
+          <Button.Checkbox
+            icon="eye"
+            checked={data.showing_user}
+            onClick={() => act('toggle_user_display')}
+            tooltip="Turns on Dogmos' map overlays for you specifically: red breach tiles, orange high-cost zones, purple reaction events, cyan leashed structures."
+          >
+            Debug Overlays
+          </Button.Checkbox>
+          <Button.Checkbox
+            icon="gauge-high"
+            checked={data.kennel_slow_mode}
+            onClick={() => act('toggle_kennel_slow_mode')}
+            tooltip="ON (default): gates only the large machinery browse and throttles refresh cadence. All bounded event histories remain available. OFF: refreshes the machinery browse every cycle."
+          >
+            Slow Mode
+          </Button.Checkbox>
+        </>
+      }
+    />
+  );
+};
+
 const OverviewPanel = (props) => {
   const { act, data } = useBackend<Data>();
   const costs = data.dogmos_costs || ({} as DogmosCosts);
   const equalizeActive = !!data.equalize_enabled;
   return (
     <>
-      <Section
-        title="Kennel Overview"
-        buttons={
-          <>
-            <Button
-              icon={data.frozen ? 'play' : 'pause'}
-              color={data.frozen ? 'bad' : 'good'}
-              onClick={() => act('toggle-freeze')}
-            >
-              {data.frozen ? 'Frozen' : 'Running'}
-            </Button>
-            <Button.Checkbox
-              icon="eye"
-              checked={data.showing_user}
-              onClick={() => act('toggle_user_display')}
-              tooltip="Turns on Dogmos' map overlays for you specifically: red breach tiles, orange high-cost zones, purple reactions of interest, cyan leashed structures. This is where overlays/debug visuals turn on."
-            >
-              Debug Overlays
-            </Button.Checkbox>
-            <Button.Checkbox
-              icon="gauge-high"
-              checked={data.kennel_slow_mode}
-              onClick={() => act('toggle_kennel_slow_mode')}
-              tooltip="ON (default): this panel only pushes cheap Overview data, and only every 4th subsystem cycle - safe for multiple simultaneous viewers. OFF: full live data every cycle, including the event-history tables and overlay candidates."
-            >
-              Slow Mode
-            </Button.Checkbox>
-            <Button.Checkbox
-              icon="stopwatch"
-              checked={data.kennel_profile_reactions}
-              onClick={() => act('toggle_kennel_profile_reactions')}
-              tooltip="OFF (default): no extra cost. ON: times every single reaction call in Rust and records the slow ones into High-Cost Zones - the one Kennel toggle with real per-reaction overhead."
-            >
-              Profile Reactions
-            </Button.Checkbox>
-          </>
-        }
-      >
+      <Section title="Kennel Overview">
         <Stack fill>
           <Stack.Item grow>
             <LabeledList>
@@ -237,18 +257,18 @@ const OverviewPanel = (props) => {
               <LabeledList.Item label="Superconductors">
                 {data.conducting_size}
               </LabeledList.Item>
+              <LabeledList.Item label="Low / High Pressure Turfs">
+                {data.low_pressure_turfs} / {data.high_pressure_turfs}
+              </LabeledList.Item>
+              <LabeledList.Item label="Group / Equalize Processed">
+                {data.group_turfs_processed} / {data.equalize_processed}
+              </LabeledList.Item>
             </LabeledList>
           </Stack.Item>
           <Stack.Item grow>
             <LabeledList>
               <LabeledList.Item label="Space Boundary Nodes">
                 {data.space_boundary_size}
-              </LabeledList.Item>
-              <LabeledList.Item label="Low / High Pressure Turfs">
-                {data.low_pressure_turfs} / {data.high_pressure_turfs}
-              </LabeledList.Item>
-              <LabeledList.Item label="Group / Equalize Processed">
-                {data.group_turfs_processed} / {data.equalize_processed}
               </LabeledList.Item>
               <LabeledList.Item label="Heat Graph Nodes">
                 {data.heat_telemetry.graph_nodes}
@@ -262,6 +282,9 @@ const OverviewPanel = (props) => {
               </LabeledList.Item>
               <LabeledList.Item label="Heat Registration Changes">
                 {data.heat_telemetry.registration_changes}
+              </LabeledList.Item>
+              <LabeledList.Item label="Callback Enqueue Failures">
+                {data.heat_telemetry.callback_enqueue_failures}
               </LabeledList.Item>
             </LabeledList>
           </Stack.Item>
@@ -301,9 +324,8 @@ const OverviewPanel = (props) => {
       </Section>
       {!!data.kennel_slow_mode && (
         <NoticeBox>
-          Slow mode is on - the Fire Groups, High-Cost Zones, Explosions,
-          Reactions of Interest, Structures/Machines and Breaches tabs may be
-          sparse or stale. Disable it above for live data.
+          Slow mode is on - the machinery browse is gated and refresh cadence
+          is reduced. All bounded event histories remain available.
         </NoticeBox>
       )}
       <Section title="Configuration">
@@ -314,7 +336,7 @@ const OverviewPanel = (props) => {
                 <Button.Checkbox
                   checked={data.realistic_space_radiation}
                   onClick={() => act('toggle_realistic_space_radiation')}
-                  tooltip="ON: real Stefan-Boltzmann blackbody radiation (physically correct, weak near room temperature). OFF: fake vacuum sink (not physical, fast and legible)."
+                  tooltip="ON: real Stefan-Boltzmann blackbody radiation. Cooling is intentionally weak near room temperature, so an exposed room will not instantly freeze. OFF: legacy fake vacuum sink for rapid, visible cooling. This changes heat loss only, not breach pressure or airflow."
                 />
               </LabeledList.Item>
               <LabeledList.Item label="Katmos Pressure Equalizer">
@@ -322,6 +344,13 @@ const OverviewPanel = (props) => {
                   checked={data.equalize_enabled}
                   onClick={() => act('toggle_equalize_enabled')}
                   tooltip="Whether Dogmos' katmos pressure equalizer (and hull-breach handling) runs as part of the gas FDM pass."
+                />
+              </LabeledList.Item>
+              <LabeledList.Item label="Flamethrower Directional Spread">
+                <Button.Checkbox
+                  checked={data.flamethrower_directional_spread}
+                  onClick={() => act('toggle_flamethrower_directional_spread')}
+                  tooltip="ON: keep the initial flamethrower hotspot below LINDA's bypass threshold so its radiated heat stays with the projected flame. OFF: preserve the legacy large hotspot behavior."
                 />
               </LabeledList.Item>
             </LabeledList>
@@ -340,7 +369,7 @@ const OverviewPanel = (props) => {
                   }
                 />
               </LabeledList.Item>
-              <LabeledList.Item label="Reaction of Interest Threshold">
+              <LabeledList.Item label="Reaction Event Threshold">
                 <Input
                   width="4em"
                   value={`${data.kennel_reaction_magnitude_threshold}`}
@@ -390,12 +419,8 @@ type Column<T> = {
   collapsing?: boolean;
 };
 
-/**
- * Shared searchable/filterable table for the five recent_* event history tabs - they're all the same
- * shape (newest-first list, a jump_to ref, a handful of display columns), so one generic component
- * covers all of them instead of five near-identical copies.
- */
-function EventHistoryTable<T extends { jump_to?: string }>(props: {
+/** Shared searchable table for the recent Dogmos event histories. */
+function EventHistoryTable<T extends { jump_to?: string | null }>(props: {
   entries: T[];
   columns: Column<T>[];
   searchKeys: (entry: T) => string;
@@ -407,6 +432,7 @@ function EventHistoryTable<T extends { jump_to?: string }>(props: {
   const filtered = searchText
     ? entries.filter(createSearch(searchText, searchKeys))
     : entries;
+  const hasTargets = filtered.some((entry) => !!entry.jump_to);
   return (
     <>
       <Input
@@ -425,21 +451,26 @@ function EventHistoryTable<T extends { jump_to?: string }>(props: {
                 {col.label}
               </Table.Cell>
             ))}
-            {!!entries[0]?.jump_to && <Table.Cell collapsing>Jump</Table.Cell>}
+            {hasTargets && (
+              <Table.Cell collapsing>Track</Table.Cell>
+            )}
           </Table.Row>
           {filtered.map((entry, i) => (
             <tr key={i}>
               {columns.map((col) => (
                 <td key={col.label}>{col.render(entry)}</td>
               ))}
-              {!!entry.jump_to && (
+              {hasTargets && (
                 <td>
-                  <Button
-                    icon="crosshairs"
-                    onClick={() =>
-                      act('move-to-target', { spot: entry.jump_to })
-                    }
-                  />
+                  {!!entry.jump_to && (
+                    <Button
+                      icon="paw"
+                      tooltip="Track scent"
+                      onClick={() =>
+                        act('move-to-target', { spot: entry.jump_to })
+                      }
+                    />
+                  )}
                 </td>
               )}
             </tr>
@@ -478,7 +509,7 @@ const HighCostZonesPanel = (props) => {
     >
       {!data.kennel_profile_reactions && (
         <NoticeBox>
-          Reaction profiling is off (Overview tab) - this list stays empty
+          Reaction profiling is off in the Profiling tab - this list stays empty
           until it's enabled. It has a real, opt-in Rust-side cost per
           reaction call, so it defaults off.
         </NoticeBox>
@@ -527,26 +558,67 @@ const ExplosionsPanel = (props) => {
   );
 };
 
-const ReactionsOfInterestPanel = (props) => {
-  const { data } = useBackend<Data>();
+const ProfilingPanel = (props) => {
+  const { act, data } = useBackend<Data>();
   return (
-    <Section
-      title={`Recent Reactions of Interest (amount >= ${data.kennel_reaction_magnitude_threshold})`}
-    >
-      <EventHistoryTable
-        entries={data.recent_reactions_of_interest}
-        searchKeys={(entry) => `${entry.area} ${entry.reaction}`}
-        emptyText="No notable reactions recorded yet."
-        columns={[
-          { label: 'Time', render: (e) => e.time, collapsing: true },
-          { label: 'Area', render: (e) => e.area },
-          { label: 'Reaction', render: (e) => e.reaction },
-          { label: 'Amount', render: (e) => e.amount, collapsing: true },
-        ]}
-      />
-    </Section>
+    <>
+      <Section
+        title="Reaction profiler"
+        buttons={
+          <Button.Checkbox
+            icon="stopwatch"
+            checked={data.kennel_profile_reactions}
+            onClick={() => act('toggle_kennel_profile_reactions')}
+            tooltip="OFF (default): no per-reaction timer. ON: measures each Rust reaction call and records calls at or above the configured threshold."
+          >
+            Profile Reactions
+          </Button.Checkbox>
+        }
+      >
+        <Box mb={1}>
+          Profiling is Dogmos' scent trail for reaction cost. When enabled, the
+          Rust reaction dispatcher measures each reaction call, including calls
+          that finish quickly. Only calls at or above the configured high-cost
+          threshold are copied into High-Cost Zones, keeping the stored history
+          bounded.
+        </Box>
+        <Box mb={1}>
+          The Reaction Events table answers a different question: which reaction
+          amounts changed enough to be operationally interesting. It is an event
+          history, not a timing measurement, and remains available when profiling
+          is off. Use the amount threshold to reduce noise in that history; use
+          the profiling threshold to find expensive individual calls.
+        </Box>
+        <Box>
+          Profiling adds real work to every reaction call, so leave it off during
+          ordinary station operation. Turn it on for a bounded investigation,
+          inspect the recorded areas and reactions, then turn it off again.
+        </Box>
+      </Section>
+      <Section
+        title={`Recent Reaction Events (amount >= ${data.kennel_reaction_magnitude_threshold})`}
+      >
+        <EventHistoryTable
+          entries={data.recent_reactions_of_interest}
+          searchKeys={(entry) => `${entry.area} ${entry.reaction}`}
+          emptyText="No notable reactions recorded yet."
+          columns={[
+            { label: 'Time', render: (e) => e.time, collapsing: true },
+            { label: 'Area', render: (e) => e.area },
+            { label: 'Reaction', render: (e) => e.reaction },
+            { label: 'Amount', render: (e) => e.amount, collapsing: true },
+          ]}
+        />
+      </Section>
+    </>
   );
 };
+
+const DocumentationPanel = (props: { title: string; content: string }) => (
+  <Section title={props.title}>
+    <MarkdownRenderer content={props.content} />
+  </Section>
+);
 
 const BreachesPanel = (props) => {
   const { data } = useBackend<Data>();
@@ -639,7 +711,7 @@ const StructuresPanel = (props) => {
       <Section title="Leash a Machine">
         {!data.atmos_machinery_browse && (
           <NoticeBox>
-            Turn off Kennel Slow Mode (Overview tab) to browse and manually
+            Turn off Kennel Slow Mode in Kennel Controls to browse and manually
             leash any registered atmos machine/canister - this list can be
             large, so it's not sent while slow mode is on.
           </NoticeBox>
@@ -682,8 +754,9 @@ const StructuresPanel = (props) => {
 };
 
 export const DogmosKennel = (props) => {
-  const tabs = Object.keys(TABS);
-  const [currentTab, setCurrentTab] = useState(tabs[0]);
+  const { data } = useBackend<Data>();
+  const tabs = Object.keys(TABS) as TABS[];
+  const [currentTab, setCurrentTab] = useState<TABS>(tabs[0]);
 
   let componentShown;
   switch (currentTab) {
@@ -696,8 +769,8 @@ export const DogmosKennel = (props) => {
     case TABS.Explosions:
       componentShown = <ExplosionsPanel />;
       break;
-    case TABS['Reactions of Interest']:
-      componentShown = <ReactionsOfInterestPanel />;
+    case TABS.Profiling:
+      componentShown = <ProfilingPanel />;
       break;
     case TABS['Structures/Machines']:
       componentShown = <StructuresPanel />;
@@ -705,7 +778,15 @@ export const DogmosKennel = (props) => {
     case TABS.Breaches:
       componentShown = <BreachesPanel />;
       break;
-    case TABS.Overview:
+    case TABS.About:
+      componentShown = <DocumentationPanel title="About Dogmos" content={aboutContent} />;
+      break;
+    case TABS.Glossary:
+      componentShown = <DocumentationPanel title="Dogmos Glossary" content={glossaryContent} />;
+      break;
+    case TABS.Credits:
+      componentShown = <DocumentationPanel title="Dogmos Credits" content={creditsContent} />;
+      break;
     default:
       componentShown = <OverviewPanel />;
   }
@@ -713,16 +794,24 @@ export const DogmosKennel = (props) => {
   return (
     <Window title="🐾 Dogmos Kennel" width={900} height={680}>
       <Window.Content scrollable>
+        <KennelControls />
         <Tabs>
-          {tabs.map((tab) => (
-            <Tabs.Tab
-              key={tab}
-              selected={currentTab === tab}
-              onClick={() => setCurrentTab(tab)}
-            >
-              {tab}
-            </Tabs.Tab>
-          ))}
+          {tabs.map((tab) => {
+            const eventCountKey = TAB_EVENT_COUNT_KEYS[tab];
+            const eventCount = eventCountKey
+              ? data.event_counts[eventCountKey]
+              : 0;
+            return (
+              <Tabs.Tab
+                key={tab}
+                selected={currentTab === tab}
+                onClick={() => setCurrentTab(tab)}
+              >
+                {tab}
+                {!!eventCount && ` (${eventCount})`}
+              </Tabs.Tab>
+            );
+          })}
         </Tabs>
         {componentShown}
       </Window.Content>

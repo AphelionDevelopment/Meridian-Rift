@@ -1,19 +1,4 @@
-/**
- * Verifies the fix for a real, latent bug investigated (but deliberately not fixed) during the
- * SSAIR_SUPERCONDUCTIVITY cutover and fixed 2026-08-15 per Zoe's "clean up deferred issues" direction:
- * aphelion-dogmos's get_share_energy(delta, cap_1, cap_2) computed `cap_1*cap_2/(cap_1+cap_2)`, which
- * hits IEEE-754's indeterminate inf/inf form (not the correct calculus limit) whenever either capacity
- * is infinite - confirmed reachable by real station turfs (two /turf/open/floor/engine tiles, finite
- * conductivity + infinite heat_capacity, separated by an ordinary window that doesn't override
- * block_superconductivity()). The observed symptom was both turfs snapping to TCMB (2.7K) via the
- * downstream sanity clamp on the resulting NaN.
- *
- * Deliberately does NOT override heat_capacity on either turf - the test room's stock turfs already
- * default to INFINITY (neither /turf/open/indestructible nor /turf/closed/indestructible overrides it),
- * which is exactly the condition that triggers the bug, unlike dogmos_superconduction_golden.dm's
- * SUPERCONDUCTION_TEST_HEAT_CAPACITY override (needed there specifically to AVOID this same NaN so it
- * could test ordinary finite-capacity conduction instead).
- */
+/** Verifies finite results when two heat capacities use BYOND's infinite sentinel. */
 /datum/unit_test/dogmos_infinite_heat_capacity_conduction
 
 /datum/unit_test/dogmos_infinite_heat_capacity_conduction/Run()
@@ -21,16 +6,11 @@
 	var/turf/open/turf_a = pair[1]
 	var/turf/open/turf_b = pair[2]
 
-	// isinf() is BYOND's true-IEEE-infinity check, and does not consider BYOND's own INFINITY constant
-	// infinite by that definition - it's a finite sentinel (1e31), not f32::INFINITY. Compare against
-	// the constant directly instead; see the matching BYOND_INFINITY_THRESHOLD comment on the Rust side
-	// (aphelion-dogmos src/turfs/superconduct.rs) for why this distinction is exactly the bug.
+	// BYOND's INFINITY is a finite sentinel, so compare it directly rather than with isinf().
 	TEST_ASSERT(turf_a.heat_capacity == INFINITY && turf_b.heat_capacity == INFINITY, \
 		"The test room's turfs no longer default to infinite heat_capacity ([turf_a.heat_capacity], [turf_b.heat_capacity]) - test setup is broken, not the thing under test (this test specifically needs the infinite-capacity condition to reproduce the bug).")
 
-	// blocks_air on turf_b breaks gas-adjacency, which is what creates a real heat edge - see
-	// dogmos_superconduction_golden.dm's doc comment for the full explanation of why a plain
-	// gas-adjacent pair (what allocate_turf_pair() guarantees) never conducts heat at all.
+	// A non-gas-adjacent neighbor creates the heat edge.
 	turf_b.blocks_air = TRUE
 	resync_turf_for_dogmos(turf_a)
 	resync_turf_for_dogmos(turf_b)
@@ -46,18 +26,7 @@
 	TEST_ASSERT(a_before > b_before, \
 		"Seeding turf_a at 1500K and turf_b at 1000K did not produce an asymmetric pair ([a_before] vs [b_before]) - test setup is broken, not the thing under test.")
 
-	// Deliberately does NOT break early on the first detected change (an earlier version of this test
-	// did, and that was wrong): the bug's actual failure signature has TWO distinct stages, one cycle
-	// apart. The "share w/ adjacents" turf-to-turf loop (no clamp of its own) can push a turf's STORED
-	// temperature to real IEEE infinity/NaN within a single process_turf_heat() call; reading it back
-	// immediately (hook_turf_temperature, superconduct.rs) returns a read-time fallback of exactly
-	// 300.0 for a non-normal stored value - which happens to be a boring, plausible-looking number that
-	// trivially satisfied a weaker version of the assertion below. Only on the NEXT full cycle does that
-	// same turf's own write-time sanity clamp (`if !temp_write.is_normal() { *temp_write = TCMB }`,
-	// which runs once per turf per cycle in the FIRST processing stage) catch the leftover bad value
-	// and overwrite storage with TCMB - which is what a too-short retry window would miss entirely.
-	// Both 700K and 1000K/1500K test seeds were deliberately chosen away from both fallback sentinels
-	// (300.0, 102.0) so neither can be mistaken for a plausible equilibrium temperature.
+	// Allow multiple cycles so a write-time sanity clamp cannot hide an intermediate invalid value.
 	for(var/attempt in 1 to 10)
 		SSair.process_turf_heat()
 		sleep(2)

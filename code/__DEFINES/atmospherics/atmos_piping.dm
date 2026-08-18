@@ -49,13 +49,7 @@
 /// The maximum pressure an gas tanks release valve can be set to.
 #define TANK_MAX_RELEASE_PRESSURE (ONE_ATMOSPHERE*3)
 /// The default initial value gas tanks release valves are set to. (At least the ones containing pure plasma/oxygen.)
-/// Meridian: was 16, landing exactly on safe_oxygen_min (code/modules/mob/living/carbon/life.dm) by
-/// design - the same pattern as TANK_PLASMAMAN_RELEASE_PRESSURE below, and the same fix. Verified via
-/// dogmos_internals_breath.dm: a stock emergency oxygen tank's breath partial pressure computes to
-/// ~16.002 kPa in exact math, which real double-precision DM math historically cleared, but Dogmos'
-/// gas_mixture math is f32 (Rust) - the tiny rounding difference tips it to ~15.9999, just under the
-/// threshold, suffocating a mob using a completely full tank at its default setting. Bumped 1 kPa for
-/// real margin rather than an exact-boundary value that was never meant to have none.
+/// Raised from 16 to keep f32 rounding above safe_oxygen_min.
 #define TANK_DEFAULT_RELEASE_PRESSURE 17
 /// The default initial value gas plasmamen tanks releases valves are set to.
 #define TANK_PLASMAMAN_RELEASE_PRESSURE 5

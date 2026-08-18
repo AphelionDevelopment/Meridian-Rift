@@ -266,10 +266,16 @@
 	var/turf/local_turf = get_turf(loc)
 	var/current_temperature
 	if(istype(local_turf))
+		/* // APHELION EDIT REMOVAL START - DOGMOS
 		var/datum/gas_mixture/enviroment = local_turf.return_air()
-		current_temperature = enviroment.return_temperature()
+		*/ // APHELION EDIT REMOVAL END
+		// APHELION EDIT ADDITION START - DOGMOS
+		current_temperature = local_turf.GetTemperature()
+		// APHELION EDIT ADDITION END
+	/* // APHELION EDIT REMOVAL START - DOGMOS
 	else if(isturf(local_turf))
 		current_temperature = local_turf.temperature
+	*/ // APHELION EDIT REMOVAL END
 	if(isnull(current_temperature))
 		data["currentTemp"] = "N/A"
 	else
