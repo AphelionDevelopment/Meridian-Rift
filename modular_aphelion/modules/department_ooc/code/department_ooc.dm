@@ -139,27 +139,16 @@ GLOBAL_LIST_INIT(department_ooc_channels, list(
 	// spoken to by staff and does not get the choice.
 	for(var/mob/iterated_mob as anything in GLOB.player_list)
 		var/client/iterated_client = iterated_mob.client
-		if(isnull(iterated_client))
-			continue
 		if(iterated_client.holder && !iterated_client.holder.deadmined && (iterated_client.prefs?.chat_toggles & CHAT_OOC))
 			listeners[iterated_client] = DEPT_OOC_LISTEN_ADMIN
-
-	if(channel.is_antag_channel)
-		for(var/datum/mind/antag_mind as anything in get_antag_minds(/datum/antagonist))
-			if(!antag_mind.current || !antag_mind.current.client || isnewplayer(antag_mind.current))
-				continue
-			if(listeners[antag_mind.current.client])
-				continue
-			listeners[antag_mind.current.client] = DEPT_OOC_LISTEN_PLAYER
-
-	if(channel.department_flags)
-		for(var/mob/iterated_mob as anything in GLOB.player_list)
-			var/client/iterated_client = iterated_mob.client
-			if(isnull(iterated_client) || listeners[iterated_client])
-				continue
-			var/datum/job/job = iterated_mob.mind?.assigned_role
-			if(job && (job.departments_bitflags & channel.department_flags))
-				listeners[iterated_client] = DEPT_OOC_LISTEN_PLAYER
+			continue
+		var/datum/job/job = iterated_mob.mind?.assigned_role
+		if(channel.department_flags && (job?.departments_bitflags & channel.department_flags))
+			listeners[iterated_client] = DEPT_OOC_LISTEN_PLAYER
+			continue
+		if(channel.is_antag_channel && iterated_mob.is_antag())
+			listeners[iterated_client] = DEPT_OOC_LISTEN_PLAYER
+			continue
 
 	for(var/client/iterated_client as anything in listeners)
 		var/mode = listeners[iterated_client]
