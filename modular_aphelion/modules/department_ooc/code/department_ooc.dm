@@ -126,9 +126,9 @@ GLOBAL_LIST_INIT(department_ooc_channels, list(
 	var/anon = FALSE
 	// Deadminned admins are anonymised alongside players, so stepping down does not out you.
 	if((!sender.holder || sender.holder.deadmined) && sender.prefs?.read_preference(/datum/preference/toggle/department_ooc_anon))
-		if(!channel.ckey_to_anon_name[sender.key])
-			channel.ckey_to_anon_name[sender.key] = "[channel.anon_prefix] [pick(GLOB.phonetic_alphabet)] [rand(1, 99)]"
-		keyname = channel.ckey_to_anon_name[sender.key]
+		if(!LAZYACCESS(channel.ckey_to_anon_name, sender.key))
+			LAZYSET(channel.ckey_to_anon_name, sender.key, "[channel.anon_prefix] [pick(GLOB.phonetic_alphabet)] [rand(1, 99)]")
+		keyname = LAZYACCESS(channel.ckey_to_anon_name, sender.key)
 		anon = TRUE
 
 	var/list/listeners = list()
