@@ -28,7 +28,6 @@
 	src.department_flags = department_flags
 	src.is_antag_channel = is_antag_channel
 	src.anon_prefix = anon_prefix
-	ckey_to_anon_name = list()
 
 /**
  * Whether a client is allowed to speak on and listen to this channel.
