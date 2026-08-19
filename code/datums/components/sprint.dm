@@ -57,27 +57,19 @@
 
 /datum/component/sprint/RegisterWithParent()
 	RegisterSignal(parent, COMSIG_MOB_CLIENT_PRE_MOVE, PROC_REF(on_mob_move))
-	RegisterSignal(parent, COMSIG_MOVE_INTENT_TOGGLED, PROC_REF(update_pace))
-	update_pace()
+	RegisterSignal(parent, COMSIG_MOVE_INTENT_TOGGLED, PROC_REF(on_intent_toggled))
 	update_stamina_hud()
 
 /datum/component/sprint/UnregisterFromParent()
 	STOP_PROCESSING(SSfastprocess, src)
 	reset_dust()
-	runner.remove_movespeed_modifier(/datum/movespeed_modifier/run_pace)
-	runner.remove_movespeed_modifier(/datum/movespeed_modifier/walk_pace)
 	UnregisterSignal(parent, list(COMSIG_MOB_CLIENT_PRE_MOVE, COMSIG_MOVE_INTENT_TOGGLED))
 
-/// Swaps in the speedup for whichever pace the mob is now on.
-/datum/component/sprint/proc/update_pace(mob/living/source)
+/// Drops the dust trail when the mob leaves a run, so the next one starts on a fresh cloud. The pace itself comes from the mob's move intent modifier.
+/datum/component/sprint/proc/on_intent_toggled(mob/living/source)
 	SIGNAL_HANDLER
-	if(runner.move_intent == MOVE_INTENT_RUN)
-		runner.remove_movespeed_modifier(/datum/movespeed_modifier/walk_pace)
-		runner.add_movespeed_modifier(/datum/movespeed_modifier/run_pace)
-		return
-	runner.remove_movespeed_modifier(/datum/movespeed_modifier/run_pace)
-	runner.add_movespeed_modifier(/datum/movespeed_modifier/walk_pace)
-	reset_dust()
+	if(runner.move_intent != MOVE_INTENT_RUN)
+		reset_dust()
 
 /// Charges a running tile and kicks up dust. Walking costs nothing.
 /datum/component/sprint/proc/on_mob_move(mob/living/source, list/move_args)

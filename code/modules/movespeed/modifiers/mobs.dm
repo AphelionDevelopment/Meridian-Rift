@@ -67,21 +67,24 @@
 	var/mod = CONFIG_GET(number/movedelay/run_delay)
 	multiplicative_slowdown = isnum(mod)? mod : initial(multiplicative_slowdown)
 
-/// Move delay removed on top of the configured run delay, while on run intent.
-#define RUN_SPEED_BONUS -0.2
-/// Move delay removed on top of the configured walk delay, while on walk intent - now the default pace.
-#define WALK_SPEED_BONUS -1.4
+/**
+ * Move delay of a mob on the sprint system - see [/datum/component/sprint].
+ *
+ * Shares its id with [/datum/movespeed_modifier/config_walk_run], so it replaces the configured delay
+ * rather than stacking on it. The pace is absolute for that reason: a bonus on top of a delay the
+ * server config sets is only correct on a server that sets it to the value the bonus was tuned against.
+ */
+/datum/movespeed_modifier/sprint_pace
+	id = MOVESPEED_ID_MOB_WALK_RUN
+	flags = IGNORE_NOSLOW
 
-/// Speedup applied while on run intent.
-/datum/movespeed_modifier/run_pace
-	multiplicative_slowdown = RUN_SPEED_BONUS
+/// Walking is the resting pace of the sprint system, so it is quicker than the configured walk.
+/datum/movespeed_modifier/sprint_pace/walk
+	multiplicative_slowdown = 2.6
 
-/// Speedup applied while on walk intent.
-/datum/movespeed_modifier/walk_pace
-	multiplicative_slowdown = WALK_SPEED_BONUS
-
-#undef RUN_SPEED_BONUS
-#undef WALK_SPEED_BONUS
+/// Running is the deliberate pace, and costs running stamina every tile.
+/datum/movespeed_modifier/sprint_pace/run
+	multiplicative_slowdown = 1.3
 
 /datum/movespeed_modifier/turf_slowdown
 	movetypes = GROUND

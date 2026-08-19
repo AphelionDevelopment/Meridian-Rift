@@ -9,6 +9,12 @@
 		return
 	return considering
 
+/// Humans run on the sprint system, so both of their paces are quicker than the configured base.
+/mob/living/carbon/human/get_move_intent_slowdown()
+	if(move_intent == MOVE_INTENT_WALK)
+		return /datum/movespeed_modifier/sprint_pace/walk
+	return /datum/movespeed_modifier/sprint_pace/run
+
 /mob/living/carbon/human/slip(knockdown_amount, obj/slipped_on, lube_flags, paralyze, daze, force_drop = FALSE)
 	if(HAS_TRAIT(src, TRAIT_NO_SLIP_ALL))
 		return FALSE
