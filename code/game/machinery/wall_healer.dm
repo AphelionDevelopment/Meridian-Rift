@@ -404,7 +404,7 @@
 		new /obj/item/stack/medical/wrap/gauze(drop_loc, num_bandages)
 
 /obj/machinery/wall_healer/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
-		// APHELION EDIT ADDITION START - MEDICAL_PROJECTION_SYSTEM
+	// APHELION EDIT ADDITION START - MEDICAL_PROJECTION_SYSTEM
 	if(istype(tool, /obj/item/lifeline_projector))
 		return refill_lifeline_projector(tool, user)
 	// APHELION EDIT ADDITION END

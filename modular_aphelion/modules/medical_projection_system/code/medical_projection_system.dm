@@ -31,70 +31,143 @@
 GLOBAL_VAR_INIT(lifeline_fuel, 0)
 /// Maximum medium available to the station-wide network.
 GLOBAL_VAR_INIT(lifeline_fuel_capacity, LIFELINE_NETWORK_CAPACITY)
-/// Type path of the reagent or organ requested by the reservoir.
-GLOBAL_VAR(lifeline_requested_type)
-/// Player-facing name of the current reservoir request.
-GLOBAL_VAR(lifeline_requested_name)
-/// Reagent units or organ count required by the current request.
-GLOBAL_VAR(lifeline_requested_amount)
-/// Medium created when staff complete the current request.
-GLOBAL_VAR(lifeline_request_yield)
-/// Whether the current request consumes an organ instead of a reagent.
-GLOBAL_VAR_INIT(lifeline_request_is_organ, FALSE)
+/// One singleton per concrete /datum/lifeline_request subtype.
+GLOBAL_LIST_INIT(lifeline_requests, build_lifeline_requests())
+/// The contribution the reservoir currently accepts.
+GLOBAL_VAR(lifeline_request)
 
 /**
- * Chooses the next hands-on contribution requested by the station-wide Lifeline network.
+ * One hands-on contribution the Lifeline network asks the crew for.
  *
- * Requests use a type switch instead of an associative list because associative lists are unreliable.
+ * Add a request by adding a subtype and nothing else. The rollable set is built from the subtype
+ * tree, so a request cannot be offered without the values that describe it.
  */
+/datum/lifeline_request
+	/// Reagent or item type the reservoir accepts. Null marks an abstract half of the tree.
+	var/requested_type
+	/// Player-facing name of what the reservoir wants.
+	var/requested_name
+	/// Reagent units, or item count, that one contribution must supply.
+	var/requested_amount
+	/// Medium the network gains when staff complete this request.
+	var/yield
+
+/// Returns the player-facing phrase for one contribution.
+/datum/lifeline_request/proc/describe()
+	return "[requested_amount] [requested_name]"
+
+/// Returns whether this item is worth offering to the intake, so unrelated items fall through it.
+/datum/lifeline_request/proc/is_contribution(obj/item/tool)
+	return FALSE
+
+/**
+ * Takes the contribution out of the item.
+ *
+ * Returns whether the item carried enough. Reports its own refusal through the reservoir when not.
+ *
+ * Arguments:
+ * * tool - the item offered to the intake.
+ * * user - the person feeding the intake.
+ * * reservoir - the machine the contribution went into, used for feedback.
+ */
+/datum/lifeline_request/proc/consume(obj/item/tool, mob/living/user, obj/machinery/lifeline_reservoir/reservoir)
+	return FALSE
+
+/// A measured sample of one reagent, carried in any container.
+/datum/lifeline_request/reagent
+
+/datum/lifeline_request/reagent/describe()
+	return "[requested_amount] units of [requested_name]"
+
+/datum/lifeline_request/reagent/is_contribution(obj/item/tool)
+	return !isnull(tool.reagents)
+
+/datum/lifeline_request/reagent/consume(obj/item/tool, mob/living/user, obj/machinery/lifeline_reservoir/reservoir)
+	if(tool.reagents.get_reagent_amount(requested_type) < requested_amount)
+		reservoir.balloon_alert(user, "needs [requested_amount]u [requested_name]!")
+		return FALSE
+	tool.reagents.remove_reagent(requested_type, requested_amount)
+	user.visible_message(span_notice("[user] manually feeds a measured sample into [reservoir]."), span_notice("You feed the requested sample into [reservoir]."))
+	return TRUE
+
+/// One organic organ, which the intake destroys.
+/datum/lifeline_request/organ
+
+/datum/lifeline_request/organ/is_contribution(obj/item/tool)
+	return istype(tool, requested_type)
+
+/datum/lifeline_request/organ/consume(obj/item/tool, mob/living/user, obj/machinery/lifeline_reservoir/reservoir)
+	var/obj/item/organ/contributed_organ = tool
+	if(contributed_organ.organ_flags & (ORGAN_ROBOTIC | ORGAN_MINERAL))
+		reservoir.balloon_alert(user, "organic organ required!")
+		return FALSE
+	if(!user.temporarilyRemoveItemFromInventory(tool))
+		reservoir.balloon_alert(user, "item stuck!")
+		return FALSE
+	user.visible_message(span_notice("[user] commits [tool] to [reservoir]'s intake."), span_notice("You commit [tool] to the current Lifeline request."))
+	qdel(tool)
+	return TRUE
+
+/datum/lifeline_request/reagent/libital
+	requested_type = /datum/reagent/medicine/c2/libital
+	requested_name = "libital"
+	requested_amount = 30
+	yield = 55
+
+/datum/lifeline_request/reagent/aiuri
+	requested_type = /datum/reagent/medicine/c2/aiuri
+	requested_name = "aiuri"
+	requested_amount = 30
+	yield = 55
+
+/datum/lifeline_request/reagent/synthflesh
+	requested_type = /datum/reagent/medicine/c2/synthflesh
+	requested_name = "synthflesh"
+	requested_amount = 20
+	yield = 70
+
+/datum/lifeline_request/reagent/epinephrine
+	requested_type = /datum/reagent/medicine/epinephrine
+	requested_name = "epinephrine"
+	requested_amount = 35
+	yield = 50
+
+/datum/lifeline_request/reagent/salbutamol
+	requested_type = /datum/reagent/medicine/salbutamol
+	requested_name = "salbutamol"
+	requested_amount = 30
+	yield = 60
+
+/datum/lifeline_request/organ/heart
+	requested_type = /obj/item/organ/heart
+	requested_name = "organic heart"
+	requested_amount = 1
+	yield = 90
+
+/datum/lifeline_request/organ/lungs
+	requested_type = /obj/item/organ/lungs
+	requested_name = "set of organic lungs"
+	requested_amount = 1
+	yield = 75
+
+/datum/lifeline_request/organ/liver
+	requested_type = /obj/item/organ/liver
+	requested_name = "organic liver"
+	requested_amount = 1
+	yield = 75
+
+/// Builds one singleton per concrete request subtype.
+/proc/build_lifeline_requests()
+	var/list/requests = list()
+	for(var/datum/lifeline_request/request_type as anything in subtypesof(/datum/lifeline_request))
+		if(isnull(initial(request_type.requested_type))) // abstract type
+			continue
+		requests += new request_type()
+	return requests
+
+/// Chooses the next contribution requested by the station-wide Lifeline network.
 /proc/roll_lifeline_request()
-	GLOB.lifeline_requested_type = pick(list(
-		/datum/reagent/medicine/c2/libital,
-		/datum/reagent/medicine/c2/aiuri,
-		/datum/reagent/medicine/c2/synthflesh,
-		/datum/reagent/medicine/epinephrine,
-		/datum/reagent/medicine/salbutamol,
-		/obj/item/organ/heart,
-		/obj/item/organ/lungs,
-		/obj/item/organ/liver,
-	))
-	GLOB.lifeline_request_is_organ = FALSE
-	switch(GLOB.lifeline_requested_type)
-		if(/datum/reagent/medicine/c2/libital)
-			GLOB.lifeline_requested_name = "libital"
-			GLOB.lifeline_requested_amount = 30
-			GLOB.lifeline_request_yield = 55
-		if(/datum/reagent/medicine/c2/aiuri)
-			GLOB.lifeline_requested_name = "aiuri"
-			GLOB.lifeline_requested_amount = 30
-			GLOB.lifeline_request_yield = 55
-		if(/datum/reagent/medicine/c2/synthflesh)
-			GLOB.lifeline_requested_name = "synthflesh"
-			GLOB.lifeline_requested_amount = 20
-			GLOB.lifeline_request_yield = 70
-		if(/datum/reagent/medicine/epinephrine)
-			GLOB.lifeline_requested_name = "epinephrine"
-			GLOB.lifeline_requested_amount = 35
-			GLOB.lifeline_request_yield = 50
-		if(/datum/reagent/medicine/salbutamol)
-			GLOB.lifeline_requested_name = "salbutamol"
-			GLOB.lifeline_requested_amount = 30
-			GLOB.lifeline_request_yield = 60
-		if(/obj/item/organ/heart)
-			GLOB.lifeline_requested_name = "organic heart"
-			GLOB.lifeline_requested_amount = 1
-			GLOB.lifeline_request_yield = 90
-			GLOB.lifeline_request_is_organ = TRUE
-		if(/obj/item/organ/lungs)
-			GLOB.lifeline_requested_name = "set of organic lungs"
-			GLOB.lifeline_requested_amount = 1
-			GLOB.lifeline_request_yield = 75
-			GLOB.lifeline_request_is_organ = TRUE
-		if(/obj/item/organ/liver)
-			GLOB.lifeline_requested_name = "organic liver"
-			GLOB.lifeline_requested_amount = 1
-			GLOB.lifeline_request_yield = 75
-			GLOB.lifeline_request_is_organ = TRUE
+	GLOB.lifeline_request = pick(GLOB.lifeline_requests)
 
 /** Central, manually-fed server and reservoir for the Lifeline emergency-care network. */
 /obj/machinery/lifeline_reservoir
@@ -109,54 +182,40 @@ GLOBAL_VAR_INIT(lifeline_request_is_organ, FALSE)
 
 /obj/machinery/lifeline_reservoir/Initialize(mapload)
 	. = ..()
-	if(isnull(GLOB.lifeline_requested_type))
+	if(isnull(GLOB.lifeline_request))
 		roll_lifeline_request()
 
 /obj/machinery/lifeline_reservoir/examine(mob/user)
 	. = ..()
+	var/datum/lifeline_request/request = GLOB.lifeline_request
 	. += span_notice("The network contains <b>[GLOB.lifeline_fuel]/[GLOB.lifeline_fuel_capacity]</b> units of reconstructive medium.")
-	. += span_notice("Current request: <b>[GLOB.lifeline_requested_amount] [GLOB.lifeline_request_is_organ ? "" : "units of "][GLOB.lifeline_requested_name]</b> for <b>[GLOB.lifeline_request_yield]</b> medium units.")
+	. += span_notice("Current request: <b>[request.describe()]</b> for <b>[request.yield]</b> medium units.")
 
 /obj/machinery/lifeline_reservoir/attack_hand(mob/living/user, list/modifiers)
 	. = ..()
 	if(.)
 		return
-	balloon_alert(user, "request: [GLOB.lifeline_requested_amount] [GLOB.lifeline_requested_name]")
-	to_chat(user, span_notice("The Lifeline network has [GLOB.lifeline_fuel]/[GLOB.lifeline_fuel_capacity] units stored. It will accept [GLOB.lifeline_requested_amount] [GLOB.lifeline_requested_name] for [GLOB.lifeline_request_yield] units."))
+	var/datum/lifeline_request/request = GLOB.lifeline_request
+	balloon_alert(user, "request: [request.describe()]")
+	to_chat(user, span_notice("The Lifeline network has [GLOB.lifeline_fuel]/[GLOB.lifeline_fuel_capacity] units stored. It will accept [request.describe()] for [request.yield] units."))
 	return TRUE
 
 /obj/machinery/lifeline_reservoir/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	var/datum/lifeline_request/request = GLOB.lifeline_request
+	if(!request.is_contribution(tool))
+		return NONE
 	if(!is_operational)
 		balloon_alert(user, "reservoir offline!")
 		return ITEM_INTERACT_BLOCKING
-	if(GLOB.lifeline_fuel + GLOB.lifeline_request_yield > GLOB.lifeline_fuel_capacity)
+	if(GLOB.lifeline_fuel + request.yield > GLOB.lifeline_fuel_capacity)
 		balloon_alert(user, "insufficient storage!")
 		return ITEM_INTERACT_BLOCKING
+	if(!request.consume(tool, user, src))
+		return ITEM_INTERACT_BLOCKING
 
-	if(GLOB.lifeline_request_is_organ)
-		if(!istype(tool, GLOB.lifeline_requested_type))
-			return NONE
-		var/obj/item/organ/contributed_organ = tool
-		if(contributed_organ.organ_flags & (ORGAN_ROBOTIC | ORGAN_MINERAL))
-			balloon_alert(user, "organic organ required!")
-			return ITEM_INTERACT_BLOCKING
-		if(!user.temporarilyRemoveItemFromInventory(tool))
-			balloon_alert(user, "item stuck!")
-			return ITEM_INTERACT_BLOCKING
-		user.visible_message(span_notice("[user] commits [tool] to [src]'s intake."), span_notice("You commit [tool] to the current Lifeline request."))
-		qdel(tool)
-	else
-		if(isnull(tool.reagents))
-			return NONE
-		if(tool.reagents.get_reagent_amount(GLOB.lifeline_requested_type) < GLOB.lifeline_requested_amount)
-			balloon_alert(user, "needs [GLOB.lifeline_requested_amount]u [GLOB.lifeline_requested_name]!")
-			return ITEM_INTERACT_BLOCKING
-		tool.reagents.remove_reagent(GLOB.lifeline_requested_type, GLOB.lifeline_requested_amount)
-		user.visible_message(span_notice("[user] manually feeds a measured sample into [src]."), span_notice("You feed the requested sample into [src]."))
-
-	GLOB.lifeline_fuel += GLOB.lifeline_request_yield
+	GLOB.lifeline_fuel += request.yield
 	playsound(src, 'sound/machines/ping.ogg', 40, TRUE)
-	balloon_alert(user, "+[GLOB.lifeline_request_yield] network units")
+	balloon_alert(user, "+[request.yield] network units")
 	roll_lifeline_request()
 	return ITEM_INTERACT_SUCCESS
 
@@ -288,9 +347,11 @@ GLOBAL_VAR_INIT(lifeline_request_is_organ, FALSE)
 			target.visible_message(span_notice("A supportive field settles around [target]."), span_notice("Your pain recedes enough for you to move, but the field locks your hands and your injuries remain."))
 		if(LIFELINE_MODE_STASIS)
 			var/obj/structure/closet/body_bag/environmental/stasis/lifeline/recovery_bag = new(get_turf(target))
-			recovery_bag.open(user)
-			target.forceMove(recovery_bag)
-			recovery_bag.close(user)
+			// insert() refuses buckled, anchored and ridden patients, and takes nobody else on the turf with them.
+			if(recovery_bag.insert(target) != TRUE)
+				qdel(recovery_bag)
+				balloon_alert(user, "patient is secured!")
+				return FALSE
 			recovery_bag.dissolve_when_opened = TRUE
 			recovery_bag.visible_message(span_notice("A translucent recovery cocoon assembles around [target]."))
 
@@ -433,7 +494,7 @@ GLOBAL_VAR_INIT(lifeline_request_is_organ, FALSE)
 	name = "Lifeline Synthesis Reservoir Board"
 	desc = "Allows for the construction of a Lifeline synthesis server and reservoir."
 	build_path = /obj/item/circuitboard/machine/lifeline_reservoir
-	category = list(RND_CATEGORY_COMPUTER + RND_SUBCATEGORY_COMPUTER_MEDICAL)
+	category = list(RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_MEDICAL)
 	departmental_flags = DEPARTMENT_BITFLAG_MEDICAL | DEPARTMENT_BITFLAG_SCIENCE
 
 /datum/techweb_node/cryostasis/New()
