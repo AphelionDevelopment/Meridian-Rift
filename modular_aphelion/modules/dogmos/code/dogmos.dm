@@ -184,7 +184,6 @@ SUBSYSTEM_DEF(dogmos)
 /datum/design/dogmos_goggles
 	name = "Dogmos Atmospheric Imaging Goggles"
 	desc = "Engineering goggles tuned for Dogmos troubleshooting without administrative area-blueprint access."
-	id = "dogmos_goggles"
 	build_type = PROTOLATHE | AWAY_LATHE
 	materials = list(
 		/datum/material/iron = SMALL_MATERIAL_AMOUNT * 5,
