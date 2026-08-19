@@ -1,6 +1,6 @@
 // Combat pain system.
-// Injuries set a permanent floor, impacts stack a temporary pool on top of it, and painkillers
-// reduce only how much of the total the mob feels.
+// Damage and injuries set a permanent floor, impacts stack a temporary pool on top of it, and
+// painkillers reduce only how much of the total the mob feels.
 
 /// Pain contributed by a Light injury.
 #define PAIN_FACTOR_LIGHT 5
@@ -18,6 +18,10 @@
 	(factor) > PAIN_FACTOR_MODERATE ? PAIN_FACTOR_MODERATE : \
 	(factor) > PAIN_FACTOR_LIGHT ? PAIN_FACTOR_LIGHT : (factor) \
 )
+
+/// Permanent pain per point of brute or burn damage a bodypart carries. Puts a maxed limb just under
+/// a Moderate injury, and a maxed head or chest at an Extreme one.
+#define PAIN_FACTOR_PER_DAMAGE 0.2
 
 /// Most permanent pain the head is allowed to contribute to the floor.
 #define PAIN_CAP_HEAD 70

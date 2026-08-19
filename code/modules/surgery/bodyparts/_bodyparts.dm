@@ -973,6 +973,7 @@
 		return
 	. = brute_dam
 	brute_dam = new_value
+	owner?.mark_pain_dirty()
 
 ///Proc to hook behavior associated to the change of the burn_dam variable's value.
 /obj/item/bodypart/proc/set_burn_dam(new_value)
@@ -982,6 +983,7 @@
 		return
 	. = burn_dam
 	burn_dam = new_value
+	owner?.mark_pain_dirty()
 
 //Returns total damage.
 /obj/item/bodypart/proc/get_damage()

@@ -130,17 +130,18 @@
 	victim.set_blood_volume(BLOOD_VOLUME_BAD - 1)
 	TEST_ASSERT(!victim.can_recover_breath(), "Bleeding out should still stop a patient clearing an oxygen debt")
 
-/// Temporary pain must only slow a human through the FELT-pain bracket modifier. The legacy health
-/// slowdown reads stamina, which is raw temporary pain for these mobs, and would bypass dampeners.
+/// A human must only be slowed through the FELT-pain bracket modifier. The legacy health slowdown
+/// reads the damage and stamina totals directly, and would bypass dampeners.
 /datum/unit_test/pain_slowdown_uses_felt_pain/Run()
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 
 	victim.add_temporary_pain(40)
+	victim.apply_damage(60, BRUTE, BODY_ZONE_CHEST, wound_bonus = CANT_WOUND)
 	victim.updatehealth()
 
 	TEST_ASSERT_EQUAL(victim.get_stamina_loss(), 40, "The test did not create enough temporary pain to trigger the old slowdown path")
 	TEST_ASSERT(!victim.has_movespeed_modifier(/datum/movespeed_modifier/damage_slowdown), \
-		"Raw temporary pain applied the legacy health slowdown instead of relying on the FELT-pain bracket")
+		"Pain or damage applied the legacy health slowdown instead of relying on the FELT-pain bracket")
 
 /// Each bracket carries every permanent and intermittent effect named by the pain design.
 /datum/unit_test/pain_brackets_cover_documented_effects/Run()
@@ -192,7 +193,8 @@
 
 	victim.get_bodypart(BODY_ZONE_R_ARM).dismember()
 	TEST_ASSERT(isnull(victim.get_bodypart(BODY_ZONE_R_ARM)), "Failed to take the arm this test is about")
-	TEST_ASSERT_EQUAL(pain.pain_floor, PAIN_CAP_LIMB, "Losing an arm should cost that limb's entire share of the pain floor")
+	TEST_ASSERT_EQUAL(pain.floor_by_zone[BODY_ZONE_R_ARM], PAIN_MISSING_LIMB, "An empty socket should hurt as much as an Extreme injury")
+	TEST_ASSERT(pain.pain_floor >= PAIN_CAP_LIMB, "Losing an arm should cost that limb's entire share of the pain floor")
 
 /**
  * Adrenaline delays pain shock. It never cancels it.

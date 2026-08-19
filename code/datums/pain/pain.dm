@@ -183,7 +183,7 @@
 
 	parent.update_pain_hud()
 
-/// Rebuilds permanent pain from wounds, organs, and other registered sources.
+/// Rebuilds permanent pain from damage, wounds, organs, and other registered sources.
 /datum/pain/proc/recalculate_floor()
 	if(QDELETED(parent))
 		return
@@ -192,6 +192,9 @@
 	floor_by_zone.Cut()
 
 	for(var/obj/item/bodypart/part as anything in parent.bodyparts)
+		// Tissue damage hurts whether or not it broke anything. A body with every injury treated but no
+		// damage healed is still in pain.
+		floor_by_zone[part.body_zone] += part.get_damage() * PAIN_FACTOR_PER_DAMAGE
 		for(var/datum/wound/injury as anything in part.wounds)
 			// Not the raw factor: a wrapped or splinted injury counts a tier lower.
 			floor_by_zone[part.body_zone] += injury.get_pain_factor()
