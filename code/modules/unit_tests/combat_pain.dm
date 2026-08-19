@@ -139,7 +139,8 @@
 	victim.apply_damage(60, BRUTE, BODY_ZONE_CHEST, wound_bonus = CANT_WOUND)
 	victim.updatehealth()
 
-	TEST_ASSERT_EQUAL(victim.get_stamina_loss(), 40, "The test did not create enough temporary pain to trigger the old slowdown path")
+	TEST_ASSERT_EQUAL(victim.get_stamina_loss(), 40 + (60 * PAIN_IMPACT_RATIO), "The test did not create enough pain to trigger the old slowdown path")
+	TEST_ASSERT(victim.maxHealth - victim.health >= 40, "The test did not create enough damage to trigger the old slowdown path")
 	TEST_ASSERT(!victim.has_movespeed_modifier(/datum/movespeed_modifier/damage_slowdown), \
 		"Pain or damage applied the legacy health slowdown instead of relying on the FELT-pain bracket")
 
