@@ -1,0 +1,458 @@
+/// The field sprayer's low-efficiency treatment mode.
+#define LIFELINE_MODE_HEAL "heal"
+/// The field sprayer's temporary transport-support mode.
+#define LIFELINE_MODE_STABILIZE "stabilize"
+/// The field sprayer's recovery-cocoon mode.
+#define LIFELINE_MODE_STASIS "stasis"
+/// The maximum amount of medium stored by the station-wide network.
+#define LIFELINE_NETWORK_CAPACITY 1000
+/// The maximum amount of medium stored by one field sprayer.
+#define LIFELINE_PROJECTOR_CAPACITY 100
+/// Medium consumed by heal mode.
+#define LIFELINE_HEAL_COST 10
+/// Medium consumed by stabilize mode.
+#define LIFELINE_STABILIZE_COST 25
+/// Medium consumed by stasis mode.
+#define LIFELINE_STASIS_COST 50
+/// Damage removed by one heal-mode use.
+#define LIFELINE_HEAL_AMOUNT 8
+/// Cryogenic recovery progress applied to one random wound. A wound closes at 33 per severity rung,
+/// so the sprayer assists a treatment it cannot finish: 6 sprays for a Moderate injury, 11 for a
+/// Severe one and 17 for a Critical one, against a sprayer that holds 10.
+#define LIFELINE_WOUND_PROGRESS 6
+/// Number of non-empty fluid levels in the field sprayer icon.
+#define LIFELINE_FUEL_ICON_LEVELS 4
+/// Duration of the transport-support field.
+#define LIFELINE_STABILIZE_DURATION (2 MINUTES)
+/// Delay between recovery-cocoon beacon pings.
+#define LIFELINE_RECOVERY_PING_INTERVAL (8 SECONDS)
+
+/// Current medium available to all connected first aid stations.
+GLOBAL_VAR_INIT(lifeline_fuel, 0)
+/// Maximum medium available to the station-wide network.
+GLOBAL_VAR_INIT(lifeline_fuel_capacity, LIFELINE_NETWORK_CAPACITY)
+/// Type path of the reagent or organ requested by the reservoir.
+GLOBAL_VAR(lifeline_requested_type)
+/// Player-facing name of the current reservoir request.
+GLOBAL_VAR(lifeline_requested_name)
+/// Reagent units or organ count required by the current request.
+GLOBAL_VAR(lifeline_requested_amount)
+/// Medium created when staff complete the current request.
+GLOBAL_VAR(lifeline_request_yield)
+/// Whether the current request consumes an organ instead of a reagent.
+GLOBAL_VAR_INIT(lifeline_request_is_organ, FALSE)
+
+/**
+ * Chooses the next hands-on contribution requested by the station-wide Lifeline network.
+ *
+ * Requests use a type switch instead of an associative list because associative lists are unreliable.
+ */
+/proc/roll_lifeline_request()
+	GLOB.lifeline_requested_type = pick(list(
+		/datum/reagent/medicine/c2/libital,
+		/datum/reagent/medicine/c2/aiuri,
+		/datum/reagent/medicine/c2/synthflesh,
+		/datum/reagent/medicine/epinephrine,
+		/datum/reagent/medicine/salbutamol,
+		/obj/item/organ/heart,
+		/obj/item/organ/lungs,
+		/obj/item/organ/liver,
+	))
+	GLOB.lifeline_request_is_organ = FALSE
+	switch(GLOB.lifeline_requested_type)
+		if(/datum/reagent/medicine/c2/libital)
+			GLOB.lifeline_requested_name = "libital"
+			GLOB.lifeline_requested_amount = 30
+			GLOB.lifeline_request_yield = 55
+		if(/datum/reagent/medicine/c2/aiuri)
+			GLOB.lifeline_requested_name = "aiuri"
+			GLOB.lifeline_requested_amount = 30
+			GLOB.lifeline_request_yield = 55
+		if(/datum/reagent/medicine/c2/synthflesh)
+			GLOB.lifeline_requested_name = "synthflesh"
+			GLOB.lifeline_requested_amount = 20
+			GLOB.lifeline_request_yield = 70
+		if(/datum/reagent/medicine/epinephrine)
+			GLOB.lifeline_requested_name = "epinephrine"
+			GLOB.lifeline_requested_amount = 35
+			GLOB.lifeline_request_yield = 50
+		if(/datum/reagent/medicine/salbutamol)
+			GLOB.lifeline_requested_name = "salbutamol"
+			GLOB.lifeline_requested_amount = 30
+			GLOB.lifeline_request_yield = 60
+		if(/obj/item/organ/heart)
+			GLOB.lifeline_requested_name = "organic heart"
+			GLOB.lifeline_requested_amount = 1
+			GLOB.lifeline_request_yield = 90
+			GLOB.lifeline_request_is_organ = TRUE
+		if(/obj/item/organ/lungs)
+			GLOB.lifeline_requested_name = "set of organic lungs"
+			GLOB.lifeline_requested_amount = 1
+			GLOB.lifeline_request_yield = 75
+			GLOB.lifeline_request_is_organ = TRUE
+		if(/obj/item/organ/liver)
+			GLOB.lifeline_requested_name = "organic liver"
+			GLOB.lifeline_requested_amount = 1
+			GLOB.lifeline_request_yield = 75
+			GLOB.lifeline_request_is_organ = TRUE
+
+/** Central, manually-fed server and reservoir for the Lifeline emergency-care network. */
+/obj/machinery/lifeline_reservoir
+	name = "Lifeline synthesis reservoir"
+	desc = "A synthesis server and reservoir that turns requested medical feedstock into reconstructive medium for the station's first aid network. Its intake requires direct manual confirmation."
+	icon = 'modular_aphelion/modules/medical_projection_system/icons/lifeline_reservoir.dmi'
+	icon_state = "lifeline_reservoir"
+	base_icon_state = "lifeline_reservoir"
+	density = TRUE
+	max_integrity = 300
+	circuit = /obj/item/circuitboard/machine/lifeline_reservoir
+
+/obj/machinery/lifeline_reservoir/Initialize(mapload)
+	. = ..()
+	if(isnull(GLOB.lifeline_requested_type))
+		roll_lifeline_request()
+
+/obj/machinery/lifeline_reservoir/examine(mob/user)
+	. = ..()
+	. += span_notice("The network contains <b>[GLOB.lifeline_fuel]/[GLOB.lifeline_fuel_capacity]</b> units of reconstructive medium.")
+	. += span_notice("Current request: <b>[GLOB.lifeline_requested_amount] [GLOB.lifeline_request_is_organ ? "" : "units of "][GLOB.lifeline_requested_name]</b> for <b>[GLOB.lifeline_request_yield]</b> medium units.")
+
+/obj/machinery/lifeline_reservoir/attack_hand(mob/living/user, list/modifiers)
+	. = ..()
+	if(.)
+		return
+	balloon_alert(user, "request: [GLOB.lifeline_requested_amount] [GLOB.lifeline_requested_name]")
+	to_chat(user, span_notice("The Lifeline network has [GLOB.lifeline_fuel]/[GLOB.lifeline_fuel_capacity] units stored. It will accept [GLOB.lifeline_requested_amount] [GLOB.lifeline_requested_name] for [GLOB.lifeline_request_yield] units."))
+	return TRUE
+
+/obj/machinery/lifeline_reservoir/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!is_operational)
+		balloon_alert(user, "reservoir offline!")
+		return ITEM_INTERACT_BLOCKING
+	if(GLOB.lifeline_fuel + GLOB.lifeline_request_yield > GLOB.lifeline_fuel_capacity)
+		balloon_alert(user, "insufficient storage!")
+		return ITEM_INTERACT_BLOCKING
+
+	if(GLOB.lifeline_request_is_organ)
+		if(!istype(tool, GLOB.lifeline_requested_type))
+			return NONE
+		var/obj/item/organ/contributed_organ = tool
+		if(contributed_organ.organ_flags & (ORGAN_ROBOTIC | ORGAN_MINERAL))
+			balloon_alert(user, "organic organ required!")
+			return ITEM_INTERACT_BLOCKING
+		if(!user.temporarilyRemoveItemFromInventory(tool))
+			balloon_alert(user, "item stuck!")
+			return ITEM_INTERACT_BLOCKING
+		user.visible_message(span_notice("[user] commits [tool] to [src]'s intake."), span_notice("You commit [tool] to the current Lifeline request."))
+		qdel(tool)
+	else
+		if(isnull(tool.reagents))
+			return NONE
+		if(tool.reagents.get_reagent_amount(GLOB.lifeline_requested_type) < GLOB.lifeline_requested_amount)
+			balloon_alert(user, "needs [GLOB.lifeline_requested_amount]u [GLOB.lifeline_requested_name]!")
+			return ITEM_INTERACT_BLOCKING
+		tool.reagents.remove_reagent(GLOB.lifeline_requested_type, GLOB.lifeline_requested_amount)
+		user.visible_message(span_notice("[user] manually feeds a measured sample into [src]."), span_notice("You feed the requested sample into [src]."))
+
+	GLOB.lifeline_fuel += GLOB.lifeline_request_yield
+	playsound(src, 'sound/machines/ping.ogg', 40, TRUE)
+	balloon_alert(user, "+[GLOB.lifeline_request_yield] network units")
+	roll_lifeline_request()
+	return ITEM_INTERACT_SUCCESS
+
+/obj/machinery/lifeline_reservoir/screwdriver_act(mob/living/user, obj/item/tool)
+	return default_deconstruction_screwdriver(user, tool)
+
+/obj/machinery/lifeline_reservoir/crowbar_act(mob/living/user, obj/item/tool)
+	return default_deconstruction_crowbar(user, tool)
+
+/obj/machinery/lifeline_reservoir/update_icon_state()
+	if(panel_open)
+		icon_state = "[base_icon_state]_open"
+	else
+		icon_state = is_operational ? base_icon_state : "[base_icon_state]_off"
+	return ..()
+
+/obj/item/circuitboard/machine/lifeline_reservoir
+	name = "Lifeline Synthesis Reservoir"
+	greyscale_colors = CIRCUIT_COLOR_MEDICAL
+	build_path = /obj/machinery/lifeline_reservoir
+	req_components = list(
+		/datum/stock_part/matter_bin = 2,
+		/datum/stock_part/capacitor = 1,
+		/datum/stock_part/servo = 1,
+		/obj/item/stack/cable_coil = 5,
+	)
+
+/** A pocket projector that draws reconstructive medium from the network at wall-mounted first aid stations. */
+/obj/item/lifeline_projector
+	name = "Lifeline field sprayer"
+	desc = "A compact emergency medical projector. Its glass reservoir shows how much reconstructive medium remains. Use it in hand to apply the selected mode to yourself; right-click it in hand to change modes."
+	icon = 'modular_aphelion/modules/medical_projection_system/icons/lifeline_projector.dmi'
+	icon_state = "lifeline_0"
+	inhand_icon_state = "electronic"
+	lefthand_file = 'icons/mob/inhands/items/devices_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/items/devices_righthand.dmi'
+	w_class = WEIGHT_CLASS_SMALL
+	item_flags = NOBLUDGEON
+	/// Medium currently stored in the field sprayer.
+	var/fuel = 0
+	/// Maximum medium stored in the field sprayer.
+	var/max_fuel = LIFELINE_PROJECTOR_CAPACITY
+	/// Treatment mode applied by the next use.
+	var/selected_mode = LIFELINE_MODE_HEAL
+
+/** A field sprayer supplied with a full reservoir. */
+/obj/item/lifeline_projector/full
+	icon_state = "lifeline_4"
+
+/obj/item/lifeline_projector/full/Initialize(mapload)
+	. = ..()
+	fuel = max_fuel
+	update_appearance()
+
+/obj/item/lifeline_projector/examine(mob/user)
+	. = ..()
+	. += span_notice("It is set to <b>[selected_mode]</b> and holds <b>[fuel]/[max_fuel]</b> medium units.")
+	. += span_notice("Heal costs [LIFELINE_HEAL_COST] units, stabilize costs [LIFELINE_STABILIZE_COST], and stasis costs [LIFELINE_STASIS_COST].")
+
+/obj/item/lifeline_projector/update_icon_state()
+	var/fuel_state = 0
+	if(fuel > 0)
+		fuel_state = clamp(CEILING((fuel / max_fuel) * LIFELINE_FUEL_ICON_LEVELS, 1), 1, LIFELINE_FUEL_ICON_LEVELS)
+	icon_state = "lifeline_[fuel_state]"
+	return ..()
+
+/obj/item/lifeline_projector/attack_self_secondary(mob/user)
+	switch(selected_mode)
+		if(LIFELINE_MODE_HEAL)
+			selected_mode = LIFELINE_MODE_STABILIZE
+		if(LIFELINE_MODE_STABILIZE)
+			selected_mode = LIFELINE_MODE_STASIS
+		else
+			selected_mode = LIFELINE_MODE_HEAL
+	balloon_alert(user, "mode: [selected_mode]")
+	playsound(src, 'sound/machines/beep/beep.ogg', 25, TRUE)
+	return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
+
+/obj/item/lifeline_projector/attack_self(mob/user)
+	if(!isliving(user))
+		return
+	use_on_target(user, user)
+	return TRUE
+
+/obj/item/lifeline_projector/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
+	if(!isliving(interacting_with))
+		return NONE
+	use_on_target(interacting_with, user)
+	return ITEM_INTERACT_SUCCESS
+
+/obj/item/lifeline_projector/proc/use_on_target(mob/living/target, mob/living/user)
+	var/fuel_cost
+	switch(selected_mode)
+		if(LIFELINE_MODE_HEAL)
+			fuel_cost = LIFELINE_HEAL_COST
+		if(LIFELINE_MODE_STABILIZE)
+			fuel_cost = LIFELINE_STABILIZE_COST
+		if(LIFELINE_MODE_STASIS)
+			fuel_cost = LIFELINE_STASIS_COST
+	if(fuel < fuel_cost)
+		balloon_alert(user, "insufficient medium!")
+		return FALSE
+	if(selected_mode != LIFELINE_MODE_STASIS && target.stat == DEAD)
+		balloon_alert(user, "no viable response!")
+		return FALSE
+	if(selected_mode == LIFELINE_MODE_STASIS && target == user)
+		balloon_alert(user, "requires another operator!")
+		return FALSE
+	if(selected_mode == LIFELINE_MODE_STABILIZE && target.has_status_effect(/datum/status_effect/lifeline_stabilized))
+		balloon_alert(user, "already stabilized!")
+		return FALSE
+
+	user.visible_message(span_notice("[user] aims [src] at [target], tracing a lattice of pale light over [target.p_them()]."), span_notice("You begin calibrating [src] on [target]."))
+	if(!do_after(user, target == user ? 2 SECONDS : 1.5 SECONDS, target = target))
+		return FALSE
+
+	switch(selected_mode)
+		if(LIFELINE_MODE_HEAL)
+			if(!apply_healing(target))
+				balloon_alert(user, "nothing to treat!")
+				return FALSE
+		if(LIFELINE_MODE_STABILIZE)
+			// Rechecked after the do_after, since somebody else may have stabilized this patient while
+			// this sprayer was calibrating. The effect is unique, so the second application is refused
+			// silently and would otherwise spend the medium for nothing.
+			if(!target.apply_status_effect(/datum/status_effect/lifeline_stabilized))
+				balloon_alert(user, "already stabilized!")
+				return FALSE
+			target.visible_message(span_notice("A supportive field settles around [target]."), span_notice("Your pain recedes enough for you to move, but the field locks your hands and your injuries remain."))
+		if(LIFELINE_MODE_STASIS)
+			var/obj/structure/closet/body_bag/environmental/stasis/lifeline/recovery_bag = new(get_turf(target))
+			recovery_bag.open(user)
+			target.forceMove(recovery_bag)
+			recovery_bag.close(user)
+			recovery_bag.dissolve_when_opened = TRUE
+			recovery_bag.visible_message(span_notice("A translucent recovery cocoon assembles around [target]."))
+
+	fuel -= fuel_cost
+	update_appearance()
+	playsound(target, 'sound/effects/spray.ogg', 40, TRUE)
+	return TRUE
+
+/**
+ * Applies one inefficient, randomly selected form of healing and progresses one random wound.
+ *
+ * The damage type is picked from what the patient actually has, so a spray is never spent treating
+ * a type they are not carrying. Returns whether there was anything to treat at all.
+ */
+/obj/item/lifeline_projector/proc/apply_healing(mob/living/target)
+	var/list/treatable_types = list()
+	if(target.get_brute_loss())
+		treatable_types += BRUTE
+	if(target.get_fire_loss())
+		treatable_types += BURN
+	if(target.get_tox_loss())
+		treatable_types += TOX
+	if(target.get_oxy_loss())
+		treatable_types += OXY
+
+	var/datum/wound/chosen_wound
+	if(iscarbon(target))
+		var/mob/living/carbon/carbon_target = target
+		if(length(carbon_target.all_wounds))
+			chosen_wound = pick(carbon_target.all_wounds)
+
+	if(!length(treatable_types) && isnull(chosen_wound))
+		return FALSE
+
+	if(length(treatable_types))
+		target.heal_damage_type(LIFELINE_HEAL_AMOUNT, pick(treatable_types))
+	chosen_wound?.on_xadone(LIFELINE_WOUND_PROGRESS)
+
+	target.visible_message(span_notice("[src] mists [target] with flickering reconstructive droplets."), span_notice("Cool light crawls over one of your injuries."))
+	return TRUE
+
+/**
+ * Keeps a critical patient mobile long enough to be moved.
+ *
+ * Suppresses the critical rungs only. Injuries, bleeding and anything still hitting the patient run
+ * exactly as they would otherwise.
+ */
+/datum/status_effect/lifeline_stabilized
+	id = "lifeline_stabilized"
+	duration = LIFELINE_STABILIZE_DURATION
+	alert_type = /atom/movable/screen/alert/status_effect/lifeline_stabilized
+
+/datum/status_effect/lifeline_stabilized/on_apply()
+	. = ..()
+	if(!.)
+		return
+	owner.add_traits(list(TRAIT_NOSOFTCRIT, TRAIT_NOHARDCRIT, TRAIT_HANDS_BLOCKED), TRAIT_STATUS_EFFECT(id))
+	owner.add_filter("lifeline_support", 2, outline_filter(1, "#70eaff80"))
+
+/datum/status_effect/lifeline_stabilized/on_remove()
+	owner.remove_traits(list(TRAIT_NOSOFTCRIT, TRAIT_NOHARDCRIT, TRAIT_HANDS_BLOCKED), TRAIT_STATUS_EFFECT(id))
+	owner.remove_filter("lifeline_support")
+	return ..()
+
+/atom/movable/screen/alert/status_effect/lifeline_stabilized
+	name = "Field Stabilized"
+	desc = "A support field is keeping you on your feet, but it is not healing you and it will not stop anything hurting you. Your hands are immobilized while the field is active. Seek proper treatment."
+	use_user_hud_icon = USER_HUD_STYLE_INHERIT
+	overlay_state = "stasis"
+
+/** Temporary projected cocoon with an audible recovery beacon. */
+/obj/structure/closet/body_bag/environmental/stasis/lifeline
+	name = "Lifeline recovery cocoon"
+	desc = "A temporary projected stasis enclosure. Its recovery beacon periodically pings to guide responders to its patient."
+	max_integrity = 150
+	breakout_time = 4 SECONDS
+	material_drop = null
+	material_drop_amount = 0
+	/// Whether the cocoon has finished deploying and should disappear the next time it opens.
+	var/dissolve_when_opened = FALSE
+	COOLDOWN_DECLARE(recovery_ping_cooldown)
+
+/obj/structure/closet/body_bag/environmental/stasis/lifeline/Initialize(mapload)
+	. = ..()
+	obj_flags |= NO_DEBRIS_AFTER_DECONSTRUCTION
+	set_light(2, 0.7, LIGHT_COLOR_CYAN)
+	COOLDOWN_START(src, recovery_ping_cooldown, 2 SECONDS)
+
+/obj/structure/closet/body_bag/environmental/stasis/lifeline/after_open(mob/living/user, force = FALSE)
+	. = ..()
+	if(!dissolve_when_opened)
+		return
+	visible_message(span_notice("[src] dissolves into fading motes of light."))
+	qdel(src)
+
+/obj/structure/closet/body_bag/environmental/stasis/lifeline/process(seconds_per_tick)
+	. = ..()
+	if(QDELETED(src) || . == PROCESS_KILL)
+		return
+	if(COOLDOWN_FINISHED(src, recovery_ping_cooldown))
+		playsound(src, 'sound/machines/ping.ogg', 45, TRUE, MEDIUM_RANGE_SOUND_EXTRARANGE)
+		visible_message(span_notice("[src]'s recovery beacon pulses."), vision_distance = 5)
+		COOLDOWN_START(src, recovery_ping_cooldown, LIFELINE_RECOVERY_PING_INTERVAL)
+
+/** Refills a field sprayer from the station-wide reservoir. */
+/obj/machinery/wall_healer/proc/refill_lifeline_projector(obj/item/lifeline_projector/projector, mob/living/user)
+	if(!is_operational)
+		balloon_alert(user, "station offline!")
+		return ITEM_INTERACT_BLOCKING
+	var/needed_fuel = projector.max_fuel - projector.fuel
+	if(needed_fuel <= 0)
+		balloon_alert(user, "already full!")
+		return ITEM_INTERACT_BLOCKING
+	var/transferred_fuel = min(needed_fuel, GLOB.lifeline_fuel)
+	if(transferred_fuel <= 0)
+		balloon_alert(user, "network reservoir empty!")
+		return ITEM_INTERACT_BLOCKING
+	projector.fuel += transferred_fuel
+	GLOB.lifeline_fuel -= transferred_fuel
+	projector.update_appearance()
+	user.visible_message(span_notice("[user] seats [projector] in [src]'s service port."), span_notice("[src] transfers [transferred_fuel] medium units into [projector]."))
+	playsound(src, 'sound/machines/machine_vend.ogg', 40, TRUE)
+	return ITEM_INTERACT_SUCCESS
+
+/datum/design/lifeline_projector
+	name = "Lifeline Field Sprayer"
+	desc = "A refillable emergency medical projector with healing, stabilization, and remote stasis modes."
+	build_path = /obj/item/lifeline_projector
+	build_type = PROTOLATHE | AWAY_LATHE
+	materials = list(
+		/datum/material/iron = SHEET_MATERIAL_AMOUNT * 2,
+		/datum/material/glass = SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/plasma = HALF_SHEET_MATERIAL_AMOUNT,
+	)
+	category = list(RND_CATEGORY_TOOLS + RND_SUBCATEGORY_TOOLS_MEDICAL)
+	departmental_flags = DEPARTMENT_BITFLAG_MEDICAL
+
+/datum/design/board/lifeline_reservoir
+	name = "Lifeline Synthesis Reservoir Board"
+	desc = "Allows for the construction of a Lifeline synthesis server and reservoir."
+	build_path = /obj/item/circuitboard/machine/lifeline_reservoir
+	category = list(RND_CATEGORY_COMPUTER + RND_SUBCATEGORY_COMPUTER_MEDICAL)
+	departmental_flags = DEPARTMENT_BITFLAG_MEDICAL | DEPARTMENT_BITFLAG_SCIENCE
+
+/datum/techweb_node/cryostasis/New()
+	. = ..()
+	unlocked_designs += list(
+		/datum/design/lifeline_projector,
+		/datum/design/board/lifeline_reservoir,
+	)
+
+#undef LIFELINE_MODE_HEAL
+#undef LIFELINE_MODE_STABILIZE
+#undef LIFELINE_MODE_STASIS
+#undef LIFELINE_NETWORK_CAPACITY
+#undef LIFELINE_PROJECTOR_CAPACITY
+#undef LIFELINE_HEAL_COST
+#undef LIFELINE_STABILIZE_COST
+#undef LIFELINE_STASIS_COST
+#undef LIFELINE_HEAL_AMOUNT
+#undef LIFELINE_WOUND_PROGRESS
+#undef LIFELINE_FUEL_ICON_LEVELS
+#undef LIFELINE_STABILIZE_DURATION
+#undef LIFELINE_RECOVERY_PING_INTERVAL
