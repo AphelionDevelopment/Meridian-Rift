@@ -245,6 +245,7 @@
 		"Harlequin",
 		"Clowness",
 		"Entertainer",
+		"Jokester",
 	)
 
 /datum/job/cook
@@ -418,6 +419,7 @@
 		"Pantomimist",
 		"Juggler",
 		"Mute",
+		"Silent",
 	)
 
 /datum/job/nanotrasen_consultant

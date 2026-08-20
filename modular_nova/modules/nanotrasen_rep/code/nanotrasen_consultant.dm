@@ -81,14 +81,14 @@
 	channels = list(RADIO_CHANNEL_CENTCOM = 1, RADIO_CHANNEL_SECURITY = 1)
 
 /obj/item/radio/headset/heads/nanotrasen_consultant
-	name = "\proper the Nanotrasen consultant's headset"
+	name = "\proper the Astraeus Federation consultant's headset"
 	desc = "An official Central Command headset."
 	icon_state = "cent_headset"
 	keyslot = new /obj/item/encryptionkey/headset_com
 	keyslot2 = new /obj/item/encryptionkey/headset_cent/ccrep
 
 /obj/item/radio/headset/heads/nanotrasen_consultant/alt
-	name = "\proper the Nanotrasen consultant's bowman headset"
+	name = "\proper the Astraeus Federation consultant's bowman headset"
 	desc = "An official Central Command headset. Protects ears from flashbangs."
 	icon_state = "cent_headset_alt"
 
@@ -97,24 +97,24 @@
 	AddComponent(/datum/component/wearertargeting/earprotection, list(ITEM_SLOT_EARS))
 
 /obj/effect/landmark/start/nanotrasen_consultant
-	name = "Nanotrasen Consultant"
-	icon_state = "Nanotrasen Consultant"
+	name = "Astraeus Federation Consultant"
+	icon_state = "Astraeus Federation"
 	icon = 'modular_nova/master_files/icons/mob/landmarks.dmi'
 
 /obj/item/clothing/accessory/medal/gold/nanotrasen_consultant
 	name = "medal of diplomacy"
-	desc = "A golden medal awarded exclusively to those promoted to the rank of Nanotrasen Consultant. It signifies the diplomatic abilities of said individual and their sheer dedication to Nanotrasen."
+	desc = "A golden medal awarded exclusively to those promoted to the rank of Astraeus Federation Consultant. It signifies the diplomatic abilities of said individual and their sheer dedication to Nanotrasen."
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | ACID_PROOF
 
 /datum/outfit/plasmaman/nanotrasen_consultant
-	name = "Nanotrasen Consultant Plasmaman"
+	name = "Astraeus Federation Consultant Plasmaman"
 
 	uniform = /obj/item/clothing/under/plasmaman/centcom_official
 	gloves = /obj/item/clothing/gloves/captain //Too iconic to be replaced with a plasma version
 	head = /obj/item/clothing/head/helmet/space/plasmaman/centcom_official
 
 /obj/item/modular_computer/pda/nanotrasen_consultant
-	name = "nanotrasen consultant's PDA"
+	name = "Astraeus Federation Consultant's PDA"
 	inserted_disk = /obj/item/disk/computer/command/captain
 	inserted_item = /obj/item/pen/fountain/green
 	/// Fax type to connect their PDA to (for use with fax notification app)
@@ -133,7 +133,7 @@
 
 /obj/item/storage/bag/garment/nanotrasen_consultant
 	name = "nanotrasen consultant's garment bag"
-	desc = "A bag for storing extra clothes and shoes. This one belongs to the Nanotrasen consultant."
+	desc = "A bag for storing extra clothes and shoes. This one belongs to the Astraeus Federation Consultant."
 
 /obj/item/storage/bag/garment/nanotrasen_consultant/PopulateContents()
 	new /obj/item/clothing/shoes/sneakers/brown(src)
@@ -156,7 +156,7 @@
 	new /obj/item/clothing/head/hats/intern(src)
 
 /obj/structure/closet/secure_closet/nanotrasen_consultant
-	name = "nanotrasen consultant's locker"
+	name = "Astraeus Federation consultant's locker"
 	req_access = list(ACCESS_CAPTAIN, ACCESS_CENT_GENERAL)
 	icon_state = "cc"
 	icon = 'modular_nova/master_files/icons/obj/closet.dmi'
@@ -175,8 +175,8 @@
 	new /obj/item/storage/bag/garment/nanotrasen_consultant(src)
 
 /obj/machinery/fax/heads/nanotrasen_consultant
-	name = "Nanotrasen Consultant's Fax Machine"
-	fax_name = "Nanotrasen Consultant's Office"
+	name = "Astraeus Federation Consultant's Fax Machine"
+	fax_name = "Astraeus Federation Consultant's Office"
 
 //Choice Beacon, I hope in the future they're going to be given proper unique gun but this will do.
 
@@ -210,8 +210,8 @@
 	custom_materials = list(/datum/material/gold = SMALL_MATERIAL_AMOUNT*7.5)
 
 /obj/item/storage/belt/sheath/sabre/consultant
-	name = "\improper Nanotrasen™ sabre sheath"
-	desc = "An ornate sheath designed to hold an officer's blade. This one is in green and a distinct Nanotrasen corporate identity."
+	name = "\improper Astraeus Federation sabre sheath"
+	desc = "An ornate sheath designed to hold an officer's blade. This one is in green."
 	icon = 'modular_nova/master_files/icons/obj/clothing/belts.dmi'
 	icon_state = "cc-sheath"
 	worn_icon = 'modular_nova/master_files/icons/mob/clothing/belt.dmi'
@@ -220,8 +220,8 @@
 	stored_blade = /obj/item/melee/sabre/central_command
 
 /obj/item/storage/belt/sheath/sabre/admiral
-	name = "\improper Nanotrasen™ sabre sheath"
-	desc = "An ornate sheath designed to hold an officer's blade. This one comes in black and a distinct Nanotrasen corporate identity."
+	name = "\improper Astraeus Federation sabre sheath"
+	desc = "An ornate sheath designed to hold an officer's blade. This one comes in black."
 	icon = 'modular_nova/master_files/icons/obj/clothing/belts.dmi'
 	icon_state = "admiral-sheath"
 	worn_icon = 'modular_nova/master_files/icons/mob/clothing/belt.dmi'
@@ -230,8 +230,8 @@
 	stored_blade = /obj/item/melee/sabre/central_command
 
 /obj/item/melee/sabre/central_command
-	name = "\improper Nanotrasen™ sabre"
-	desc = "An well crafted and elegant weapon, this one came out poorly from the nanofabricator with a bilayer edge capable of cutting through flesh and bone, but not as well as finer samples. This one carries a distinct Nanotrasen corporate identity carved into the hilt."
+	name = "\improper Astraeus Federation sabre"
+	desc = "An well crafted and elegant weapon, this one came out poorly from the nanofabricator with a bilayer edge capable of cutting through flesh and bone, but not as well as finer samples. This one carries a distinct Astraeus Federation identity carved into the hilt."
 	block_chance = 40
 	armour_penetration = 40
 

@@ -1,6 +1,6 @@
 /datum/job/barber
 	title = JOB_BARBER
-	description = "Run your salon and meet the crews sanitary needs, such as hair cutting, massaging and more!"
+	description = "Run the station salon. Turn it into a place for the crew and visitors to relax where they can get their hair, fur and scales taken care of. Sauna refurbishment optional."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
