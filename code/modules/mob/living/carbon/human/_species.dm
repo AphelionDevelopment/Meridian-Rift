@@ -1292,7 +1292,7 @@ GLOBAL_LIST_EMPTY(features_by_species)
 				if(humi.bodytemperature > BODYTEMP_HEAT_WOUND_LIMIT + 400) // 800k
 					severity = WOUND_SEVERITY_SEVERE
 			if(WOUND_SEVERITY_SEVERE)
-				if(humi.bodytemperature > BODYTEMP_HEAT_WOUND_LIMIT + 2800) // 3200k
+				if(humi.bodytemperature > BODYTEMP_HEAT_WOUND_LIMIT + 1600) // 2000k
 					severity = WOUND_SEVERITY_CRITICAL
 	else // If we have no burn apply the lowest level burn
 		severity = WOUND_SEVERITY_MODERATE

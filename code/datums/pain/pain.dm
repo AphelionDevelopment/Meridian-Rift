@@ -524,7 +524,7 @@
 		parent.adjust_jitter_up_to(PAIN_EFFECT_ROLL_INTERVAL, PAIN_EFFECT_ROLL_INTERVAL * 2)
 
 	if(current_bracket.vocalise_chance && prob(current_bracket.vocalise_chance))
-		parent.emote(felt_pain >= PAIN_BRACKET_SEVERE_THRESHOLD ? "scream" : "whimper")
+		parent.emote(current_bracket.vocalise_emote)
 
 	if(current_bracket.drop_chance && prob(current_bracket.drop_chance))
 		var/obj/item/dropped = parent.get_active_held_item()

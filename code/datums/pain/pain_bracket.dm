@@ -27,6 +27,8 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	var/fall_chance = 0
 	/// Chance per roll to make an involuntary noise.
 	var/vocalise_chance = 0
+	/// Emote key that noise uses. Screaming belongs to the top bracket alone.
+	var/vocalise_emote = "grimace"
 	/// Chance per roll for pain to make the mob visibly shake.
 	var/shake_chance = 0
 	/// Chance per roll for pain to impair speech until the next roll.
@@ -60,6 +62,7 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	interaction_penalty = 1.3
 	drop_chance = 5
 	vocalise_chance = 10
+	vocalise_emote = "whimper"
 	shake_chance = 10
 	stutter_chance = 10
 
@@ -74,6 +77,7 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	drop_chance = 15
 	fall_chance = 5
 	vocalise_chance = 20
+	vocalise_emote = "groan"
 	shake_chance = 25
 	stutter_chance = 100
 
@@ -88,6 +92,7 @@ GLOBAL_LIST_INIT(pain_brackets, list(
 	drop_chance = 30
 	fall_chance = 15
 	vocalise_chance = 35
+	vocalise_emote = "scream"
 	shake_chance = 100
 	stutter_chance = 100
 	passout_chance = 10

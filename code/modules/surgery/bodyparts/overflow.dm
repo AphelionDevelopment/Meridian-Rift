@@ -14,13 +14,17 @@
  * Tells the owner their body is being ruined from the inside, at most once every few seconds.
  *
  * Overflow happens per hit, and a hit can be a bullet or one tick of standing in a fire, so this
- * carries a cooldown on top of the feedback budget.
+ * carries a cooldown on top of the feedback budget. A corpse announces nothing: burning one still
+ * destroys what is left inside it, but there is nobody there to feel it.
  *
  * Arguments:
  * * message - What the owner feels.
  * * onlooker_message - What everyone else sees.
+ * * wounding_type - One of the WOUND_* types, which decides what it sounds like.
  */
-/obj/item/bodypart/proc/announce_overflow(message, onlooker_message)
+/obj/item/bodypart/proc/announce_overflow(message, onlooker_message, wounding_type)
+	if(owner.stat == DEAD)
+		return
 	if(!COOLDOWN_FINISHED(src, overflow_feedback_cooldown))
 		return
 
@@ -29,9 +33,25 @@
 		COMBAT_FEEDBACK_OVERFLOW,
 		message = span_bolddanger(onlooker_message),
 		self_message = span_userdanger(message),
-		sound = (biological_state & BIO_METAL) ? 'sound/effects/sparks/sparks4.ogg' : 'sound/effects/wounds/crackandbleed.ogg',
+		sound = get_overflow_sound(wounding_type),
 		shake_strength = COMBAT_SHAKE_PENETRATING_MAX,
 	)
+
+/**
+ * What an overflowing hit on this bodypart sounds like.
+ *
+ * Burning cooks what is behind a part rather than breaking it, so it never uses the wet crack the
+ * other wounding types do.
+ *
+ * Arguments:
+ * * wounding_type - One of the WOUND_* types.
+ */
+/obj/item/bodypart/proc/get_overflow_sound(wounding_type)
+	if(biological_state & BIO_METAL)
+		return 'sound/effects/sparks/sparks4.ogg'
+	if(wounding_type == WOUND_BURN)
+		return 'sound/effects/wounds/sizzle1.ogg'
+	return 'sound/effects/wounds/crackandbleed.ogg'
 
 /**
  * Whether this bodypart has nothing left to give.
@@ -128,10 +148,11 @@
  * * log_name - What the organ is called in the overflow log.
  * * message - What the owner feels.
  * * onlooker_message - What everyone else sees.
+ * * wounding_type - One of the WOUND_* types, which decides what it sounds like.
  *
  * Returns FALSE, as the bodypart itself survives.
  */
-/obj/item/bodypart/proc/overflow_into_organ(slot, damage, damage_source, log_name, message, onlooker_message)
+/obj/item/bodypart/proc/overflow_into_organ(slot, damage, damage_source, log_name, message, onlooker_message, wounding_type)
 	if(isnull(owner.get_organ_slot(slot)))
 		return FALSE
 
@@ -139,7 +160,7 @@
 	owner.adjust_organ_loss(slot, overflow)
 	log_overflow(owner, damage_source, plaintext_zone, log_name, overflow)
 
-	announce_overflow(message, onlooker_message)
+	announce_overflow(message, onlooker_message, wounding_type)
 	return FALSE
 
 /obj/item/bodypart/head/apply_overflow(damage, wounding_type, attack_direction, damage_source)
@@ -150,6 +171,7 @@
 		"brain",
 		"Something gives way inside your skull!",
 		"Something gives way inside [owner]'s skull!",
+		wounding_type,
 	)
 
 /obj/item/bodypart/chest/apply_overflow(damage, wounding_type, attack_direction, damage_source)
@@ -165,6 +187,7 @@
 			"brain",
 			"Something deep in your chest gives out!",
 			"Something deep in [owner]'s chest gives out!",
+			wounding_type,
 		)
 
 	. = overflow_into_organ(
@@ -174,6 +197,7 @@
 		"heart",
 		"Something tears deep in your chest!",
 		"Something tears deep in [owner]'s chest!",
+		wounding_type,
 	)
 
 	// Failing and beating are separate states here, so a ruined heart does not stop on its own.
