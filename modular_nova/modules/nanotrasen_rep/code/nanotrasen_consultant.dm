@@ -98,7 +98,7 @@
 
 /obj/effect/landmark/start/nanotrasen_consultant
 	name = "Astraeus Federation Consultant"
-	icon_state = "Astraeus Federation"
+	icon_state = "Nanotrasen Consultant"
 	icon = 'modular_nova/master_files/icons/mob/landmarks.dmi'
 
 /obj/item/clothing/accessory/medal/gold/nanotrasen_consultant
