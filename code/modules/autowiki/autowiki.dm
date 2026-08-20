@@ -19,6 +19,10 @@
 	var/total_output = ""
 
 	for (var/datum/autowiki/autowiki_type as anything in subtypesof(/datum/autowiki))
+		// NOVA EDIT ADDITION START - LORE_OVERHAUL - Skip the modular adapter base; generated child types are pages.
+		if (autowiki_type == /datum/autowiki/lore_overhaul)
+			continue
+		// NOVA EDIT ADDITION END - LORE_OVERHAUL
 		var/datum/autowiki/autowiki = new autowiki_type
 		var/output = autowiki.generate()
 
