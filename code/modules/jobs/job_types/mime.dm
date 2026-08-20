@@ -1,6 +1,8 @@
 /datum/job/mime
 	title = JOB_MIME
-	description = "..."
+	description = "Apportez un peu de légèreté à la journée ! Devenez la mascotte de l'équipe, une source de divertissement tout en douceur, au mieux.\
+ Arborez un visage impassible et faites sourire quelqu'un !"
+
 	faction = FACTION_STATION
 	total_positions = 1
 	spawn_positions = 1

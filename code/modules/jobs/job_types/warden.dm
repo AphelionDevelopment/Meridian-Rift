@@ -1,8 +1,9 @@
 /datum/job/warden
 	title = JOB_WARDEN
-	description = "Watch over the Brig and Prison Wing, release prisoners when \
-		their time is up, issue equipment to security, be a security officer when \
-		they all eventually die."
+	description = "Second only to the Head of Security you manage the Federation Security Team as they perform boots on the ground operations aboard the station.\
+		Keep the armoury stocks in check, train and arm your team well and ensure that you know where the officers are and what they are doing at all times.\
+		 The Prison and the Inmates the ASF have shipped to the facility are your responsibility so take good care of them."
+
 	auto_deadmin_role_flags = DEADMIN_POSITION_SECURITY
 	faction = FACTION_STATION
 	total_positions = 1

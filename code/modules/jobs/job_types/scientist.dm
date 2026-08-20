@@ -1,6 +1,7 @@
 /datum/job/scientist
 	title = JOB_SCIENTIST
-	description = "Do experiments, perform research, feed the slimes, make bombs."
+	description = "Aphelion is equipped with a state of the art research suite allowing it to perform bleeding edge science and technology research on the Meridian Rift, it’s strange anomalous resources and the peoples within the station.\
+ Use the grand tools provided to perform research, invent brand new tools for the other departments and collaborate with your team on the many ways to generate research points together."
 	faction = FACTION_STATION
 	total_positions = 5
 	spawn_positions = 3
