@@ -1210,7 +1210,7 @@ GLOBAL_LIST_EMPTY(features_by_species)
 
 	//If the body temp is above the wound limit start adding exposure stacks
 	if(humi.bodytemperature > BODYTEMP_HEAT_WOUND_LIMIT)
-		humi.heat_exposure_stacks = min(humi.heat_exposure_stacks + (0.5 * seconds_per_tick), 40)
+		humi.heat_exposure_stacks = min(humi.heat_exposure_stacks + (2 * seconds_per_tick), 40) // ORIGINAL: (0.5 * seconds_per_tick)
 	else //When below the wound limit, reduce the exposure stacks fast.
 		humi.heat_exposure_stacks = max(humi.heat_exposure_stacks - (2 * seconds_per_tick), 0)
 
@@ -1289,10 +1289,12 @@ GLOBAL_LIST_EMPTY(features_by_species)
 	if(existing_burn)
 		switch(existing_burn.severity)
 			if(WOUND_SEVERITY_MODERATE)
-				if(humi.bodytemperature > BODYTEMP_HEAT_WOUND_LIMIT + 400) // 800k
+				if(humi.bodytemperature > BODYTEMP_HEAT_WOUND_LIMIT + 200) // 600k, ORIGINAL: + 400 // 800k
 					severity = WOUND_SEVERITY_SEVERE
 			if(WOUND_SEVERITY_SEVERE)
-				if(humi.bodytemperature > BODYTEMP_HEAT_WOUND_LIMIT + 1600) // 2000k
+				// A burning body peaks a little over 3000k, so the original limit was out of reach and heat
+				// alone could never ruin a part, which is what opens one to overflow.
+				if(humi.bodytemperature > BODYTEMP_HEAT_WOUND_LIMIT + 800) // 1200k, ORIGINAL: + 2800 // 3200k
 					severity = WOUND_SEVERITY_CRITICAL
 	else // If we have no burn apply the lowest level burn
 		severity = WOUND_SEVERITY_MODERATE
@@ -1301,9 +1303,9 @@ GLOBAL_LIST_EMPTY(features_by_species)
 
 	// always take some burn damage
 	var/burn_damage = HEAT_DAMAGE_LEVEL_1
-	if(humi.bodytemperature > BODYTEMP_HEAT_WOUND_LIMIT + 400)
+	if(humi.bodytemperature > BODYTEMP_HEAT_WOUND_LIMIT + 200) // 600k, ORIGINAL: + 400 // 800k
 		burn_damage = HEAT_DAMAGE_LEVEL_2
-	if(humi.bodytemperature > BODYTEMP_HEAT_WOUND_LIMIT + 2800)
+	if(humi.bodytemperature > BODYTEMP_HEAT_WOUND_LIMIT + 800) // 1200k, ORIGINAL: + 2800 // 3200k
 		burn_damage = HEAT_DAMAGE_LEVEL_3
 
 	humi.apply_damage(burn_damage * seconds_per_tick, BURN, bodypart, wound_clothing = FALSE)
