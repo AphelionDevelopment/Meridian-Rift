@@ -255,6 +255,9 @@ export const DmTarget = new Juke.Target({
     'sound/**',
     'tgui/public/tgui.html',
     "modular_nova/**", ///NOVA EDIT ADDITION - Making the CBT work
+    // APHELION EDIT ADDITION START - LORE_OVERHAUL
+    'modular_aphelion/**',
+    // APHELION EDIT ADDITION END - LORE_OVERHAUL
     `${DME_NAME}.dme`,
     NamedVersionFile,
   ],
