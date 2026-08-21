@@ -341,13 +341,13 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 		return TRUE
 	// APHELION EDIT ADDITION START
 	if(action == "get_whitelisted") // APHELION EDIT - discord whitelist
-		play_lobby_button_sound()
+		player.play_lobby_button_sound()
 		client?.get_whitelisted()
 		return TRUE
 	// Allow-list, not deny-list - everything else is gated.
 	// get_whitelisted sits above the gate so clicks don't each query.
-	if(!symphony_action_is_gate_free(action) && symphony_blocks_play())
-		symphony_gate_notice()
+	if(!symphony_action_is_gate_free(action) && player.symphony_blocks_play())
+		player.symphony_gate_notice()
 		return TRUE
 	// APHELION EDIT ADDITION END
 
