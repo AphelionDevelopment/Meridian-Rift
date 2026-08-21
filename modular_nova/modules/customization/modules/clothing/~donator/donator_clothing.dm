@@ -2123,7 +2123,7 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/structure/sign/poster/contraband/korpstech, 32)
 // donator item for Sciamach
 /obj/item/organ/cyberimp/arm/toolkit/shard/donator/theurgic_crystal
 	name = "theurgic stone"
-	desc = "An eerie crystalline shard that pulses with theurgic energies. Tendrils of crimson energy seem to dance along its surface."
+	desc = "An eerie crystalline shard that pulses with theurgic energy. Tendrils of crimson energy seem to dance along its surface."
 	icon = 'modular_nova/master_files/icons/donator/obj/custom.dmi'
 	icon_state = "crystal"
 	items_to_create = list(/obj/item/knife/razor_claws/donator/theurgic_knife)
