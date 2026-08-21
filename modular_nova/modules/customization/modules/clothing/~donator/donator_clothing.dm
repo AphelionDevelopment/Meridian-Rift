@@ -2123,24 +2123,23 @@ MAPPING_DIRECTIONAL_HELPERS(/obj/structure/sign/poster/contraband/korpstech, 32)
 // donator item for Sciamach
 /obj/item/organ/cyberimp/arm/toolkit/shard/donator/theurgic_crystal
 	name = "theurgic stone"
-	desc = "An eerie crystalline shard that pulses with theurgic energies. Tendrils of crimson energy seem to dance along its surface."
+	desc = "An eerie crystalline shard that pulses with theurgic energy. Tendrils of crimson energy seem to dance along its surface."
 	icon = 'modular_nova/master_files/icons/donator/obj/custom.dmi'
 	icon_state = "crystal"
-	items_to_create = list(/obj/item/knife/razor_claws/donator/theurgic_knife)
+	items_to_create = list(/obj/item/melee/implantarmblade/theurgic_knife)
 	extend_sound = 'sound/items/haunted/ghostitemattack.ogg'
 	retract_sound = 'sound/items/haunted/ghostitemattack.ogg'
 
-/obj/item/knife/razor_claws/donator/theurgic_knife
+/obj/item/melee/implantarmblade/theurgic_knife
 	name = "cursed ritual knife"
 	desc = "A large carving or flensing dagger made of a heavy, dusty material. It seems to emit a soft, eerie crimson glow."
 	icon = 'modular_nova/master_files/icons/donator/obj/custom.dmi'
 	righthand_file = 'modular_nova/modules/modular_ert/icons/pizza/righthand.dmi'
 	lefthand_file = 'modular_nova/modules/modular_ert/icons/pizza/lefthand.dmi'
-	icon_state = "dagger"
+	icon_state = "precision_dagger"
 	inhand_icon_state = "hotknife"
-	toggle_sound = 'sound/items/haunted/ghostitemattack.ogg'
 
-/obj/item/knife/razor_claws/donator/theurgic_knife/attack_self(mob/user)
+/obj/item/melee/implantarmblade/theurgic_knife/attack_self(mob/user)
 	. = ..()
 	inhand_icon_state = src::inhand_icon_state // Don't have a precision variant for this, just always use base
 
