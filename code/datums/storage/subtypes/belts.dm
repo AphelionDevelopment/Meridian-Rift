@@ -114,6 +114,7 @@
 		/obj/item/restraints/legcuffs/bola,
 		/obj/item/gun, // NOVA EDIT - ADDITION
 		/obj/item/clothing/mask/whistle, // NOVA EDIT - ADDITION
+		/obj/item/stock_parts/power_store/cell/microfusion, // NOVA EDIT - ADDITION
 	))
 
 ///Webbing security belt
@@ -167,6 +168,7 @@
 		/obj/item/wrench,
 		/obj/item/wormhole_jaunter,
 		/obj/item/skeleton_key,
+		/obj/item/crusher_trophy,
 	))
 
 ///Primitive mining belt
