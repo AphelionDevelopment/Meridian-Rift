@@ -94,6 +94,7 @@
 	trim_state = "trim_telecommsspecialist"
 	department_color = COLOR_ENGINEERING_ORANGE
 	subdepartment_color = COLOR_ENGINEERING_ORANGE
+	sechud_icon = MODULAR_HUDS_DMI
 	sechud_icon_state = SECHUD_TELECOMMS_SPECIALIST
 	minimal_access = list(
 		ACCESS_CONSTRUCTION,

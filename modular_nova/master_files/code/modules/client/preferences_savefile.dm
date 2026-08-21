@@ -3,7 +3,7 @@
  * You can't really use the non-modular version, least you eventually want asinine merge
  * conflicts and/or potentially disastrous issues to arise, so here's your own.
  */
-#define MODULAR_SAVEFILE_VERSION_MAX 18
+#define MODULAR_SAVEFILE_VERSION_MAX 19
 
 #define MODULAR_SAVEFILE_UP_TO_DATE -1
 
@@ -24,6 +24,7 @@
 #define VERSION_FEATHERY_WINGS_FIX 16
 #define VERSION_DONK_MIGRATION 17
 #define VERSION_AUGMENT_ITEMS_PATH_CHANGE 18
+#define VERSION_HEIGHT_UPDATE 19
 
 #define INDEX_UNDERWEAR 1
 #define INDEX_BRA 2
@@ -318,6 +319,20 @@
 		var/current_pocket = save_data["feature_testicles"]
 		if(current_pocket == "Pair")
 			write_preference(GLOB.preference_entries[/datum/preference/choiced/genital/testicles], "Pair (Alt)")
+
+	if(current_version < VERSION_HEIGHT_UPDATE)
+		var/static/list/height_scaling_to_label = list(
+			"[HUMAN_HEIGHT_SHORT]" = "Short",
+			"[HUMAN_HEIGHT_MEDIUM]" = "Average",
+			"[HUMAN_HEIGHT_TALL]" = "Tall",
+			"[HUMAN_HEIGHT_TALLER]" = "Taller",
+			"[HUMAN_HEIGHT_TALLEST]" = "Tallest",
+		)
+		var/old_height_scaling = save_data["height_scaling"]
+		if(!isnull(old_height_scaling))
+			var/migrated_label = height_scaling_to_label["[old_height_scaling]"]
+			if(migrated_label)
+				write_preference(GLOB.preference_entries[/datum/preference/choiced/mob_height], migrated_label)
 
 /datum/preferences/proc/check_migration()
 	if(!tgui_prefs_migration)
@@ -623,3 +638,4 @@
 #undef VERSION_AUGMENT_ITEMS_PATH_CHANGE
 #undef INDEX_UNDERWEAR
 #undef INDEX_BRA
+#undef VERSION_HEIGHT_UPDATE
