@@ -436,13 +436,7 @@
 	nova_starting_node = FALSE
 
 // Alien Stuff
-/datum/techweb_node/alien/base
-	nova_starting_node = FALSE
-
-/datum/techweb_node/alien/surgery
-	nova_starting_node = FALSE
-
-/datum/techweb_node/alien/engi
+/datum/techweb_node/alien
 	nova_starting_node = FALSE
 
 // Ilegal tech
