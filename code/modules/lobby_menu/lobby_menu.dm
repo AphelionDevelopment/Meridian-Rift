@@ -260,6 +260,7 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 		// APHELION EDIT ADDITION START - LOBBY_MENU_REWORK - Aphelion's own lobby content
 		"notice" = SStitle.current_notice,
 		"latejoinQueue" = SStitle.get_latejoin_queue_count(),
+		"canSwapServers" = length(CONFIG_GET(keyed_list/cross_server)) > 0,
 		"characterName" = uppertext(client?.prefs?.read_preference(/datum/preference/name/real_name)),
 		"whitelistGate" = symphony_blocks_this_player(),
 		"isAntag" = client?.prefs?.read_preference(/datum/preference/toggle/be_antag),

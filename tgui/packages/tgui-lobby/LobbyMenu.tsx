@@ -47,6 +47,7 @@ export type ServerState = {
   // APHELION EDIT ADDITION START - LOBBY_MENU_REWORK - Aphelion's own lobby content
   notice: string | null;
   latejoinQueue: string | number;
+  canSwapServers: boolean;
   characterName: string;
   isAntag: boolean;
   startupMessages: StartupMessage[];
