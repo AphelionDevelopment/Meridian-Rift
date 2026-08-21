@@ -65,7 +65,7 @@
 	icon_with_bra.scale(32, 32)
 	return icon_with_bra
 
-/datum/preference/choiced/bra/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/bra/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.bra = value
 
 /datum/preference/choiced/bra/compile_constant_data()

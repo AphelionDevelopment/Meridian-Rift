@@ -97,7 +97,6 @@
 		return
 	return ..()
 
-
 /mob/living/carbon/human/Topic(href, href_list)
 
 	if(href_list["see_id"])
@@ -758,7 +757,7 @@
 	if(locked_record)
 		locked_record.name = newname
 
-/mob/living/carbon/human/update_health_hud()
+/mob/living/carbon/human/update_health_hud(healthpercent)
 	if(!client || !hud_used)
 		return
 	// Updates the health bar, also sends signal
@@ -861,6 +860,8 @@
 			var/datum/quirk/quirk_type = type
 			// NOVA EDIT ADDITION START
 			if(initial(quirk_type.erp_quirk) && CONFIG_GET(flag/disable_erp_preferences))
+				continue
+			if(initial(quirk_type.tum_quirk) && CONFIG_GET(flag/disable_tums_preferences))
 				continue
 			// NOVA EDIT ADDITION END
 			var/qname = initial(quirk_type.name)
@@ -1278,6 +1279,3 @@
 
 /mob/living/carbon/human/species/zombie
 	race = /datum/species/zombie
-
-/mob/living/carbon/human/species/zombie/infectious
-	race = /datum/species/zombie/infectious

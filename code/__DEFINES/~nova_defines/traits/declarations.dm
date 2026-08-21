@@ -48,9 +48,6 @@
 // Trait sources
 #define TRAIT_GHOSTROLE "ghostrole"
 
-/// One can breath under water, you get me?
-#define TRAIT_WATER_BREATHING "water_breathing"
-
 /// Trait to assign to pets who've already had a space treat to prevent double-feeding
 #define TRAIT_PET_SPACE_TREAT "space_pet_treat"
 
@@ -89,6 +86,9 @@
 
 /// The trait accompanying the "Heavyset" quirk.
 #define TRAIT_HEAVYSET "trait_heavyset"
+
+/// The trait accompanying the "Big Boned"/belly quirk.  See "tums" module for more info.
+#define TRAIT_PREDATORY "trait_predatory"
 
 /// The trait that determines if someone has the system shock quirk.
 #define TRAIT_SYSTEM_SHOCK "trait_system_shock"

@@ -18,6 +18,8 @@
 	var/list/species_blacklist
 	/// The species IDs in this whitelist are the only ones which can get this augment
 	var/list/species_whitelist
+	/// Quirk typepaths which forbid this augment, for augments a quirk would just overwrite anyway
+	var/list/quirk_blacklist
 	/// If set, it's a list containing ckeys which only can get the item
 	var/list/ckey_whitelist
 

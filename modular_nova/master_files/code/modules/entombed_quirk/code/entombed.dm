@@ -280,7 +280,7 @@
 	savefile_identifier = PREFERENCE_CHARACTER
 	can_randomize = FALSE
 
-/datum/preference/choiced/entombed_hardlight_theme/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/entombed_hardlight_theme/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /datum/preference/choiced/entombed_hardlight_theme/is_accessible(datum/preferences/preferences)
@@ -310,7 +310,7 @@
 
 	return /datum/quirk/equipping/entombed::name in preferences.all_quirks
 
-/datum/preference/choiced/entombed_skin/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/entombed_skin/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /datum/preference/text/entombed_mod_name
@@ -336,7 +336,7 @@
 	else
 		return ""
 
-/datum/preference/text/entombed_mod_name/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/text/entombed_mod_name/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /datum/preference/text/entombed_mod_desc
@@ -361,7 +361,7 @@
 	else
 		return ""
 
-/datum/preference/text/entombed_mod_desc/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/text/entombed_mod_desc/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /datum/preference/text/entombed_mod_prefix
@@ -386,7 +386,7 @@
 /datum/preference/text/entombed_mod_prefix/create_default_value()
 	return "Fused"
 
-/datum/preference/text/entombed_mod_prefix/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/text/entombed_mod_prefix/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /datum/preference/toggle/entombed_deploy_lock
@@ -400,7 +400,7 @@
 
 	return /datum/quirk/equipping/entombed::name in preferences.all_quirks
 
-/datum/preference/toggle/entombed_deploy_lock/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/toggle/entombed_deploy_lock/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 #undef ENTOMBED_TICK_DAMAGE

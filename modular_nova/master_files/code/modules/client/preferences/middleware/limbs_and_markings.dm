@@ -262,6 +262,9 @@
 		return FALSE
 	if(aug.species_whitelist && !aug.species_whitelist[species.id])
 		return FALSE
+	for(var/datum/quirk/blacklisted_quirk as anything in aug.quirk_blacklist)
+		if(blacklisted_quirk::name in prefs.all_quirks)
+			return FALSE
 	var/digi_legs = prefs.read_preference(/datum/preference/choiced/digitigrade_legs) == DIGITIGRADE_LEGS
 	if(digi_legs)
 		var/datum/augment_item/limb/limb_aug = astype(aug, /datum/augment_item/limb)
@@ -368,11 +371,11 @@
 	var/marking_name = pick(GLOB.body_markings_per_limb[bodypart_slot])
 	var/datum/body_marking/marking = GLOB.body_markings[marking_name]
 	var/species_type = preferences.read_preference(/datum/preference/choiced/species)
-	var/list/mutant_colors = preferences.read_preference(/datum/preference/tri_color/mutant_colors)
+	var/list/preview_features = preferences.character_preview_view.body.dna.features
 	var/list/features = list(
-		FEATURE_MUTANT_COLOR       = mutant_colors[1],
-		FEATURE_MUTANT_COLOR_TWO   = mutant_colors[2],
-		FEATURE_MUTANT_COLOR_THREE = mutant_colors[3],
+		FEATURE_MUTANT_COLOR       = preview_features[FEATURE_MUTANT_COLOR],
+		FEATURE_MUTANT_COLOR_TWO   = preview_features[FEATURE_MUTANT_COLOR_TWO],
+		FEATURE_MUTANT_COLOR_THREE = preview_features[FEATURE_MUTANT_COLOR_THREE],
 		FEATURE_SKIN_COLOR         = skintone2hex(preferences.read_preference(/datum/preference/choiced/skin_tone)),
 	)
 	var/datum/species/current_species = GLOB.species_prototypes[species_type]
@@ -455,11 +458,11 @@
 	if(preset)
 		var/datum/body_marking_set/BMS = GLOB.body_marking_sets[preset]
 		var/species_type = preferences.read_preference(/datum/preference/choiced/species)
-		var/list/mutant_colors = preferences.read_preference(/datum/preference/tri_color/mutant_colors)
+		var/list/preview_features = preferences.character_preview_view.body.dna.features
 		var/list/features = list(
-			FEATURE_MUTANT_COLOR       = mutant_colors[1],
-			FEATURE_MUTANT_COLOR_TWO   = mutant_colors[2],
-			FEATURE_MUTANT_COLOR_THREE = mutant_colors[3],
+			FEATURE_MUTANT_COLOR       = preview_features[FEATURE_MUTANT_COLOR],
+			FEATURE_MUTANT_COLOR_TWO   = preview_features[FEATURE_MUTANT_COLOR_TWO],
+			FEATURE_MUTANT_COLOR_THREE = preview_features[FEATURE_MUTANT_COLOR_THREE],
 			FEATURE_SKIN_COLOR         = skintone2hex(preferences.read_preference(/datum/preference/choiced/skin_tone)),
 		)
 		var/datum/species/current_species = GLOB.species_prototypes[species_type]

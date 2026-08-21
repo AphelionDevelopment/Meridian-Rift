@@ -131,7 +131,7 @@ GLOBAL_LIST_INIT(possible_player_pet, list(
 
 	return /datum/quirk/item_quirk/pet_owner::name in preferences.all_quirks
 
-/datum/preference/choiced/pet_owner/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/pet_owner/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /datum/preference/text/pet_name
@@ -150,7 +150,7 @@ GLOBAL_LIST_INIT(possible_player_pet, list(
 /datum/preference/text/pet_name/serialize(input)
 	return htmlrendertext(input)
 
-/datum/preference/text/pet_name/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/text/pet_name/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /datum/preference/text/pet_desc
@@ -168,7 +168,7 @@ GLOBAL_LIST_INIT(possible_player_pet, list(
 /datum/preference/text/pet_desc/serialize(input)
 	return htmlrendertext(input)
 
-/datum/preference/text/pet_desc/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/text/pet_desc/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /datum/preference/choiced/pet_gender
@@ -189,5 +189,5 @@ GLOBAL_LIST_INIT(possible_player_pet, list(
 
 	return /datum/quirk/item_quirk/pet_owner::name in preferences.all_quirks
 
-/datum/preference/choiced/pet_gender/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/pet_gender/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return

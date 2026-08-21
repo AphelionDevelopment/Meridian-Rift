@@ -27,7 +27,7 @@
 
 	return /datum/quirk/custom_tongue::name in preferences.all_quirks
 
-/datum/preference/text/custom_tongue/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/text/custom_tongue/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /datum/preference/text/custom_tongue/ask

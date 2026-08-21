@@ -249,10 +249,6 @@
 	new_icon = 'modular_nova/master_files/icons/obj/clothing/accessories.dmi'
 	new_worn_icon = 'modular_nova/master_files/icons/mob/clothing/accessories.dmi'
 
-/datum/atom_skin/pride_pin/nova/man_loving_man
-	preview_name = "Man-Loving-Man / Gay Pride"
-	new_icon_state = "pride_mlm"
-
 /datum/atom_skin/pride_pin/nova/genderfluid
 	preview_name = "Genderfluid Pride"
 	new_icon_state = "pride_genderfluid"
@@ -339,7 +335,6 @@
 
 /datum/design/vaporizer
 	name = "Hydro-Vaporizer"
-	id = "vaporizer"
 	build_type = PROTOLATHE | AWAY_LATHE
 	materials = list(/datum/material/gold = SMALL_MATERIAL_AMOUNT*2.5, /datum/material/silver =SMALL_MATERIAL_AMOUNT*5)
 	build_path = /obj/item/clothing/accessory/vaporizer

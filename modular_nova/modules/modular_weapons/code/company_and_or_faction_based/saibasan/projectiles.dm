@@ -13,6 +13,7 @@
 	impact_effect_type = /obj/effect/temp_visual/impact_effect/red_laser
 	light_color = COLOR_SOFT_RED
 	wound_falloff_tile = -1
+	speed = 2
 
 // Speedy sniper lasers for the big gun
 
@@ -131,7 +132,7 @@
 	icon_state = "hellfire"
 	damage = 30
 	impact_effect_type = /obj/effect/temp_visual/impact_effect/red_laser
-	speed = 1.6
+	speed = 1.8
 	wound_bonus = 0
 	light_color = COLOR_SOFT_RED
 

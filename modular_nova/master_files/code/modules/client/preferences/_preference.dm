@@ -39,7 +39,7 @@
 		part_enabled = is_factual_sprite_accessory(relevant_mutant_bodypart, part_enabled)
 	return ((passed_initial_check || allowed) && part_enabled)
 
-/datum/preference/tri_color/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/tri_color/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	if (type == abstract_type)
 		return ..()
 	var/datum/mutant_bodypart/mutant_part = target.dna.mutant_bodyparts[relevant_mutant_bodypart]
@@ -87,7 +87,7 @@
 /datum/preference/color/mutant
 	abstract_type = /datum/preference/color/mutant
 
-/datum/preference/color/mutant/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/color/mutant/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	if (type == abstract_type)
 		return ..()
 
@@ -253,7 +253,7 @@
 		part_enabled = is_factual_sprite_accessory(relevant_mutant_bodypart, part_enabled)
 	return ((passed_initial_check || allowed) && part_enabled && emissives_allowed)
 
-/datum/preference/toggle/emissive/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/toggle/emissive/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	if (type == abstract_type)
 		return ..()
 	var/datum/mutant_bodypart/mutant_bodypart = target.dna.mutant_bodyparts[relevant_mutant_bodypart]

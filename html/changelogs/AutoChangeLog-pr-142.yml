@@ -1,0 +1,4 @@
+author: "sciira"
+delete-after: True
+changes:
+  - code_imp: "Changed the base item for scia's donator item from the claw implant for the old armblade implant."

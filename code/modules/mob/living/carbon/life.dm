@@ -118,7 +118,7 @@
 				var/turf/our_turf = loc
 				if(our_turf.liquids && !HAS_TRAIT(src, TRAIT_NOBREATH) && ((body_position == LYING_DOWN && our_turf.liquids.liquid_state >= LIQUID_STATE_WAIST) || (body_position == STANDING_UP && our_turf.liquids.liquid_state >= LIQUID_STATE_FULLTILE)))
 					//Officially trying to breathe underwater
-					if(HAS_TRAIT(src, TRAIT_WATER_BREATHING))
+					if(HAS_TRAIT(src, TRAIT_NODROWN))
 						failed_last_breath = FALSE
 						clear_alert("not_enough_oxy")
 						return FALSE
@@ -528,8 +528,8 @@
 			// A simple weighted average that simplifies down to "total synth volume / total blood volume" i.e. "how much of our blood is synthetic"
 			AddComponent(/datum/component/synth_blood, (added_synth_volume + existing_synth_volume) / (blood_added + cached_blood_volume))
 
-	if(chem.data?["blood_type"])
-		var/datum/blood_type/donor_type = chem.data["blood_type"]
+	if(chem.data?[BLOOD_DATA_TYPE])
+		var/datum/blood_type/donor_type = chem.data[BLOOD_DATA_TYPE]
 		if(!(donor_type.type_key() in blood_type.compatible_types))
 			reagents.add_reagent(/datum/reagent/toxin, reac_volume * 0.5)
 			return COMPONENT_NO_EXPOSE_REAGENTS
