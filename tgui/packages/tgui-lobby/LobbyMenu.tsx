@@ -52,6 +52,7 @@ export type ServerState = {
   startupMessages: StartupMessage[];
   progressCurrent: number;
   progressTotal: number;
+  whitelistGate: boolean;
   // APHELION EDIT ADDITION END
 };
 

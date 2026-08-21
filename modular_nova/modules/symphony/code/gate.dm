@@ -1,14 +1,9 @@
-/// Href keys a gated player can still send.
-GLOBAL_LIST_INIT(symphony_gate_free_hrefs, list("src", "title_is_ready", "server_swap"))
+/// Lobby menu actions a gated player can still send.
+GLOBAL_LIST_INIT(symphony_gate_free_actions, list("server_swap"))
 
-/// Every key has to be gate-free, one we don't know and the gate applies.
-/proc/symphony_href_is_gate_free(list/href_list)
-	if(!length(href_list))
-		return FALSE
-	for(var/key in href_list)
-		if(!(key in GLOB.symphony_gate_free_hrefs))
-			return FALSE
-	return TRUE
+/// TRUE if this lobby menu action is allowed through the whitelist gate.
+/proc/symphony_action_is_gate_free(action)
+	return action in GLOB.symphony_gate_free_actions
 
 /// TRUE means this new_player isn't getting into the round.
 /mob/dead/new_player/proc/symphony_blocks_play()
@@ -28,4 +23,4 @@ GLOBAL_LIST_INIT(symphony_gate_free_hrefs, list("src", "title_is_ready", "server
 		to_chat(src, span_warning("Guest accounts cannot be whitelisted. Sign in with a real BYOND account and reconnect to play."))
 		return
 	to_chat(src, span_userdanger("You are not whitelisted."))
-	to_chat(src, span_warning("<a href='byond://?src=[REF(src)];get_whitelisted=1'><b>Click here to Get Whitelisted</b></a> - link your Discord account to gain access. You must stay in the Discord with the whitelist role to play."))
+	to_chat(src, span_warning("Use the <b>GET WHITELISTED</b> button on the lobby menu to link your Discord account. You must stay in the Discord with the whitelist role to play."))

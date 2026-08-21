@@ -128,6 +128,7 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 		"adminCount" = length(GLOB.admins),
 		"shiftTime" = (SSticker.round_start_time == 0) ? "Pre-Game" : round_timestamp(),
 		"latejoinQueue" = SStitle.get_latejoin_queue_count(), // APHELION EDIT ADDITION
+		"whitelistGate" = symphony_blocks_this_player(), // APHELION EDIT ADDITION
 	))
 
 /datum/lobby_menu/proc/on_client_qdel()
@@ -210,6 +211,11 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 		return "DELAYED"
 	return "SOON"
 
+/// Whether the current player is currently blocked from playing by the Discord whitelist gate.
+/datum/lobby_menu/proc/symphony_blocks_this_player()
+	var/mob/dead/new_player/player = client?.mob
+	return istype(player) && player.symphony_blocks_play()
+
 /datum/lobby_menu/proc/get_station_traits()
 	var/list/result = list()
 	var/mob/dead/new_player/player = client?.mob
@@ -255,6 +261,7 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 		"notice" = SStitle.current_notice,
 		"latejoinQueue" = SStitle.get_latejoin_queue_count(),
 		"characterName" = uppertext(client?.prefs?.read_preference(/datum/preference/name/real_name)),
+		"whitelistGate" = symphony_blocks_this_player(),
 		"isAntag" = client?.prefs?.read_preference(/datum/preference/toggle/be_antag),
 		"startupMessages" = GLOB.startup_messages,
 		"progressCurrent" = world.timeofday - SStitle.progress_reference_time,
@@ -332,6 +339,17 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 		return TRUE
 	if(client.interviewee)
 		return TRUE
+	// APHELION EDIT ADDITION START
+	if(action == "get_whitelisted") // APHELION EDIT - discord whitelist
+		play_lobby_button_sound()
+		client?.get_whitelisted()
+		return TRUE
+	// Allow-list, not deny-list - everything else is gated.
+	// get_whitelisted sits above the gate so clicks don't each query.
+	if(!symphony_action_is_gate_free(action) && symphony_blocks_play())
+		symphony_gate_notice()
+		return TRUE
+	// APHELION EDIT ADDITION END
 
 	player.play_lobby_button_sound() // APHELION EDIT ADDITION - LOBBY_MENU_REWORK
 	switch(action)
@@ -404,7 +422,7 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 			player.ViewManifest()
 		if("poll")
 			player.handle_player_polling()
-		// APHELION EDIT ADDITION START - LOBBY_MENU_REWORK
+		// APHELION EDIT ADDITION START
 		if("server_swap")
 			player.server_swap()
 		if("view_directory")
