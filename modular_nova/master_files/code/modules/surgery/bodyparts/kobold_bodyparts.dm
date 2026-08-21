@@ -30,6 +30,15 @@
 /obj/item/bodypart/chest/kobold/get_butt_sprite()
 	return icon('icons/mob/butts.dmi', BUTT_SPRITE_LIZARD)
 
+/obj/item/bodypart/chest/kobold/update_mob_heights(mob/living/carbon/holder)
+	if(HAS_TRAIT(holder, TRAIT_DWARF))
+		return MONKEY_HEIGHT_DWARF
+
+	if(HAS_TRAIT(holder, TRAIT_TOO_TALL))
+		return MONKEY_HEIGHT_TALL
+
+	return MONKEY_HEIGHT_MEDIUM
+
 /obj/item/bodypart/arm/left/kobold
 	icon = 'modular_nova/master_files/icons/mob/species/kobold_bodyparts.dmi'
 	icon_greyscale = 'modular_nova/master_files/icons/mob/species/kobold_bodyparts.dmi'
