@@ -1,5 +1,7 @@
 #define DUALWIELD_PENALTY_EXTRA_MULTIPLIER 1.4
 #define FIRING_PIN_REMOVAL_DELAY 50
+/// How long the execution prompt waits for an answer before it lapses.
+#define EXECUTION_CONFIRM_TIME (10 SECONDS)
 
 /obj/item/gun
 	name = "gun"
@@ -421,6 +423,9 @@
 	if(check_botched(user, target))
 		return NONE
 
+	if(can_execute(target, user))
+		return handle_execution(target, user, params)
+
 	var/obj/item/bodypart/other_hand = user.has_hand_for_held_index(user.get_inactive_hand_index()) //returns non-disabled inactive hands
 	if(weapon_weight == WEAPON_HEAVY && (user.get_inactive_held_item() || !other_hand))
 		balloon_alert(user, "use both hands!")
@@ -707,6 +712,57 @@
 		return NONE
 	return ITEM_INTERACT_SUCCESS
 
+/**
+ * Whether a shot into this mob's head would be an execution
+ *
+ * Arguments:
+ * * target - Who is being aimed at.
+ * * user - Who is aiming.
+ */
+/obj/item/gun/proc/can_execute(mob/living/carbon/target, mob/living/user)
+	return iscarbon(target) \
+		&& target != user \
+		&& (target.stat == SOFT_CRIT || target.stat == HARD_CRIT) \
+		&& target.body_position == LYING_DOWN \
+		&& target.is_location_accessible(BODY_ZONE_HEAD) \
+		&& user.zone_selected == BODY_ZONE_HEAD \
+		&& user.Adjacent(target)
+
+/**
+ * Puts a round through the head of someone who cannot stop it, killing them outright.
+ *
+ * Arguments:
+ * * target - Who is being executed.
+ * * user - Who is doing it.
+ * * params - Click parameters, passed on to the shot.
+ */
+/obj/item/gun/proc/handle_execution(mob/living/carbon/target, mob/living/user, params)
+	if(fire_cd)
+		return NONE
+
+	target.visible_message(
+		span_danger("[user] presses [src] against [target]'s head!"),
+		span_userdanger("[user] presses [src] against your head!"),
+	)
+
+	// Held for the length of the prompt so clicking again cannot open a second one.
+	fire_cd = TRUE
+	var/confirmed = tgui_alert(user, "Execute [target]?", "Execution", list("Yes", "No"), EXECUTION_CONFIRM_TIME) == "Yes"
+	fire_cd = FALSE
+
+	// The prompt is a window in which they can be dragged clear, treated, helmeted or stood back up.
+	if(!confirmed || !can_execute(target, user))
+		target.visible_message(span_notice("[user] lowers [src]."))
+		return ITEM_INTERACT_BLOCKING
+
+	if(!process_fire(target, user, TRUE, params, BODY_ZONE_HEAD))
+		return NONE
+
+	log_combat(user, target, "executed", src)
+	target.investigate_log("was executed by [key_name(user)] with [src].", INVESTIGATE_DEATHS)
+	target.adjust_organ_loss(ORGAN_SLOT_BRAIN, BRAIN_DAMAGE_DEATH)
+	return ITEM_INTERACT_SUCCESS
+
 /obj/item/gun/proc/unlock() //used in summon guns and as a convience for admins
 	if(pin)
 		qdel(pin)
@@ -733,5 +789,6 @@
 		forceMove(user.loc)
 		throw_at(pick(get_step(user, user.dir)), 1, 3)
 
+#undef EXECUTION_CONFIRM_TIME
 #undef FIRING_PIN_REMOVAL_DELAY
 #undef DUALWIELD_PENALTY_EXTRA_MULTIPLIER
