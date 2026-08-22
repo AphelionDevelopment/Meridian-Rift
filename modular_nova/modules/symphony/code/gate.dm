@@ -16,6 +16,17 @@ GLOBAL_LIST_INIT(symphony_gate_free_actions, list("server_swap"))
 		return FALSE
 	return !is_symphony_whitelisted(ckey)
 
+/// Non-blocking version of symphony_blocks_play()
+/mob/dead/new_player/proc/symphony_blocks_play_cached()
+	if(!CONFIG_GET(flag/symphony_enabled))
+		return FALSE
+	if(!client)
+		return TRUE
+	if(client.holder)
+		return FALSE
+	var/cached = symphony_whitelist_cache_peek(ckey)
+	return isnull(cached) ? TRUE : !cached
+
 /mob/dead/new_player/proc/symphony_gate_notice()
 	// `key`, not `ckey` - ckey() strips the hyphen that is_guest_key matches on
 	if(is_guest_key(key))

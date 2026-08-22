@@ -36,6 +36,8 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 	var/datum/tgui_window/window
 	/// Whether we've already registered for asset subsystem init signals
 	var/assets_signals_registered = FALSE
+	/// Whether a symphony_whitelist_cache_peek() miss already has a refresh_whitelist_gate() going off
+	var/whitelist_gate_refreshing = FALSE
 
 /datum/lobby_menu/New(client/client)
 	src.client = client
@@ -214,7 +216,27 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 /// Whether the current player is currently blocked from playing by the Discord whitelist gate.
 /datum/lobby_menu/proc/symphony_blocks_this_player()
 	var/mob/dead/new_player/player = client?.mob
-	return istype(player) && player.symphony_blocks_play()
+	if(!istype(player))
+		return FALSE
+	if(!CONFIG_GET(flag/symphony_enabled) || client.holder)
+		return FALSE
+	if(!whitelist_gate_refreshing && isnull(symphony_whitelist_cache_peek(player.ckey)))
+		whitelist_gate_refreshing = TRUE
+		refresh_whitelist_gate()
+	return player.symphony_blocks_play_cached()
+
+/// Does the real (DB-hitting, sleep-capable) whitelist check off the should-not-sleep callstack, then pushes the answer to the client.
+/datum/lobby_menu/proc/refresh_whitelist_gate()
+	set waitfor = FALSE
+	var/mob/dead/new_player/player = client?.mob
+	if(!istype(player))
+		whitelist_gate_refreshing = FALSE
+		return
+	var/blocks = player.symphony_blocks_play()
+	whitelist_gate_refreshing = FALSE
+	if(!client)
+		return
+	send_update(list("whitelistGate" = blocks))
 
 /datum/lobby_menu/proc/get_station_traits()
 	var/list/result = list()

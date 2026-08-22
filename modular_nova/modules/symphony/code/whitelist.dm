@@ -57,16 +57,27 @@ GLOBAL_VAR_INIT(symphony_whitelist_epoch, 0)
 	GLOB.symphony_whitelist_cache_expiry -= target_ckey
 	GLOB.symphony_whitelist_epoch++
 
+/// Cache-only lookup, never touches the DB and so never sleeps. TRUE/FALSE if cached, null if we don't know yet.
+/proc/symphony_whitelist_cache_peek(target_ckey)
+	target_ckey = ckey(target_ckey)
+	if(!target_ckey)
+		return null
+	var/expiry = GLOB.symphony_whitelist_cache_expiry[target_ckey]
+	if(!expiry || world.time >= expiry)
+		return null
+	return GLOB.symphony_whitelist_cache[target_ckey]
+
 /// TRUE if the gate is off, or we hold the whitelist role. Fail-OPEN when disabled - it's a gate, not an entitlement.
+/// Can sleep on a cache miss - use symphony_whitelist_cache_peek() if you need a non-sleeping version
 /proc/is_symphony_whitelisted(target_ckey)
 	if(!CONFIG_GET(flag/symphony_enabled))
 		return TRUE
 	target_ckey = ckey(target_ckey)
 	if(!target_ckey)
 		return FALSE
-	var/expiry = GLOB.symphony_whitelist_cache_expiry[target_ckey]
-	if(expiry && world.time < expiry)
-		return GLOB.symphony_whitelist_cache[target_ckey]
+	var/cached = symphony_whitelist_cache_peek(target_ckey)
+	if(!isnull(cached))
+		return cached
 	var/epoch = GLOB.symphony_whitelist_epoch
 	. = symphony_has_ingame_role(target_ckey, "whitelist")
 	// A revoke can land while we wait on the DB. Don't cache over it.
