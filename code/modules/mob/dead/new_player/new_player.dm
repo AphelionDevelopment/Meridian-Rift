@@ -70,9 +70,11 @@
 
 //When you cop out of the round (NB: this HAS A SLEEP FOR PLAYER INPUT IN IT)
 /mob/dead/new_player/proc/make_me_an_observer()
-	if(symphony_blocks_play()) // APHELION EDIT - discord whitelist gate
+	// APHELION EDIT ADDITION START - Discord whitelist gate
+	if(symphony_blocks_play())
 		symphony_gate_notice()
 		return FALSE
+	// APHELION EDIT ADDITION END
 	if(QDELETED(src) || !src.client)
 		ready = PLAYER_NOT_READY
 		return FALSE
@@ -189,9 +191,11 @@
 
 
 /mob/dead/new_player/proc/AttemptLateSpawn(rank)
-	if(symphony_blocks_play()) // APHELION EDIT - discord whitelist gate
+	// APHELION EDIT ADDITION START - Discord whitelist gate
+	if(symphony_blocks_play())
 		symphony_gate_notice()
 		return FALSE
+	// APHELION EDIT ADDITION END
 	// Check that they're picking someone new for new character respawning
 	if(CONFIG_GET(flag/allow_respawn) == RESPAWN_FLAG_NEW_CHARACTER)
 		if("[client.prefs.default_slot]" in persistent_client.joined_as_slots)
