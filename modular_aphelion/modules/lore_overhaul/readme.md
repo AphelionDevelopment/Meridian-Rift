@@ -7,7 +7,7 @@ Module ID: LORE_OVERHAUL
 ### Description:
 
 Establishes the runtime contract for lore-overhaul entries generated from human-authored source
-data in the external `AphelionDevelopment/aphelion-lore-tools` repository.
+data in the external `AphelionDevelopment/aphelion-content-tools` repository.
 
 `modular_aphelion/modules/lore_overhaul/code/generated_lore_overrides.dm` is generator-owned and
 must be regenerated from the JSON source; it is never edited by hand.
@@ -40,14 +40,14 @@ Module files:
 ### External source and export tool
 
 The canonical source, catalog, browser editor, reviews, groups, and validation code live in
-`https://github.com/AphelionDevelopment/aphelion-lore-tools`. The game repository intentionally keeps
+`https://github.com/AphelionDevelopment/aphelion-content-tools`. The game repository intentionally keeps
 only this runtime module and the generated DM artifact. A maintainer prepares and validates an export in
 the external tool, then applies it to a clean game checkout. The export writes only
 `modular_aphelion/modules/lore_overhaul/code/generated_lore_overrides.dm`.
 
 ### Writer workflow
 
-Writers start the external tool by double-clicking `Launch Lore Tools.cmd`. They search the catalog,
+Writers start Aphelion Content Tools through its shipped launcher. They search the catalog,
 filter by the pre-populated lore groups, and use the Configuration tab to
 maintain group labels, keywords, type-path prefixes, and colors. Directional and redundant subtype
 entries are hidden until their visibility toggles are enabled.
