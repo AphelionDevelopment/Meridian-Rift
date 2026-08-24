@@ -10,14 +10,14 @@
 		"Short" = HUMAN_HEIGHT_SHORT,
 		DEFAULT_HEIGHT = HUMAN_HEIGHT_MEDIUM,
 		"Tall" = HUMAN_HEIGHT_TALL,
-		// "Taller" = HUMAN_HEIGHT_TALLER, // Reserved for Spacer
-		// "Tallest" = HUMAN_HEIGHT_TALLEST, // Reserved for Spacer
+		"Taller" = HUMAN_HEIGHT_TALLER, // APHELION EDIT CHANGE - ORIGINAL: // "Taller" = HUMAN_HEIGHT_TALLER, // Reserved for Spacer
+		"Tallest" = HUMAN_HEIGHT_TALLEST, // APHELION EDIT CHANGE - ORIGINAL: // "Tallest" = HUMAN_HEIGHT_TALLEST, // Reserved for Spacer
 	)
 
 /datum/preference/choiced/mob_height/init_possible_values()
 	return assoc_to_keys(height_to_actual)
 
-/datum/preference/choiced/mob_height/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/mob_height/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.set_mob_height(height_to_actual[value] || DEFAULT_HEIGHT)
 
 /datum/preference/choiced/mob_height/is_accessible(datum/preferences/preferences)
@@ -27,6 +27,12 @@
 		return FALSE
 	if(/datum/quirk/spacer_born::name in preferences.all_quirks)
 		return FALSE
+	// NOVA EDIT ADDITION START - dwarves manually set their own height
+	var/species_type = preferences.read_preference(/datum/preference/choiced/species)
+	var/datum/species/current_species = GLOB.species_prototypes[species_type]
+	if(istype(current_species, /datum/species/dwarf))
+		return FALSE
+	// NOVA EDIT ADDITION END
 	return ..()
 
 /datum/preference/choiced/mob_height/create_default_value(datum/preferences/preferences)
