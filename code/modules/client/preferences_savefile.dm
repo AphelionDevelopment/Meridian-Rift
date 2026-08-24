@@ -459,6 +459,11 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 		tainted_character_profiles = TRUE
 		randomise_appearance_prefs()
 		all_quirks = list()
+		// APHELION EDIT ADDITION START
+		augments = list()
+		body_markings = list()
+		languages = list()
+		// APHELION EDIT ADDITION END
 		recently_updated_keys |= /datum/preference/name/real_name
 		save_character()
 
