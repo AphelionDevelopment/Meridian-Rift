@@ -167,7 +167,8 @@ GLOBAL_VAR(lifeline_request)
 
 /// Chooses the next contribution requested by the station-wide Lifeline network.
 /proc/roll_lifeline_request()
-	GLOB.lifeline_request = pick(GLOB.lifeline_requests)
+	var/list/other_requests = GLOB.lifeline_requests - GLOB.lifeline_request
+	GLOB.lifeline_request = pick(length(other_requests) ? other_requests : GLOB.lifeline_requests)
 
 /** Central, manually-fed server and reservoir for the Lifeline emergency-care network. */
 /obj/machinery/lifeline_reservoir
@@ -263,7 +264,6 @@ GLOBAL_VAR(lifeline_request)
 
 /** A field sprayer supplied with a full reservoir. */
 /obj/item/lifeline_projector/full
-	icon_state = "lifeline_4"
 
 /obj/item/lifeline_projector/full/Initialize(mapload)
 	. = ..()
@@ -334,6 +334,9 @@ GLOBAL_VAR(lifeline_request)
 
 	switch(selected_mode)
 		if(LIFELINE_MODE_HEAL)
+			if(target.stat == DEAD)
+				balloon_alert(user, "no viable response!")
+				return FALSE
 			if(!apply_healing(target))
 				balloon_alert(user, "nothing to treat!")
 				return FALSE
@@ -347,7 +350,7 @@ GLOBAL_VAR(lifeline_request)
 			target.visible_message(span_notice("A supportive field settles around [target]."), span_notice("Your pain recedes enough for you to move, but the field locks your hands and your injuries remain."))
 		if(LIFELINE_MODE_STASIS)
 			var/obj/structure/closet/body_bag/environmental/stasis/lifeline/recovery_bag = new(get_turf(target))
-			// insert() refuses buckled, anchored and ridden patients, and takes nobody else on the turf with them.
+			// insert() refuses anchored, buckled, incorporeal and oversized patients.
 			if(recovery_bag.insert(target) != TRUE)
 				qdel(recovery_bag)
 				balloon_alert(user, "patient is secured!")
@@ -428,15 +431,13 @@ GLOBAL_VAR(lifeline_request)
 	desc = "A temporary projected stasis enclosure. Its recovery beacon periodically pings to guide responders to its patient."
 	max_integrity = 150
 	breakout_time = 4 SECONDS
-	material_drop = null
-	material_drop_amount = 0
+	obj_flags = parent_type::obj_flags | NO_DEBRIS_AFTER_DECONSTRUCTION
 	/// Whether the cocoon has finished deploying and should disappear the next time it opens.
 	var/dissolve_when_opened = FALSE
 	COOLDOWN_DECLARE(recovery_ping_cooldown)
 
 /obj/structure/closet/body_bag/environmental/stasis/lifeline/Initialize(mapload)
 	. = ..()
-	obj_flags |= NO_DEBRIS_AFTER_DECONSTRUCTION
 	set_light(2, 0.7, LIGHT_COLOR_CYAN)
 	COOLDOWN_START(src, recovery_ping_cooldown, 2 SECONDS)
 
@@ -447,6 +448,7 @@ GLOBAL_VAR(lifeline_request)
 	visible_message(span_notice("[src] dissolves into fading motes of light."))
 	qdel(src)
 
+/// Pings its recovery beacon.
 /obj/structure/closet/body_bag/environmental/stasis/lifeline/process(seconds_per_tick)
 	. = ..()
 	if(QDELETED(src) || . == PROCESS_KILL)
