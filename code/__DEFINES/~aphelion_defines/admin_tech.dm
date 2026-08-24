@@ -15,11 +15,13 @@
 /// Admin Items and Flags
 /// These three defines belong to three different bitfields and are NOT interchangeable - the bits overlap.
 /// ADMIN_OBJ_FLAGS goes on obj_flags, ADMIN_OBJ_FLAGS_NOVA goes on obj_flags_nova, ADMIN_CLOTHING_FLAGS goes on clothing_flags.
-#define ADMIN_OBJ_FLAGS (XENOMORPH_HOLDABLE | UNIQUE_RENAME)
+#define ADMIN_OBJ_FLAGS (UNIQUE_RENAME)
 /// Prevents removal through strip menu, and tags the item as administrative on examine
 #define ADMIN_OBJ_FLAGS_NOVA (NOSTRIP | ADMIN_ITEM)
-/// Admin worn gear doesn't get knocked off and doesn't get eaten by moths. Apply with |= so the parent type's own flags survive.
-#define ADMIN_CLOTHING_FLAGS (SNUG_FIT | INEDIBLE_CLOTHING)
+/// Admin worn gear doesn't get knocked off. Apply with |= so the parent type's own flags survive.
+/// Moths are kept off it by resistance_flags & INDESTRUCTIBLE, which every admin clothing type
+/// already carries - drop that from one and it becomes edible again.
+#define ADMIN_CLOTHING_FLAGS (SNUG_FIT)
 
 /// Used by Admin fabricators to select from admin / debug / useful / fun prints
 #define ADMIN_TECHWEB (1<<12)
