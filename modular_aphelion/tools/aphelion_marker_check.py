@@ -13,6 +13,7 @@ MODULE_ID = r"[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*"
 START = re.compile(rf"APHELION EDIT (ADDITION|REMOVAL) START - (?P<module>\S+)")
 END = re.compile(r"APHELION EDIT (ADDITION|REMOVAL) END")
 CHANGE = re.compile(rf"APHELION EDIT CHANGE - (?P<module>{MODULE_ID}) - ORIGINAL: .+")
+IGNORED_MARKER_SUFFIXES = (".md", ".py")
 
 
 @dataclass(frozen=True)
@@ -45,6 +46,8 @@ def validate_diff(diff_text: str, *, allow_nova_sync: bool = False) -> list[Mark
 			continue
 		line_number += 1
 		line = raw_line[1:]
+		if path.endswith(IGNORED_MARKER_SUFFIXES):
+			continue
 		if "NOVA EDIT" in line and not path.startswith("modular_nova/") and not allow_nova_sync:
 			if "THIS IS A NOVA SECTOR UI FILE" not in line:
 				errors.append(MarkerError("new_nova_marker", path, line_number, "new Meridian work must use APHELION EDIT"))

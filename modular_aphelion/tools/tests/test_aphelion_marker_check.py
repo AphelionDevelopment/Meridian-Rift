@@ -68,6 +68,11 @@ class MarkerCheckTests(unittest.TestCase):
 		self.assertEqual(validate_diff(context), [])
 		self.assertEqual(validate_diff(diff("// NOVA EDIT ADDITION START - SYNC"), allow_nova_sync=True), [])
 
+	def test_ignores_marker_examples_in_documentation_and_python(self) -> None:
+		for path in ("docs/example.md", "tools/example.py"):
+			with self.subTest(path=path):
+				self.assertEqual(validate_diff(diff("// NOVA EDIT ADDITION START - EXAMPLE", path=path)), [])
+
 	def test_cli_ignores_base_tip_changes_after_branching(self) -> None:
 		with tempfile.TemporaryDirectory() as temporary_directory:
 			repository = Path(temporary_directory)
