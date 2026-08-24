@@ -983,7 +983,7 @@
 	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON
 
 // Donation reward for CandleJax
-/obj/item/clothing/mask/gas/cmpc_mask
+/obj/item/clothing/mask/gas/cmcp_mask
 	name = "\improper CMCP 'Oni' Faceplate"
 	desc = "A modular faceplate mount. Typically meant to be attached to field platforms."
 	icon = 'modular_nova/master_files/icons/donator/obj/clothing/masks.dmi'
