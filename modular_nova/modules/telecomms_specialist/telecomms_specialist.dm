@@ -41,6 +41,7 @@
 	)
 	rpg_title = "Diviner"
 	job_flags = STATION_JOB_FLAGS
+	tgui_icon = FA_ICON_TOWER_CELL
 
 /obj/effect/landmark/start/telecomms_specialist
 	name = "Telecomms Specialist"

@@ -39,6 +39,7 @@
 	)
 	rpg_title = "Plague Doctor"
 	job_flags = STATION_JOB_FLAGS
+	tgui_icon = FA_ICON_VIRUS
 
 
 /datum/outfit/job/virologist

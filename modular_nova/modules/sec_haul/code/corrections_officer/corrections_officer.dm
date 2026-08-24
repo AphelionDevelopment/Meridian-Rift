@@ -37,6 +37,7 @@
 	family_heirlooms = list(/obj/item/book/manual/wiki/security_space_law, /obj/item/clothing/head/security_cap, /obj/item/clothing/mask/whistle)
 
 	job_flags = STATION_JOB_FLAGS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_HANDS_BOUND
 
 // OUTFIT
 /datum/outfit/job/corrections_officer

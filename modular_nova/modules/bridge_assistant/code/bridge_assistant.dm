@@ -17,6 +17,7 @@
 		/obj/item/vending_refill/cigarette = 1,
 		/obj/item/vending_refill/coffee = 1,
 	)
+	tgui_icon = FA_ICON_MUG_HOT
 
 //outfit datum
 /datum/outfit/job/bridge_assistant

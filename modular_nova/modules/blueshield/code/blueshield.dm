@@ -41,6 +41,7 @@
 
 	nova_stars_only = TRUE
 	job_flags = STATION_JOB_FLAGS | JOB_CANNOT_OPEN_SLOTS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_SHIELD_DOG
 
 /datum/outfit/job/blueshield
 	name = "Blueshield"

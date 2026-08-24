@@ -40,6 +40,7 @@
 
 	nova_stars_only = TRUE
 	job_flags = STATION_JOB_FLAGS | JOB_BOLD_SELECT_TEXT | JOB_CANNOT_OPEN_SLOTS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_CLIPBOARD_CHECK
 
 /datum/outfit/job/nanotrasen_consultant
 	name = "Astraeus Federation Consultant"

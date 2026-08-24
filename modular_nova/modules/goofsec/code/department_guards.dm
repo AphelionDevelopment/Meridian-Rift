@@ -582,6 +582,7 @@
 		/obj/item/melee/baton/security/boomerang/loaded = 1
 	)
 	job_flags = STATION_JOB_FLAGS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_SHIELD_HEART
 
 /datum/outfit/job/science_guard
 	name = "Science Guard"
@@ -684,6 +685,7 @@
 	)
 
 	job_flags = STATION_JOB_FLAGS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_SHIELD_HEART
 
 /datum/outfit/job/orderly
 	name = "Orderly"
@@ -780,6 +782,7 @@
 		/obj/item/melee/baton/security/boomerang/loaded = 1
 	)
 	job_flags = STATION_JOB_FLAGS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_SHIELD_HEART
 
 /datum/outfit/job/engineering_guard
 	name = "Engineering Guard"
@@ -882,6 +885,7 @@
 		/obj/item/melee/baton/security/boomerang/loaded = 1
 	)
 	job_flags = STATION_JOB_FLAGS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_SHIELD_HEART
 
 /datum/outfit/job/customs_agent
 	name = "Customs Agent"
@@ -976,6 +980,7 @@
 		/obj/item/melee/baton/security/boomerang/loaded = 1
 	)
 	job_flags = STATION_JOB_FLAGS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_SHIELD_HEART
 
 /datum/outfit/job/bouncer
 	name = "Bouncer"
