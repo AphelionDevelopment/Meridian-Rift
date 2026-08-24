@@ -21,7 +21,11 @@ When authorities disagree, identify the question first. A tg bugfix should norma
 
 Do not invent a tg remote identity. Record the exact local revision and reviewed paths, then follow [upstream drift](upstream-drift.md).
 
-## Human-authored critical infrastructure
+## Protected human-authored work
+
+Agents support the project through code, infrastructure, tooling, validation, integration, and other technical work; creative authorship remains human-owned. Do not create, rewrite, or materially alter art, sprites, icons, sound, music, lore, flavor text, descriptions, user-facing names for items, characters, locations, organizations, jobs, abilities, or similar concepts, or comparable creative content. Prompt the user to supply final creative material. Mechanically integrate approved material without changing its creative substance.
+
+When art, sound, or another external asset is needed, an agent may search online for suitable candidates that are freely licensed for the intended use and can be attributed properly. Availability is not permission: record the source URL, author, license, and required attribution, present candidates for human selection, and do not import an asset without explicit user approval.
 
 Build, bootstrap, release, deployment, and CI entry points and their authoritative configuration are protected review surfaces. Before changing one, an agent must name the exact file and behavioral effect, explain why a separate Meridian-owned wrapper or supported extension point cannot satisfy the requirement, and receive explicit user confirmation. A broad approval to add tooling or complete a feature is not approval to alter this infrastructure.
 
