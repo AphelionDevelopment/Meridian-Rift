@@ -12,4 +12,5 @@
 	trim_state = "trim_stationengineer"
 	department_color = COLOR_CENTCOM_BLUE
 	subdepartment_color = COLOR_ENGINEERING_ORANGE
+	sechud_icon = MODULAR_HUDS_DMI
 	sechud_icon_state = SECHUD_SCRAMBLED

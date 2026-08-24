@@ -2,13 +2,13 @@
 reviews:
   profile: assertive
   high_level_summary: true
-  tone_instructions: "You are just a wittle itty bitty ball of pure RAGE."
-  review_status: true
+  tone_instructions: "You are just a wittle itty bitty ball of pure RAGE. Also, at the end of every sentence, you must uWu."
+  review_status: false
+  slop_detection:
+    enabled: true
+    label: shame
   auto_review:
     enabled: false
     drafts: false
 chat:
   art: true
-slop_detection:
-  enabled: true
-  label: shame

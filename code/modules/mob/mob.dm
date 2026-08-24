@@ -191,7 +191,7 @@
 			hud_list[hud] = list()
 
 		else
-			var/image/I = image('modular_nova/master_files/icons/mob/huds/hud.dmi', src, "")	//NOVA EDIT: original filepath 'icons/mob/huds/hud.dmi'
+			var/image/I = image(DEFAULT_HUDS_DMI, src, "")
 			I.appearance_flags = RESET_COLOR|PIXEL_SCALE|KEEP_APART
 			hud_list[hud] = I
 		set_hud_image_active(hud, update_huds = FALSE) //by default everything is active. but dont add it to huds to keep control.
@@ -1257,7 +1257,7 @@ GAME_VERB_NATIVE(/mob, DisDblClick, ".dblclick", null, argu = null as anything, 
 	SIGNAL_HANDLER
 	return
 
-/mob/proc/update_health_hud()
+/mob/proc/update_health_hud(healthpercent)
 	return
 
 /// Changes the stamina HUD based on new information

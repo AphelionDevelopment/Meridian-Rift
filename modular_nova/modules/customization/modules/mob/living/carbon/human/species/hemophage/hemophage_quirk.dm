@@ -59,7 +59,7 @@
 		ADD_TRAIT(human_holder, TRAIT_MASQUERADE_FOOD, QUIRK_TRAIT)
 
 	original_blood_type = human_holder.get_bloodtype()
-	human_holder.set_blood_type(get_blood_type(BLOOD_TYPE_UNIVERSAL))
+	human_holder.set_blood_type(get_blood_type(/datum/blood_type/universal))
 	human_holder.physiology.bleed_mod *= HEMOPHAGE_BLEED_MOD
 
 	for(var/organ_slot in corrupted_organs)
