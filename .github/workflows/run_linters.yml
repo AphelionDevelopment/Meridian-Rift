@@ -66,6 +66,18 @@ jobs:
         run: |
           bash tools/ci/check_grep.sh
           bash modular_nova/tools/nova_check_grep.sh # NOVA EDIT ADDITION - checking modular_nova code
+      # APHELION EDIT ADDITION START - AGENT_STANDARDS
+      - name: Validate agent guidance and downstream markers
+        if: steps.linter-setup.conclusion == 'success' && !cancelled()
+        env:
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          BASE_SHA="${GITHUB_BASE_SHA:-HEAD^}"
+          python -m unittest discover -s tools/ci/tests -p 'test_*.py' -v
+          python -m unittest discover -s modular_aphelion/tools/tests -p 'test_*.py' -v
+          python tools/ci/check_agent_docs.py
+          python modular_aphelion/tools/aphelion_marker_check.py --base "$BASE_SHA"
+      # APHELION EDIT ADDITION END
       - name: Ticked File Enforcement
         if: steps.linter-setup.conclusion == 'success' && !cancelled()
         run: |

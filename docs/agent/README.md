@@ -1,0 +1,15 @@
+# Agent guide index
+
+| Work | Read |
+| --- | --- |
+| DM style, correctness, security | [STYLE](../../.github/guides/STYLE.md), [AUTODOC](../../.github/guides/AUTODOC.md), [STANDARDS](../../.github/guides/STANDARDS.md) |
+| Reference lifecycle or `Destroy()` | [HARDDELETES](../../.github/guides/HARDDELETES.md) |
+| Planes, layers, filters, overlays | [VISUALS](../../.github/guides/VISUALS.md) |
+| Source conflicts and lineage | [Source authority](source-authority.md) |
+| Aphelion/Nova placement and markers | [Placement and markers](placement-and-markers.md), [Nova handbook](../../modular_nova/readme.md) |
+| Selecting and reporting tests | [Verification](verification.md) |
+| DreamMaker navigation | [Meridian-MCP](meridian-mcp.md) |
+| Lore and generated artifacts | [Generated content](generated-content.md) |
+| tg/Nova merge review | [Upstream drift](upstream-drift.md) |
+
+The root [AGENTS.md](../../AGENTS.md) is the concise mandatory entry point. These guides add local decisions without replacing inherited tgstation or Nova documentation.
