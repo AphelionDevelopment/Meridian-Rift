@@ -19,4 +19,6 @@ Read [.github/guides/HARDDELETES.md](.github/guides/HARDDELETES.md) before `Dest
 
 New Meridian-owned work belongs under `modular_aphelion` and uses canonical `APHELION EDIT` markers. Preserve inherited `modular_nova` paths and `NOVA EDIT` ownership; do not convert Nova content in bulk. Prefer existing helpers, components, subsystems, defines, and patterns. Treat player input as hostile, revalidate context after interactive input, scope references, pair registration with cleanup, and keep `Destroy()` free of side effects.
 
+Treat human-authored critical infrastructure as protected. This includes build, bootstrap, release, deployment, and CI entry points and their authoritative configuration. Before changing one, identify the exact file and effect, explain why a separate Meridian-owned wrapper or extension point is insufficient, and obtain explicit user confirmation. Approval to add agent tooling does not authorize changing this infrastructure. Prefer a separate wrapper that delegates to the authoritative human workflow.
+
 Use Meridian-MCP for DreamMaker parsing and navigation after `dm_parse_environment`; reparse after changes. Use PowerShell for Windows builds and tests. Direct `dm.exe` is a fast compiler gate. `BUILD.cmd` is the authoritative full build. Focused tests are iteration evidence, never a full-completion claim.
