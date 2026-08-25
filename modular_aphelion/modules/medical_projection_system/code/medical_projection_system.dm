@@ -25,7 +25,8 @@
 /// Duration of the transport-support field.
 #define LIFELINE_STABILIZE_DURATION (2 MINUTES)
 /// Delay between recovery-cocoon beacon pings.
-#define LIFELINE_RECOVERY_PING_INTERVAL (8 SECONDS)
+// Original: 8 SECONDS
+#define LIFELINE_RECOVERY_PING_INTERVAL (20 SECONDS)
 
 /// Current medium available to all connected first aid stations.
 GLOBAL_VAR_INIT(lifeline_fuel, 0)
@@ -445,6 +446,7 @@ GLOBAL_VAR(lifeline_request)
 /obj/structure/closet/body_bag/environmental/stasis/lifeline/Initialize(mapload)
 	. = ..()
 	set_light(2, 0.7, LIGHT_COLOR_CYAN)
+	AddComponent(/datum/component/gps, "Lifeline Recovery Signal")
 	COOLDOWN_START(src, recovery_ping_cooldown, 2 SECONDS)
 
 /obj/structure/closet/body_bag/environmental/stasis/lifeline/after_open(mob/living/user, force = FALSE)
@@ -461,7 +463,7 @@ GLOBAL_VAR(lifeline_request)
 		return
 	if(COOLDOWN_FINISHED(src, recovery_ping_cooldown))
 		playsound(src, 'sound/machines/ping.ogg', 45, TRUE, MEDIUM_RANGE_SOUND_EXTRARANGE)
-		visible_message(span_notice("[src]'s recovery beacon pulses."), vision_distance = 5)
+		visible_message(span_notice("[src]'s beacon pulses."), vision_distance = 5)
 		COOLDOWN_START(src, recovery_ping_cooldown, LIFELINE_RECOVERY_PING_INTERVAL)
 
 /** Refills a field sprayer from the station-wide reservoir. */
