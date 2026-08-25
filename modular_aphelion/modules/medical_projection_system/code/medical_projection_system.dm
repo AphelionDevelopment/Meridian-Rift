@@ -255,6 +255,12 @@ GLOBAL_VAR(lifeline_request)
 	righthand_file = 'icons/mob/inhands/items/devices_righthand.dmi'
 	w_class = WEIGHT_CLASS_SMALL
 	item_flags = NOBLUDGEON
+	custom_materials = list(
+		/datum/material/iron = SHEET_MATERIAL_AMOUNT * 2,
+		/datum/material/glass = SHEET_MATERIAL_AMOUNT,
+		/datum/material/silver = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/plasma = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 	/// Medium currently stored in the field sprayer.
 	var/fuel = 0
 	/// Maximum medium stored in the field sprayer.
