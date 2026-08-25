@@ -29,6 +29,7 @@
 	icon = 'modular_nova/master_files/icons/obj/clothing/suits.dmi'
 	worn_icon = 'modular_nova/master_files/icons/mob/clothing/suit.dmi'
 	icon_state = "armadyne_trench"
+	worn_icon_digi = null
 
 /obj/item/clothing/suit/armor/vest/armadyne
 	name = "armadyne jacket"
@@ -36,6 +37,7 @@
 	icon = 'modular_nova/master_files/icons/obj/clothing/suits.dmi'
 	worn_icon = 'modular_nova/master_files/icons/mob/clothing/suit.dmi'
 	icon_state = "armadyne_jacket"
+	worn_icon_digi = null
 	worn_icon_state = "armadyne_jacket"
 	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON
 
@@ -47,6 +49,7 @@
 	name = "armadyne armor vest"
 	desc = "A nanocarbon and high-grade polymer vest, with the worn-red Armadyne logo printed on the back. Used by Armadyne corporate when they need emergency armor."
 	icon_state = "armadyne_armor"
+	worn_icon_digi = null
 	worn_icon_state = "armadyne_armor"
 
 /obj/item/clothing/glasses/hud/security/sunglasses/armadyne
