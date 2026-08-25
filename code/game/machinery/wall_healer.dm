@@ -91,6 +91,11 @@
 	if(istype(held_item, /obj/item/stack/medical/wrap/gauze))
 		context[SCREENTIP_CONTEXT_LMB] = "Restock"
 		return CONTEXTUAL_SCREENTIP_SET
+	// APHELION EDIT ADDITION START - MEDICAL_PROJECTION_SYSTEM
+	if(istype(held_item, /obj/item/lifeline_projector))
+		context[SCREENTIP_CONTEXT_LMB] = "Refill"
+		return CONTEXTUAL_SCREENTIP_SET
+	// APHELION EDIT ADDITION END
 	if(held_item?.tool_behaviour == TOOL_SCREWDRIVER)
 		context[SCREENTIP_CONTEXT_LMB] = "[panel_open ? "Close" : "Open"] panel"
 		return CONTEXTUAL_SCREENTIP_SET

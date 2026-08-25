@@ -15,7 +15,7 @@ Adds a station-wide, manually maintained emergency-care network.
 
 ### TG Proc/File Changes
 
-- `code/game/machinery/wall_healer.dm`: Extends `/obj/machinery/wall_healer/item_interaction()` with field sprayer refills.
+- `code/game/machinery/wall_healer.dm`: Extends `/obj/machinery/wall_healer/add_context()` and `/obj/machinery/wall_healer/item_interaction()` with field sprayer refills.
 
 ### Modular Overrides
 
