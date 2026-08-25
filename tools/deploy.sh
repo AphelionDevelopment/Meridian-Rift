@@ -34,11 +34,6 @@ find modular_nova/ -name \*.dmi -exec cp --parents {} $1 \;
 find modular_nova/modules/GAGS/json_configs -name \*.json -exec cp --parents {} $1 \;
 find modular_nova/modules/GAGS/nsfw/json_configs -name \*.json -exec cp --parents {} $1 \;
 # NOVA EDIT ADDITION END
-# APHELION EDIT ADDITION START
-mkdir -p $1/modular_aphelion
-
-find modular_aphelion/ \( -name \*.dmi -o -name \*.png -o -name \*.toml -o -name \*.ogg -o -name \*.mp3 -o -name \*.json \) -exec cp --parents {} $1 \;
-# APHELION EDIT ADDITION END
 
 cp tgstation.dmb tgstation.rsc $1/
 cp -r _maps/* $1/_maps/
