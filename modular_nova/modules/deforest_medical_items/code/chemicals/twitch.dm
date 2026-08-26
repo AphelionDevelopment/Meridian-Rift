@@ -104,7 +104,7 @@
 				span_danger("[our_guy] suddenly slows from [our_guy.p_their()] inhuman speeds!"),
 				span_danger("You suddenly slow back to normal speed!")
 			)
-		our_guy.adjust_stamina_loss(constant_dose_time)
+		our_guy.adjust_sprint_stamina_loss(constant_dose_time)
 
 	else // Much longer than that however, and you're not gonna have a good day
 		if(!(our_guy.mob_biotypes & MOB_ROBOTIC))
@@ -119,7 +119,7 @@
 				span_danger("[our_guy] suddenly snaps back from [our_guy.p_their()] inhuman speeds!"),
 				span_danger("You suddenly snap back to normal speeds. You feel like you've just been run over by a power loader.")
 			)
-		our_guy.adjust_stamina_loss(constant_dose_time)
+		our_guy.adjust_sprint_stamina_loss(constant_dose_time)
 		if(!HAS_TRAIT(our_guy, TRAIT_TWITCH_ADAPTED))
 			our_guy.adjust_organ_loss(ORGAN_SLOT_HEART, 0.3 * constant_dose_time, required_organ_flag = affected_organ_flags) // Basically you might die
 

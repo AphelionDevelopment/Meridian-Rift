@@ -24,7 +24,7 @@
 	SIGNAL_HANDLER
 	if(key != "taunt" || !intentional)
 		return
-	if((source.maxHealth - (source.get_stamina_loss() + TAUNT_STAMINA_COST)) <= source.crit_threshold)
+	if(source.is_sprint_stamina_exhausted())
 		source.balloon_alert(source, "too tired!")
 		return COMPONENT_CANT_EMOTE
 
@@ -33,7 +33,7 @@
 	if(HAS_TRAIT_FROM(source, TRAIT_UNHITTABLE_BY_PROJECTILES, SKILLCHIP_TRAIT))
 		return
 	ADD_TRAIT(source, TRAIT_UNHITTABLE_BY_PROJECTILES, SKILLCHIP_TRAIT)
-	source.adjust_stamina_loss(TAUNT_STAMINA_COST)
+	source.adjust_sprint_stamina_loss(TAUNT_STAMINA_COST)
 	addtimer(TRAIT_CALLBACK_REMOVE(source, TRAIT_UNHITTABLE_BY_PROJECTILES, SKILLCHIP_TRAIT), TAUNT_EMOTE_DURATION * 1.5)
 
 #undef TAUNT_STAMINA_COST

@@ -586,8 +586,8 @@
 		if(40 to INFINITY)
 			combined_msg += span_danger("You feel like you're about to pass out!")
 
-	if(get_stamina_loss())
-		if(get_stamina_loss() > 30)
+	if(get_sprint_stamina_loss())
+		if(get_sprint_stamina_loss() > 30)
 			combined_msg += span_info("You're completely exhausted.")
 		else
 			combined_msg += span_info("You feel fatigued.")

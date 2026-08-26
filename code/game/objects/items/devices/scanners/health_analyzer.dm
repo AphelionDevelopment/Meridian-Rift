@@ -202,9 +202,9 @@
 			render_list += "<span class='alert ml-1'>Pain level: [felt_pain]%.</span><br>"
 		else
 			render_list += "<span class='alert ml-1'>Subject appears to be suffering from pain.</span><br>"
-	else if(target.get_stamina_loss())
+	else if(target.get_sprint_stamina_loss())
 		if(scanpower >= SCANPOWER_ADVANCED)
-			render_list += "<span class='alert ml-1'>Fatigue level: [target.get_stamina_loss()]%.</span><br>"
+			render_list += "<span class='alert ml-1'>Fatigue level: [target.get_sprint_stamina_loss()]%.</span><br>"
 		else
 			render_list += "<span class='alert ml-1'>Subject appears to be suffering from fatigue.</span><br>"
 

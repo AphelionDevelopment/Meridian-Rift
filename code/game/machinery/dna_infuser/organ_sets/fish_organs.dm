@@ -133,7 +133,7 @@
 	if(!bonus_active || !HAS_TRAIT(owner, TRAIT_IS_WET))
 		return
 	owner.adjust_bodytemperature(-2 * seconds_between_ticks, min_temp = owner.get_body_temp_normal())
-	owner.adjust_stamina_loss(-1.5 * seconds_between_ticks)
+	owner.adjust_sprint_stamina_loss(-1.5 * seconds_between_ticks)
 
 /datum/status_effect/organ_set_bonus/fish/proc/update_wetness(datum/source)
 	SIGNAL_HANDLER

@@ -523,7 +523,7 @@
 	REMOVE_TRAIT(affected_mob, TRAIT_DOUBLE_TAP, type)
 	if(current_cycle > 10)
 		to_chat(affected_mob, span_warning("You feel kinda tired as your sugar rush wears off..."))
-		affected_mob.adjust_stamina_loss(min(80, current_cycle * 3), required_biotype = affected_biotype)
+		affected_mob.adjust_sprint_stamina_loss(min(80, current_cycle * 3))
 		affected_mob.adjust_drowsiness((current_cycle-1) * 2 SECONDS)
 
 /datum/reagent/consumable/rootbeer/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)

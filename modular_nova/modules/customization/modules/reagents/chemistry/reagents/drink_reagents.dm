@@ -53,8 +53,7 @@
 
 /datum/reagent/consumable/catnip_tea/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)
 	. = ..()
-	if(affected_mob.adjust_stamina_loss(min(50 - affected_mob.get_stamina_loss(), 3)))
-		. = UPDATE_MOB_HEALTH
+	affected_mob.adjust_sprint_stamina_loss(min(50 - affected_mob.get_sprint_stamina_loss(), 3))
 	if(isfeline(affected_mob))
 		if(prob(20))
 			affected_mob.emote("nya")

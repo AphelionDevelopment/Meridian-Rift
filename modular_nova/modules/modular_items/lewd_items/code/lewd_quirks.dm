@@ -65,7 +65,7 @@
 		owner.adjust_hallucinations(60 SECONDS)
 		lust_message = "You begin to fantasize of what you could do to someone..."
 	if(stress >= 240)
-		need_mob_update += human_owner.adjust_stamina_loss(30)
+		human_owner.adjust_sprint_stamina_loss(30)
 		lust_message = "You body feels so very hot, almost unwilling to cooperate..."
 	if(stress >= 300)
 		need_mob_update += human_owner.adjust_oxy_loss(40)

@@ -714,7 +714,7 @@
 			healed += owner.adjust_fire_loss(recovery, updating_health = FALSE, required_bodytype = BODYTYPE_ORGANIC)
 			healed += owner.adjust_tox_loss(recovery, updating_health = FALSE, required_biotype = MOB_ORGANIC)
 			healed += owner.adjust_brute_loss(recovery, updating_health = FALSE, required_bodytype = BODYTYPE_ORGANIC)
-		healed += owner.adjust_stamina_loss(stam_recovery, updating_stamina = FALSE)
+		owner.adjust_sprint_stamina_loss(stam_recovery)
 		if(healed)
 			owner.updatehealth()
 	else if(istype(shower_reagent, /datum/reagent/blood))
