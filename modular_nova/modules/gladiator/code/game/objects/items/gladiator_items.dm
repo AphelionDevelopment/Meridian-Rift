@@ -158,7 +158,7 @@
 	if(user.IsImmobilized()) // no free dodgerolls
 		return NONE
 	var/turf/where_to = get_turf(interacting_with)
-	user.apply_damage(damage = roll_stamcost, damagetype = STAMINA)
+	user.adjust_sprint_stamina_loss(roll_stamcost) // NOVA EDIT CHANGE - ORIGINAL: user.apply_damage(damage = roll_stamcost, damagetype = STAMINA)
 	user.Immobilize(0.1 SECONDS) // you dont get to adjust your roll
 	user.throw_at(where_to, range = roll_range, speed = 1, force = MOVE_FORCE_NORMAL)
 	user.apply_status_effect(/datum/status_effect/dodgeroll_iframes)

@@ -95,7 +95,7 @@
 	//Finally, we get our athletics skill as a reduction to the stamina cost. This is a direct reduction.
 	var/athletics_skill =  (floater.mind?.get_skill_level(/datum/skill/athletics) || 1) - 1
 
-	floater.apply_damage(clamp((effective_stamina_entry_cost - athletics_skill) * gravity_modifier, 1, 100), STAMINA)
+	floater.adjust_sprint_stamina_loss(clamp((effective_stamina_entry_cost - athletics_skill) * gravity_modifier, 1, 100)) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: floater.apply_damage(clamp((effective_stamina_entry_cost - athletics_skill) * gravity_modifier, 1, 100), STAMINA)
 	floater.mind?.adjust_experience(/datum/skill/athletics, (stamina_entry_cost * gravity_modifier) * 0.1)
 	floater.apply_status_effect(/datum/status_effect/exercised, 15 SECONDS)
 	floater.apply_status_effect(/datum/status_effect/swimming, ticking_stamina_cost, ticking_oxy_damage) // Apply the status anyway for when they stop riding
@@ -150,7 +150,7 @@
 
 	if (!HAS_TRAIT(owner, TRAIT_SWIMMER))
 		var/athletics_skill =  (owner.mind?.get_skill_level(/datum/skill/athletics) || 1) - 1
-		owner.apply_damage(clamp((effective_stamina_per_interval - (athletics_skill / 2)) * gravity_modifier, 1, 100), STAMINA)
+		owner.adjust_sprint_stamina_loss(clamp((effective_stamina_per_interval - (athletics_skill / 2)) * gravity_modifier, 1, 100)) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: owner.apply_damage(clamp((effective_stamina_per_interval - (athletics_skill / 2)) * gravity_modifier, 1, 100), STAMINA)
 
 	// You might not be swimming but you can breathe
 	if (HAS_TRAIT(owner, TRAIT_NODROWN) || HAS_TRAIT(owner, TRAIT_NOBREATH) || (owner.mob_size >= MOB_SIZE_HUMAN && owner.body_position == STANDING_UP))

@@ -40,7 +40,19 @@
 /mob/living/proc/adjust_sprint_stamina_loss(amount)
 	SEND_SIGNAL(src, COMSIG_LIVING_ADJUST_SPRINT_STAMINA, amount)
 
-/// Returns whether sprint stamina is exhausted.
+// APHELION EDIT ADDITION START - SPRINT-STAMINA
+/**
+ * Returns the current sprint stamina loss.
+ *
+ * Mobs without a sprint component return zero.
+ */
+/mob/living/proc/get_sprint_stamina_loss()
+	var/list/stamina_loss = list(0)
+	SEND_SIGNAL(src, COMSIG_LIVING_GET_SPRINT_STAMINA_LOSS, stamina_loss)
+	return stamina_loss[1]
+// APHELION EDIT ADDITION END
+
+/** Returns whether sprint stamina is exhausted. */
 /mob/living/proc/is_sprint_stamina_exhausted()
 	return !!(SEND_SIGNAL(src, COMSIG_LIVING_IS_SPRINT_STAMINA_EXHAUSTED) & COMPONENT_SPRINT_EXHAUSTED)
 

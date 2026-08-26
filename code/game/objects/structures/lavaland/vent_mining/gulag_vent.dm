@@ -49,5 +49,5 @@
 	gulag_boulder.platform_lifespan = PLATFORM_LIFE_GULAG
 
 	living_user.visible_message(span_notice("[living_user] hauls a boulder out of [src]."))
-	living_user.apply_damage(stamina_damage_to_inflict, STAMINA)
+	living_user.adjust_sprint_stamina_loss(stamina_damage_to_inflict) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: living_user.apply_damage(stamina_damage_to_inflict, STAMINA)
 	playsound(src, 'sound/items/weapons/genhit.ogg', vol = 50, vary = TRUE)

@@ -26,6 +26,10 @@
 
 /// Sent when a living mob spends dedicated sprint stamina. Arguments: (mob/living/source, amount)
 #define COMSIG_LIVING_ADJUST_SPRINT_STAMINA "living_adjust_sprint_stamina"
+// APHELION EDIT ADDITION START - SPRINT-STAMINA
+/// Sent when a living mob queries its dedicated sprint stamina loss. Arguments: (mob/living/source, list/stamina_loss)
+#define COMSIG_LIVING_GET_SPRINT_STAMINA_LOSS "living_get_sprint_stamina_loss"
+// APHELION EDIT ADDITION END
 /// Sent when a living mob checks whether its dedicated sprint stamina is exhausted. Arguments: (mob/living/source)
 #define COMSIG_LIVING_IS_SPRINT_STAMINA_EXHAUSTED "living_is_sprint_stamina_exhausted"
 	/// The sprint stamina pool is exhausted.

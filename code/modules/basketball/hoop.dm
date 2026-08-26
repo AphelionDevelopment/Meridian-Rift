@@ -110,7 +110,7 @@
 	score(tool, user, 2)
 
 	if(istype(tool, /obj/item/toy/basketball))
-		user.adjust_stamina_loss(STAMINA_COST_DUNKING)
+		user.adjust_sprint_stamina_loss(STAMINA_COST_DUNKING) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: user.adjust_stamina_loss(STAMINA_COST_DUNKING)
 	return ITEM_INTERACT_SUCCESS
 
 /obj/structure/hoop/attack_hand(mob/living/baller, list/modifiers)
@@ -129,7 +129,7 @@
 	loser.Paralyze(100)
 	visible_message(span_danger("[baller] dunks [loser] into \the [src]!"))
 	playsound(src, 'sound/machines/scanner/scanbuzz.ogg', 100, FALSE)
-	baller.adjust_stamina_loss(STAMINA_COST_DUNKING_MOB)
+	baller.adjust_sprint_stamina_loss(STAMINA_COST_DUNKING_MOB) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: baller.adjust_stamina_loss(STAMINA_COST_DUNKING_MOB)
 	baller.stop_pulling()
 
 /obj/structure/hoop/click_ctrl(mob/user)

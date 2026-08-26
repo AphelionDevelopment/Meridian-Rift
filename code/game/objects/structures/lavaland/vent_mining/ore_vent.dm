@@ -140,7 +140,7 @@
 			user.balloon_alert(user, "stay still!")
 			return
 		user.balloon_alert(user, i > 2 ? "got one!" : "digging around...")
-		user.apply_damage(20, STAMINA)
+		user.adjust_sprint_stamina_loss(20) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: user.apply_damage(20, STAMINA)
 		playsound(src, 'sound/items/weapons/genhit.ogg', 50, TRUE)
 		// NOVA EDIT ADDITION END
 	produce_boulder(TRUE)

@@ -139,8 +139,8 @@
 		return
 
 	var/mob/living/skater = buckled_mobs[1]
-	skater.adjust_stamina_loss(instability*0.3)
-	if(skater.get_stamina_loss() >= 100)
+	skater.adjust_sprint_stamina_loss(instability*0.3) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: skater.adjust_stamina_loss(instability*0.3)
+	if(skater.is_sprint_stamina_exhausted()) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: if(skater.get_stamina_loss() >= 100)
 		obj_flags = CAN_BE_HIT
 		playsound(src, 'sound/effects/bang.ogg', 20, TRUE)
 		unbuckle_mob(skater)
@@ -163,7 +163,7 @@
 			playsound(location, 'sound/items/trayhit/trayhit2.ogg', 40)
 			victim.apply_damage(damage = 25, damagetype = BRUTE, def_zone = victim.get_random_valid_zone(even_weights = TRUE), wound_bonus = 20)
 			victim.Paralyze(1.5 SECONDS)
-			skater.adjust_stamina_loss(instability)
+			skater.adjust_sprint_stamina_loss(instability) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: skater.adjust_stamina_loss(instability)
 			victim.visible_message(span_danger("[victim] straight up gets grinded into the ground by [skater]'s [src]! Radical!"))
 	addtimer(CALLBACK(src, PROC_REF(grind)), 0.1 SECONDS)
 

@@ -1,8 +1,8 @@
 /**
  * Stamina, for anything with a pain controller, is temporary pain.
  *
- * Every stamina source (batons, disablers, exhaustion, tackles, sprinting) spends itself on the pain
- * pool instead of a bar of its own, so the existing stamina call sites keep working through these
+ * Painful stamina sources, such as batons, disablers, and tackles, spend themselves on the pain pool
+ * instead of a bar of their own, so the existing combat stamina call sites keep working through these
  * three procs. The pool carries its own decay curve and its own shock, so neither the stamina
  * regeneration timer nor stamcrit survive the conversion: both hang off received_stamina_damage(),
  * which these overrides never reach and which bails on a controller anyway.

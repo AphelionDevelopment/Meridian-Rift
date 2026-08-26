@@ -727,7 +727,7 @@
 		if(!grinded)
 			to_chat(user, span_warning("There is nothing to grind!"))
 			return ITEM_INTERACT_BLOCKING
-		if(user.get_stamina_loss() > 50)
+		if(user.get_sprint_stamina_loss() > 50) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: if(user.get_stamina_loss() > 50)
 			to_chat(user, span_warning("You are too tired to work!"))
 			return ITEM_INTERACT_BLOCKING
 		var/list/choose_options = list(
@@ -740,7 +740,7 @@
 		to_chat(user, span_notice("You start grinding..."))
 		if(!do_after(user, 2.5 SECONDS, target = src))
 			return ITEM_INTERACT_BLOCKING
-		user.adjust_stamina_loss(40)
+		user.adjust_sprint_stamina_loss(40) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: user.adjust_stamina_loss(40)
 		switch(picked_option)
 			if("Juice")
 				return juice_item(grinded, user) ? ITEM_INTERACT_BLOCKING : ITEM_INTERACT_SUCCESS

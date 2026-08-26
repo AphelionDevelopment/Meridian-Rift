@@ -59,13 +59,14 @@
 	RegisterSignal(parent, COMSIG_MOB_CLIENT_PRE_MOVE, PROC_REF(on_mob_move))
 	RegisterSignal(parent, COMSIG_MOVE_INTENT_TOGGLED, PROC_REF(on_intent_toggled))
 	RegisterSignal(parent, COMSIG_LIVING_ADJUST_SPRINT_STAMINA, PROC_REF(on_adjust_sprint_stamina))
+	RegisterSignal(parent, COMSIG_LIVING_GET_SPRINT_STAMINA_LOSS, PROC_REF(on_get_sprint_stamina_loss)) // APHELION EDIT ADDITION - SPRINT-STAMINA
 	RegisterSignal(parent, COMSIG_LIVING_IS_SPRINT_STAMINA_EXHAUSTED, PROC_REF(on_is_sprint_stamina_exhausted))
 	update_stamina_hud()
 
 /datum/component/sprint/UnregisterFromParent()
 	STOP_PROCESSING(SSfastprocess, src)
 	reset_dust()
-	UnregisterSignal(parent, list(COMSIG_MOB_CLIENT_PRE_MOVE, COMSIG_MOVE_INTENT_TOGGLED, COMSIG_LIVING_ADJUST_SPRINT_STAMINA, COMSIG_LIVING_IS_SPRINT_STAMINA_EXHAUSTED))
+	UnregisterSignal(parent, list(COMSIG_MOB_CLIENT_PRE_MOVE, COMSIG_MOVE_INTENT_TOGGLED, COMSIG_LIVING_ADJUST_SPRINT_STAMINA, COMSIG_LIVING_GET_SPRINT_STAMINA_LOSS, COMSIG_LIVING_IS_SPRINT_STAMINA_EXHAUSTED)) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: UnregisterSignal(parent, list(COMSIG_MOB_CLIENT_PRE_MOVE, COMSIG_MOVE_INTENT_TOGGLED, COMSIG_LIVING_ADJUST_SPRINT_STAMINA, COMSIG_LIVING_IS_SPRINT_STAMINA_EXHAUSTED))
 
 /// Drops the dust trail when the mob leaves a run, so the next one starts on a fresh cloud. The pace itself comes from the mob's move intent modifier.
 /datum/component/sprint/proc/on_intent_toggled(mob/living/source)
@@ -93,7 +94,15 @@
 /// Spends sprint stamina requested by another system.
 /datum/component/sprint/proc/on_adjust_sprint_stamina(mob/living/source, amount)
 	SIGNAL_HANDLER
+	if(amount > 0)
+		last_spend = world.time
+		START_PROCESSING(SSfastprocess, src)
 	adjust_stamina_loss(amount)
+
+/// Stores the current sprint stamina loss in the query list.
+/datum/component/sprint/proc/on_get_sprint_stamina_loss(mob/living/source, list/stamina_loss)
+	SIGNAL_HANDLER
+	stamina_loss[1] = src.stamina_loss
 
 /// Reports whether the sprint stamina pool is exhausted.
 /datum/component/sprint/proc/on_is_sprint_stamina_exhausted(mob/living/source)

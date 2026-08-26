@@ -243,5 +243,5 @@
 	if(!.)
 		return
 	visible_message(span_danger("[user] shoots the blowgun!"))
-	user.adjust_stamina_loss(20, updating_stamina = FALSE)
+	user.adjust_sprint_stamina_loss(20) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: user.adjust_stamina_loss(20, updating_stamina = FALSE)
 	user.adjust_oxy_loss(20)

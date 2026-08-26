@@ -180,7 +180,7 @@
 		if(!user.Adjacent(src))
 			return
 		durability--
-		user.apply_damage(4 * skill_modifier, STAMINA)
+		user.adjust_sprint_stamina_loss(4 * skill_modifier) // APHELION EDIT CHANGE - SPRINT-STAMINA - ORIGINAL: user.apply_damage(4 * skill_modifier, STAMINA)
 	if(durability <= 0)
 		convert_to_ore()
 		to_chat(user, span_notice("You finish working on \the [src], and it crumbles into ore."))
