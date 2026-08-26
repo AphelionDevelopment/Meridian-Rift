@@ -246,6 +246,7 @@ const CrewTableEntry = (props: CrewTableEntryProps) => {
     brutedam,
     health,
     area,
+    ref,
     is_robot, // NOVA EDIT ADDITION
     can_track, // NOVA EDIT ADDITION
   } = sensor_data;
@@ -304,7 +305,7 @@ const CrewTableEntry = (props: CrewTableEntryProps) => {
             disabled={!can_track} // NOVA EDIT ADDITION
             onClick={() =>
               act('select_person', {
-                name: name,
+                ref: ref,
               })
             }
           >

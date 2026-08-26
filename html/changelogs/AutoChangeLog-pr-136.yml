@@ -1,6 +1,0 @@
-author: "vinylspiders"
-delete-after: True
-changes:
-  - bugfix: "Insectoids get their appropriate blood type, which also fixes a medical record bluescreen"
-  - bugfix: "Bandana toggling works properly with snouts"
-  - bugfix: "Fixed occasional unresponsiveness in the verb panel"
