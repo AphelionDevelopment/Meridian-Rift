@@ -10,6 +10,7 @@
 | Aphelion/Nova placement and markers | [Placement and markers](placement-and-markers.md), [Nova handbook](../../modular_nova/readme.md) |
 | Selecting and reporting tests | [Verification](verification.md) |
 | DreamMaker navigation | [Meridian-MCP](meridian-mcp.md) |
+| Dogmos, ByondAPI, Lighting, Cameras, or native subsystem work | [Native subsystem offload](native-subsystem-offload.md), [Verification](verification.md) |
 | Lore and generated artifacts | [Generated content](generated-content.md) |
 | tg/Nova merge review | [Upstream drift](upstream-drift.md) |
 

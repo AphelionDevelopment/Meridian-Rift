@@ -9,6 +9,7 @@ Meridian-Rift is a BYOND/DreamMaker SS13 codebase downstream of Nova Sector and 
 - Source conflicts: [docs/agent/source-authority.md](docs/agent/source-authority.md).
 - Verification: [docs/agent/verification.md](docs/agent/verification.md).
 - Meridian-MCP: [docs/agent/meridian-mcp.md](docs/agent/meridian-mcp.md).
+- Native subsystem offload: [docs/agent/native-subsystem-offload.md](docs/agent/native-subsystem-offload.md).
 - Generated content: [docs/agent/generated-content.md](docs/agent/generated-content.md).
 - Upstream review: [docs/agent/upstream-drift.md](docs/agent/upstream-drift.md).
 - Full routing index: [docs/agent/README.md](docs/agent/README.md).
