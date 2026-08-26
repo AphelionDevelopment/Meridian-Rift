@@ -16,6 +16,7 @@
 	obj_flags_nova = ERP_ITEM
 	//When taking that thing in mouth
 	flags_cover = MASKCOVERSMOUTH
+	supports_variations_flags = CLOTHING_SNOUTED_VARIATION
 	var/modifies_speech = TRUE
 	/// If the color of the toy has been changed before
 	var/color_changed = FALSE

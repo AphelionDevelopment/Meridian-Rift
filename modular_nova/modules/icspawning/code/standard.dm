@@ -7,6 +7,7 @@
 	e_cost = LASER_SHOTS(1000, STANDARD_CELL_CHARGE)
 
 /obj/item/clothing/suit/armor/vest/debug
+	worn_icon_digi = null
 	name = "Bluespace Tech vest"
 	desc = "A sleek piece of armour designed for Bluespace agents."
 	armor_type = /datum/armor/vest_debug

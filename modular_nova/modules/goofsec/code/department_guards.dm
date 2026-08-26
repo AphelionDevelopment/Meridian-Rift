@@ -75,79 +75,109 @@
 	greyscale_colors = "#39393F#57852A#57852A"
 
 /obj/item/clothing/under/rank/security/nova/skirt/cargo
+	worn_icon_digi = null
 	name = "customs agent skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/skirt/cargo"
 	greyscale_colors = "#39393F#ba832f#ba832f#39393F"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/skirt/engineering
+	worn_icon_digi = null
 	name = "engineering guard skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/skirt/engineering"
 	greyscale_colors = "#ee7900#a78962#FFE12F#FFE12F"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/skirt/science
+	worn_icon_digi = null
 	name = "science guard skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/skirt/science"
 	greyscale_colors = "#daeaf0#66748c#830085#830085"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/skirt/medical
+	worn_icon_digi = null
 	name = "orderly skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/skirt/medical"
 	greyscale_colors = "#CBCDD1#39393F#16313D#16313D"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/skirt/service
+	worn_icon_digi = null
 	name = "bouncer skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/skirt/service"
 	greyscale_colors = "#39393F#57852A#57852A#EBEBEB"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/plainskirt/cargo
+	worn_icon_digi = null
 	name = "customs agent plain skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/plainskirt/cargo"
 	greyscale_colors = "#39393F#ba832f#ba832f#39393F"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/plainskirt/engineering
+	worn_icon_digi = null
 	name = "engineering guard plain skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/plainskirt/engineering"
 	greyscale_colors = "#ee7900#a78962#FFE12F#FFE12F"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/plainskirt/science
+	worn_icon_digi = null
 	name = "science guard plain skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/plainskirt/science"
 	greyscale_colors = "#daeaf0#66748c#830085#830085"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/plainskirt/medical
+	worn_icon_digi = null
 	name = "orderly plain skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/plainskirt/medical"
 	greyscale_colors = "#CBCDD1#39393F#16313D#16313D"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/plainskirt/service
+	worn_icon_digi = null
 	name = "bouncer plain skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/plainskirt/service"
 	greyscale_colors = "#39393F#57852A#57852A#EBEBEB"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/dress/cargo
+	worn_icon_digi = null
 	name = "customs agent dress"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/dress/cargo"
 	greyscale_colors = "#ba832f#39393F#ba832f"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/dress/engineering
+	worn_icon_digi = null
 	name = "engineering guard dress"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/dress/engineering"
 	greyscale_colors = "#ee7900#a78962#FFE12F"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/dress/science
+	worn_icon_digi = null
 	name = "science guard dress"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/dress/science"
 	greyscale_colors = "#daeaf0#66748c#830085"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/dress/medical
+	worn_icon_digi = null
 	name = "orderly dress"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/dress/medical"
 	greyscale_colors = "#CBCDD1#39393F#16313D"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/dress/service
+	worn_icon_digi = null
 	name = "bouncer dress"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/dress/service"
 	greyscale_colors = "#57852A#39393F#EBEBEB"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/shorts/cargo
 	name = "customs agent shorts"
@@ -216,6 +246,7 @@
 
 /obj/item/clothing/suit/armor/vest/blueshirt/nova/guard //Badge-less version of the blueshirt vest
 	icon_state = "guard_armor"
+	worn_icon_digi = null
 	worn_icon_state = "guard_armor"
 
 /obj/item/clothing/suit/armor/vest/blueshirt/nova/orderly
@@ -236,6 +267,7 @@
 	name = "armored customs agent coat"
 	desc = "An armored coat, with intricately woven patterns and details. This should help keep you safe from unruly customers."
 	icon_state = "customs_coat"
+	worn_icon_digi = null
 	worn_icon_state = "customs_coat"
 
 /obj/item/clothing/suit/hooded/wintercoat/security/depgag/cargo
@@ -291,26 +323,31 @@
 /obj/item/clothing/suit/armor/vest/depgag_hazard/cargo
 	name = "customs agent hazard vest"
 	icon_state = "/obj/item/clothing/suit/armor/vest/depgag_hazard/cargo"
+	worn_icon_digi = null
 	greyscale_colors = "#ba832f#EBEBEB"
 
 /obj/item/clothing/suit/armor/vest/depgag_hazard/engineering
 	name = "engineering guard hazard vest"
 	icon_state = "/obj/item/clothing/suit/armor/vest/depgag_hazard/engineering"
+	worn_icon_digi = null
 	greyscale_colors = "#ee7900#EBEBEB"
 
 /obj/item/clothing/suit/armor/vest/depgag_hazard/science
 	name = "science guard hazard vest"
 	icon_state = "/obj/item/clothing/suit/armor/vest/depgag_hazard/science"
+	worn_icon_digi = null
 	greyscale_colors = "#830085#EBEBEB"
 
 /obj/item/clothing/suit/armor/vest/depgag_hazard/medical
 	name = "orderly hazard vest"
 	icon_state = "/obj/item/clothing/suit/armor/vest/depgag_hazard/medical"
+	worn_icon_digi = null
 	greyscale_colors = "#16313D#EBEBEB"
 
 /obj/item/clothing/suit/armor/vest/depgag_hazard/service
 	name = "bouncer hazard vest"
 	icon_state = "/obj/item/clothing/suit/armor/vest/depgag_hazard/service"
+	worn_icon_digi = null
 	greyscale_colors = "#57852A#EBEBEB"
 
 /*
@@ -572,6 +609,7 @@
 	trim_state = "trim_calhoun"
 	department_color = COLOR_SCIENCE_PINK
 	subdepartment_color = COLOR_SCIENCE_PINK
+	sechud_icon = MODULAR_HUDS_DMI
 	sechud_icon_state = SECHUD_SCIENCE_GUARD
 	extra_access = list(
 		ACCESS_AUX_BASE,
@@ -673,6 +711,7 @@
 	trim_state = "trim_orderly"
 	department_color = COLOR_MEDICAL_BLUE
 	subdepartment_color = COLOR_MEDICAL_BLUE
+	sechud_icon = MODULAR_HUDS_DMI
 	sechud_icon_state = SECHUD_ORDERLY
 	extra_access = list(
 		ACCESS_BRIG_ENTRANCE,
@@ -767,6 +806,7 @@
 	trim_state = "trim_engiguard"
 	department_color = COLOR_ENGINEERING_ORANGE
 	subdepartment_color = COLOR_ENGINEERING_ORANGE
+	sechud_icon = MODULAR_HUDS_DMI
 	sechud_icon_state = SECHUD_ENGINEERING_GUARD
 	extra_access = list(
 		ACCESS_ATMOSPHERICS,
@@ -867,6 +907,7 @@
 	trim_state = "trim_customs"
 	department_color = COLOR_CARGO_BROWN
 	subdepartment_color = COLOR_CARGO_BROWN
+	sechud_icon = MODULAR_HUDS_DMI
 	sechud_icon_state = SECHUD_CUSTOMS_AGENT
 	extra_access = list(
 		ACCESS_BRIG_ENTRANCE,
@@ -959,6 +1000,7 @@
 	trim_state = "trim_bouncer"
 	department_color = COLOR_SERVICE_LIME
 	subdepartment_color = COLOR_SERVICE_LIME // Personally speaking I'd have one of these with sec colors but I'm being authentic
+	sechud_icon = MODULAR_HUDS_DMI
 	sechud_icon_state = SECHUD_BOUNCER
 	extra_access = list(
 		ACCESS_BAR,
