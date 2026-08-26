@@ -364,8 +364,8 @@
 		return
 	var/mob/living/rider = owner
 	var/turf/landing_turf = get_step(vehicle.loc, vehicle.dir)
-	rider.adjust_stamina_loss(vehicle.instability* 0.75)
-	if (rider.get_stamina_loss() >= 100)
+	rider.adjust_sprint_stamina_loss(vehicle.instability * 0.75)
+	if (rider.is_sprint_stamina_exhausted())
 		vehicle.obj_flags &= ~CAN_BE_HIT
 		playsound(src, 'sound/effects/bang.ogg', 20, TRUE)
 		vehicle.unbuckle_mob(rider)
@@ -406,8 +406,8 @@
 	var/obj/vehicle/ridden/scooter/skateboard/board = vehicle_target
 	var/mob/living/rider = owner
 
-	rider.adjust_stamina_loss(board.instability)
-	if (rider.get_stamina_loss() >= 100)
+	rider.adjust_sprint_stamina_loss(board.instability)
+	if (rider.is_sprint_stamina_exhausted())
 		playsound(src, 'sound/effects/bang.ogg', 20, vary = TRUE)
 		board.unbuckle_mob(rider)
 		rider.Paralyze(50)

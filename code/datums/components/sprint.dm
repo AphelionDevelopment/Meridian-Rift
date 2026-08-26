@@ -58,12 +58,14 @@
 /datum/component/sprint/RegisterWithParent()
 	RegisterSignal(parent, COMSIG_MOB_CLIENT_PRE_MOVE, PROC_REF(on_mob_move))
 	RegisterSignal(parent, COMSIG_MOVE_INTENT_TOGGLED, PROC_REF(on_intent_toggled))
+	RegisterSignal(parent, COMSIG_LIVING_ADJUST_SPRINT_STAMINA, PROC_REF(on_adjust_sprint_stamina))
+	RegisterSignal(parent, COMSIG_LIVING_IS_SPRINT_STAMINA_EXHAUSTED, PROC_REF(on_is_sprint_stamina_exhausted))
 	update_stamina_hud()
 
 /datum/component/sprint/UnregisterFromParent()
 	STOP_PROCESSING(SSfastprocess, src)
 	reset_dust()
-	UnregisterSignal(parent, list(COMSIG_MOB_CLIENT_PRE_MOVE, COMSIG_MOVE_INTENT_TOGGLED))
+	UnregisterSignal(parent, list(COMSIG_MOB_CLIENT_PRE_MOVE, COMSIG_MOVE_INTENT_TOGGLED, COMSIG_LIVING_ADJUST_SPRINT_STAMINA, COMSIG_LIVING_IS_SPRINT_STAMINA_EXHAUSTED))
 
 /// Drops the dust trail when the mob leaves a run, so the next one starts on a fresh cloud. The pace itself comes from the mob's move intent modifier.
 /datum/component/sprint/proc/on_intent_toggled(mob/living/source)
@@ -87,6 +89,16 @@
 		handle_sustained_dust(direction, step_size)
 
 	spend_stamina()
+
+/// Spends sprint stamina requested by another system.
+/datum/component/sprint/proc/on_adjust_sprint_stamina(mob/living/source, amount)
+	SIGNAL_HANDLER
+	adjust_stamina_loss(amount)
+
+/// Reports whether the sprint stamina pool is exhausted.
+/datum/component/sprint/proc/on_is_sprint_stamina_exhausted(mob/living/source)
+	SIGNAL_HANDLER
+	return stamina_loss >= max_stamina ? COMPONENT_SPRINT_EXHAUSTED : NONE
 
 /// Clears dust tracking, so the next run starts with a fresh cloud.
 /datum/component/sprint/proc/reset_dust()

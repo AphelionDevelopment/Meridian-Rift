@@ -24,6 +24,13 @@
 ///Called when movement intent is toggled.
 #define COMSIG_MOVE_INTENT_TOGGLED "move_intent_toggled"
 
+/// Sent when a living mob spends dedicated sprint stamina. Arguments: (mob/living/source, amount)
+#define COMSIG_LIVING_ADJUST_SPRINT_STAMINA "living_adjust_sprint_stamina"
+/// Sent when a living mob checks whether its dedicated sprint stamina is exhausted. Arguments: (mob/living/source)
+#define COMSIG_LIVING_IS_SPRINT_STAMINA_EXHAUSTED "living_is_sprint_stamina_exhausted"
+	/// The sprint stamina pool is exhausted.
+	#define COMPONENT_SPRINT_EXHAUSTED (1<<0)
+
 /// Called when combat mode is toggled.
 #define COMSIG_COMBAT_MODE_TOGGLED "combat_mode_toggled"
 

@@ -31,6 +31,19 @@
 	med_hud_set_health()
 	med_hud_set_status()
 
+/**
+ * Adjusts sprint stamina loss.
+ *
+ * Arguments:
+ * * amount - sprint stamina loss to add. Negative values restore sprint stamina.
+ */
+/mob/living/proc/adjust_sprint_stamina_loss(amount)
+	SEND_SIGNAL(src, COMSIG_LIVING_ADJUST_SPRINT_STAMINA, amount)
+
+/// Returns whether sprint stamina is exhausted.
+/mob/living/proc/is_sprint_stamina_exhausted()
+	return !!(SEND_SIGNAL(src, COMSIG_LIVING_IS_SPRINT_STAMINA_EXHAUSTED) & COMPONENT_SPRINT_EXHAUSTED)
+
 /// Returns the appearance other mobs see instead of us while unconscious
 /mob/living/proc/get_unconscious_appearance()
 	return null
