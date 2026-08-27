@@ -46,7 +46,7 @@ GLOBAL_DATUM_INIT(manifest, /datum/manifest, new)
 			misc_list[++misc_list.len] = list(
 				"name" = name,
 				"rank" = rank,
-				"trim" = job.tgui_icon,
+				"trim" = job?.tgui_icon,
 				)
 			continue
 		for(var/department_type in job.departments_list)
