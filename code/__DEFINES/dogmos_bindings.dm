@@ -16,20 +16,96 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:equalize_hook_ffi")
 	return call_ext(loaded)(src, remaining)
 
-/// Clears the gas mixture my removing all of its gases.
-/datum/gas_mixture/proc/clear()
-	var/static/loaded = load_ext(DOGMOS, "byond:clear_hook_ffi")
+/// Returns: If this cycle is interrupted by overtiming or not. Starts a processing excited groups cycle, does nothing if process_turfs isn't ran.
+/datum/controller/subsystem/air/proc/process_excited_groups_auxtools(remaining)
+	var/static/loaded = load_ext(DOGMOS, "byond:groups_hook_ffi")
+	return call_ext(loaded)(src, remaining)
+
+/turf/return_temperature()
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_ffi")
 	return call_ext(loaded)(src)
 
-/// Returns whether the mix has been marked immutable.
-/datum/gas_mixture/proc/is_immutable()
-	var/static/loaded = load_ext(DOGMOS, "byond:is_immutable_hook_ffi")
+/// Returns the cumulative number of heat-graph insertions and removals since the DLL initialized.
+/// This is intentionally monotonic: the per-cycle registration counter is delivered through the
+/// asynchronous callback queue and can be zero when a perf sample races that callback, while this
+/// direct atomic read cannot lose a completed registration event to queue timing.
+/proc/dogmos_heat_registration_total()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_heat_registration_total_ffi")
+	return call_ext(loaded)()
+
+/// Returns the number of registered turfs in the heat graph.
+/proc/dogmos_heat_graph_count()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_heat_graph_count_ffi")
+	return call_ext(loaded)()
+
+/datum/controller/subsystem/air/proc/process_turf_heat()
+	var/static/loaded = load_ext(DOGMOS, "byond:process_heat_notify_ffi")
 	return call_ext(loaded)(src)
 
-/// Marks the mix as immutable, meaning it will never change. This cannot be undone.
-/datum/gas_mixture/proc/mark_immutable()
-	var/static/loaded = load_ext(DOGMOS, "byond:mark_immutable_hook_ffi")
+/turf/proc/__set_temperature(arg_temp)
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_set_ffi")
+	return call_ext(loaded)(src, arg_temp)
+
+/turf/proc/__dogmos_heat_temperature()
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_dogmos_heat_temperature_ffi")
 	return call_ext(loaded)(src)
+
+/// Returns: If this cycle is interrupted by overtiming or not. Calls all outstanding callbacks created by other processes, usually ones that can't run on other threads and only the main thread.
+/datum/controller/subsystem/air/proc/finish_turf_processing_auxtools(time_remaining)
+	var/static/loaded = load_ext(DOGMOS, "byond:finish_process_turfs_ffi")
+	return call_ext(loaded)(time_remaining)
+
+/// Returns: If this cycle is interrupted by overtiming or not. Starts a processing turfs cycle.
+/datum/controller/subsystem/air/proc/process_turfs_auxtools(remaining)
+	var/static/loaded = load_ext(DOGMOS, "byond:process_turf_hook_ffi")
+	return call_ext(loaded)(src, remaining)
+
+/// Returns: If a processing thread is running or not.
+/datum/controller/subsystem/air/proc/thread_running()
+	var/static/loaded = load_ext(DOGMOS, "byond:thread_running_hook_ffi")
+	return call_ext(loaded)()
+
+/// For registering gases, do not touch this.
+/proc/_auxtools_register_gas(gas)
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_register_gas_ffi")
+	return call_ext(loaded)(gas)
+
+/// For updating reagent gas fire products, do not use for now.
+/proc/finalize_gas_refs()
+	var/static/loaded = load_ext(DOGMOS, "byond:finalize_gas_refs_ffi")
+	return call_ext(loaded)()
+
+/// Refreshes the reaction cache after DM changes the reaction table.
+/datum/controller/subsystem/air/proc/auxtools_update_reactions()
+	var/static/loaded = load_ext(DOGMOS, "byond:update_reactions_ffi")
+	return call_ext(loaded)()
+
+/// Returns the number of reactions accepted during initialization.
+/proc/dogmos_reaction_count()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_reaction_count_ffi")
+	return call_ext(loaded)()
+
+/// Registers gases and loads the reaction table during SSair initialization.
+/proc/auxtools_atmos_init(gas_data)
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_init_ffi")
+	return call_ext(loaded)(gas_data)
+
+/// Updates adjacency infos for turfs, only use this in immediateupdateturfs.
+///
+/// The map bounds are passed from DM because World intrinsic properties are not regular FFI vars.
+/turf/proc/__update_auxtools_turf_adjacency_info(_max_x, _max_y)
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_infos_ffi")
+	return call_ext(loaded)(src, _max_x, _max_y)
+
+/// Returns: null. Updates turf air infos, whether the turf is closed, is space or a regular turf, or even a planet turf is decided here.
+/turf/proc/update_air_ref(flag)
+	var/static/loaded = load_ext(DOGMOS, "byond:hook_register_turf_ffi")
+	return call_ext(loaded)(src, flag)
+
+/// Returns the number of on-demand space-boundary nodes in the gas graph.
+/proc/dogmos_space_boundary_count()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_space_boundary_count_ffi")
+	return call_ext(loaded)()
 
 /// Args: (mixture, ratio, gas_list). Takes gases given by `gas_list` and moves `ratio` amount of those gases from `src` into `mixture`.
 /datum/gas_mixture/proc/scrub_into(into, ratio_v, gas_list)
@@ -160,6 +236,27 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:return_volume_hook_ffi")
 	return call_ext(loaded)(src)
 
+/// Returns: the mix's temperature, in kelvins.
+/datum/gas_mixture/proc/return_temperature()
+	var/static/loaded = load_ext(DOGMOS, "byond:return_temperature_hook_ffi")
+	return call_ext(loaded)(src)
+
+/// Returns: the mix's pressure, in kilopascals.
+/datum/gas_mixture/proc/return_pressure()
+	var/static/loaded = load_ext(DOGMOS, "byond:return_pressure_hook_ffi")
+	return call_ext(loaded)(src)
+
+/// Returns: Amount of substance, in moles.
+/datum/gas_mixture/proc/total_moles()
+	var/static/loaded = load_ext(DOGMOS, "byond:total_moles_hook_ffi")
+	return call_ext(loaded)(src)
+
+/// Enables or disables the bounded operation transcript and latency histograms. Aggregate counters
+/// remain enabled because they use fixed preallocated storage.
+/proc/dogmos_perf_set_detailed(enabled)
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_perf_set_detailed_ffi")
+	return call_ext(loaded)(enabled)
+
 /// Returns: true. Parses gas strings like "o2=2500;plasma=5000;TEMP=370" and turns src mixes into the parsed gas mixture, invalid patterns will be ignored
 /datum/gas_mixture/proc/__auxtools_parse_gas_string(string)
 	var/static/loaded = load_ext(DOGMOS, "byond:parse_gas_string_ffi")
@@ -211,8 +308,9 @@
 	return call_ext(loaded)(src, temp)
 
 /// Args: (holder). Runs all reactions on this gas mixture. Holder is used by the reactions, and can be any arbitrary datum or null.
-/// Underscored because the DM `react()` wrapper retains reaction_results bookkeeping and
-/// COMSIG_GASMIX_REACTED, while this hook also enforces the shared Hypernoblium gate for native calls.
+/// Underscored because DM keeps a `react()` wrapper of its own, carrying behaviour Dogmos has no
+/// equivalent for: the hypernoblium oppression gate that stops all reactions before any are
+/// considered, the reaction_results bookkeeping, and COMSIG_GASMIX_REACTED.
 ///
 /// Optional profiling reads its toggle on each call and records slow reactions directly on the DM
 /// thread, avoiding callback overhead when profiling is disabled.
@@ -225,19 +323,19 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:compare_hook_ffi")
 	return call_ext(loaded)(src, other)
 
-/// Returns: the mix's temperature, in kelvins.
-/datum/gas_mixture/proc/return_temperature()
-	var/static/loaded = load_ext(DOGMOS, "byond:return_temperature_hook_ffi")
+/// Clears the gas mixture my removing all of its gases.
+/datum/gas_mixture/proc/clear()
+	var/static/loaded = load_ext(DOGMOS, "byond:clear_hook_ffi")
 	return call_ext(loaded)(src)
 
-/// Returns: the mix's pressure, in kilopascals.
-/datum/gas_mixture/proc/return_pressure()
-	var/static/loaded = load_ext(DOGMOS, "byond:return_pressure_hook_ffi")
+/// Returns whether the mix has been marked immutable.
+/datum/gas_mixture/proc/is_immutable()
+	var/static/loaded = load_ext(DOGMOS, "byond:is_immutable_hook_ffi")
 	return call_ext(loaded)(src)
 
-/// Returns: Amount of substance, in moles.
-/datum/gas_mixture/proc/total_moles()
-	var/static/loaded = load_ext(DOGMOS, "byond:total_moles_hook_ffi")
+/// Marks the mix as immutable, meaning it will never change. This cannot be undone.
+/datum/gas_mixture/proc/mark_immutable()
+	var/static/loaded = load_ext(DOGMOS, "byond:mark_immutable_hook_ffi")
 	return call_ext(loaded)(src)
 
 /// Args: (min_heat_cap). Sets the mix's minimum heat capacity.
@@ -268,6 +366,11 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_shutdown_hook_ffi")
 	return call_ext(loaded)()
 
+/// Returns the number of panics caught at Dogmos' BYOND FFI and initialization boundaries.
+/proc/dogmos_ffi_panic_count()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_ffi_panic_count_ffi")
+	return call_ext(loaded)()
+
 /// Returns the number of callbacks rejected because the main-thread callback queue was already
 /// closed. A live server should keep this at zero; a non-zero value identifies teardown ordering
 /// that attempted to enqueue work after callback processing had stopped.
@@ -280,93 +383,8 @@
 	var/static/loaded = load_ext(DOGMOS, "byond:atmos_callback_handle_ffi")
 	return call_ext(loaded)(remaining)
 
-/turf/return_temperature()
-	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_ffi")
-	return call_ext(loaded)(src)
-
-/// Returns the cumulative number of heat-graph insertions and removals since the DLL initialized.
-/// This is intentionally monotonic: the per-cycle registration counter is delivered through the
-/// asynchronous callback queue and can be zero when a perf sample races that callback, while this
-/// direct atomic read cannot lose a completed registration event to queue timing.
-/proc/dogmos_heat_registration_total()
-	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_heat_registration_total_ffi")
-	return call_ext(loaded)()
-
-/// Returns the number of registered turfs in the heat graph.
-/proc/dogmos_heat_graph_count()
-	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_heat_graph_count_ffi")
-	return call_ext(loaded)()
-
-/datum/controller/subsystem/air/proc/process_turf_heat()
-	var/static/loaded = load_ext(DOGMOS, "byond:process_heat_notify_ffi")
-	return call_ext(loaded)(src)
-
-/turf/proc/__set_temperature(arg_temp)
-	var/static/loaded = load_ext(DOGMOS, "byond:hook_turf_temperature_set_ffi")
-	return call_ext(loaded)(src, arg_temp)
-
-/turf/proc/__dogmos_heat_temperature()
-	var/static/loaded = load_ext(DOGMOS, "byond:hook_dogmos_heat_temperature_ffi")
-	return call_ext(loaded)(src)
-
-/// For registering gases, do not touch this.
-/proc/_auxtools_register_gas(gas)
-	var/static/loaded = load_ext(DOGMOS, "byond:hook_register_gas_ffi")
-	return call_ext(loaded)(gas)
-
-/// For updating reagent gas fire products, do not use for now.
-/proc/finalize_gas_refs()
-	var/static/loaded = load_ext(DOGMOS, "byond:finalize_gas_refs_ffi")
-	return call_ext(loaded)()
-
-/// Refreshes the reaction cache after DM changes the reaction table.
-/datum/controller/subsystem/air/proc/auxtools_update_reactions()
-	var/static/loaded = load_ext(DOGMOS, "byond:update_reactions_ffi")
-	return call_ext(loaded)()
-
-/// Returns the number of reactions accepted during initialization.
-/proc/dogmos_reaction_count()
-	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_reaction_count_ffi")
-	return call_ext(loaded)()
-
-/// Registers gases and loads the reaction table during SSair initialization.
-/proc/auxtools_atmos_init(gas_data)
-	var/static/loaded = load_ext(DOGMOS, "byond:hook_init_ffi")
-	return call_ext(loaded)(gas_data)
-
-/// Updates adjacency infos for turfs, only use this in immediateupdateturfs.
-///
-/// The map bounds are passed from DM because World intrinsic properties are not regular FFI vars.
-/turf/proc/__update_auxtools_turf_adjacency_info(max_x, max_y)
-	var/static/loaded = load_ext(DOGMOS, "byond:hook_infos_ffi")
-	return call_ext(loaded)(src, max_x, max_y)
-
-/// Returns: null. Updates turf air infos, whether the turf is closed, is space or a regular turf, or even a planet turf is decided here.
-/turf/proc/update_air_ref(flag)
-	var/static/loaded = load_ext(DOGMOS, "byond:hook_register_turf_ffi")
-	return call_ext(loaded)(src, flag)
-
-/// Returns the number of on-demand space-boundary nodes in the gas graph.
-/proc/dogmos_space_boundary_count()
-	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_space_boundary_count_ffi")
-	return call_ext(loaded)()
-
-/// Returns: If this cycle is interrupted by overtiming or not. Starts a processing excited groups cycle, does nothing if process_turfs isn't ran.
-/datum/controller/subsystem/air/proc/process_excited_groups_auxtools(remaining)
-	var/static/loaded = load_ext(DOGMOS, "byond:groups_hook_ffi")
-	return call_ext(loaded)(src, remaining)
-
-/// Returns: If this cycle is interrupted by overtiming or not. Calls all outstanding callbacks created by other processes, usually ones that can't run on other threads and only the main thread.
-/datum/controller/subsystem/air/proc/finish_turf_processing_auxtools(time_remaining)
-	var/static/loaded = load_ext(DOGMOS, "byond:finish_process_turfs_ffi")
-	return call_ext(loaded)(time_remaining)
-
-/// Returns: If this cycle is interrupted by overtiming or not. Starts a processing turfs cycle.
-/datum/controller/subsystem/air/proc/process_turfs_auxtools(remaining)
-	var/static/loaded = load_ext(DOGMOS, "byond:process_turf_hook_ffi")
-	return call_ext(loaded)(src, remaining)
-
-/// Returns: If a processing thread is running or not.
-/datum/controller/subsystem/air/proc/thread_running()
-	var/static/loaded = load_ext(DOGMOS, "byond:thread_running_hook_ffi")
+/// Returns Dogmos' Rust-side operation and arena telemetry as JSON. Process memory is sampled
+/// externally so DreamDaemon and any future Dogmos service remain separate measurements.
+/proc/dogmos_perf_snapshot()
+	var/static/loaded = load_ext(DOGMOS, "byond:dogmos_perf_snapshot_ffi")
 	return call_ext(loaded)()

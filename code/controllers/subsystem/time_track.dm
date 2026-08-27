@@ -65,6 +65,10 @@ SUBSYSTEM_DEF(time_track)
 			"air_superconductivity_cost",
 			"air_pipenets_cost",
 			"air_rebuilds_cost",
+			// NOVA EDIT ADDITION START - DOGMOS
+			"air_equalize_cost",
+			"air_post_process_cost",
+			// NOVA EDIT ADDITION END
 			"air_turf_count",
 			"air_eg_count",
 			"air_hotspot_count",
@@ -158,6 +162,10 @@ SUBSYSTEM_DEF(time_track)
 			SSair.cost_superconductivity,
 			SSair.cost_pipenets,
 			SSair.cost_rebuilds,
+			// NOVA EDIT ADDITION START - DOGMOS
+			SSair.cost_equalize,
+			SSair.cost_post_process,
+			// NOVA EDIT ADDITION END
 			length(SSair.active_turfs),
 			length(SSair.excited_groups),
 			length(SSair.hotspots),

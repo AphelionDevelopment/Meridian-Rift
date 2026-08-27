@@ -6,7 +6,10 @@ the DM and Rust sources linked below.
 
 ## Ownership
 
-Dogmos owns gas storage and the hot environmental simulation in Rust. DM retains the public
+Dogmos owns gas storage and the hot environmental simulation in Rust. In the current audited build,
+that Rust state lives inside the 32-bit `dogmos.dll` loaded by DreamDaemon; a DLL allocation is still
+a DreamDaemon allocation. The target architecture moves growing state and compute into the separate
+64-bit `dogmosd` service while retaining a fixed-size BYOND adapter in-process. DM retains the public
 `/datum/gas_mixture` API, reactions, atmospheric machinery, pipeline machinery, player feedback,
 and subsystem scheduling. The two sides share registered gas and turf handles through the bindings
 in `code/__DEFINES/dogmos_bindings.dm`.
@@ -23,6 +26,12 @@ The Rust crate is in `aphelion-dogmos/`. The DM integration lives primarily in:
 
 Do not add a second gas store or bypass the mixture API. A gas mixture's
 `_extools_pointer_gasmixture` is an internal Dogmos handle, not application state.
+
+The fork-owned edit exception is limited to `code/modules/atmospherics/gasmixtures/**`,
+`code/modules/atmospherics/environmental/**`, and the generated `code/__DEFINES/dogmos_bindings.dm`
+and `code/__DEFINES/dogmos_contract.dm` files. It does not exempt atmos machinery, unrelated gameplay,
+subsystem, turf, UI, build, or deployment files. Use `APHELION EDIT`
+for new Meridian-owned core changes outside the exception and preserve inherited `NOVA EDIT`.
 
 ## One air-subsystem cycle
 
@@ -46,7 +55,9 @@ zero-cost synchronous DM proc.
 
 ## Gas mixtures
 
-Rust stores mixtures in a lock-protected arena. DM datums keep the arena slot and expose operations
+Rust currently stores mixtures in an in-process lock-protected arena. The service migration moves the
+arena out of DreamDaemon without changing the public DM procs. DM datums keep an opaque,
+generation-checked handle and expose operations
 such as `get_moles`, `set_moles`, `adjust_moles`, `remove`, `copy_from`, `share`, `react`, and
 `return_pressure`. Use those procs instead of writing implementation state directly.
 
