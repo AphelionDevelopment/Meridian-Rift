@@ -3,7 +3,7 @@
 Status: active development; the 64-bit service is not yet the default game backend.
 
 Last verified: 2026-08-27 against Meridian-Rift revision
-`1623a76079a6617598498eaf7f5778f8564ed314`. Current source uses Dogmos wire protocol version 4;
+`8bc58b68b17637def5b968ee1c30aef3c0927cba`. Current source uses Dogmos wire protocol version 4;
 the latest repeated callback-pressure memory evidence below was collected with protocol version 3.
 
 This memo is for players, server operators, and contributors who are comfortable with concepts such
@@ -159,6 +159,14 @@ most 1,023 complete 64-byte event records plus its header per drain.
 
 These are boundary tests, not a before-and-after production benchmark. They do not yet include the
 complete set of atmosphere reactions, turf heat, visual updates, and gameplay consequences.
+
+The standalone service core now also owns validated, immutable gas and reaction metadata with
+fixed-width numeric identities. Its reaction-condition scan preserves the current temperature,
+energy, gas-quantity, and burnability thresholds, walks reactions in explicit priority order, and
+can reuse caller-owned output storage. This removes a legacy failure mode in which equal priorities
+could silently discard a reaction. It is a tested core capability, but it is not yet connected to
+the game registration protocol or reaction execution path and therefore does not change current
+DreamDaemon memory use.
 
 ## Gameplay ownership
 
