@@ -1,6 +1,10 @@
 #define BUBBLEGUM_SMASH (health <= maxHealth*0.5) // angery
 #define BUBBLEGUM_CAN_ENRAGE (enrage_till + (enrage_time * 2) <= world.time)
 #define BUBBLEGUM_IS_ENRAGED (enrage_till > world.time)
+// APHELION EDIT ADDITION START - BUBBLEGUM_CHARGE_SPEED
+/// Delay in deciseconds between Bubblegum charge steps. Original generic charge speed: 0.5.
+#define BUBBLEGUM_CHARGE_SPEED 0.80
+// APHELION EDIT ADDITION END
 
 /*
 
@@ -91,6 +95,11 @@ Difficulty: Hard
 	triple_charge = new(src)
 	hallucination_charge = new(src)
 	hallucination_charge_surround = new(src)
+	// APHELION EDIT ADDITION START - BUBBLEGUM_CHARGE_SPEED
+	triple_charge.charge_speed = BUBBLEGUM_CHARGE_SPEED
+	hallucination_charge.charge_speed = BUBBLEGUM_CHARGE_SPEED
+	hallucination_charge_surround.charge_speed = BUBBLEGUM_CHARGE_SPEED
+	// APHELION EDIT ADDITION END
 	blood_warp = new(src)
 	triple_charge.Grant(src)
 	hallucination_charge.Grant(src)
@@ -403,3 +412,6 @@ Difficulty: Hard
 #undef BUBBLEGUM_CAN_ENRAGE
 #undef BUBBLEGUM_IS_ENRAGED
 #undef BUBBLEGUM_SMASH
+// APHELION EDIT ADDITION START - BUBBLEGUM_CHARGE_SPEED
+#undef BUBBLEGUM_CHARGE_SPEED
+// APHELION EDIT ADDITION END
