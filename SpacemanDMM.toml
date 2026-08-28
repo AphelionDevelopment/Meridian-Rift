@@ -19,6 +19,6 @@ icon-smoothing-2025 = true
 # APHELION EDIT ADDITION START
 
 [map_renderer]
-# Runtime-only mapgen placeholder - present in map files, replaced before the round starts, so it must not render into staged map images.
+# These are not invisible for some reason???
 hide_invisible = ["/turf/open/genturf"]
 # APHELION EDIT ADDITION END
