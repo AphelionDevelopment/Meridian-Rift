@@ -387,7 +387,7 @@
 		stack_trace("Dogmos shim revision or feature fingerprint does not match the generated contract.")
 		return FALSE
 
-	var/service_path = world.system_type == UNIX ? "dogmosd" : "dogmosd.exe"
+	var/service_path = world.system_type == UNIX ? "./dogmosd" : "./dogmosd.exe"
 	if(!dogmos_service_start(service_path) || !dogmos_service_health())
 		stack_trace("dogmosd failed its startup health check.")
 		return FALSE
