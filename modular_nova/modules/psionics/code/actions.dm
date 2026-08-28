@@ -94,6 +94,33 @@
 	stop_concentration(remove_from)
 	return ..()
 
+/// Registers Q to deactivate a hand manifestation owned by this action.
+/datum/action/cooldown/psionic/proc/register_hand_manifestation_dropkey(mob/living/living_owner)
+	RegisterSignal(living_owner, COMSIG_KB_MOB_DROPITEM_DOWN, PROC_REF(on_hand_manifestation_dropkey))
+
+/// Stops this action from intercepting Q for its hand manifestation.
+/datum/action/cooldown/psionic/proc/unregister_hand_manifestation_dropkey(mob/living/living_owner)
+	UnregisterSignal(living_owner, COMSIG_KB_MOB_DROPITEM_DOWN)
+
+/// Returns the hand manifestation that Q can deactivate.
+/datum/action/cooldown/psionic/proc/get_hand_manifestation()
+	return
+
+/// Deactivates this action after Q targets its hand manifestation.
+/datum/action/cooldown/psionic/proc/deactivate_hand_manifestation(mob/living/living_owner)
+	return FALSE
+
+/// Deactivates this action instead of dropping its active hand manifestation with Q.
+/datum/action/cooldown/psionic/proc/on_hand_manifestation_dropkey(mob/living/source, turf/target)
+	SIGNAL_HANDLER
+
+	var/obj/item/hand_manifestation = get_hand_manifestation()
+	if(!hand_manifestation || source.get_active_held_item() != hand_manifestation)
+		return
+
+	deactivate_hand_manifestation(source)
+	return COMSIG_KB_ACTIVATED
+
 /datum/action/cooldown/psionic/Trigger(mob/clicker, trigger_flags, atom/target)
 	if((trigger_flags & TRIGGER_SECONDARY_ACTION) && length(get_rank_variants()))
 		var/mob/living/living_owner = owner
@@ -731,6 +758,7 @@
 	var/projectile_sound_volume = 65
 
 /datum/action/cooldown/psionic/pointed/projectile/Remove(mob/living/remove_from)
+	unregister_hand_manifestation_dropkey(remove_from)
 	remove_projectile_hand_visual(remove_from)
 	return ..()
 
@@ -744,9 +772,13 @@
 	. = ..()
 	if(!.)
 		remove_projectile_hand_visual(on_who)
+		return
+
+	register_hand_manifestation_dropkey(on_who)
 
 /datum/action/cooldown/psionic/pointed/projectile/unset_click_ability(mob/on_who, refund_cooldown = TRUE)
 	. = ..()
+	unregister_hand_manifestation_dropkey(on_who)
 	remove_projectile_hand_visual(on_who)
 
 /datum/action/cooldown/psionic/pointed/projectile/psionic_activate(atom/target)
@@ -823,6 +855,12 @@
 		return
 	if(owner.click_intercept == src)
 		unset_click_ability(owner, refund_cooldown = TRUE)
+
+/datum/action/cooldown/psionic/pointed/projectile/get_hand_manifestation()
+	return projectile_hand_visual
+
+/datum/action/cooldown/psionic/pointed/projectile/deactivate_hand_manifestation(mob/living/living_owner)
+	unset_click_ability(living_owner, refund_cooldown = TRUE)
 
 /datum/action/cooldown/psionic/open_menu
 	name = "Psionic Imprinting"

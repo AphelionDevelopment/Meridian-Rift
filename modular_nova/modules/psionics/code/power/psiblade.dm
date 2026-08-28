@@ -88,6 +88,7 @@
 
 	psiblade = new_psiblade
 	RegisterSignals(psiblade, list(COMSIG_QDELETING, COMSIG_ITEM_DROPPED), PROC_REF(on_psiblade_lost))
+	register_hand_manifestation_dropkey(living_owner)
 	start_maintaining(living_owner)
 
 	living_owner.visible_message(
@@ -98,6 +99,7 @@
 	return TRUE
 
 /datum/action/cooldown/psionic/psiblade/on_maintain_stopped(mob/living/living_owner, silent = FALSE)
+	unregister_hand_manifestation_dropkey(living_owner)
 	if(!psiblade || QDELETED(psiblade))
 		psiblade = null
 		return
@@ -117,6 +119,12 @@
 		return
 	var/mob/living/living_owner = owner
 	stop_maintaining(living_owner, silent = TRUE)
+
+/datum/action/cooldown/psionic/psiblade/get_hand_manifestation()
+	return psiblade
+
+/datum/action/cooldown/psionic/psiblade/deactivate_hand_manifestation(mob/living/living_owner)
+	return stop_maintaining(living_owner)
 
 
 /obj/item/psionic_blade
