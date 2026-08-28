@@ -88,38 +88,94 @@
 	var/list/rank_variant_types
 	/// Form subtype this action's mechanics expect, resolved by get_form().
 	var/datum/psionic_rank_variant/variant_type = /datum/psionic_rank_variant
+	/// Item currently manifested into the owner's hand by this action.
+	var/obj/item/hand_manifestation
 
 /datum/action/cooldown/psionic/Remove(mob/remove_from)
 	stop_maintaining(remove_from, silent = TRUE)
 	stop_concentration(remove_from)
+	remove_hand_manifestation(remove_from)
 	return ..()
 
-/// Registers Q to deactivate a hand manifestation owned by this action.
-/datum/action/cooldown/psionic/proc/register_hand_manifestation_dropkey(mob/living/living_owner)
+/**
+ * Tracks an item manifested into this action owner's hand.
+ *
+ * Call this after placing the item into the owner's hand. Standard maintained and pointed actions
+ * remove it through their normal teardown paths.
+ * Arguments:
+ * * living_owner - Mob holding the manifestation.
+ * * new_manifestation - Item created by this action.
+ */
+/datum/action/cooldown/psionic/proc/set_hand_manifestation(mob/living/living_owner, obj/item/new_manifestation)
+	if(hand_manifestation == new_manifestation)
+		return
+
+	remove_hand_manifestation(living_owner)
+	hand_manifestation = new_manifestation
+	if(!hand_manifestation)
+		return
+
+	RegisterSignals(hand_manifestation, list(COMSIG_QDELETING, COMSIG_ITEM_DROPPED), PROC_REF(on_hand_manifestation_lost))
 	RegisterSignal(living_owner, COMSIG_KB_MOB_DROPITEM_DOWN, PROC_REF(on_hand_manifestation_dropkey))
 
-/// Stops this action from intercepting Q for its hand manifestation.
-/datum/action/cooldown/psionic/proc/unregister_hand_manifestation_dropkey(mob/living/living_owner)
-	UnregisterSignal(living_owner, COMSIG_KB_MOB_DROPITEM_DOWN)
+/**
+ * Deletes the tracked hand manifestation and stops managing its lifecycle.
+ *
+ * Action removal and standard maintained or pointed teardown call this automatically.
+ * Arguments:
+ * * living_owner - Mob expected to hold the manifestation.
+ */
+/datum/action/cooldown/psionic/proc/remove_hand_manifestation(mob/living/living_owner)
+	if(!hand_manifestation)
+		return
 
-/// Returns the hand manifestation that Q can deactivate.
-/datum/action/cooldown/psionic/proc/get_hand_manifestation()
-	return
+	if(!QDELETED(living_owner))
+		UnregisterSignal(living_owner, COMSIG_KB_MOB_DROPITEM_DOWN)
+	UnregisterSignal(hand_manifestation, list(COMSIG_QDELETING, COMSIG_ITEM_DROPPED))
+	if(QDELETED(hand_manifestation))
+		hand_manifestation = null
+		return
 
-/// Deactivates this action after Q targets its hand manifestation.
-/datum/action/cooldown/psionic/proc/deactivate_hand_manifestation(mob/living/living_owner)
+	if(!QDELETED(living_owner))
+		living_owner.temporarilyRemoveItemFromInventory(hand_manifestation, force = TRUE)
+	QDEL_NULL(hand_manifestation)
+
+/**
+ * Deactivates this action after its hand manifestation is dismissed.
+ *
+ * This handles standard maintained and pointed actions. Override it only for a different lifecycle.
+ * Arguments:
+ * * living_owner - Mob that held the manifestation.
+ * * manifestation_lost - Whether the item disappeared instead of being dismissed with the drop key.
+ */
+/datum/action/cooldown/psionic/proc/deactivate_hand_manifestation(mob/living/living_owner, manifestation_lost = FALSE)
+	if(is_maintaining())
+		return stop_maintaining(living_owner, silent = manifestation_lost)
+	if(click_to_activate && living_owner.click_intercept == src)
+		return unset_click_ability(living_owner, refund_cooldown = TRUE)
+
 	return FALSE
 
-/// Deactivates this action instead of dropping its active hand manifestation with Q.
+/// Deactivates this action instead of dropping its active hand manifestation.
 /datum/action/cooldown/psionic/proc/on_hand_manifestation_dropkey(mob/living/source, turf/target)
 	SIGNAL_HANDLER
 
-	var/obj/item/hand_manifestation = get_hand_manifestation()
-	if(!hand_manifestation || source.get_active_held_item() != hand_manifestation)
+	if(hand_manifestation && source.get_active_held_item() == hand_manifestation && deactivate_hand_manifestation(source))
+		return COMSIG_KB_ACTIVATED
+
+/// Deactivates this action when its hand manifestation leaves the owner unexpectedly.
+/datum/action/cooldown/psionic/proc/on_hand_manifestation_lost(datum/source)
+	SIGNAL_HANDLER
+
+	UnregisterSignal(source, list(COMSIG_QDELETING, COMSIG_ITEM_DROPPED))
+	var/mob/living/living_owner = owner
+	if(!QDELETED(living_owner))
+		UnregisterSignal(living_owner, COMSIG_KB_MOB_DROPITEM_DOWN)
+	hand_manifestation = null
+	if(QDELETED(living_owner))
 		return
 
-	deactivate_hand_manifestation(source)
-	return COMSIG_KB_ACTIVATED
+	deactivate_hand_manifestation(living_owner, manifestation_lost = TRUE)
 
 /datum/action/cooldown/psionic/Trigger(mob/clicker, trigger_flags, atom/target)
 	if((trigger_flags & TRIGGER_SECONDARY_ACTION) && length(get_rank_variants()))
@@ -432,6 +488,7 @@
 		living_owner = owner
 	if(istype(living_owner))
 		UnregisterSignal(living_owner, list(COMSIG_LIVING_LIFE, COMSIG_LIVING_DEATH))
+	remove_hand_manifestation(living_owner)
 	on_maintain_stopped(living_owner, silent)
 	stop_concentration(living_owner)
 	if(!silent && istype(living_owner))
@@ -660,6 +717,7 @@
 	if(!.)
 		return
 
+	remove_hand_manifestation(on_who)
 	if(refund_cooldown)
 		var/datum/component/psionic_profile/profile
 		var/mob/living/living_owner = on_who
@@ -744,10 +802,6 @@
 	var/obj/projectile/projectile_type
 	/// Optional hand item shown while this projectile discipline is readied.
 	var/obj/item/projectile_hand_visual_type
-	/// Hand item instance currently shown while this projectile discipline is readied.
-	var/obj/item/projectile_hand_visual
-	/// TRUE while the hand visual is being intentionally removed.
-	var/removing_projectile_hand_visual = FALSE
 	/// Number of projectiles released by one activation.
 	var/projectiles_per_fire = 1
 	/// Degrees between projectiles in a multi-projectile spread.
@@ -756,11 +810,6 @@
 	var/projectile_sound
 	/// Volume the launch sound plays at. Rapid-firing disciplines want this well below the default.
 	var/projectile_sound_volume = 65
-
-/datum/action/cooldown/psionic/pointed/projectile/Remove(mob/living/remove_from)
-	unregister_hand_manifestation_dropkey(remove_from)
-	remove_projectile_hand_visual(remove_from)
-	return ..()
 
 /datum/action/cooldown/psionic/pointed/projectile/set_click_ability(mob/on_who)
 	if(!IsAvailable(feedback = TRUE))
@@ -771,15 +820,8 @@
 
 	. = ..()
 	if(!.)
-		remove_projectile_hand_visual(on_who)
+		remove_hand_manifestation(on_who)
 		return
-
-	register_hand_manifestation_dropkey(on_who)
-
-/datum/action/cooldown/psionic/pointed/projectile/unset_click_ability(mob/on_who, refund_cooldown = TRUE)
-	. = ..()
-	unregister_hand_manifestation_dropkey(on_who)
-	remove_projectile_hand_visual(on_who)
 
 /datum/action/cooldown/psionic/pointed/projectile/psionic_activate(atom/target)
 	return fire_psionic_projectiles(target, projectile_type, projectiles_per_fire, projectile_spread, projectile_sound)
@@ -821,10 +863,10 @@
 	return to_fire.aim_projectile(target, user, null, deviation)
 
 /datum/action/cooldown/psionic/pointed/projectile/proc/create_projectile_hand_visual(mob/on_who)
-	if(projectile_hand_visual && !QDELETED(projectile_hand_visual))
-		if(projectile_hand_visual.loc == on_who)
+	if(hand_manifestation && !QDELETED(hand_manifestation))
+		if(hand_manifestation.loc == on_who)
 			return TRUE
-		remove_projectile_hand_visual(on_who)
+		remove_hand_manifestation(on_who)
 
 	var/obj/item/new_hand_visual = new projectile_hand_visual_type(on_who)
 	if(!on_who.put_in_hands(new_hand_visual, del_on_fail = TRUE))
@@ -832,36 +874,8 @@
 		to_chat(on_who, span_warning("You need a free hand to focus [src]."))
 		return FALSE
 
-	projectile_hand_visual = new_hand_visual
-	RegisterSignals(projectile_hand_visual, list(COMSIG_QDELETING, COMSIG_ITEM_DROPPED), PROC_REF(on_projectile_hand_visual_lost))
+	set_hand_manifestation(on_who, new_hand_visual)
 	return TRUE
-
-/datum/action/cooldown/psionic/pointed/projectile/proc/remove_projectile_hand_visual(mob/hand_owner)
-	if(!projectile_hand_visual || QDELETED(projectile_hand_visual))
-		projectile_hand_visual = null
-		return
-
-	removing_projectile_hand_visual = TRUE
-	UnregisterSignal(projectile_hand_visual, list(COMSIG_QDELETING, COMSIG_ITEM_DROPPED))
-	hand_owner?.temporarilyRemoveItemFromInventory(projectile_hand_visual, force = TRUE)
-	QDEL_NULL(projectile_hand_visual)
-	removing_projectile_hand_visual = FALSE
-
-/datum/action/cooldown/psionic/pointed/projectile/proc/on_projectile_hand_visual_lost(datum/source)
-	SIGNAL_HANDLER
-
-	projectile_hand_visual = null
-	if(removing_projectile_hand_visual || QDELETED(owner))
-		return
-	if(owner.click_intercept == src)
-		unset_click_ability(owner, refund_cooldown = TRUE)
-
-/datum/action/cooldown/psionic/pointed/projectile/get_hand_manifestation()
-	return projectile_hand_visual
-
-/datum/action/cooldown/psionic/pointed/projectile/deactivate_hand_manifestation(mob/living/living_owner)
-	unset_click_ability(living_owner, refund_cooldown = TRUE)
-
 /datum/action/cooldown/psionic/open_menu
 	name = "Psionic Imprinting"
 	desc = "Review strain and imprint new psionic disciplines."

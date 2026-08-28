@@ -86,7 +86,7 @@
 	if(!.)
 		return
 
-	projectile_hand_visual.color = get_manifestation_color()
+	hand_manifestation.color = get_manifestation_color()
 
 /datum/action/cooldown/psionic/pointed/projectile/kinetic_bolt/ready_projectile(obj/projectile/to_fire, atom/target, mob/user, iteration, fire_count = 1, fire_spread = 0)
 	. = ..()

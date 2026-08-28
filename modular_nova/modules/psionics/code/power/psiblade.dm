@@ -55,10 +55,6 @@
 		/datum/psionic_rank_variant/psiblade/beta,
 		/datum/psionic_rank_variant/psiblade/alpha,
 	)
-	/// Currently manifested psiblade.
-	var/obj/item/psionic_blade/psiblade
-	/// TRUE while the action is intentionally deleting its blade.
-	var/removing_psiblade = FALSE
 
 /datum/action/cooldown/psionic/psiblade/before_psionic(atom/target)
 	var/mob/living/living_owner = owner
@@ -86,46 +82,15 @@
 		to_chat(living_owner, span_warning("You need a free hand to shape [src]."))
 		return FALSE
 
-	psiblade = new_psiblade
-	RegisterSignals(psiblade, list(COMSIG_QDELETING, COMSIG_ITEM_DROPPED), PROC_REF(on_psiblade_lost))
-	register_hand_manifestation_dropkey(living_owner)
+	set_hand_manifestation(living_owner, new_psiblade)
 	start_maintaining(living_owner)
 
 	living_owner.visible_message(
-		span_warning("[living_owner] shapes hardlight into [psiblade]."),
-		span_purple("You shape [psiblade] into your hand."),
+		span_warning("[living_owner] shapes hardlight into [hand_manifestation]."),
+		span_purple("You shape [hand_manifestation] into your hand."),
 	)
 	playsound(living_owner, 'sound/items/weapons/saberon.ogg', 35, TRUE)
 	return TRUE
-
-/datum/action/cooldown/psionic/psiblade/on_maintain_stopped(mob/living/living_owner, silent = FALSE)
-	unregister_hand_manifestation_dropkey(living_owner)
-	if(!psiblade || QDELETED(psiblade))
-		psiblade = null
-		return
-
-	removing_psiblade = TRUE
-	UnregisterSignal(psiblade, list(COMSIG_QDELETING, COMSIG_ITEM_DROPPED))
-	if(istype(living_owner))
-		living_owner.temporarilyRemoveItemFromInventory(psiblade, force = TRUE)
-	QDEL_NULL(psiblade)
-	removing_psiblade = FALSE
-
-/datum/action/cooldown/psionic/psiblade/proc/on_psiblade_lost(datum/source)
-	SIGNAL_HANDLER
-
-	psiblade = null
-	if(removing_psiblade || QDELETED(owner))
-		return
-	var/mob/living/living_owner = owner
-	stop_maintaining(living_owner, silent = TRUE)
-
-/datum/action/cooldown/psionic/psiblade/get_hand_manifestation()
-	return psiblade
-
-/datum/action/cooldown/psionic/psiblade/deactivate_hand_manifestation(mob/living/living_owner)
-	return stop_maintaining(living_owner)
-
 
 /obj/item/psionic_blade
 	name = "psionic machete"
