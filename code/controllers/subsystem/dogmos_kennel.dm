@@ -2,6 +2,16 @@
  * same values while this facade stays independent from AtmosControlPanel. */
 GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 
+#define KENNEL_BROWSE_PAGE_SIZE 250
+#define KENNEL_BROWSE_SEARCH_MAX_LENGTH 64
+
+/** Per-session state for the bounded Kennel machinery browser. */
+/datum/tgui/dogmos_kennel
+	/// One-indexed machinery browse page requested by this UI session.
+	var/browse_page = 1
+	/// Bounded machinery browse search requested by this UI session.
+	var/browse_search = ""
+
 /datum/dogmos_kennel
 
 /datum/dogmos_kennel/ui_state(mob/user)
@@ -10,9 +20,82 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 /datum/dogmos_kennel/ui_interact(mob/user, datum/tgui/ui)
 	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, "DogmosKennel")
+		ui = new /datum/tgui/dogmos_kennel(user, src, "DogmosKennel")
 		ui.set_autoupdate(FALSE)
 		ui.open()
+
+/** Returns Kennel limits which remain constant for the lifetime of an open UI. */
+/datum/dogmos_kennel/ui_static_data(mob/user)
+	return list(
+		"kennel_browse_page_size" = KENNEL_BROWSE_PAGE_SIZE,
+		"kennel_browse_search_max_length" = KENNEL_BROWSE_SEARCH_MAX_LENGTH,
+	)
+
+/** Returns a valid finite Kennel threshold or null for malformed input. */
+/datum/dogmos_kennel/proc/normalize_threshold(threshold, raw_value)
+	var/value = raw_value
+	if(istext(value))
+		value = text2num(value)
+	if(!isnum(value) || value != value || value == INFINITY || value == -INFINITY)
+		return null
+
+	switch(threshold)
+		if("fire_group_notable_size")
+			return clamp(value, 1, SHORT_REAL_LIMIT)
+		if("reaction_magnitude_threshold", "machine_cost_ms_threshold", "high_cost_ms_threshold")
+			return clamp(value, 0, SHORT_REAL_LIMIT)
+	return null
+
+/** Returns a machinery search string within the per-session input limit. */
+/datum/dogmos_kennel/proc/normalize_browse_search(raw_search)
+	if(!istext(raw_search))
+		return ""
+	return copytext_char(raw_search, 1, KENNEL_BROWSE_SEARCH_MAX_LENGTH + 1)
+
+/** Builds one bounded machinery browse page without retaining or materializing the full result set. */
+/datum/dogmos_kennel/proc/build_machinery_browse_page(list/candidates, raw_search, raw_page)
+	var/search = normalize_browse_search(raw_search)
+	var/requested_page = raw_page
+	if(istext(requested_page))
+		requested_page = text2num(requested_page)
+	if(!isnum(requested_page) || requested_page != requested_page || requested_page == INFINITY || requested_page == -INFINITY)
+		requested_page = 1
+
+	var/total = 0
+	for(var/obj/machinery/machine as anything in candidates)
+		var/area/candidate_area = get_area(machine)
+		if(length(search) && !findtext("[machine.name] [candidate_area?.name]", search))
+			continue
+		total++
+
+	var/total_pages = max(1, CEILING(total / KENNEL_BROWSE_PAGE_SIZE, 1))
+	var/page = clamp(round(requested_page), 1, total_pages)
+	var/first_row = (page - 1) * KENNEL_BROWSE_PAGE_SIZE + 1
+	var/last_row = min(first_row + KENNEL_BROWSE_PAGE_SIZE - 1, total)
+	var/matched_row = 0
+	var/list/rows = list()
+	for(var/obj/machinery/machine as anything in candidates)
+		var/area/candidate_area = get_area(machine)
+		if(length(search) && !findtext("[machine.name] [candidate_area?.name]", search))
+			continue
+		matched_row++
+		if(matched_row < first_row)
+			continue
+		if(matched_row > last_row)
+			break
+		rows += list(list(
+			"ref" = REF(machine),
+			"name" = machine.name,
+			"area" = candidate_area?.name,
+		))
+
+	return list(
+		"rows" = rows,
+		"page" = page,
+		"pages" = total_pages,
+		"total" = total,
+		"search" = search,
+	)
 
 /** Returns live Dogmos telemetry and bounded Kennel histories for the Overview tab. */
 /datum/dogmos_kennel/ui_data(mob/user)
@@ -68,21 +151,20 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 	data["structures_of_interest"] = SSair.structures_of_interest
 
 	if(!SSair.kennel_slow_mode)
-		// Every registered atmos machine/canister, for manually pinning one not already auto-flagged -
-		// this list can be large (thousands of pipe segments on a full map), so it only exists while
-		// slow mode is off.
-		var/list/browse = list()
-		for(var/candidate as anything in SSair.atmos_machinery)
-			if(!istype(candidate, /obj/machinery))
-				continue
-			var/obj/machinery/machine = candidate
-			var/area/candidate_area = get_area(machine)
-			browse += list(list(
-				"ref" = REF(machine),
-				"name" = machine.name,
-				"area" = candidate_area ? candidate_area.name : null,
-			))
-		data["atmos_machinery_browse"] = browse
+		var/datum/tgui/dogmos_kennel/kennel_ui = SStgui.get_open_ui(user, src)
+		var/list/browse_page = build_machinery_browse_page(
+			SSair.atmos_machinery,
+			kennel_ui?.browse_search,
+			kennel_ui?.browse_page,
+		)
+		if(kennel_ui)
+			kennel_ui.browse_search = browse_page["search"]
+			kennel_ui.browse_page = browse_page["page"]
+		data["atmos_machinery_browse"] = browse_page["rows"]
+		data["atmos_machinery_browse_page"] = browse_page["page"]
+		data["atmos_machinery_browse_pages"] = browse_page["pages"]
+		data["atmos_machinery_browse_total"] = browse_page["total"]
+		data["atmos_machinery_browse_search"] = browse_page["search"]
 
 	data["kennel_fire_group_notable_size"] = SSair.kennel_fire_group_notable_size
 	data["kennel_reaction_magnitude_threshold"] = SSair.kennel_reaction_magnitude_threshold
@@ -93,9 +175,10 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 
 /datum/dogmos_kennel/ui_act(action, list/params, datum/tgui/ui, datum/ui_state/state)
 	. = ..()
-	var/mob/user = usr
+	var/mob/user = ui?.user
 	if(. || !user?.client || !check_rights_for(user.client, R_DEBUG))
 		return
+	var/datum/tgui/dogmos_kennel/kennel_ui = ui
 	switch(action)
 		if("move-to-target")
 			var/turf/target = SSair.resolve_kennel_jump_target(params["spot"])
@@ -123,7 +206,6 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 			SSair.kennel_profile_reactions = !SSair.kennel_profile_reactions
 			return TRUE
 		if("toggle_user_display")
-			user = ui.user
 			user.hud_used.atmos_debug_overlays = !user.hud_used.atmos_debug_overlays
 			if(user.hud_used.atmos_debug_overlays)
 				user.client.images += GLOB.colored_images
@@ -148,19 +230,36 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 		if("kennel_unpin")
 			SSair.kennel_unpin_structure(params["ref"])
 			return TRUE
+		if("kennel_set_browse_search")
+			if(!istype(kennel_ui))
+				return
+			kennel_ui.browse_search = normalize_browse_search(params["search"])
+			kennel_ui.browse_page = 1
+			return TRUE
+		if("kennel_set_browse_page")
+			if(!istype(kennel_ui))
+				return
+			var/page = text2num(params["page"])
+			if(!isnum(page) || page != page || page == INFINITY || page == -INFINITY)
+				return
+			kennel_ui.browse_page = max(1, round(page))
+			return TRUE
 		if("kennel_set_threshold")
-			var/value = text2num(params["value"])
+			var/value = normalize_threshold(params["threshold"], params["value"])
 			if(isnull(value))
 				return
 			switch(params["threshold"])
 				if("fire_group_notable_size")
-					SSair.kennel_fire_group_notable_size = max(1, value)
+					SSair.kennel_fire_group_notable_size = value
 				if("reaction_magnitude_threshold")
-					SSair.kennel_reaction_magnitude_threshold = max(0, value)
+					SSair.kennel_reaction_magnitude_threshold = value
 				if("machine_cost_ms_threshold")
-					SSair.kennel_machine_cost_ms_threshold = max(0, value)
+					SSair.kennel_machine_cost_ms_threshold = value
 				if("high_cost_ms_threshold")
-					SSair.kennel_high_cost_ms_threshold = max(0, value)
+					SSair.kennel_high_cost_ms_threshold = value
 				else
 					return
 			return TRUE
+
+#undef KENNEL_BROWSE_PAGE_SIZE
+#undef KENNEL_BROWSE_SEARCH_MAX_LENGTH

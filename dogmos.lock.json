@@ -1,0 +1,94 @@
+{
+  "artifacts": [
+    {
+      "architecture": "x86_64",
+      "file": "linux/dogmosd",
+      "format": "elf",
+      "platform": "linux",
+      "role": "service",
+      "sha256": "9e31142efb0d5f295c590f0f5ff03fb2264a3195a7d43b1e875c5caaa30fd90a",
+      "size": 414376,
+      "symbols": {
+        "file": "linux/dogmosd.debug",
+        "sha256": "a4b19bb34bcd4eb79edbcb3881235f38747d1ffd71d002792b09cb266bef94bf",
+        "size": 2003328
+      },
+      "target": "x86_64-unknown-linux-gnu"
+    },
+    {
+      "architecture": "i686",
+      "file": "linux/libdogmos.so",
+      "format": "elf",
+      "platform": "linux",
+      "role": "shim",
+      "sha256": "0e23b99241da28ead8ff5996d8addbb8fd55481f96e815de617a6213edd2fa80",
+      "size": 997364,
+      "symbols": {
+        "file": "linux/libdogmos.so.debug",
+        "sha256": "52e7fe064ba76e2c1a104f44080c5af47e6c5cae3bf44fff2056fa54de32b6fc",
+        "size": 8908960
+      },
+      "target": "i686-unknown-linux-gnu"
+    },
+    {
+      "architecture": "x86_64",
+      "file": "windows/dogmosd.exe",
+      "format": "pe",
+      "platform": "windows",
+      "role": "service",
+      "sha256": "08f2f1cbe9a09010f5ac429ebc0e64134f1ff21cfee8e19978f2d9155efaf461",
+      "size": 774144,
+      "symbols": {
+        "file": "windows/dogmosd.pdb",
+        "sha256": "954bde792d8a66e9150a6e1595fc8b9c804143cb083370e911f403e104c61165",
+        "size": 13078528
+      },
+      "target": "x86_64-pc-windows-msvc"
+    },
+    {
+      "architecture": "i686",
+      "file": "windows/dogmos.dll",
+      "format": "pe",
+      "platform": "windows",
+      "role": "shim",
+      "sha256": "fd94aafcfc5e488fa1589a2dc4bb823adbd000b38cf2ac9e3f0176fbe514b719",
+      "size": 534528,
+      "symbols": {
+        "file": "windows/dogmos.pdb",
+        "sha256": "35c554655e1a10332e86b442f6bdefd30406f8d877459da527318079e3a04302",
+        "size": 8630272
+      },
+      "target": "i686-pc-windows-msvc"
+    }
+  ],
+  "bindings": {
+    "file": "dogmos_bindings.dm",
+    "sha256": "c53b52ed33ef882f1d55263dff9654102b98047642817636ea86381efa94bf59",
+    "size": 3219
+  },
+  "build_profile": "release",
+  "capabilities": {
+    "feature_fingerprint": "1e358373b6f7dce97d73e5c3ec86148eb41ac469d9f3f112daa815008e136bfb",
+    "features": [
+      "aphelion_reactions",
+      "katmos",
+      "katmos_slow_decompression",
+      "superconductivity",
+      "turf_processing"
+    ]
+  },
+  "schema_version": 1,
+  "source_revision": "8996c4943eba4e1d147aca970232b17634fd1780",
+  "toolchain": {
+    "byond": "516.1687",
+    "byondapi_revision": "721dd4690b60954687e41d8691d0040f398d91a6",
+    "rust": "1.98.0"
+  },
+  "versions": {
+    "abi": 1,
+    "dogmos-byond": "2.3.0",
+    "dogmos-server": "2.3.0",
+    "protocol": 5,
+    "workspace": "2.3.0"
+  }
+}

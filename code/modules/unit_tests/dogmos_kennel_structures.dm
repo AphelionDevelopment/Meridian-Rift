@@ -36,6 +36,18 @@
 	TEST_ASSERT_EQUAL(length(SSair.structures_of_interest), 0, \
 		"kennel_unpin_structure() did not remove the pinned entry by ref.")
 
+	for(var/index in 1 to 250)
+		SSair.structures_of_interest += list(list(
+			"ref" = "bounded-test-[index]",
+			"name" = "Bounded test [index]",
+		))
+	SSair.kennel_pin_structure(fake_machine, "bounded pin", null)
+	TEST_ASSERT_EQUAL(length(SSair.structures_of_interest), 250, \
+		"kennel_pin_structure() retained more than 250 structure rows.")
+	TEST_ASSERT_EQUAL(SSair.structures_of_interest[250]["ref"], "bounded-test-249", \
+		"kennel_pin_structure() did not evict the oldest structure row at the cap.")
+	SSair.kennel_unpin_structure(REF(fake_machine))
+
 	qdel(fake_machine)
 	SSair.structures_of_interest = original_list
 

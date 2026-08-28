@@ -38,7 +38,7 @@
 
 	var/obj/machinery/air_sensor/sensor = allocate(/obj/machinery/air_sensor)
 	var/obj/machinery/atmospherics/components/unary/outlet_injector/input = allocate(/obj/machinery/atmospherics/components/unary/outlet_injector)
-	sensor.configure(input)
+	sensor.inlet_id = input.id_tag
 	computer.connected_sensors["unit_test_chamber"] = sensor.id_tag
 
 	var/datum/gas_mixture/input_air = input.airs[1]

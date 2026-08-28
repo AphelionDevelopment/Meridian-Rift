@@ -1,13 +1,7 @@
 /// Maximum entries retained in each recent-event buffer.
 #define KENNEL_EVENT_HISTORY_CAP 200
-
-/// Fixed overlay categories with stable colors.
-#define KENNEL_OVERLAY_BREACH "breach"
-#define KENNEL_OVERLAY_HIGH_COST "high_cost"
-#define KENNEL_OVERLAY_REACTION "reaction"
-#define KENNEL_OVERLAY_STRUCTURE "structure"
-/// Maximum turfs lit per event overlay category.
-#define KENNEL_OVERLAY_RECENT_CAP 15
+/// Maximum machinery entries retained for Kennel inspection.
+#define KENNEL_STRUCTURE_INTEREST_CAP 250
 
 // APHELION EDIT ADDITION START - DOGMOS
 /// Minimum time between player-facing decompression messages in the same area.
@@ -42,6 +36,70 @@ GLOBAL_LIST_EMPTY(kennel_overlay_images_by_category)
 			shiny.color = category_colors[category]
 			category_images += shiny
 			GLOB.kennel_overlay_images += shiny
+
+/** Rebuilds bounded Kennel indexes and overlay trackers after SSair replacement. */
+/datum/controller/subsystem/air/proc/recover_kennel_derived_state(datum/controller/subsystem/air/old_air)
+	kennel_jump_targets = list()
+	kennel_jump_target_counts = list()
+	var/list/history_buckets = list(
+		recent_fire_groups,
+		recent_high_cost_zones,
+		recent_explosions,
+		recent_reactions_of_interest,
+		recent_breaches,
+	)
+	for(var/list/history as anything in history_buckets)
+		for(var/list/entry as anything in history)
+			var/jump_key = entry["jump_to"]
+			if(!istext(jump_key))
+				continue
+			var/datum/weakref/old_target_ref = old_air.kennel_jump_targets[jump_key]
+			var/atom/target = old_target_ref?.resolve()
+			if(!target || QDELETED(target))
+				continue
+			kennel_jump_targets[jump_key] = WEAKREF(target)
+			kennel_jump_target_counts[jump_key] = (kennel_jump_target_counts[jump_key] || 0) + 1
+
+	if(length(structures_of_interest) > KENNEL_STRUCTURE_INTEREST_CAP)
+		for(var/index in (KENNEL_STRUCTURE_INTEREST_CAP + 1) to length(structures_of_interest))
+			var/list/evicted = structures_of_interest[index]
+			var/datum/weakref/evicted_turf_ref = old_air.kennel_pinned_turfs[evicted["ref"]]
+			kennel_hide_overlay(evicted_turf_ref?.resolve(), KENNEL_OVERLAY_STRUCTURE)
+		structures_of_interest.Cut(KENNEL_STRUCTURE_INTEREST_CAP + 1, length(structures_of_interest) + 1)
+
+	kennel_pinned_turfs = list()
+	for(var/list/entry as anything in structures_of_interest)
+		var/pinned_key = entry["ref"]
+		var/datum/weakref/old_turf_ref = old_air.kennel_pinned_turfs[pinned_key]
+		var/turf/pinned_turf = old_turf_ref?.resolve()
+		if(!pinned_turf || QDELETED(pinned_turf))
+			continue
+		kennel_pinned_turfs[pinned_key] = WEAKREF(pinned_turf)
+		kennel_show_overlay(pinned_turf, KENNEL_OVERLAY_STRUCTURE)
+
+	kennel_overlay_breach_turfs = recover_kennel_overlay_tracker(old_air.kennel_overlay_breach_turfs, KENNEL_OVERLAY_BREACH)
+	kennel_overlay_high_cost_turfs = recover_kennel_overlay_tracker(old_air.kennel_overlay_high_cost_turfs, KENNEL_OVERLAY_HIGH_COST)
+	kennel_overlay_reaction_turfs = recover_kennel_overlay_tracker(old_air.kennel_overlay_reaction_turfs, KENNEL_OVERLAY_REACTION)
+	kennel_breach_feedback_times = list()
+
+	kennel_machine_cost_ewma = list()
+	for(var/obj/machinery/machine as anything in atmos_machinery)
+		var/key = REF(machine)
+		var/old_cost = old_air.kennel_machine_cost_ewma[key]
+		if(!isnull(old_cost))
+			kennel_machine_cost_ewma[key] = old_cost
+
+/** Returns a live, bounded overlay tracker rebuilt from the previous SSair instance. */
+/datum/controller/subsystem/air/proc/recover_kennel_overlay_tracker(list/old_tracker, category)
+	var/list/recovered = list()
+	for(var/turf/target as anything in old_tracker)
+		if(QDELETED(target))
+			continue
+		recovered += target
+		kennel_show_overlay(target, category)
+		if(length(recovered) >= KENNEL_OVERLAY_RECENT_CAP)
+			break
+	return recovered
 
 /datum/controller/subsystem/air/proc/kennel_show_overlay(turf/target, category)
 	if(!istype(target))
@@ -81,9 +139,22 @@ GLOBAL_LIST_EMPTY(kennel_overlay_images_by_category)
 		return FALSE
 	var/area/breach_area = get_area(breach_turf)
 	var/feedback_key = breach_area ? REF(breach_area) : "z[breach_turf.z]"
+	for(var/retained_key in kennel_breach_feedback_times)
+		if(world.time >= kennel_breach_feedback_times[retained_key] + DOGMOS_DECOMPRESSION_FEEDBACK_COOLDOWN)
+			kennel_breach_feedback_times -= retained_key
 	var/last_feedback = kennel_breach_feedback_times[feedback_key]
-	if(!isnull(last_feedback) && world.time < last_feedback + DOGMOS_DECOMPRESSION_FEEDBACK_COOLDOWN)
+	if(!isnull(last_feedback))
 		return FALSE
+	if(length(kennel_breach_feedback_times) >= KENNEL_EVENT_HISTORY_CAP)
+		var/oldest_key
+		var/oldest_time = INFINITY
+		for(var/retained_key in kennel_breach_feedback_times)
+			var/retained_time = kennel_breach_feedback_times[retained_key]
+			if(retained_time >= oldest_time)
+				continue
+			oldest_key = retained_key
+			oldest_time = retained_time
+		kennel_breach_feedback_times -= oldest_key
 	kennel_breach_feedback_times[feedback_key] = world.time
 	return TRUE
 // APHELION EDIT ADDITION END
@@ -229,6 +300,10 @@ GLOBAL_LIST_EMPTY(kennel_overlay_images_by_category)
 	if(target_turf)
 		kennel_pinned_turfs[key] = WEAKREF(target_turf)
 		kennel_show_overlay(target_turf, KENNEL_OVERLAY_STRUCTURE)
+	if(length(structures_of_interest) > KENNEL_STRUCTURE_INTEREST_CAP)
+		var/list/evicted = structures_of_interest[KENNEL_STRUCTURE_INTEREST_CAP + 1]
+		structures_of_interest.Cut(KENNEL_STRUCTURE_INTEREST_CAP + 1, length(structures_of_interest) + 1)
+		kennel_hide_pinned_overlay(evicted["ref"])
 
 /// Hides and clears a structure's weakly-referenced overlay turf.
 /datum/controller/subsystem/air/proc/kennel_hide_pinned_overlay(ref)
@@ -257,3 +332,5 @@ GLOBAL_LIST_EMPTY(kennel_overlay_images_by_category)
 // APHELION EDIT ADDITION START - DOGMOS
 #undef DOGMOS_DECOMPRESSION_FEEDBACK_COOLDOWN
 // APHELION EDIT ADDITION END
+#undef KENNEL_EVENT_HISTORY_CAP
+#undef KENNEL_STRUCTURE_INTEREST_CAP

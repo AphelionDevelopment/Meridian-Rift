@@ -57,4 +57,15 @@
 #define DOGMOS_GOGGLE_MODE_STRUCTURES "structure pins"
 /// Administrative goggles mode that displays every Kennel diagnostic overlay.
 #define DOGMOS_GOGGLE_MODE_ALL "full kennel"
+
+/// Kennel overlay category for recent decompression breaches.
+#define KENNEL_OVERLAY_BREACH "breach"
+/// Kennel overlay category for reactions exceeding the measured cost threshold.
+#define KENNEL_OVERLAY_HIGH_COST "high_cost"
+/// Kennel overlay category for recent reaction hotspots.
+#define KENNEL_OVERLAY_REACTION "reaction"
+/// Kennel overlay category for structures pinned by diagnostics.
+#define KENNEL_OVERLAY_STRUCTURE "structure"
+/// Maximum turfs lit per Kennel event overlay category.
+#define KENNEL_OVERLAY_RECENT_CAP 15
 // APHELION EDIT ADDITION END

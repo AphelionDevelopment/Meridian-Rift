@@ -130,6 +130,12 @@ type Data = {
   recent_breaches: BreachEntry[];
   structures_of_interest: StructureOfInterestEntry[];
   atmos_machinery_browse?: MachineBrowseEntry[];
+  atmos_machinery_browse_page?: number;
+  atmos_machinery_browse_pages?: number;
+  atmos_machinery_browse_total?: number;
+  atmos_machinery_browse_search?: string;
+  kennel_browse_page_size: number;
+  kennel_browse_search_max_length: number;
   kennel_fire_group_notable_size: number;
   kennel_reaction_magnitude_threshold: number;
   kennel_machine_cost_ms_threshold: number;
@@ -645,16 +651,16 @@ const BreachesPanel = (props) => {
 const StructuresPanel = (props) => {
   const { act, data } = useBackend<Data>();
   const [pinnedSearch, setPinnedSearch] = useState('');
-  const [browseSearch, setBrowseSearch] = useState('');
   const pinned = pinnedSearch
     ? data.structures_of_interest.filter(
         createSearch(pinnedSearch, (e) => `${e.name} ${e.area} ${e.reason}`),
       )
     : data.structures_of_interest;
   const browse = data.atmos_machinery_browse || [];
-  const browseFiltered = browseSearch
-    ? browse.filter(createSearch(browseSearch, (e) => `${e.name} ${e.area}`))
-    : browse;
+  const browsePage = data.atmos_machinery_browse_page || 1;
+  const browsePages = data.atmos_machinery_browse_pages || 1;
+  const browseTotal = data.atmos_machinery_browse_total || 0;
+  const browseSearch = data.atmos_machinery_browse_search || '';
   return (
     <>
       <Section title="Leashed / Flagged Structures &amp; Machines">
@@ -721,12 +727,15 @@ const StructuresPanel = (props) => {
             <Input
               placeholder="Search machinery..."
               value={browseSearch}
-              onChange={(value) => setBrowseSearch(value)}
+              maxLength={data.kennel_browse_search_max_length}
+              onChange={(value) =>
+                act('kennel_set_browse_search', { search: value })
+              }
               fluid
               mb={1}
             />
             <Table>
-              {browseFiltered.slice(0, 100).map((entry) => (
+              {browse.map((entry) => (
                 <tr key={entry.ref}>
                   <td>{entry.name}</td>
                   <td>{entry.area}</td>
@@ -740,12 +749,34 @@ const StructuresPanel = (props) => {
                 </tr>
               ))}
             </Table>
-            {browseFiltered.length > 100 && (
-              <Box color="label">
-                {browseFiltered.length - 100} more not shown - narrow your
-                search.
-              </Box>
-            )}
+            <Stack align="center" mt={1}>
+              <Stack.Item>
+                <Button
+                  icon="chevron-left"
+                  disabled={browsePage <= 1}
+                  onClick={() =>
+                    act('kennel_set_browse_page', { page: browsePage - 1 })
+                  }
+                >
+                  Previous
+                </Button>
+              </Stack.Item>
+              <Stack.Item grow textAlign="center" color="label">
+                Page {browsePage} of {browsePages}; {browseTotal} matching
+                machines; at most {data.kennel_browse_page_size} rows per page
+              </Stack.Item>
+              <Stack.Item>
+                <Button
+                  icon="chevron-right"
+                  disabled={browsePage >= browsePages}
+                  onClick={() =>
+                    act('kennel_set_browse_page', { page: browsePage + 1 })
+                  }
+                >
+                  Next
+                </Button>
+              </Stack.Item>
+            </Stack>
           </>
         )}
       </Section>

@@ -1,2 +1,0 @@
-#include "dogmos_ipc_benchmark.dm"
-#include "dogmos_ipc_benchmark_bindings.dm"

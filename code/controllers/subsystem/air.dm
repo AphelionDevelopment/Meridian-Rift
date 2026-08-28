@@ -348,6 +348,63 @@ SUBSYSTEM_DEF(air)
 	currentrun = SSair.currentrun
 	queued_for_activation = SSair.queued_for_activation
 
+	// APHELION EDIT ADDITION START - DOGMOS
+	share_max_steps = SSair.share_max_steps
+	equalize_enabled = SSair.equalize_enabled
+	realistic_space_radiation = SSair.realistic_space_radiation
+	flamethrower_directional_spread = SSair.flamethrower_directional_spread
+	planet_share_ratio = SSair.planet_share_ratio
+	excited_group_pressure_goal = SSair.excited_group_pressure_goal
+	equalize_hard_turf_limit = SSair.equalize_hard_turf_limit
+	dogmos_blocked_turf_temperature_authority = SSair.dogmos_blocked_turf_temperature_authority
+	dogmos_equalize_performance_profile = SSair.dogmos_equalize_performance_profile
+
+	kennel_slow_mode = SSair.kennel_slow_mode
+	kennel_profile_reactions = SSair.kennel_profile_reactions
+	kennel_high_cost_ms_threshold = SSair.kennel_high_cost_ms_threshold
+	kennel_fire_group_notable_size = SSair.kennel_fire_group_notable_size
+	kennel_reaction_magnitude_threshold = SSair.kennel_reaction_magnitude_threshold
+	kennel_machine_cost_ms_threshold = SSair.kennel_machine_cost_ms_threshold
+	kennel_auto_pin_duration = SSair.kennel_auto_pin_duration
+	kennel_push_cursor = 0
+	active_turfs_walk_cursor = 0
+
+	recent_fire_groups = SSair.recent_fire_groups
+	recent_high_cost_zones = SSair.recent_high_cost_zones
+	recent_explosions = SSair.recent_explosions
+	recent_reactions_of_interest = SSair.recent_reactions_of_interest
+	recent_breaches = SSair.recent_breaches
+	structures_of_interest = SSair.structures_of_interest
+
+	cached_cost = SSair.cached_cost
+	cost_atoms = SSair.cost_atoms
+	cost_turfs = SSair.cost_turfs
+	cost_hotspots = SSair.cost_hotspots
+	cost_groups = SSair.cost_groups
+	cost_highpressure = SSair.cost_highpressure
+	cost_superconductivity = SSair.cost_superconductivity
+	cost_pipenets = SSair.cost_pipenets
+	cost_atmos_machinery = SSair.cost_atmos_machinery
+	cost_rebuilds = SSair.cost_rebuilds
+	cost_adjacent = SSair.cost_adjacent
+	cost_post_process = SSair.cost_post_process
+	cost_equalize = SSair.cost_equalize
+	low_pressure_turfs = SSair.low_pressure_turfs
+	high_pressure_turfs = SSair.high_pressure_turfs
+	num_group_turfs_processed = SSair.num_group_turfs_processed
+	num_equalize_processed = SSair.num_equalize_processed
+	dogmos_heat_graph_nodes = SSair.dogmos_heat_graph_nodes
+	dogmos_heat_edge_attempts = SSair.dogmos_heat_edge_attempts
+	dogmos_heat_edges_applied = SSair.dogmos_heat_edges_applied
+	dogmos_heat_lock_contention = SSair.dogmos_heat_lock_contention
+	dogmos_heat_registration_changes = SSair.dogmos_heat_registration_changes
+
+	dogmos_reactions = init_dogmos_reactions(gas_reactions)
+	recover_kennel_derived_state(SSair)
+	RegisterSignal(SSdcs, COMSIG_GLOB_EXPLOSION, PROC_REF(on_kennel_explosion))
+	// SSdogmos owns the service session and all atmosphere state; recovery must not copy or restart it.
+	// APHELION EDIT ADDITION END
+
 /datum/controller/subsystem/air/proc/process_adjacent_rebuild(init = FALSE)
 	var/list/queue = adjacent_rebuild
 
@@ -965,6 +1022,9 @@ GLOBAL_LIST_EMPTY(colored_images)
 		return
 	machine.atmos_processing = FALSE
 	atmos_machinery -= machine
+	// APHELION EDIT ADDITION START - DOGMOS
+	kennel_machine_cost_ewma -= REF(machine)
+	// APHELION EDIT ADDITION END
 
 	// If we're currently processing atmos machines, there's a chance this machine is in
 	// the currentrun list, which is a cache of atmos_machinery. Remove it from that list
@@ -1085,3 +1145,5 @@ GLOBAL_LIST_EMPTY(colored_images)
 			else
 				user.client.images -= GLOB.colored_images
 			return TRUE
+
+#undef KENNEL_SLOW_MODE_PUSH_INTERVAL

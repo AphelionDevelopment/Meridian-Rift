@@ -179,6 +179,9 @@
 #include "dogmos_superconduction_golden.dm"
 #include "dogmos_active_turfs_bloat.dm"
 #include "dogmos_space_boundary_registration.dm"
+// APHELION EDIT ADDITION START - DOGMOS
+#include "dogmos_ssair_recovery.dm"
+// APHELION EDIT ADDITION END
 #include "dogmos_aphelion_reactions.dm"
 #include "dogmos_internals_breath.dm"
 #include "dogmos_breach_radiative_cooling.dm"
@@ -201,6 +204,9 @@
 #include "dogmos_goggle_modes.dm"
 // APHELION EDIT ADDITION END
 #include "dogmos_kennel_slow_mode_payload.dm"
+// APHELION EDIT ADDITION START - DOGMOS
+#include "dogmos_kennel_thresholds.dm"
+// APHELION EDIT ADDITION END
 #include "dogmos_init_health.dm"
 #include "dogmos_registration.dm"
 #include "dogmos_turf_adjacency_sync.dm"
