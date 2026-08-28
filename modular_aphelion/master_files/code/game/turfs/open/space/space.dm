@@ -1,5 +1,5 @@
 /** Registers a touched space turf as an immutable Dogmos graph boundary. */
-/turf/open/space/register_dogmos_air()
+/turf/open/space/register_dogmos_air(remove_uninitialized)
 	if(!DOGMOS)
 		return
 	if(isnull(dogmos_registration_generation))

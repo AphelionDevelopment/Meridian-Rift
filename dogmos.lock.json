@@ -21,11 +21,11 @@
       "format": "elf",
       "platform": "linux",
       "role": "shim",
-      "sha256": "53d8777b616d1fe64329c95096d1cbfde5dcf4184f27f86bbc02824db9d8ca09",
+      "sha256": "b61e6d7cc8008014dfc5343eaf3a99a4151a979b8f4bef67f77891750ce83260",
       "size": 1005656,
       "symbols": {
         "file": "linux/libdogmos.so.debug",
-        "sha256": "0fba99a37fec7fd9cbf36188c6bf665732fad1ed25b6cc98d0a3ddb2fe26a7f3",
+        "sha256": "ce9dd2f824247681636b4cf9c01c510c564982d26db8c5c6424b1e87f046be5f",
         "size": 8949820
       },
       "target": "i686-unknown-linux-gnu"
@@ -36,11 +36,11 @@
       "format": "pe",
       "platform": "windows",
       "role": "service",
-      "sha256": "ce46aac43328461ff6b62da723582c8a640d6e80f6e43e0d0eb0489baa5831f0",
-      "size": 776192,
+      "sha256": "ee895ab612b9b2cae7c868da09614337bedb4d7b8303d540845651c90d63e710",
+      "size": 775680,
       "symbols": {
         "file": "windows/dogmosd.pdb",
-        "sha256": "f206953a2a672a420789283b3b50289e402c78ed5bd7de67ef41096c399caaec",
+        "sha256": "d617703f75176cd9186e27320cc974c68dd6a75c5f35cc0d952181c03aca38e2",
         "size": 13127680
       },
       "target": "x86_64-pc-windows-msvc"
@@ -51,11 +51,11 @@
       "format": "pe",
       "platform": "windows",
       "role": "shim",
-      "sha256": "5db11461007df57e1827b5796927deea19b2c62dafe7282fb8ca03b2902e5cf5",
+      "sha256": "2345c0a5b216bc919d97c45bc6096aebb4a4dfbcd8a2a0abcb6ed4c13f0cdda6",
       "size": 540672,
       "symbols": {
         "file": "windows/dogmos.pdb",
-        "sha256": "52c4ac7f7db5333d0f869629d4adf5b821575bb2dccb3fa1d44e14f46d0823c4",
+        "sha256": "5698dc078374bdcde0161aae3a1a98f34d3c64fe59ac4b258ff21f4ab15122cc",
         "size": 8704000
       },
       "target": "i686-pc-windows-msvc"
@@ -78,7 +78,7 @@
     ]
   },
   "schema_version": 1,
-  "source_revision": "f08b07d34f2098aa7ccefed1237b70d0d9c6d6b2",
+  "source_revision": "f59bd3b68e201c1b176aa4703ef2ededc34d504c",
   "toolchain": {
     "byond": "516.1687",
     "byondapi_revision": "721dd4690b60954687e41d8691d0040f398d91a6",

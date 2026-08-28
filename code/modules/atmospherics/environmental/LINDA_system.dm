@@ -166,8 +166,8 @@
 	if(!init_air || !DOGMOS)
 		return
 	conductivity_blocked_directions = ALL_CARDINALS & ~conductivity_directions()
-	__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
 	register_dogmos_air()
+	__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
 
 /**
  * returns a list of adjacent turfs that can share air with this one.

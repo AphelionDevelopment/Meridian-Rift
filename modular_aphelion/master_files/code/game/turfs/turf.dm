@@ -18,12 +18,18 @@
 	register_dogmos_air()
 	return ..()
 
-/** Registers or re-registers this turf in Dogmos' gas and heat graphs. */
-/turf/proc/register_dogmos_air()
+/**
+ * Registers or re-registers this turf in Dogmos' gas and heat graphs.
+ *
+ * Arguments:
+ * * remove_uninitialized - Whether a newly replaced non-atmos turf must invalidate the previous service generation.
+ */
+/turf/proc/register_dogmos_air(remove_uninitialized = FALSE)
 	if(!DOGMOS)
 		return
 	if(!init_air)
-		update_air_ref(DOGMOS_SIMULATION_REMOVE)
+		if(remove_uninitialized)
+			update_air_ref(DOGMOS_SIMULATION_REMOVE)
 		return
 	if(isnull(dogmos_registration_generation))
 		mark_dogmos_turf_replacement()

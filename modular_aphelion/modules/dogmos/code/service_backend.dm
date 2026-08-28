@@ -4,6 +4,11 @@
 #define DOGMOS_CALLBACK_HEADER_FIELDS 12
 #define DOGMOS_CALLBACK_EVENT_FIELDS 31
 #define DOGMOS_CALLBACK_EVENT_START 13
+#define DOGMOS_TURF_BATCH_OPERATIONS 512
+#define DOGMOS_TURF_LIFECYCLE_FIELDS 6
+#define DOGMOS_TURF_ADJACENCY_FIELDS 6
+#define DOGMOS_TURF_HEAT_FIELDS 7
+#define DOGMOS_TURF_HEAT_ADJACENCY_FIELDS 5
 
 #define DOGMOS_LIFECYCLE_REGISTER 1
 #define DOGMOS_LIFECYCLE_UNREGISTER 2
@@ -102,6 +107,88 @@
 	var/dogmos_pending_service_callbacks = 0
 	/// Number of stale turf callbacks rejected before invoking a gameplay proc.
 	var/dogmos_stale_callback_count = 0
+	/// Whether startup turf mutations are accumulating in bounded IPC batches.
+	var/turf_registration_batching = FALSE
+	/// Pending fixed-width turf lifecycle records keyed by turf slot.
+	var/list/dogmos_pending_turf_lifecycle = list()
+	/// Pending fixed-width turf adjacency records keyed by canonical slot pair.
+	var/list/dogmos_pending_turf_adjacency = list()
+	/// Pending fixed-width turf heat records keyed by turf slot.
+	var/list/dogmos_pending_turf_heat = list()
+	/// Pending fixed-width turf heat-adjacency records keyed by canonical slot pair.
+	var/list/dogmos_pending_turf_heat_adjacency = list()
+
+/** Starts bounded accumulation of startup turf mutations. */
+/datum/controller/subsystem/dogmos/proc/begin_turf_registration_batch()
+	if(turf_registration_batching)
+		CRASH("Attempted to nest Dogmos turf registration batches.")
+	turf_registration_batching = TRUE
+	dogmos_pending_turf_lifecycle.Cut()
+	dogmos_pending_turf_adjacency.Cut()
+	dogmos_pending_turf_heat.Cut()
+	dogmos_pending_turf_heat_adjacency.Cut()
+
+/** Flushes pending startup turf mutations while preserving registration-before-topology ordering. */
+/datum/controller/subsystem/dogmos/proc/flush_turf_registration_batch()
+	if(length(dogmos_pending_turf_lifecycle))
+		var/list/lifecycle_batch = list()
+		for(var/turf_slot in dogmos_pending_turf_lifecycle)
+			lifecycle_batch += dogmos_pending_turf_lifecycle[turf_slot]
+		var/lifecycle_count = length(lifecycle_batch) / DOGMOS_TURF_LIFECYCLE_FIELDS
+		if(dogmos_turf_lifecycle_batch(lifecycle_batch) != lifecycle_count)
+			CRASH("dogmosd rejected a startup turf lifecycle batch.")
+		dogmos_pending_turf_lifecycle.Cut()
+	if(length(dogmos_pending_turf_heat))
+		var/list/heat_batch = list()
+		for(var/heat_turf_slot in dogmos_pending_turf_heat)
+			heat_batch += dogmos_pending_turf_heat[heat_turf_slot]
+		var/heat_count = length(heat_batch) / DOGMOS_TURF_HEAT_FIELDS
+		if(dogmos_turf_heat_batch(heat_batch) != heat_count)
+			CRASH("dogmosd rejected a startup turf heat batch.")
+		dogmos_pending_turf_heat.Cut()
+	if(length(dogmos_pending_turf_adjacency))
+		var/list/adjacency_batch = list()
+		for(var/edge_key in dogmos_pending_turf_adjacency)
+			adjacency_batch += dogmos_pending_turf_adjacency[edge_key]
+		var/adjacency_count = length(adjacency_batch) / DOGMOS_TURF_ADJACENCY_FIELDS
+		if(dogmos_turf_adjacency_batch(adjacency_batch) != adjacency_count)
+			CRASH("dogmosd rejected a startup turf adjacency batch.")
+		dogmos_pending_turf_adjacency.Cut()
+	if(length(dogmos_pending_turf_heat_adjacency))
+		var/list/heat_adjacency_batch = list()
+		for(var/heat_edge_key in dogmos_pending_turf_heat_adjacency)
+			heat_adjacency_batch += dogmos_pending_turf_heat_adjacency[heat_edge_key]
+		var/heat_adjacency_count = length(heat_adjacency_batch) / DOGMOS_TURF_HEAT_ADJACENCY_FIELDS
+		if(dogmos_turf_heat_adjacency_batch(heat_adjacency_batch) != heat_adjacency_count)
+			CRASH("dogmosd rejected a startup turf heat-adjacency batch.")
+		dogmos_pending_turf_heat_adjacency.Cut()
+
+/** Flushes a full startup turf batch before any wire payload can exceed its bound. */
+/datum/controller/subsystem/dogmos/proc/flush_full_turf_registration_batch()
+	if(length(dogmos_pending_turf_lifecycle) >= DOGMOS_TURF_BATCH_OPERATIONS \
+		|| length(dogmos_pending_turf_adjacency) >= DOGMOS_TURF_BATCH_OPERATIONS \
+		|| length(dogmos_pending_turf_heat) >= DOGMOS_TURF_BATCH_OPERATIONS \
+		|| length(dogmos_pending_turf_heat_adjacency) >= DOGMOS_TURF_BATCH_OPERATIONS)
+		flush_turf_registration_batch()
+
+/** Removes pending topology that predates a turf's latest registration state. */
+/datum/controller/subsystem/dogmos/proc/discard_pending_turf_adjacencies(turf/target)
+	var/slot = target.dogmos_service_slot()
+	for(var/direction in GLOB.cardinals)
+		var/turf/neighbor = get_step(target, direction)
+		if(!neighbor)
+			continue
+		var/neighbor_slot = neighbor.dogmos_service_slot()
+		var/edge_key = "[min(slot, neighbor_slot)]:[max(slot, neighbor_slot)]"
+		dogmos_pending_turf_adjacency.Remove(edge_key)
+		dogmos_pending_turf_heat_adjacency.Remove(edge_key)
+
+/** Flushes and closes startup turf mutation accumulation. */
+/datum/controller/subsystem/dogmos/proc/finish_turf_registration_batch()
+	if(!turf_registration_batching)
+		CRASH("Attempted to finish an inactive Dogmos turf registration batch.")
+	flush_turf_registration_batch()
+	turf_registration_batching = FALSE
 
 /** Registers one gas mixture with a stale-handle-safe numeric identity. */
 /datum/controller/subsystem/dogmos/proc/register_mixture(datum/gas_mixture/mixture)
@@ -776,8 +863,11 @@
 			DOGMOS_LIFECYCLE_REGISTER, slot, generation, FALSE, 0, 0,
 			DOGMOS_LIFECYCLE_UNREGISTER, slot, generation, FALSE, 0, 0,
 		)
+		if(SSdogmos.turf_registration_batching)
+			SSdogmos.flush_turf_registration_batch()
 		if(dogmos_turf_lifecycle_batch(removal) != 2)
 			CRASH("dogmosd rejected turf removal for [slot]:[generation].")
+		mark_dogmos_turf_replacement()
 		return
 
 	var/turf/open/open_turf = isopenturf(src) ? src : null
@@ -785,15 +875,39 @@
 	var/mixture_present = !isnull(mixture)
 	var/mixture_slot = mixture?.dogmos_slot || 0
 	var/mixture_generation = mixture?.dogmos_generation || 0
-	if(dogmos_turf_lifecycle_batch(list(DOGMOS_LIFECYCLE_REGISTER, slot, generation, mixture_present, mixture_slot, mixture_generation)) != 1)
+	var/list/lifecycle = list(DOGMOS_LIFECYCLE_REGISTER, slot, generation, mixture_present, mixture_slot, mixture_generation)
+	if(!SSdogmos.turf_registration_batching && dogmos_turf_lifecycle_batch(lifecycle) != 1)
 		CRASH("dogmosd rejected turf registration for [slot]:[generation].")
 
 	if(flag == DOGMOS_SIMULATION_SPACE_BOUNDARY)
-		if(dogmos_turf_heat_batch(list(slot, generation, FALSE, 0, 0, 0, FALSE)) != 1)
+		var/list/space_heat = list(slot, generation, FALSE, 0, 0, 0, FALSE)
+		if(SSdogmos.turf_registration_batching)
+			SSdogmos.discard_pending_turf_adjacencies(src)
+			SSdogmos.dogmos_pending_turf_lifecycle["[slot]"] = lifecycle
+			SSdogmos.dogmos_pending_turf_heat["[slot]"] = space_heat
+			SSdogmos.flush_full_turf_registration_batch()
+			return
+		if(dogmos_turf_heat_batch(space_heat) != 1)
 			CRASH("dogmosd rejected the space-boundary heat state for [slot]:[generation].")
 		return
 
-	if(dogmos_turf_heat_batch(list(slot, generation, TRUE, initial_temperature, thermal_conductivity, heat_capacity, should_conduct_to_space())) != 1)
+	var/heat_present = thermal_conductivity > 0 && heat_capacity > 0
+	var/list/heat = list(
+		slot,
+		generation,
+		heat_present,
+		heat_present ? initial_temperature : 0,
+		heat_present ? thermal_conductivity : 0,
+		heat_present ? heat_capacity : 0,
+		heat_present && should_conduct_to_space(),
+	)
+	if(SSdogmos.turf_registration_batching)
+		SSdogmos.discard_pending_turf_adjacencies(src)
+		SSdogmos.dogmos_pending_turf_lifecycle["[slot]"] = lifecycle
+		SSdogmos.dogmos_pending_turf_heat["[slot]"] = heat
+		SSdogmos.flush_full_turf_registration_batch()
+		return
+	if(dogmos_turf_heat_batch(heat) != 1)
 		CRASH("dogmosd rejected turf heat registration for [slot]:[generation].")
 
 /** Updates this turf's service-owned heat temperature. */
@@ -819,25 +933,44 @@
 	var/generation = dogmos_service_generation()
 	var/list/gas_edges = list()
 	var/list/heat_edges = list()
+	var/heat_present = thermal_conductivity > 0 && heat_capacity > 0
 	for(var/direction in GLOB.cardinals)
 		var/turf/neighbor = get_step(src, direction)
-		if(!neighbor || isnull(neighbor.dogmos_registration_generation))
+		if(!neighbor)
 			continue
 		var/neighbor_slot = neighbor.dogmos_service_slot()
+		if(SSdogmos.turf_registration_batching && slot >= neighbor_slot)
+			continue
+		if(neighbor.init_air)
+			neighbor.register_dogmos_air()
+		if(isnull(neighbor.dogmos_registration_generation))
+			continue
 		var/neighbor_generation = neighbor.dogmos_service_generation()
 		var/turf/open/open_turf = isopenturf(src) ? src : null
 		var/turf/open/open_neighbor = isopenturf(neighbor) ? neighbor : null
-		if(open_turf?.air && open_neighbor?.air && !blocks_air && !neighbor.blocks_air)
+		if(init_air && neighbor.init_air && open_turf?.air && open_neighbor?.air && open_turf.air != open_neighbor.air && !blocks_air && !neighbor.blocks_air)
 			var/connected = (neighbor in atmos_adjacent_turfs)
-			var/firelock = connected && (atmos_adjacent_turfs[neighbor] & DOGMOS_ADJACENT_FIRELOCK)
-			gas_edges += list(slot, generation, neighbor_slot, neighbor_generation, connected, firelock)
-		if(init_air && neighbor.init_air && !isspaceturf(src) && !isspaceturf(neighbor))
+			var/firelock = !!(connected && (atmos_adjacent_turfs[neighbor] & DOGMOS_ADJACENT_FIRELOCK))
+			var/list/gas_edge = list(slot, generation, neighbor_slot, neighbor_generation, connected, firelock)
+			if(SSdogmos.turf_registration_batching)
+				var/gas_edge_key = "[slot]:[neighbor_slot]"
+				SSdogmos.dogmos_pending_turf_adjacency[gas_edge_key] = gas_edge
+			else
+				gas_edges += gas_edge
+		if(heat_present && neighbor.thermal_conductivity > 0 && neighbor.heat_capacity > 0 && init_air && neighbor.init_air && !isspaceturf(src) && !isspaceturf(neighbor))
 			var/heat_connected = !(conductivity_blocked_directions & direction) && !(neighbor.conductivity_blocked_directions & turn(direction, 180))
-			heat_edges += list(slot, generation, neighbor_slot, neighbor_generation, heat_connected)
+			var/list/heat_edge = list(slot, generation, neighbor_slot, neighbor_generation, heat_connected)
+			if(SSdogmos.turf_registration_batching)
+				var/heat_edge_key = "[slot]:[neighbor_slot]"
+				SSdogmos.dogmos_pending_turf_heat_adjacency[heat_edge_key] = heat_edge
+			else
+				heat_edges += heat_edge
 
-	if(length(gas_edges) && dogmos_turf_adjacency_batch(gas_edges) != length(gas_edges) / 6)
+	if(SSdogmos.turf_registration_batching)
+		return TRUE
+	if(length(gas_edges) && dogmos_turf_adjacency_batch(gas_edges) != length(gas_edges) / DOGMOS_TURF_ADJACENCY_FIELDS)
 		CRASH("dogmosd rejected gas adjacency for turf [slot]:[generation].")
-	if(length(heat_edges) && dogmos_turf_heat_adjacency_batch(heat_edges) != length(heat_edges) / 5)
+	if(length(heat_edges) && dogmos_turf_heat_adjacency_batch(heat_edges) != length(heat_edges) / DOGMOS_TURF_HEAT_ADJACENCY_FIELDS)
 		CRASH("dogmosd rejected heat adjacency for turf [slot]:[generation].")
 	return TRUE
 
@@ -913,6 +1046,11 @@
 #undef DOGMOS_CALLBACK_HEADER_FIELDS
 #undef DOGMOS_CALLBACK_EVENT_FIELDS
 #undef DOGMOS_CALLBACK_EVENT_START
+#undef DOGMOS_TURF_BATCH_OPERATIONS
+#undef DOGMOS_TURF_LIFECYCLE_FIELDS
+#undef DOGMOS_TURF_ADJACENCY_FIELDS
+#undef DOGMOS_TURF_HEAT_FIELDS
+#undef DOGMOS_TURF_HEAT_ADJACENCY_FIELDS
 #undef DOGMOS_LIFECYCLE_REGISTER
 #undef DOGMOS_LIFECYCLE_UNREGISTER
 #undef DOGMOS_RESPONSE_APPLIED

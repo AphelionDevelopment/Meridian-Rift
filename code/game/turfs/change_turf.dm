@@ -286,8 +286,8 @@ GLOBAL_LIST_INIT(blacklisted_automated_baseturfs, typecacheof(list(
 	levelupdate()
 	// APHELION EDIT ADDITION START - DOGMOS
 	mark_dogmos_turf_replacement()
+	register_dogmos_air(remove_uninitialized = TRUE)
 	// APHELION EDIT ADDITION END
-	register_dogmos_air()
 	if(flags & CHANGETURF_RECALC_ADJACENT)
 		immediate_calculate_adjacent_turfs()
 		if(ispath(oldType, /turf/closed) && isopenturf(src))

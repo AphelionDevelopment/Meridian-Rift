@@ -717,6 +717,10 @@ SUBSYSTEM_DEF(air)
 /datum/controller/subsystem/air/proc/setup_allturfs()
 	var/list/active_turfs = src.active_turfs
 	times_fired++
+	// APHELION EDIT ADDITION START - DOGMOS
+	if(DOGMOS)
+		SSdogmos.begin_turf_registration_batch()
+	// APHELION EDIT ADDITION END
 
 	// Clear active turfs - faster than removing every single turf in the world
 	// one-by-one, and Initalize_Atmos only ever adds `src` back in.
@@ -741,6 +745,10 @@ SUBSYSTEM_DEF(air)
 		difference_check += setup
 		if(CHECK_TICK)
 			time--
+	// APHELION EDIT ADDITION START - DOGMOS
+	if(DOGMOS)
+		SSdogmos.finish_turf_registration_batch()
+	// APHELION EDIT ADDITION END
 
 	// Now we're gonna compare for differences
 	// Taking advantage of current cycle being set to negative before this run to do A->B B->A prevention
