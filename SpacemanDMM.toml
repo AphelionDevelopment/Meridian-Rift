@@ -16,8 +16,8 @@ engine = "auxtools"
 [map_renderer.render_passes]
 icon-smoothing = false
 icon-smoothing-2025 = true
-
 # APHELION EDIT ADDITION START
+
 [map_renderer]
 # Runtime-only mapgen placeholder - present in map files, replaced before the round starts, so it must not render into staged map images.
 hide_invisible = ["/turf/open/genturf"]
