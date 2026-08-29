@@ -6,8 +6,8 @@
 /proc/dogmos_abi_version()
 	return call_ext(DOGMOS, "byond:dogmos_abi_version_ffi")()
 
-/proc/dogmos_callback_drain(max_events)
-	return call_ext(DOGMOS, "byond:dogmos_callback_drain_ffi")(max_events)
+/proc/dogmos_callback_drain(fields)
+	return call_ext(DOGMOS, "byond:dogmos_callback_drain_ffi")(fields)
 
 /proc/dogmos_continuation_adjust_multiple(fields)
 	return call_ext(DOGMOS, "byond:dogmos_continuation_adjust_multiple_ffi")(fields)
@@ -23,6 +23,15 @@
 
 /proc/dogmos_feature_fingerprint()
 	return call_ext(DOGMOS, "byond:dogmos_feature_fingerprint_ffi")()
+
+/proc/dogmos_frontier_append(records)
+	return call_ext(DOGMOS, "byond:dogmos_frontier_append_ffi")(records)
+
+/proc/dogmos_frontier_begin(fields)
+	return call_ext(DOGMOS, "byond:dogmos_frontier_begin_ffi")(fields)
+
+/proc/dogmos_frontier_commit(fields)
+	return call_ext(DOGMOS, "byond:dogmos_frontier_commit_ffi")(fields)
 
 /proc/dogmos_gas_metadata_install(numeric_records, keys, names, product_records)
 	return call_ext(DOGMOS, "byond:dogmos_gas_metadata_install_ffi")(numeric_records, keys, names, product_records)
@@ -41,6 +50,9 @@
 
 /proc/dogmos_mixture_state_batch(entries)
 	return call_ext(DOGMOS, "byond:dogmos_mixture_state_batch_ffi")(entries)
+
+/proc/dogmos_process_metrics()
+	return call_ext(DOGMOS, "byond:dogmos_process_metrics_ffi")()
 
 /proc/dogmos_protocol_version()
 	return call_ext(DOGMOS, "byond:dogmos_protocol_version_ffi")()
@@ -62,6 +74,9 @@
 
 /proc/dogmos_service_telemetry()
 	return call_ext(DOGMOS, "byond:dogmos_service_telemetry_ffi")()
+
+/proc/dogmos_service_world_generation()
+	return call_ext(DOGMOS, "byond:dogmos_service_world_generation_ffi")()
 
 /proc/dogmos_simulation_stage(fields)
 	return call_ext(DOGMOS, "byond:dogmos_simulation_stage_ffi")(fields)

@@ -7,6 +7,24 @@
 	SSair.structures_of_interest = list()
 
 	var/obj/machinery/fake_machine = allocate(/obj/machinery)
+	var/datum/component/gas_leaker/fake_gas_leaker = fake_machine.AddComponent(/datum/component/gas_leaker)
+	SSair.start_processing_machine(fake_gas_leaker)
+	TEST_ASSERT(fake_gas_leaker in SSair.atmos_machinery, \
+		"SSair rejected the real gas-leaker component type from atmosphere processing.")
+	SSair.stop_processing_machine(fake_gas_leaker)
+	TEST_ASSERT(!(fake_gas_leaker in SSair.atmos_machinery), \
+		"SSair did not remove a gas-leaker component from atmosphere processing.")
+	var/list/browse_page = GLOB.dogmos_kennel.build_machinery_browse_page(
+		list(fake_gas_leaker, fake_machine),
+		"",
+		1,
+	)
+	TEST_ASSERT_EQUAL(browse_page["total"], 1, \
+		"Kennel machinery browse counted a gas-leaker component as machinery.")
+	TEST_ASSERT_EQUAL(length(browse_page["rows"]), 1, \
+		"Kennel machinery browse returned an unexpected number of rows for mixed processors.")
+	TEST_ASSERT_EQUAL(browse_page["rows"][1]["ref"], REF(fake_machine), \
+		"Kennel machinery browse did not retain the actual machinery row.")
 
 	SSair.kennel_pin_structure(fake_machine, "first reason", 10 SECONDS)
 	TEST_ASSERT_EQUAL(length(SSair.structures_of_interest), 1, \

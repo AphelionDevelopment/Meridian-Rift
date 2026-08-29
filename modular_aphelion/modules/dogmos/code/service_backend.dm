@@ -1,14 +1,56 @@
-#define DOGMOS_REQUIRED_PROTOCOL_VERSION 6
+#define DOGMOS_REQUIRED_PROTOCOL_VERSION 9
 #define DOGMOS_MAX_EXACT_INTEGER 16777216
+#define DOGMOS_PROCESS_METRICS_WORDS 28
+#define DOGMOS_PROCESS_METRICS_LAYOUT_VERSION 1
+#define DOGMOS_PROCESS_WORD_BASE 65536
+#define DOGMOS_PROCESS_WORD_MAX 65535
+#define DOGMOS_PROCESS_LAYOUT_WORD 1
+#define DOGMOS_PROCESS_HOST_FLAGS_WORD 3
+#define DOGMOS_PROCESS_SERVICE_FLAGS_WORD 5
+#define DOGMOS_PROCESS_RESERVED_WORD 7
+#define DOGMOS_PROCESS_HOST_PRIVATE_BYTES_WORD 9
+#define DOGMOS_PROCESS_HOST_VIRTUAL_BYTES_WORD 13
+#define DOGMOS_PROCESS_HOST_WORKING_SET_BYTES_WORD 17
+#define DOGMOS_PROCESS_SERVICE_RSS_BYTES_WORD 21
+#define DOGMOS_PROCESS_SERVICE_CPU_MILLISECONDS_WORD 25
+#define DOGMOS_DREAMDAEMON_PRIVATE_BYTES_AVAILABLE 1
+#define DOGMOS_DREAMDAEMON_VIRTUAL_BYTES_AVAILABLE 2
+#define DOGMOS_DREAMDAEMON_WORKING_SET_BYTES_AVAILABLE 4
+#define DOGMOS_DREAMDAEMON_ALL_AVAILABLE 7
+#define DOGMOS_SERVICE_RSS_BYTES_AVAILABLE 1
+#define DOGMOS_SERVICE_CPU_MILLISECONDS_AVAILABLE 2
+#define DOGMOS_SERVICE_ALL_AVAILABLE 3
 #define DOGMOS_CALLBACK_BATCH_SIZE 256
 #define DOGMOS_CALLBACK_HEADER_FIELDS 12
-#define DOGMOS_CALLBACK_EVENT_FIELDS 31
+#define DOGMOS_CALLBACK_EVENT_FIELDS 36
 #define DOGMOS_CALLBACK_EVENT_START 13
+#define DOGMOS_CALLBACK_SCOPE_GENERAL 1
+#define DOGMOS_CALLBACK_SCOPE_REACTION 2
+#define DOGMOS_CALLBACK_TRANSACTION_WORD 4
+#define DOGMOS_CALLBACK_SCOPE_FIELD 8
+#define DOGMOS_CALLBACK_KIND_FIELD 9
+#define DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD 11
+#define DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD 13
+#define DOGMOS_CALLBACK_TARGET_SLOT_FIELD 15
+#define DOGMOS_CALLBACK_TARGET_GENERATION_FIELD 17
+#define DOGMOS_CALLBACK_VALUES_FIELD 19
+#define DOGMOS_CALLBACK_AUX_FIELD 23
+#define DOGMOS_CALLBACK_CONTINUATION_TOKEN_FIELD 26
 #define DOGMOS_TURF_BATCH_OPERATIONS 512
 #define DOGMOS_TURF_LIFECYCLE_FIELDS 6
 #define DOGMOS_TURF_ADJACENCY_FIELDS 6
 #define DOGMOS_TURF_HEAT_FIELDS 7
 #define DOGMOS_TURF_HEAT_ADJACENCY_FIELDS 5
+#define DOGMOS_MIXTURE_CACHE_BUCKETS 512
+#define DOGMOS_MIXTURE_SNAPSHOT_FIELDS 42
+#define DOGMOS_MIXTURE_SNAPSHOT_GAS_COUNT 3
+#define DOGMOS_MIXTURE_SNAPSHOT_TEMPERATURE 4
+#define DOGMOS_MIXTURE_SNAPSHOT_VOLUME 5
+#define DOGMOS_MIXTURE_SNAPSHOT_TOTAL_MOLES 7
+#define DOGMOS_MIXTURE_SNAPSHOT_PRESSURE 8
+#define DOGMOS_MIXTURE_SNAPSHOT_HEAT_CAPACITY 9
+#define DOGMOS_MIXTURE_SNAPSHOT_IMMUTABLE 10
+#define DOGMOS_MIXTURE_SNAPSHOT_GASES_START 11
 
 #define DOGMOS_LIFECYCLE_REGISTER 1
 #define DOGMOS_LIFECYCLE_UNREGISTER 2
@@ -62,6 +104,7 @@
 #define DOGMOS_CALLBACK_FIRELOCK_CONSIDERATION 5
 #define DOGMOS_CALLBACK_TURF_DESTRUCTION_REQUEST 6
 #define DOGMOS_CALLBACK_RUN_DM_REACTION 7
+#define DOGMOS_CALLBACK_REACTION_PROFILED 8
 
 #define DOGMOS_TURF_DESTRUCTION_SUPERCONDUCTIVE_HEAT 1
 
@@ -74,6 +117,13 @@
 #define DOGMOS_SIMULATION_TURF_EQUALIZE 2
 #define DOGMOS_SIMULATION_TURF_HEAT 3
 #define DOGMOS_SIMULATION_TURFS 4
+#define DOGMOS_SIMULATION_REACTIONS 5
+#define DOGMOS_STAGE_RESPONSE_FIELDS 13
+#define DOGMOS_STAGE_RESPONSE_PENDING 5
+#define DOGMOS_STAGE_RESPONSE_REMAINING_LOW 6
+#define DOGMOS_STAGE_RESPONSE_REMAINING_HIGH 7
+#define DOGMOS_STAGE_MINIMUM_BUDGET_MS 1
+#define DOGMOS_STAGE_FULL_BUDGET_MS 10
 
 /** Service-owned Dogmos state retained by Dream Maker only for identity translation. */
 /datum/controller/subsystem/dogmos
@@ -107,6 +157,8 @@
 	var/dogmos_pending_service_callbacks = 0
 	/// Number of stale turf callbacks rejected before invoking a gameplay proc.
 	var/dogmos_stale_callback_count = 0
+	/// Number of explicit health preflights performed by SSair fires.
+	var/dogmos_health_preflight_count = 0
 	/// Whether startup turf mutations are accumulating in bounded IPC batches.
 	var/turf_registration_batching = FALSE
 	/// Pending fixed-width turf lifecycle records keyed by turf slot.
@@ -117,6 +169,28 @@
 	var/list/dogmos_pending_turf_heat = list()
 	/// Pending fixed-width turf heat-adjacency records keyed by canonical slot pair.
 	var/list/dogmos_pending_turf_heat_adjacency = list()
+	/// Whether one runtime adjacency queue is coalescing repeated turf updates.
+	var/runtime_topology_batching = FALSE
+	/// Number of runtime topology records accepted by dogmosd.
+	var/dogmos_runtime_topology_records = 0
+	/// Number of runtime topology IPC calls accepted by dogmosd.
+	var/dogmos_runtime_topology_calls = 0
+	/// Maximum combined queued runtime topology mutations.
+	var/dogmos_runtime_topology_max_queued = 0
+	/// Number of topology flushes deferred behind a pending simulation stage.
+	var/dogmos_runtime_topology_deferrals = 0
+	/// Fixed-size direct-mapped cache of service mixture snapshots.
+	var/list/dogmos_mixture_cache
+	/// Exact integer epoch invalidating every cached snapshot in O(1).
+	var/dogmos_mixture_cache_epoch = 1
+	/// Number of mixture snapshot cache hits.
+	var/dogmos_mixture_cache_hits = 0
+	/// Number of mixture snapshot cache misses.
+	var/dogmos_mixture_cache_misses = 0
+	/// Number of live direct-mapped entries displaced by another handle.
+	var/dogmos_mixture_cache_collisions = 0
+	/// Number of stage-wide cache epoch invalidations.
+	var/dogmos_mixture_cache_epoch_invalidations = 0
 
 /** Starts bounded accumulation of startup turf mutations. */
 /datum/controller/subsystem/dogmos/proc/begin_turf_registration_batch()
@@ -128,40 +202,73 @@
 	dogmos_pending_turf_heat.Cut()
 	dogmos_pending_turf_heat_adjacency.Cut()
 
-/** Flushes pending startup turf mutations while preserving registration-before-topology ordering. */
+/** Flushes pending turf mutations in bounded batches while preserving lifecycle-before-topology ordering. */
 /datum/controller/subsystem/dogmos/proc/flush_turf_registration_batch()
-	if(length(dogmos_pending_turf_lifecycle))
+	if(SSair?.dogmos_pending_frontier_epoch)
+		dogmos_runtime_topology_deferrals++
+		return FALSE
+	while(length(dogmos_pending_turf_lifecycle))
 		var/list/lifecycle_batch = list()
+		var/list/lifecycle_keys = list()
+		var/lifecycle_count = 0
 		for(var/turf_slot in dogmos_pending_turf_lifecycle)
-			lifecycle_batch += dogmos_pending_turf_lifecycle[turf_slot]
-		var/lifecycle_count = length(lifecycle_batch) / DOGMOS_TURF_LIFECYCLE_FIELDS
+			var/list/lifecycle_records = dogmos_pending_turf_lifecycle[turf_slot]
+			var/record_count = length(lifecycle_records) / DOGMOS_TURF_LIFECYCLE_FIELDS
+			if(lifecycle_count && lifecycle_count + record_count > DOGMOS_TURF_BATCH_OPERATIONS)
+				break
+			lifecycle_batch += lifecycle_records
+			lifecycle_keys += turf_slot
+			lifecycle_count += record_count
 		if(dogmos_turf_lifecycle_batch(lifecycle_batch) != lifecycle_count)
-			CRASH("dogmosd rejected a startup turf lifecycle batch.")
-		dogmos_pending_turf_lifecycle.Cut()
-	if(length(dogmos_pending_turf_heat))
+			CRASH("dogmosd rejected a turf lifecycle batch.")
+		for(var/lifecycle_key in lifecycle_keys)
+			dogmos_pending_turf_lifecycle.Remove(lifecycle_key)
+	while(length(dogmos_pending_turf_heat))
 		var/list/heat_batch = list()
+		var/list/heat_keys = list()
 		for(var/heat_turf_slot in dogmos_pending_turf_heat)
 			heat_batch += dogmos_pending_turf_heat[heat_turf_slot]
-		var/heat_count = length(heat_batch) / DOGMOS_TURF_HEAT_FIELDS
+			heat_keys += heat_turf_slot
+			if(length(heat_keys) >= DOGMOS_TURF_BATCH_OPERATIONS)
+				break
+		var/heat_count = length(heat_keys)
 		if(dogmos_turf_heat_batch(heat_batch) != heat_count)
-			CRASH("dogmosd rejected a startup turf heat batch.")
-		dogmos_pending_turf_heat.Cut()
-	if(length(dogmos_pending_turf_adjacency))
+			CRASH("dogmosd rejected a turf heat batch.")
+		for(var/heat_key in heat_keys)
+			dogmos_pending_turf_heat.Remove(heat_key)
+	while(length(dogmos_pending_turf_adjacency))
 		var/list/adjacency_batch = list()
+		var/list/adjacency_keys = list()
 		for(var/edge_key in dogmos_pending_turf_adjacency)
 			adjacency_batch += dogmos_pending_turf_adjacency[edge_key]
-		var/adjacency_count = length(adjacency_batch) / DOGMOS_TURF_ADJACENCY_FIELDS
+			adjacency_keys += edge_key
+			if(length(adjacency_keys) >= DOGMOS_TURF_BATCH_OPERATIONS)
+				break
+		var/adjacency_count = length(adjacency_keys)
 		if(dogmos_turf_adjacency_batch(adjacency_batch) != adjacency_count)
-			CRASH("dogmosd rejected a startup turf adjacency batch.")
-		dogmos_pending_turf_adjacency.Cut()
-	if(length(dogmos_pending_turf_heat_adjacency))
+			CRASH("dogmosd rejected a turf adjacency batch.")
+		for(var/adjacency_key in adjacency_keys)
+			dogmos_pending_turf_adjacency.Remove(adjacency_key)
+		if(!turf_registration_batching)
+			dogmos_runtime_topology_records += adjacency_count
+			dogmos_runtime_topology_calls++
+	while(length(dogmos_pending_turf_heat_adjacency))
 		var/list/heat_adjacency_batch = list()
+		var/list/heat_adjacency_keys = list()
 		for(var/heat_edge_key in dogmos_pending_turf_heat_adjacency)
 			heat_adjacency_batch += dogmos_pending_turf_heat_adjacency[heat_edge_key]
-		var/heat_adjacency_count = length(heat_adjacency_batch) / DOGMOS_TURF_HEAT_ADJACENCY_FIELDS
+			heat_adjacency_keys += heat_edge_key
+			if(length(heat_adjacency_keys) >= DOGMOS_TURF_BATCH_OPERATIONS)
+				break
+		var/heat_adjacency_count = length(heat_adjacency_keys)
 		if(dogmos_turf_heat_adjacency_batch(heat_adjacency_batch) != heat_adjacency_count)
-			CRASH("dogmosd rejected a startup turf heat-adjacency batch.")
-		dogmos_pending_turf_heat_adjacency.Cut()
+			CRASH("dogmosd rejected a turf heat-adjacency batch.")
+		for(var/heat_adjacency_key in heat_adjacency_keys)
+			dogmos_pending_turf_heat_adjacency.Remove(heat_adjacency_key)
+		if(!turf_registration_batching)
+			dogmos_runtime_topology_records += heat_adjacency_count
+			dogmos_runtime_topology_calls++
+	return TRUE
 
 /** Flushes a full startup turf batch before any wire payload can exceed its bound. */
 /datum/controller/subsystem/dogmos/proc/flush_full_turf_registration_batch()
@@ -174,20 +281,28 @@
 /** Removes pending topology that predates a turf's latest registration state. */
 /datum/controller/subsystem/dogmos/proc/discard_pending_turf_adjacencies(turf/target)
 	var/slot = target.dogmos_service_slot()
-	for(var/direction in GLOB.cardinals)
-		var/turf/neighbor = get_step(target, direction)
-		if(!neighbor)
-			continue
-		var/neighbor_slot = neighbor.dogmos_service_slot()
-		var/edge_key = "[min(slot, neighbor_slot)]:[max(slot, neighbor_slot)]"
+	var/generation = target.dogmos_service_generation()
+	var/list/gas_removals = list()
+	for(var/edge_key in dogmos_pending_turf_adjacency)
+		var/list/edge = dogmos_pending_turf_adjacency[edge_key]
+		if((edge[1] == slot && edge[2] == generation) || (edge[3] == slot && edge[4] == generation))
+			gas_removals += edge_key
+	for(var/edge_key in gas_removals)
 		dogmos_pending_turf_adjacency.Remove(edge_key)
-		dogmos_pending_turf_heat_adjacency.Remove(edge_key)
+	var/list/heat_removals = list()
+	for(var/heat_edge_key in dogmos_pending_turf_heat_adjacency)
+		var/list/heat_edge = dogmos_pending_turf_heat_adjacency[heat_edge_key]
+		if((heat_edge[1] == slot && heat_edge[2] == generation) || (heat_edge[3] == slot && heat_edge[4] == generation))
+			heat_removals += heat_edge_key
+	for(var/heat_edge_key in heat_removals)
+		dogmos_pending_turf_heat_adjacency.Remove(heat_edge_key)
 
 /** Flushes and closes startup turf mutation accumulation. */
 /datum/controller/subsystem/dogmos/proc/finish_turf_registration_batch()
 	if(!turf_registration_batching)
 		CRASH("Attempted to finish an inactive Dogmos turf registration batch.")
-	flush_turf_registration_batch()
+	if(!flush_turf_registration_batch())
+		CRASH("Dogmos startup turf mutations were blocked by an unexpected pending stage.")
 	turf_registration_batching = FALSE
 
 /** Registers one gas mixture with a stale-handle-safe numeric identity. */
@@ -222,12 +337,16 @@
 /datum/controller/subsystem/dogmos/proc/unregister_mixture(datum/gas_mixture/mixture)
 	var/slot = mixture.dogmos_slot
 	var/generation = mixture.dogmos_generation
-	if(!slot || dogmos_mixture_slots[slot]?.resolve() != mixture || dogmos_mixture_generations[slot] != generation)
+	var/datum/weakref/registered_mixture
+	if(slot)
+		registered_mixture = dogmos_mixture_slots[slot]
+	if(!slot || registered_mixture?.reference != REF(mixture) || dogmos_mixture_generations[slot] != generation)
 		CRASH("Attempted to unregister stale Dogmos mixture identity [slot]:[generation].")
 
 	if(service_ready && dogmos_mixture_lifecycle_batch(list(DOGMOS_LIFECYCLE_UNREGISTER, slot, generation)) != 1)
 		CRASH("dogmosd rejected mixture unregistration for [slot]:[generation].")
 
+	evict_mixture_snapshot_cache(slot, generation)
 	dogmos_mixture_slots[slot] = null
 	dogmos_free_mixture_slots += slot
 	mixture.dogmos_slot = null
@@ -240,6 +359,90 @@
 		return null
 	var/datum/weakref/reference = dogmos_mixture_slots[slot]
 	return reference?.resolve()
+
+/** Resets the bounded mixture snapshot cache and its counters. */
+/datum/controller/subsystem/dogmos/proc/reset_mixture_snapshot_cache()
+	dogmos_mixture_cache = new/list(DOGMOS_MIXTURE_CACHE_BUCKETS)
+	dogmos_mixture_cache_epoch = 1
+	dogmos_mixture_cache_hits = 0
+	dogmos_mixture_cache_misses = 0
+	dogmos_mixture_cache_collisions = 0
+	dogmos_mixture_cache_epoch_invalidations = 0
+
+/** Returns the direct-mapped cache bucket for one positive mixture slot. */
+/datum/controller/subsystem/dogmos/proc/mixture_snapshot_cache_bucket(slot)
+	return (slot % DOGMOS_MIXTURE_CACHE_BUCKETS) + 1
+
+/** Returns a cached snapshot only for the exact current handle and cache epoch. */
+/datum/controller/subsystem/dogmos/proc/lookup_mixture_snapshot_cache(slot, generation)
+	if(!dogmos_mixture_cache)
+		reset_mixture_snapshot_cache()
+	var/list/entry = dogmos_mixture_cache[mixture_snapshot_cache_bucket(slot)]
+	if(!entry || entry[1] != slot || entry[2] != generation || entry[3] != dogmos_mixture_cache_epoch)
+		return null
+	var/list/cached = entry[4]
+	// store_mixture_snapshot_cache() is the only writer and only runs after mixture_snapshot() has
+	// validated length, so a malformed entry should be unreachable. Checked anyway because the failure
+	// mode if it ever is reachable is silent and remote: a short list here is returned straight to
+	// callers that index it by field constant, surfacing as "cannot read from list" in return_pressure()
+	// and friends with nothing pointing back at the cache. Treated as a miss so the fresh-fetch path's
+	// own validation produces the real diagnosis.
+	if(!islist(cached) || length(cached) != DOGMOS_MIXTURE_SNAPSHOT_FIELDS)
+		stack_trace("Discarded a malformed cached mixture snapshot for [slot]:[generation]: length [islist(cached) ? length(cached) : "not a list"], expected [DOGMOS_MIXTURE_SNAPSHOT_FIELDS].")
+		dogmos_mixture_cache[mixture_snapshot_cache_bucket(slot)] = null
+		return null
+	dogmos_mixture_cache_hits++
+	return cached
+
+/** Stores one validated service snapshot in its direct-mapped cache bucket. */
+/datum/controller/subsystem/dogmos/proc/store_mixture_snapshot_cache(slot, generation, list/snapshot)
+	if(!dogmos_mixture_cache)
+		reset_mixture_snapshot_cache()
+	var/bucket = mixture_snapshot_cache_bucket(slot)
+	var/list/displaced = dogmos_mixture_cache[bucket]
+	if(displaced && displaced[3] == dogmos_mixture_cache_epoch && (displaced[1] != slot || displaced[2] != generation))
+		dogmos_mixture_cache_collisions++
+	dogmos_mixture_cache[bucket] = list(slot, generation, dogmos_mixture_cache_epoch, snapshot)
+	return snapshot
+
+/** Evicts a cached snapshot only when the direct-mapped entry matches the exact handle. */
+/datum/controller/subsystem/dogmos/proc/evict_mixture_snapshot_cache(slot, generation)
+	if(!dogmos_mixture_cache || !slot)
+		return
+	var/bucket = mixture_snapshot_cache_bucket(slot)
+	var/list/entry = dogmos_mixture_cache[bucket]
+	if(entry && entry[1] == slot && entry[2] == generation)
+		dogmos_mixture_cache[bucket] = null
+
+/** Invalidates every mixture snapshot in O(1), clearing once at exact-integer rollover. */
+/datum/controller/subsystem/dogmos/proc/invalidate_mixture_snapshot_epoch()
+	if(!dogmos_mixture_cache)
+		reset_mixture_snapshot_cache()
+	dogmos_mixture_cache_epoch_invalidations++
+	if(dogmos_mixture_cache_epoch >= DOGMOS_MAX_EXACT_INTEGER)
+		dogmos_mixture_cache = new/list(DOGMOS_MIXTURE_CACHE_BUCKETS)
+		dogmos_mixture_cache_epoch = 1
+		return
+	dogmos_mixture_cache_epoch++
+
+/** Returns one validated cached or freshly fetched service-owned mixture snapshot. */
+/datum/controller/subsystem/dogmos/proc/mixture_snapshot(slot, generation)
+	var/list/cached = lookup_mixture_snapshot_cache(slot, generation)
+	if(cached)
+		return cached
+	dogmos_mixture_cache_misses++
+	var/list/snapshot = dogmos_mixture_snapshot(list(slot, generation))
+	if(!islist(snapshot) || length(snapshot) != DOGMOS_MIXTURE_SNAPSHOT_FIELDS)
+		CRASH("dogmosd returned a malformed mixture snapshot for [slot]:[generation].")
+	var/gas_count = snapshot[DOGMOS_MIXTURE_SNAPSHOT_GAS_COUNT]
+	if(gas_count < 0 || gas_count > length(dogmos_gas_paths) || round(gas_count) != gas_count)
+		// The actuals are the whole diagnosis here: this rejection aborts mixture_snapshot(), which then
+		// returns null to every caller, so the visible symptom is a flood of downstream "cannot read from
+		// list" runtimes in return_pressure()/return_volume() rather than this root cause. Without the
+		// numbers there is no way to tell an out-of-range count from a non-integer one, or a genuine
+		// service fault from dogmos_gas_paths not having been populated.
+		CRASH("dogmosd returned an invalid mixture gas count for [slot]:[generation]: got [gas_count], registered gas paths [length(dogmos_gas_paths)].")
+	return store_mixture_snapshot_cache(slot, generation, snapshot)
 
 /** Allocates a bounded ephemeral identity for an arbitrary reaction holder. */
 /datum/controller/subsystem/dogmos/proc/register_holder(datum/holder)
@@ -282,7 +485,90 @@
 
 /** Converts the shim's exact 16-bit word pair back into a 32-bit identity field. */
 /datum/controller/subsystem/dogmos/proc/join_u32_words(low_word, high_word)
-	return low_word + high_word * 65536
+	return low_word + high_word * DOGMOS_PROCESS_WORD_BASE
+
+/** Converts four exact 16-bit words into one unsigned process metric. */
+/datum/controller/subsystem/dogmos/proc/join_u64_words(word_one, word_two, word_three, word_four)
+	return word_one + DOGMOS_PROCESS_WORD_BASE * (word_two + DOGMOS_PROCESS_WORD_BASE * (word_three + DOGMOS_PROCESS_WORD_BASE * word_four))
+
+/** Splits one bounded nonnegative integer into two exact little-endian 16-bit words. */
+/datum/controller/subsystem/dogmos/proc/split_u32_words(value)
+	if(!IS_FINITE(value) || value < 0 || value > DOGMOS_MAX_EXACT_INTEGER || round(value) != value)
+		CRASH("Dogmos cannot encode invalid u32-compatible value [value].")
+	return list(value % DOGMOS_PROCESS_WORD_BASE, floor(value / DOGMOS_PROCESS_WORD_BASE))
+
+/** Advances one four-word exact epoch without converting it to an imprecise DM number. */
+/datum/controller/subsystem/dogmos/proc/increment_u64_words(list/words)
+	if(!islist(words) || length(words) != 4)
+		CRASH("Dogmos received a malformed exact epoch.")
+	var/list/advanced = words.Copy()
+	for(var/word_index in 1 to 4)
+		if(advanced[word_index] < DOGMOS_PROCESS_WORD_MAX)
+			advanced[word_index]++
+			return advanced
+		advanced[word_index] = 0
+	CRASH("Dogmos exact epoch capacity exhausted.")
+
+/** Returns whether two exact four-word epochs are identical. */
+/datum/controller/subsystem/dogmos/proc/equal_u64_words(list/left, list/right)
+	if(!islist(left) || !islist(right) || length(left) != 4 || length(right) != 4)
+		return FALSE
+	for(var/word_index in 1 to 4)
+		if(left[word_index] != right[word_index])
+			return FALSE
+	return TRUE
+
+/** Validates and decodes one fixed-width process-metrics snapshot. */
+/datum/controller/subsystem/dogmos/proc/decode_process_metrics(list/words)
+	if(!islist(words) || length(words) != DOGMOS_PROCESS_METRICS_WORDS)
+		return null
+	for(var/word in words)
+		if(!IS_FINITE(word) || word < 0 || word > DOGMOS_PROCESS_WORD_MAX || round(word) != word)
+			return null
+
+	var/layout_version = join_u32_words(words[DOGMOS_PROCESS_LAYOUT_WORD], words[DOGMOS_PROCESS_LAYOUT_WORD + 1])
+	var/dreamdaemon_flags = join_u32_words(words[DOGMOS_PROCESS_HOST_FLAGS_WORD], words[DOGMOS_PROCESS_HOST_FLAGS_WORD + 1])
+	var/service_flags = join_u32_words(words[DOGMOS_PROCESS_SERVICE_FLAGS_WORD], words[DOGMOS_PROCESS_SERVICE_FLAGS_WORD + 1])
+	var/reserved = join_u32_words(words[DOGMOS_PROCESS_RESERVED_WORD], words[DOGMOS_PROCESS_RESERVED_WORD + 1])
+	if(layout_version != DOGMOS_PROCESS_METRICS_LAYOUT_VERSION || dreamdaemon_flags > DOGMOS_DREAMDAEMON_ALL_AVAILABLE || service_flags > DOGMOS_SERVICE_ALL_AVAILABLE || reserved)
+		return null
+
+	var/private_bytes = join_u64_words(words[DOGMOS_PROCESS_HOST_PRIVATE_BYTES_WORD], words[DOGMOS_PROCESS_HOST_PRIVATE_BYTES_WORD + 1], words[DOGMOS_PROCESS_HOST_PRIVATE_BYTES_WORD + 2], words[DOGMOS_PROCESS_HOST_PRIVATE_BYTES_WORD + 3])
+	var/virtual_bytes = join_u64_words(words[DOGMOS_PROCESS_HOST_VIRTUAL_BYTES_WORD], words[DOGMOS_PROCESS_HOST_VIRTUAL_BYTES_WORD + 1], words[DOGMOS_PROCESS_HOST_VIRTUAL_BYTES_WORD + 2], words[DOGMOS_PROCESS_HOST_VIRTUAL_BYTES_WORD + 3])
+	var/working_set_bytes = join_u64_words(words[DOGMOS_PROCESS_HOST_WORKING_SET_BYTES_WORD], words[DOGMOS_PROCESS_HOST_WORKING_SET_BYTES_WORD + 1], words[DOGMOS_PROCESS_HOST_WORKING_SET_BYTES_WORD + 2], words[DOGMOS_PROCESS_HOST_WORKING_SET_BYTES_WORD + 3])
+	var/service_rss_bytes = join_u64_words(words[DOGMOS_PROCESS_SERVICE_RSS_BYTES_WORD], words[DOGMOS_PROCESS_SERVICE_RSS_BYTES_WORD + 1], words[DOGMOS_PROCESS_SERVICE_RSS_BYTES_WORD + 2], words[DOGMOS_PROCESS_SERVICE_RSS_BYTES_WORD + 3])
+	var/service_cpu_total_milliseconds = join_u64_words(words[DOGMOS_PROCESS_SERVICE_CPU_MILLISECONDS_WORD], words[DOGMOS_PROCESS_SERVICE_CPU_MILLISECONDS_WORD + 1], words[DOGMOS_PROCESS_SERVICE_CPU_MILLISECONDS_WORD + 2], words[DOGMOS_PROCESS_SERVICE_CPU_MILLISECONDS_WORD + 3])
+	if(!(dreamdaemon_flags & DOGMOS_DREAMDAEMON_PRIVATE_BYTES_AVAILABLE) && private_bytes)
+		return null
+	if(!(dreamdaemon_flags & DOGMOS_DREAMDAEMON_VIRTUAL_BYTES_AVAILABLE) && virtual_bytes)
+		return null
+	if(!(dreamdaemon_flags & DOGMOS_DREAMDAEMON_WORKING_SET_BYTES_AVAILABLE) && working_set_bytes)
+		return null
+	if(!(service_flags & DOGMOS_SERVICE_RSS_BYTES_AVAILABLE) && service_rss_bytes)
+		return null
+	if(!(service_flags & DOGMOS_SERVICE_CPU_MILLISECONDS_AVAILABLE) && service_cpu_total_milliseconds)
+		return null
+
+	return list(
+		"dreamdaemon" = list(
+			"private_bytes" = private_bytes,
+			"virtual_bytes" = virtual_bytes,
+			"working_set_bytes" = working_set_bytes,
+			"available" = dreamdaemon_flags == DOGMOS_DREAMDAEMON_ALL_AVAILABLE,
+		),
+		"dogmosd" = list(
+			"rss_bytes" = service_rss_bytes,
+			"cpu_total_milliseconds" = service_cpu_total_milliseconds,
+			"available" = service_flags == DOGMOS_SERVICE_ALL_AVAILABLE,
+		),
+	)
+
+/** Returns one validated on-demand snapshot of DreamDaemon and dogmosd process metrics. */
+/proc/dogmos_process_metrics_snapshot()
+	var/list/decoded = SSdogmos.decode_process_metrics(dogmos_process_metrics())
+	if(!decoded)
+		CRASH("dogmosd returned malformed process metrics.")
+	return decoded
 
 /** Resolves a coordinate-derived turf identity without accepting a stale generation. */
 /datum/controller/subsystem/dogmos/proc/resolve_turf(slot, generation)
@@ -300,27 +586,36 @@
 		return null
 	return resolved
 
-/** Advances the exact callback sequence after rejecting duplicate, missing, or reordered events. */
-/datum/controller/subsystem/dogmos/proc/consume_callback_sequence(list/batch, offset)
+/** Advances one scope-local callback sequence after rejecting duplicate, missing, or reordered events. */
+/datum/controller/subsystem/dogmos/proc/consume_callback_sequence(list/batch, offset, list/next_sequence)
 	if(length(batch) < offset + DOGMOS_CALLBACK_EVENT_FIELDS - 1)
 		CRASH("dogmosd returned a truncated callback event.")
 	for(var/word_index in 1 to 4)
-		if(batch[offset + word_index - 1] != dogmos_next_callback_sequence[word_index])
+		if(batch[offset + word_index - 1] != next_sequence[word_index])
 			CRASH("Dogmos callback sequence was duplicated, missing, or reordered.")
 	for(var/word_index in 1 to 4)
-		dogmos_next_callback_sequence[word_index]++
-		if(dogmos_next_callback_sequence[word_index] <= 65535)
+		next_sequence[word_index]++
+		if(next_sequence[word_index] <= DOGMOS_PROCESS_WORD_MAX)
 			return
-		dogmos_next_callback_sequence[word_index] = 0
+		next_sequence[word_index] = 0
 	CRASH("Dogmos callback sequence exhausted.")
 
 /** Validates the flattened callback batch and returns its event count. */
-/datum/controller/subsystem/dogmos/proc/validate_callback_batch(list/batch)
+/datum/controller/subsystem/dogmos/proc/validate_callback_batch(list/batch, scope, list/transaction_words)
 	if(!islist(batch) || length(batch) < DOGMOS_CALLBACK_HEADER_FIELDS)
 		CRASH("dogmosd returned a malformed callback batch.")
 	var/returned = join_u32_words(batch[1], batch[2])
 	if(returned > DOGMOS_CALLBACK_BATCH_SIZE || length(batch) != DOGMOS_CALLBACK_HEADER_FIELDS + returned * DOGMOS_CALLBACK_EVENT_FIELDS)
 		CRASH("dogmosd returned a callback batch with an invalid event count.")
+	for(var/event_index in 0 to returned - 1)
+		if(!returned)
+			break
+		var/offset = DOGMOS_CALLBACK_EVENT_START + event_index * DOGMOS_CALLBACK_EVENT_FIELDS
+		if(batch[offset + DOGMOS_CALLBACK_SCOPE_FIELD] != scope)
+			CRASH("dogmosd returned a callback event in the wrong scope.")
+		for(var/word_index in 1 to 4)
+			if(batch[offset + DOGMOS_CALLBACK_TRANSACTION_WORD + word_index - 1] != transaction_words[word_index])
+				CRASH("dogmosd returned a callback event for the wrong transaction.")
 	return returned
 
 /** Records one stale callback while keeping the exported counter exactly representable by BYOND. */
@@ -329,13 +624,13 @@
 
 /** Dispatches one non-reaction callback after validating sequence and turf generations. */
 /datum/controller/subsystem/dogmos/proc/dispatch_general_callback(list/batch, offset)
-	consume_callback_sequence(batch, offset)
-	var/kind = batch[offset + 4]
+	consume_callback_sequence(batch, offset, dogmos_next_callback_sequence)
+	var/kind = batch[offset + DOGMOS_CALLBACK_KIND_FIELD]
 	if(kind < DOGMOS_CALLBACK_PRESSURE_DIFFERENCE || kind > DOGMOS_CALLBACK_TURF_DESTRUCTION_REQUEST)
 		CRASH("Unexpected Dogmos callback kind [kind] during general callback processing.")
 
-	var/subject_slot = join_u32_words(batch[offset + 6], batch[offset + 7])
-	var/subject_generation = join_u32_words(batch[offset + 8], batch[offset + 9])
+	var/subject_slot = join_u32_words(batch[offset + DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD], batch[offset + DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD + 1])
+	var/subject_generation = join_u32_words(batch[offset + DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD], batch[offset + DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD + 1])
 	var/turf/subject = resolve_turf(subject_slot, subject_generation)
 	if(!subject)
 		record_stale_callback()
@@ -343,8 +638,8 @@
 
 	var/turf/target
 	if(kind == DOGMOS_CALLBACK_PRESSURE_DIFFERENCE || kind == DOGMOS_CALLBACK_FIRELOCK_CONSIDERATION)
-		var/target_slot = join_u32_words(batch[offset + 10], batch[offset + 11])
-		var/target_generation = join_u32_words(batch[offset + 12], batch[offset + 13])
+		var/target_slot = join_u32_words(batch[offset + DOGMOS_CALLBACK_TARGET_SLOT_FIELD], batch[offset + DOGMOS_CALLBACK_TARGET_SLOT_FIELD + 1])
+		var/target_generation = join_u32_words(batch[offset + DOGMOS_CALLBACK_TARGET_GENERATION_FIELD], batch[offset + DOGMOS_CALLBACK_TARGET_GENERATION_FIELD + 1])
 		target = resolve_turf(target_slot, target_generation)
 		if(!target)
 			record_stale_callback()
@@ -355,13 +650,13 @@
 			if(!isopenturf(subject))
 				CRASH("Dogmos pressure callback referenced a non-open turf.")
 			var/turf/open/open_subject = subject
-			open_subject.consider_pressure_difference(target, batch[offset + 14])
+			open_subject.consider_pressure_difference(target, batch[offset + DOGMOS_CALLBACK_VALUES_FIELD])
 		if(DOGMOS_CALLBACK_DECOMPRESSION_FLOOR_RIP)
-			subject.handle_decompression_floor_rip(batch[offset + 14])
+			subject.handle_decompression_floor_rip(batch[offset + DOGMOS_CALLBACK_VALUES_FIELD])
 		if(DOGMOS_CALLBACK_FIRELOCK_CONSIDERATION)
 			subject.consider_firelocks(target)
 		if(DOGMOS_CALLBACK_TURF_DESTRUCTION_REQUEST)
-			var/reason = join_u32_words(batch[offset + 18], batch[offset + 19])
+			var/reason = join_u32_words(batch[offset + DOGMOS_CALLBACK_AUX_FIELD], batch[offset + DOGMOS_CALLBACK_AUX_FIELD + 1])
 			if(reason != DOGMOS_TURF_DESTRUCTION_SUPERCONDUCTIVE_HEAT)
 				CRASH("Dogmos requested unknown turf destruction reason [reason].")
 			subject.to_be_destroyed = TRUE
@@ -370,7 +665,7 @@
 /datum/controller/subsystem/dogmos/proc/flush_pending_general_callbacks()
 	if(!dogmos_pending_callback_batch)
 		return
-	var/returned = validate_callback_batch(dogmos_pending_callback_batch)
+	var/returned = validate_callback_batch(dogmos_pending_callback_batch, DOGMOS_CALLBACK_SCOPE_GENERAL, list(0, 0, 0, 0))
 	while(dogmos_pending_callback_index < returned)
 		var/offset = DOGMOS_CALLBACK_EVENT_START + dogmos_pending_callback_index * DOGMOS_CALLBACK_EVENT_FIELDS
 		dispatch_general_callback(dogmos_pending_callback_batch, offset)
@@ -381,24 +676,33 @@
 
 /** Validates and returns a typed mixture-command response. */
 /datum/controller/subsystem/dogmos/proc/mixture_command(list/fields, expected_response)
-	if(!service_ready || !dogmos_service_health())
-		service_ready = FALSE
+	if(!service_ready)
 		CRASH("dogmosd became unavailable; in-process atmosphere fallback is forbidden.")
 	var/list/response = dogmos_mixture_command(fields)
-	if(!islist(response) || length(response) != 4 || response[1] != expected_response)
+	var/expected_length = expected_response == DOGMOS_RESPONSE_REACTION_PROGRESS ? 8 : 4
+	if(!islist(response) || length(response) != expected_length || response[1] != expected_response)
 		CRASH("dogmosd returned malformed mixture response [json_encode(response)].")
 	return response
 
 /** Dispatches the callback kinds required by synchronous mixture reactions. */
-/datum/controller/subsystem/dogmos/proc/dispatch_reaction_callbacks(datum/gas_mixture/expected_mixture, list/progress)
-	flush_pending_general_callbacks()
+/datum/controller/subsystem/dogmos/proc/dispatch_reaction_callbacks(datum/gas_mixture/expected_mixture, list/progress, reaction_profile_threshold_ms)
+	if(!islist(progress) || length(progress) != 8 || progress[1] != DOGMOS_RESPONSE_REACTION_PROGRESS)
+		CRASH("dogmosd returned malformed reaction progress.")
+	var/list/transaction_words = progress.Copy(5, 9)
+	if(!transaction_words[1] && !transaction_words[2] && !transaction_words[3] && !transaction_words[4])
+		CRASH("dogmosd returned a zero direct-reaction transaction.")
+	var/list/next_sequence = list(1, 0, 0, 0)
 	var/maximum_events
 	var/events_processed = 0
 	while(TRUE)
-		var/list/batch = dogmos_callback_drain(DOGMOS_CALLBACK_BATCH_SIZE)
-		var/returned = validate_callback_batch(batch)
+		var/list/drain_fields = list(DOGMOS_CALLBACK_SCOPE_REACTION)
+		drain_fields += transaction_words
+		drain_fields += split_u32_words(DOGMOS_CALLBACK_BATCH_SIZE)
+		var/list/batch = dogmos_callback_drain(drain_fields)
+		var/returned = validate_callback_batch(batch, DOGMOS_CALLBACK_SCOPE_REACTION, transaction_words)
 		if(isnull(maximum_events))
-			maximum_events = join_u32_words(batch[5], batch[6]) + length(dogmos_reaction_ids) + 1
+			var/events_per_reaction = isnull(reaction_profile_threshold_ms) ? 1 : 2
+			maximum_events = join_u32_words(batch[5], batch[6]) + length(dogmos_reaction_ids) * events_per_reaction + 1
 		events_processed += returned
 		if(events_processed > maximum_events || (!returned && progress[4]))
 			CRASH("Dogmos reaction continuation exceeded the bounded callback capacity.")
@@ -406,28 +710,31 @@
 			if(!returned)
 				break
 			var/offset = DOGMOS_CALLBACK_EVENT_START + event_index * DOGMOS_CALLBACK_EVENT_FIELDS
-			var/kind = batch[offset + 4]
-			if(kind >= DOGMOS_CALLBACK_PRESSURE_DIFFERENCE && kind <= DOGMOS_CALLBACK_TURF_DESTRUCTION_REQUEST)
-				dispatch_general_callback(batch, offset)
-				continue
-			if(kind != DOGMOS_CALLBACK_REACTION_FINISHED && kind != DOGMOS_CALLBACK_RUN_DM_REACTION)
+			var/kind = batch[offset + DOGMOS_CALLBACK_KIND_FIELD]
+			if(kind != DOGMOS_CALLBACK_REACTION_FINISHED && kind != DOGMOS_CALLBACK_RUN_DM_REACTION && kind != DOGMOS_CALLBACK_REACTION_PROFILED)
 				CRASH("Unexpected Dogmos callback kind [kind] during direct reaction processing.")
-			consume_callback_sequence(batch, offset)
+			consume_callback_sequence(batch, offset, next_sequence)
 
-			var/subject_slot = join_u32_words(batch[offset + 6], batch[offset + 7])
-			var/subject_generation = join_u32_words(batch[offset + 8], batch[offset + 9])
+			var/subject_slot = join_u32_words(batch[offset + DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD], batch[offset + DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD + 1])
+			var/subject_generation = join_u32_words(batch[offset + DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD], batch[offset + DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD + 1])
 			var/datum/gas_mixture/mixture = resolve_mixture(subject_slot, subject_generation)
 			if(mixture != expected_mixture)
 				CRASH("Dogmos reaction callback referenced a stale or unexpected gas mixture.")
 
-			var/target_slot = join_u32_words(batch[offset + 10], batch[offset + 11])
-			var/target_generation = join_u32_words(batch[offset + 12], batch[offset + 13])
+			var/target_slot = join_u32_words(batch[offset + DOGMOS_CALLBACK_TARGET_SLOT_FIELD], batch[offset + DOGMOS_CALLBACK_TARGET_SLOT_FIELD + 1])
+			var/target_generation = join_u32_words(batch[offset + DOGMOS_CALLBACK_TARGET_GENERATION_FIELD], batch[offset + DOGMOS_CALLBACK_TARGET_GENERATION_FIELD + 1])
 			var/datum/holder = resolve_holder(target_slot, target_generation)
-			var/value_one = batch[offset + 14]
-			var/value_two = batch[offset + 15]
-			var/value_three = batch[offset + 16]
-			var/value_four = batch[offset + 17]
-			var/aux = join_u32_words(batch[offset + 18], batch[offset + 19])
+			var/value_one = batch[offset + DOGMOS_CALLBACK_VALUES_FIELD]
+			var/value_two = batch[offset + DOGMOS_CALLBACK_VALUES_FIELD + 1]
+			var/value_three = batch[offset + DOGMOS_CALLBACK_VALUES_FIELD + 2]
+			var/value_four = batch[offset + DOGMOS_CALLBACK_VALUES_FIELD + 3]
+			var/aux = join_u32_words(batch[offset + DOGMOS_CALLBACK_AUX_FIELD], batch[offset + DOGMOS_CALLBACK_AUX_FIELD + 1])
+			if(kind == DOGMOS_CALLBACK_REACTION_PROFILED)
+				var/datum/gas_reaction/profiled_reaction = dogmos_reaction_ids[aux + 1]
+				if(!istype(profiled_reaction))
+					CRASH("Dogmos profiled unknown reaction id [aux].")
+				SSair.kennel_record_reaction_cost(profiled_reaction.id, holder, value_one)
+				continue
 
 			if(kind == DOGMOS_CALLBACK_REACTION_FINISHED)
 				switch(aux)
@@ -446,11 +753,16 @@
 			var/datum/gas_reaction/reaction = dogmos_reaction_ids[aux + 1]
 			if(!istype(reaction))
 				CRASH("Dogmos requested unknown DM reaction id [aux].")
+			var/reaction_started = isnull(reaction_profile_threshold_ms) ? null : TICK_USAGE_REAL
 			var/reaction_result = reaction.react(mixture, holder)
-			var/list/resume_fields = batch.Copy(offset + 21, offset + 31)
+			if(!isnull(reaction_started))
+				var/reaction_cost_ms = TICK_DELTA_TO_MS(TICK_USAGE_REAL - reaction_started)
+				if(reaction_cost_ms >= reaction_profile_threshold_ms)
+					SSair.kennel_record_reaction_cost(reaction.id, holder, reaction_cost_ms)
+			var/list/resume_fields = batch.Copy(offset + DOGMOS_CALLBACK_CONTINUATION_TOKEN_FIELD, offset + DOGMOS_CALLBACK_CONTINUATION_TOKEN_FIELD + 10)
 			resume_fields += reaction_result
 			progress = dogmos_continuation_resume(resume_fields)
-			if(!islist(progress) || length(progress) != 4 || progress[1] != DOGMOS_RESPONSE_REACTION_PROGRESS)
+			if(!islist(progress) || length(progress) != 8 || progress[1] != DOGMOS_RESPONSE_REACTION_PROGRESS || !equal_u64_words(progress.Copy(5, 9), transaction_words))
 				CRASH("dogmosd returned malformed continuation progress.")
 
 		if(!progress[4])
@@ -462,16 +774,38 @@
 /proc/__detect_dogmos()
 	return world.system_type == UNIX ? "libdogmos" : "dogmos"
 
+/** Returns the first exact mismatch between the loaded shim and generated contract.
+ * Arguments:
+ * * actual_abi_version - ABI reported by the loaded shim.
+ * * actual_protocol_version - Protocol reported by the loaded shim.
+ * * actual_source_revision - Source revision reported by the loaded shim.
+ * * actual_feature_fingerprint - Feature fingerprint reported by the loaded shim.
+ */
+/proc/dogmos_contract_identity_error(actual_abi_version, actual_protocol_version, actual_source_revision, actual_feature_fingerprint)
+	if(actual_abi_version != DOGMOS_CONTRACT_ABI_VERSION)
+		return "Dogmos ABI mismatch: expected [DOGMOS_CONTRACT_ABI_VERSION], actual [actual_abi_version]."
+	if(actual_protocol_version != DOGMOS_CONTRACT_PROTOCOL_VERSION)
+		return "Dogmos protocol mismatch: expected [DOGMOS_CONTRACT_PROTOCOL_VERSION], actual [actual_protocol_version]."
+	if(actual_source_revision != DOGMOS_CONTRACT_SOURCE_REVISION)
+		return "Dogmos source revision mismatch: expected [DOGMOS_CONTRACT_SOURCE_REVISION], actual [actual_source_revision]."
+	if(actual_feature_fingerprint != DOGMOS_CONTRACT_FEATURE_FINGERPRINT)
+		return "Dogmos feature fingerprint mismatch: expected [DOGMOS_CONTRACT_FEATURE_FINGERPRINT], actual [actual_feature_fingerprint]."
+	return null
+
 /** Starts dogmosd, validates the generated contract, and installs metadata. */
 /proc/auxtools_atmos_init(gas_data)
-	if(DOGMOS_CONTRACT_PROTOCOL_VERSION != DOGMOS_REQUIRED_PROTOCOL_VERSION)
+	var/contract_protocol_version = DOGMOS_CONTRACT_PROTOCOL_VERSION
+	if(contract_protocol_version != DOGMOS_REQUIRED_PROTOCOL_VERSION)
 		stack_trace("Dogmos contract protocol [DOGMOS_CONTRACT_PROTOCOL_VERSION] is stale; protocol [DOGMOS_REQUIRED_PROTOCOL_VERSION] is required.")
 		return FALSE
-	if(dogmos_abi_version() != DOGMOS_CONTRACT_ABI_VERSION || dogmos_protocol_version() != DOGMOS_CONTRACT_PROTOCOL_VERSION)
-		stack_trace("Dogmos shim identity does not match the generated contract.")
-		return FALSE
-	if(dogmos_source_revision() != DOGMOS_CONTRACT_SOURCE_REVISION || dogmos_feature_fingerprint() != DOGMOS_CONTRACT_FEATURE_FINGERPRINT)
-		stack_trace("Dogmos shim revision or feature fingerprint does not match the generated contract.")
+	var/identity_error = dogmos_contract_identity_error(
+		dogmos_abi_version(),
+		dogmos_protocol_version(),
+		dogmos_source_revision(),
+		dogmos_feature_fingerprint(),
+	)
+	if(identity_error)
+		stack_trace(identity_error)
 		return FALSE
 
 	var/service_path = world.system_type == UNIX ? "./dogmosd" : "./dogmosd.exe"
@@ -485,6 +819,12 @@
 	SSdogmos.dogmos_pending_callback_index = 0
 	SSdogmos.dogmos_pending_service_callbacks = 0
 	SSdogmos.dogmos_stale_callback_count = 0
+	SSdogmos.dogmos_health_preflight_count = 0
+	SSdogmos.dogmos_runtime_topology_records = 0
+	SSdogmos.dogmos_runtime_topology_calls = 0
+	SSdogmos.dogmos_runtime_topology_max_queued = 0
+	SSdogmos.dogmos_runtime_topology_deferrals = 0
+	SSdogmos.reset_mixture_snapshot_cache()
 	SSdogmos.dogmos_gas_ids = list()
 	SSdogmos.dogmos_gas_paths = list()
 	var/list/numeric_records = list()
@@ -584,7 +924,22 @@
 /datum/gas_mixture/proc/dogmos_command(kind, flags = 0, datum/gas_mixture/secondary, scalar_one = 0, scalar_two = 0, scalar_three = 0, gas_id = 0, aux = 0, expected_response = DOGMOS_RESPONSE_APPLIED)
 	var/secondary_slot = secondary?.dogmos_slot || 0
 	var/secondary_generation = secondary?.dogmos_generation || 0
-	return SSdogmos.mixture_command(list(kind, flags, dogmos_slot, dogmos_generation, secondary_slot, secondary_generation, scalar_one, scalar_two, scalar_three, gas_id, aux), expected_response)
+	var/list/response = SSdogmos.mixture_command(list(kind, flags, dogmos_slot, dogmos_generation, secondary_slot, secondary_generation, scalar_one, scalar_two, scalar_three, gas_id, aux), expected_response)
+	if(!is_read_only_dogmos_command(kind))
+		SSdogmos.evict_mixture_snapshot_cache(dogmos_slot, dogmos_generation)
+		SSdogmos.evict_mixture_snapshot_cache(secondary_slot, secondary_generation)
+	return response
+
+/** Returns whether a canonical mixture command cannot change either mixture. */
+/datum/gas_mixture/proc/is_read_only_dogmos_command(kind)
+	switch(kind)
+		if(DOGMOS_COMMAND_GET_MOLES, DOGMOS_COMMAND_TEMPERATURE, DOGMOS_COMMAND_VOLUME, DOGMOS_COMMAND_HEAT_CAPACITY, DOGMOS_COMMAND_PARTIAL_HEAT_CAPACITY, DOGMOS_COMMAND_TOTAL_MOLES, DOGMOS_COMMAND_PRESSURE, DOGMOS_COMMAND_THERMAL_ENERGY, DOGMOS_COMMAND_GET_MOLES_BY_FLAGS, DOGMOS_COMMAND_BURNABILITY, DOGMOS_COMMAND_COMPARE, DOGMOS_COMMAND_IS_IMMUTABLE)
+			return TRUE
+	return FALSE
+
+/** Returns the common service snapshot for this exact mixture handle. */
+/datum/gas_mixture/proc/dogmos_snapshot()
+	return SSdogmos.mixture_snapshot(dogmos_slot, dogmos_generation)
 
 /// Returns the numeric gas id installed for a native string id.
 /datum/gas_mixture/proc/dogmos_gas_id(gas_id)
@@ -607,7 +962,7 @@
 
 /// Returns the moles of one native string gas id.
 /datum/gas_mixture/proc/__get_moles(gas_id)
-	return dogmos_command(DOGMOS_COMMAND_GET_MOLES, gas_id = dogmos_gas_id(gas_id), expected_response = DOGMOS_RESPONSE_SCALAR)[2]
+	return dogmos_snapshot()[DOGMOS_MIXTURE_SNAPSHOT_GASES_START + dogmos_gas_id(gas_id)]
 
 /// Returns one gas's partial heat capacity.
 /datum/gas_mixture/proc/__partial_heat_capacity(gas_id)
@@ -622,14 +977,15 @@
 	var/list/response = dogmos_mixture_adjust_multiple(fields)
 	if(!islist(response) || response[1] != DOGMOS_RESPONSE_APPLIED)
 		CRASH("dogmosd rejected a multi-gas adjustment.")
+	SSdogmos.evict_mixture_snapshot_cache(dogmos_slot, dogmos_generation)
 	return response[2]
 
 /// Returns the native string ids currently present in this mixture.
 /datum/gas_mixture/proc/__get_gases()
-	var/list/snapshot = dogmos_mixture_snapshot(list(dogmos_slot, dogmos_generation))
+	var/list/snapshot = dogmos_snapshot()
 	var/list/gases = list()
-	for(var/gas_index in 1 to min(snapshot[3], length(SSdogmos.dogmos_gas_paths)))
-		if(snapshot[gas_index + 7] > 0)
+	for(var/gas_index in 1 to min(snapshot[DOGMOS_MIXTURE_SNAPSHOT_GAS_COUNT], length(SSdogmos.dogmos_gas_paths)))
+		if(snapshot[DOGMOS_MIXTURE_SNAPSHOT_GASES_START + gas_index - 1] > 0)
 			var/gas_path = SSdogmos.dogmos_gas_paths[gas_index]
 			gases += GLOB.meta_gas_info[META_GAS_ID][gas_path]
 	return gases
@@ -640,7 +996,7 @@
 
 /// Returns the mixture temperature.
 /datum/gas_mixture/proc/return_temperature()
-	return dogmos_command(DOGMOS_COMMAND_TEMPERATURE, expected_response = DOGMOS_RESPONSE_SCALAR)[2]
+	return dogmos_snapshot()[DOGMOS_MIXTURE_SNAPSHOT_TEMPERATURE]
 
 /// Sets the mixture volume.
 /datum/gas_mixture/proc/set_volume(volume)
@@ -648,23 +1004,24 @@
 
 /// Returns the mixture volume.
 /datum/gas_mixture/proc/return_volume()
-	return dogmos_command(DOGMOS_COMMAND_VOLUME, expected_response = DOGMOS_RESPONSE_SCALAR)[2]
+	return dogmos_snapshot()[DOGMOS_MIXTURE_SNAPSHOT_VOLUME]
 
 /// Returns the mixture heat capacity.
 /datum/gas_mixture/proc/heat_capacity()
-	return dogmos_command(DOGMOS_COMMAND_HEAT_CAPACITY, expected_response = DOGMOS_RESPONSE_SCALAR)[2]
+	return dogmos_snapshot()[DOGMOS_MIXTURE_SNAPSHOT_HEAT_CAPACITY]
 
 /// Returns the mixture total moles.
 /datum/gas_mixture/proc/total_moles()
-	return dogmos_command(DOGMOS_COMMAND_TOTAL_MOLES, expected_response = DOGMOS_RESPONSE_SCALAR)[2]
+	return dogmos_snapshot()[DOGMOS_MIXTURE_SNAPSHOT_TOTAL_MOLES]
 
 /// Returns the mixture pressure.
 /datum/gas_mixture/proc/return_pressure()
-	return dogmos_command(DOGMOS_COMMAND_PRESSURE, expected_response = DOGMOS_RESPONSE_SCALAR)[2]
+	return dogmos_snapshot()[DOGMOS_MIXTURE_SNAPSHOT_PRESSURE]
 
 /// Returns the mixture thermal energy.
 /datum/gas_mixture/proc/thermal_energy()
-	return dogmos_command(DOGMOS_COMMAND_THERMAL_ENERGY, expected_response = DOGMOS_RESPONSE_SCALAR)[2]
+	var/list/snapshot = dogmos_snapshot()
+	return snapshot[DOGMOS_MIXTURE_SNAPSHOT_TEMPERATURE] * snapshot[DOGMOS_MIXTURE_SNAPSHOT_HEAT_CAPACITY]
 
 /// Sets the mixture minimum heat capacity.
 /datum/gas_mixture/proc/set_min_heat_capacity(amount)
@@ -728,7 +1085,7 @@
 
 /// Returns whether this mixture is immutable.
 /datum/gas_mixture/proc/is_immutable()
-	return dogmos_command(DOGMOS_COMMAND_IS_IMMUTABLE, expected_response = DOGMOS_RESPONSE_BOOLEAN)[2]
+	return dogmos_snapshot()[DOGMOS_MIXTURE_SNAPSHOT_IMMUTABLE]
 
 /// Marks this mixture immutable.
 /datum/gas_mixture/proc/mark_immutable()
@@ -767,9 +1124,15 @@
 
 /// Runs the complete native and DM reaction sequence through dogmosd.
 /datum/gas_mixture/proc/__react(datum/holder)
+	var/reaction_profile_threshold_ms
+	if(SSair.kennel_profile_reactions)
+		if(!IS_FINITE(SSair.kennel_high_cost_ms_threshold) || SSair.kennel_high_cost_ms_threshold < 0)
+			CRASH("Dogmos reaction profiling received an invalid cost threshold.")
+		reaction_profile_threshold_ms = SSair.kennel_high_cost_ms_threshold
 	var/list/holder_handle = SSdogmos.register_holder(holder)
-	var/list/progress = SSdogmos.mixture_command(list(DOGMOS_COMMAND_REACT, 0, dogmos_slot, dogmos_generation, holder_handle[1], holder_handle[2], 0, 0, 0, 0, 0), DOGMOS_RESPONSE_REACTION_PROGRESS)
-	progress = SSdogmos.dispatch_reaction_callbacks(src, progress)
+	var/list/progress = SSdogmos.mixture_command(list(DOGMOS_COMMAND_REACT, !isnull(reaction_profile_threshold_ms), dogmos_slot, dogmos_generation, holder_handle[1], holder_handle[2], reaction_profile_threshold_ms || 0, 0, 0, 0, 0), DOGMOS_RESPONSE_REACTION_PROGRESS)
+	progress = SSdogmos.dispatch_reaction_callbacks(src, progress, reaction_profile_threshold_ms)
+	SSdogmos.evict_mixture_snapshot_cache(dogmos_slot, dogmos_generation)
 	SSdogmos.unregister_holder(holder_handle)
 	return progress[2]
 
@@ -806,32 +1169,109 @@
 /proc/dogmos_perf_set_detailed(enabled)
 	return TRUE
 
-/// Applies the requested service simulation stage synchronously.
-/datum/controller/subsystem/air/proc/dogmos_run_stage(stage)
-	if(!SSdogmos.service_ready || !dogmos_service_health())
-		SSdogmos.service_ready = FALSE
+/** Publishes the current active-turf order as one atomic bounded service frontier. */
+/datum/controller/subsystem/air/proc/publish_dogmos_frontier()
+	if(dogmos_pending_frontier_epoch)
+		CRASH("Attempted to replace the Dogmos frontier while a simulation cycle is pending.")
+	if(!SSdogmos.flush_turf_registration_batch())
+		CRASH("Dogmos topology remained blocked before active-frontier publication.")
+	dogmos_frontier_epoch = SSdogmos.increment_u64_words(dogmos_frontier_epoch)
+	var/list/count_words = SSdogmos.split_u32_words(length(active_turfs))
+	var/list/begin_fields = dogmos_frontier_epoch.Copy()
+	begin_fields += count_words
+	var/list/accepted_epoch = dogmos_frontier_begin(begin_fields)
+	if(!SSdogmos.equal_u64_words(accepted_epoch, dogmos_frontier_epoch))
+		CRASH("dogmosd accepted the wrong active-frontier epoch.")
+
+	var/offset = 0
+	var/list/append_fields = dogmos_frontier_epoch.Copy()
+	append_fields += SSdogmos.split_u32_words(offset)
+	for(var/turf/open/active_turf as anything in active_turfs)
+		if(!active_turf || !active_turf.air)
+			CRASH("SSair active frontier contains an invalid turf at offset [offset].")
+		append_fields += SSdogmos.split_u32_words(active_turf.dogmos_service_slot())
+		append_fields += SSdogmos.split_u32_words(active_turf.dogmos_service_generation())
+		offset++
+		if((offset % DOGMOS_TURF_BATCH_OPERATIONS) != 0)
+			continue
+		var/list/accepted_count = dogmos_frontier_append(append_fields)
+		if(SSdogmos.join_u32_words(accepted_count[1], accepted_count[2]) != DOGMOS_TURF_BATCH_OPERATIONS)
+			CRASH("dogmosd rejected a full active-frontier append at offset [offset - DOGMOS_TURF_BATCH_OPERATIONS].")
+		append_fields = dogmos_frontier_epoch.Copy()
+		append_fields += SSdogmos.split_u32_words(offset)
+
+	var/trailing_count = offset % DOGMOS_TURF_BATCH_OPERATIONS
+	if(trailing_count)
+		var/list/accepted_trailing = dogmos_frontier_append(append_fields)
+		if(SSdogmos.join_u32_words(accepted_trailing[1], accepted_trailing[2]) != trailing_count)
+			CRASH("dogmosd rejected the trailing active-frontier append at offset [offset - trailing_count].")
+
+	var/list/committed = dogmos_frontier_commit(dogmos_frontier_epoch.Copy())
+	if(!islist(committed) || length(committed) != 6 || !SSdogmos.equal_u64_words(committed.Copy(1, 5), dogmos_frontier_epoch) || SSdogmos.join_u32_words(committed[5], committed[6]) != offset)
+		CRASH("dogmosd returned a malformed active-frontier commit for epoch [json_encode(dogmos_frontier_epoch)].")
+	dogmos_pending_frontier_epoch = dogmos_frontier_epoch.Copy()
+
+/** Returns the next bounded work limit for the remaining SSair budget. */
+/datum/controller/subsystem/air/proc/dogmos_work_limit_for_budget(remaining_ms)
+	if(remaining_ms < DOGMOS_STAGE_MINIMUM_BUDGET_MS)
+		return 0
+	var/budget_ratio = min(1, remaining_ms / DOGMOS_STAGE_FULL_BUDGET_MS)
+	return max(1, min(dogmos_stage_work_limit, floor(dogmos_stage_work_limit * budget_ratio)))
+
+/** Runs or resumes one service simulation stage and returns TRUE while work remains. */
+/datum/controller/subsystem/air/proc/dogmos_run_stage(stage, remaining_ms)
+	if(!SSdogmos.service_ready)
 		CRASH("dogmosd became unavailable during SSair processing.")
-	return dogmos_simulation_stage(list(stage, wait * 0.1))
+	if(!dogmos_pending_frontier_epoch)
+		publish_dogmos_frontier()
+	if(!isnull(dogmos_pending_stage) && dogmos_pending_stage != stage)
+		CRASH("Attempted to start Dogmos stage [stage] while stage [dogmos_pending_stage] remains pending.")
+	var/work_limit = dogmos_work_limit_for_budget(remaining_ms)
+	if(!work_limit)
+		return TRUE
+	if(isnull(dogmos_pending_stage))
+		dogmos_stage_epoch = SSdogmos.increment_u64_words(dogmos_stage_epoch)
+		dogmos_pending_stage = stage
+	var/list/request = list(stage)
+	request += dogmos_pending_frontier_epoch
+	request += dogmos_stage_epoch
+	request += SSdogmos.split_u32_words(work_limit)
+	request += wait * 0.1
+	var/list/response = dogmos_simulation_stage(request)
+	if(!islist(response) || length(response) != DOGMOS_STAGE_RESPONSE_FIELDS)
+		CRASH("dogmosd returned a malformed stage response for stage [stage].")
+	SSdogmos.invalidate_mixture_snapshot_epoch()
+	dogmos_stage_remaining_estimate = SSdogmos.join_u32_words(response[DOGMOS_STAGE_RESPONSE_REMAINING_LOW], response[DOGMOS_STAGE_RESPONSE_REMAINING_HIGH])
+	if(response[DOGMOS_STAGE_RESPONSE_PENDING])
+		return TRUE
+	dogmos_pending_stage = null
+	dogmos_stage_remaining_estimate = 0
+	return FALSE
 
 /// Processes active turfs in dogmosd.
 /datum/controller/subsystem/air/proc/process_turfs_auxtools(remaining)
-	dogmos_run_stage(DOGMOS_SIMULATION_TURFS)
-	return FALSE
+	return dogmos_run_stage(DOGMOS_SIMULATION_TURFS, remaining)
+
+/// Processes active-turf reactions in dogmosd.
+/datum/controller/subsystem/air/proc/process_reactions_auxtools(remaining)
+	return dogmos_run_stage(DOGMOS_SIMULATION_REACTIONS, remaining)
 
 /// Processes equalization in dogmosd.
 /datum/controller/subsystem/air/proc/process_turf_equalize_auxtools(remaining)
-	dogmos_run_stage(DOGMOS_SIMULATION_TURF_EQUALIZE)
-	return FALSE
+	return dogmos_run_stage(DOGMOS_SIMULATION_TURF_EQUALIZE, remaining)
 
 /// Processes excited groups in dogmosd.
 /datum/controller/subsystem/air/proc/process_excited_groups_auxtools(remaining)
-	dogmos_run_stage(DOGMOS_SIMULATION_EXCITED_GROUPS)
-	return FALSE
+	return dogmos_run_stage(DOGMOS_SIMULATION_EXCITED_GROUPS, remaining)
 
 /// Processes the turf heat graph in dogmosd.
 /datum/controller/subsystem/air/proc/process_turf_heat()
-	dogmos_run_stage(DOGMOS_SIMULATION_TURF_HEAT)
-	return TRUE
+	var/pending = dogmos_run_stage(DOGMOS_SIMULATION_TURF_HEAT, TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE))
+	if(!pending)
+		dogmos_pending_frontier_epoch = null
+		dogmos_active_turf_stages_complete = FALSE
+		SSdogmos.flush_turf_registration_batch()
+	return pending
 
 /// Drains one bounded callback batch after service processing.
 /datum/controller/subsystem/air/proc/finish_turf_processing_auxtools(time_remaining)
@@ -852,7 +1292,7 @@
 
 /** Registers or removes this turf's service-owned gas and heat state. */
 /turf/proc/update_air_ref(flag)
-	if(!SSdogmos.service_ready || !dogmos_service_health())
+	if(!SSdogmos.service_ready)
 		SSdogmos.service_ready = FALSE
 		CRASH("Attempted to update a turf while dogmosd is unavailable.")
 
@@ -863,10 +1303,11 @@
 			DOGMOS_LIFECYCLE_REGISTER, slot, generation, FALSE, 0, 0,
 			DOGMOS_LIFECYCLE_UNREGISTER, slot, generation, FALSE, 0, 0,
 		)
-		if(SSdogmos.turf_registration_batching)
+		SSdogmos.discard_pending_turf_adjacencies(src)
+		SSdogmos.dogmos_pending_turf_lifecycle["[slot]"] = removal
+		SSdogmos.dogmos_pending_turf_heat.Remove("[slot]")
+		if(!SSdogmos.turf_registration_batching && !SSdogmos.runtime_topology_batching)
 			SSdogmos.flush_turf_registration_batch()
-		if(dogmos_turf_lifecycle_batch(removal) != 2)
-			CRASH("dogmosd rejected turf removal for [slot]:[generation].")
 		mark_dogmos_turf_replacement()
 		return
 
@@ -876,19 +1317,15 @@
 	var/mixture_slot = mixture?.dogmos_slot || 0
 	var/mixture_generation = mixture?.dogmos_generation || 0
 	var/list/lifecycle = list(DOGMOS_LIFECYCLE_REGISTER, slot, generation, mixture_present, mixture_slot, mixture_generation)
-	if(!SSdogmos.turf_registration_batching && dogmos_turf_lifecycle_batch(lifecycle) != 1)
-		CRASH("dogmosd rejected turf registration for [slot]:[generation].")
+	SSdogmos.dogmos_pending_turf_lifecycle["[slot]"] = lifecycle
 
 	if(flag == DOGMOS_SIMULATION_SPACE_BOUNDARY)
 		var/list/space_heat = list(slot, generation, FALSE, 0, 0, 0, FALSE)
-		if(SSdogmos.turf_registration_batching)
-			SSdogmos.discard_pending_turf_adjacencies(src)
-			SSdogmos.dogmos_pending_turf_lifecycle["[slot]"] = lifecycle
-			SSdogmos.dogmos_pending_turf_heat["[slot]"] = space_heat
-			SSdogmos.flush_full_turf_registration_batch()
-			return
-		if(dogmos_turf_heat_batch(space_heat) != 1)
-			CRASH("dogmosd rejected the space-boundary heat state for [slot]:[generation].")
+		SSdogmos.discard_pending_turf_adjacencies(src)
+		SSdogmos.dogmos_pending_turf_heat["[slot]"] = space_heat
+		SSdogmos.flush_full_turf_registration_batch()
+		if(!SSdogmos.turf_registration_batching && !SSdogmos.runtime_topology_batching)
+			SSdogmos.flush_turf_registration_batch()
 		return
 
 	var/heat_present = thermal_conductivity > 0 && heat_capacity > 0
@@ -901,26 +1338,42 @@
 		heat_present ? heat_capacity : 0,
 		heat_present && should_conduct_to_space(),
 	)
-	if(SSdogmos.turf_registration_batching)
-		SSdogmos.discard_pending_turf_adjacencies(src)
-		SSdogmos.dogmos_pending_turf_lifecycle["[slot]"] = lifecycle
-		SSdogmos.dogmos_pending_turf_heat["[slot]"] = heat
-		SSdogmos.flush_full_turf_registration_batch()
-		return
-	if(dogmos_turf_heat_batch(heat) != 1)
-		CRASH("dogmosd rejected turf heat registration for [slot]:[generation].")
+	SSdogmos.discard_pending_turf_adjacencies(src)
+	SSdogmos.dogmos_pending_turf_heat["[slot]"] = heat
+	SSdogmos.flush_full_turf_registration_batch()
+	if(!SSdogmos.turf_registration_batching && !SSdogmos.runtime_topology_batching)
+		SSdogmos.flush_turf_registration_batch()
 
 /** Updates this turf's service-owned heat temperature. */
 /turf/proc/__set_temperature(new_temperature)
 	var/slot = dogmos_service_slot()
 	var/generation = dogmos_service_generation()
-	if(dogmos_turf_heat_batch(list(slot, generation, TRUE, new_temperature, thermal_conductivity, heat_capacity, should_conduct_to_space())) != 1)
-		CRASH("dogmosd rejected the heat update for [slot]:[generation].")
+	var/heat_present = thermal_conductivity > 0 && heat_capacity > 0
+	var/list/heat = list(
+		slot,
+		generation,
+		heat_present,
+		heat_present ? new_temperature : 0,
+		heat_present ? thermal_conductivity : 0,
+		heat_present ? heat_capacity : 0,
+		heat_present && should_conduct_to_space(),
+	)
+	SSdogmos.dogmos_pending_turf_heat["[slot]"] = heat
+	SSdogmos.flush_full_turf_registration_batch()
+	if(!SSdogmos.turf_registration_batching && !SSdogmos.runtime_topology_batching)
+		SSdogmos.flush_turf_registration_batch()
 	return new_temperature
 
 /** Returns the service-owned turf temperature. */
 /turf/proc/__dogmos_heat_temperature()
-	CRASH("Dogmos turf heat snapshots are not yet exposed by the synchronized service contract.")
+	if(!init_air || thermal_conductivity <= 0 || heat_capacity <= 0 || isnull(dogmos_registration_generation))
+		return null
+	var/list/snapshot = dogmos_turf_heat_snapshot(list(dogmos_service_slot(), dogmos_service_generation()))
+	if(length(snapshot) != 5)
+		CRASH("dogmosd returned a malformed turf heat snapshot.")
+	if(!snapshot[1])
+		return null
+	return snapshot[2]
 
 /** Rebuilds this turf's gas and heat adjacency edges in dogmosd. */
 /turf/proc/__update_auxtools_turf_adjacency_info(max_x, max_y)
@@ -931,8 +1384,6 @@
 
 	var/slot = dogmos_service_slot()
 	var/generation = dogmos_service_generation()
-	var/list/gas_edges = list()
-	var/list/heat_edges = list()
 	var/heat_present = thermal_conductivity > 0 && heat_capacity > 0
 	for(var/direction in GLOB.cardinals)
 		var/turf/neighbor = get_step(src, direction)
@@ -952,40 +1403,35 @@
 			var/connected = (neighbor in atmos_adjacent_turfs)
 			var/firelock = !!(connected && (atmos_adjacent_turfs[neighbor] & DOGMOS_ADJACENT_FIRELOCK))
 			var/list/gas_edge = list(slot, generation, neighbor_slot, neighbor_generation, connected, firelock)
-			if(SSdogmos.turf_registration_batching)
-				var/gas_edge_key = "[slot]:[neighbor_slot]"
-				SSdogmos.dogmos_pending_turf_adjacency[gas_edge_key] = gas_edge
-			else
-				gas_edges += gas_edge
+			var/gas_edge_key = slot < neighbor_slot ? "[slot]:[generation]:[neighbor_slot]:[neighbor_generation]" : "[neighbor_slot]:[neighbor_generation]:[slot]:[generation]"
+			SSdogmos.dogmos_pending_turf_adjacency[gas_edge_key] = gas_edge
 		if(heat_present && neighbor.thermal_conductivity > 0 && neighbor.heat_capacity > 0 && init_air && neighbor.init_air && !isspaceturf(src) && !isspaceturf(neighbor))
 			var/heat_connected = !(conductivity_blocked_directions & direction) && !(neighbor.conductivity_blocked_directions & turn(direction, 180))
 			var/list/heat_edge = list(slot, generation, neighbor_slot, neighbor_generation, heat_connected)
-			if(SSdogmos.turf_registration_batching)
-				var/heat_edge_key = "[slot]:[neighbor_slot]"
-				SSdogmos.dogmos_pending_turf_heat_adjacency[heat_edge_key] = heat_edge
-			else
-				heat_edges += heat_edge
+			var/heat_edge_key = slot < neighbor_slot ? "[slot]:[generation]:[neighbor_slot]:[neighbor_generation]" : "[neighbor_slot]:[neighbor_generation]:[slot]:[generation]"
+			SSdogmos.dogmos_pending_turf_heat_adjacency[heat_edge_key] = heat_edge
 
-	if(SSdogmos.turf_registration_batching)
-		return TRUE
-	if(length(gas_edges) && dogmos_turf_adjacency_batch(gas_edges) != length(gas_edges) / DOGMOS_TURF_ADJACENCY_FIELDS)
-		CRASH("dogmosd rejected gas adjacency for turf [slot]:[generation].")
-	if(length(heat_edges) && dogmos_turf_heat_adjacency_batch(heat_edges) != length(heat_edges) / DOGMOS_TURF_HEAT_ADJACENCY_FIELDS)
-		CRASH("dogmosd rejected heat adjacency for turf [slot]:[generation].")
+	var/queued_topology = length(SSdogmos.dogmos_pending_turf_adjacency) + length(SSdogmos.dogmos_pending_turf_heat_adjacency)
+	SSdogmos.dogmos_runtime_topology_max_queued = max(SSdogmos.dogmos_runtime_topology_max_queued, queued_topology)
+	SSdogmos.flush_full_turf_registration_batch()
+	if(!SSdogmos.turf_registration_batching && !SSdogmos.runtime_topology_batching)
+		SSdogmos.flush_turf_registration_batch()
 	return TRUE
 
 /// Drains bounded Dogmos callbacks on the Dream Maker main thread.
 /proc/process_atmos_callbacks(remaining)
 	if(!SSdogmos.dogmos_pending_callback_batch)
-		SSdogmos.dogmos_pending_callback_batch = dogmos_callback_drain(DOGMOS_CALLBACK_BATCH_SIZE)
+		var/list/drain_fields = list(DOGMOS_CALLBACK_SCOPE_GENERAL, 0, 0, 0, 0)
+		drain_fields += SSdogmos.split_u32_words(DOGMOS_CALLBACK_BATCH_SIZE)
+		SSdogmos.dogmos_pending_callback_batch = dogmos_callback_drain(drain_fields)
 		SSdogmos.dogmos_pending_callback_index = 0
-		SSdogmos.validate_callback_batch(SSdogmos.dogmos_pending_callback_batch)
+		SSdogmos.validate_callback_batch(SSdogmos.dogmos_pending_callback_batch, DOGMOS_CALLBACK_SCOPE_GENERAL, list(0, 0, 0, 0))
 		SSdogmos.dogmos_pending_service_callbacks = SSdogmos.join_u32_words(
 			SSdogmos.dogmos_pending_callback_batch[3],
 			SSdogmos.dogmos_pending_callback_batch[4],
 		)
 
-	var/returned = SSdogmos.validate_callback_batch(SSdogmos.dogmos_pending_callback_batch)
+	var/returned = SSdogmos.validate_callback_batch(SSdogmos.dogmos_pending_callback_batch, DOGMOS_CALLBACK_SCOPE_GENERAL, list(0, 0, 0, 0))
 	var/start_tick_usage = TICK_USAGE
 	var/time_budget_ms = max(0, remaining)
 	while(SSdogmos.dogmos_pending_callback_index < returned)
@@ -1042,15 +1488,57 @@
 
 #undef DOGMOS_REQUIRED_PROTOCOL_VERSION
 #undef DOGMOS_MAX_EXACT_INTEGER
+#undef DOGMOS_PROCESS_METRICS_WORDS
+#undef DOGMOS_PROCESS_METRICS_LAYOUT_VERSION
+#undef DOGMOS_PROCESS_WORD_BASE
+#undef DOGMOS_PROCESS_WORD_MAX
+#undef DOGMOS_PROCESS_LAYOUT_WORD
+#undef DOGMOS_PROCESS_HOST_FLAGS_WORD
+#undef DOGMOS_PROCESS_SERVICE_FLAGS_WORD
+#undef DOGMOS_PROCESS_RESERVED_WORD
+#undef DOGMOS_PROCESS_HOST_PRIVATE_BYTES_WORD
+#undef DOGMOS_PROCESS_HOST_VIRTUAL_BYTES_WORD
+#undef DOGMOS_PROCESS_HOST_WORKING_SET_BYTES_WORD
+#undef DOGMOS_PROCESS_SERVICE_RSS_BYTES_WORD
+#undef DOGMOS_PROCESS_SERVICE_CPU_MILLISECONDS_WORD
+#undef DOGMOS_DREAMDAEMON_PRIVATE_BYTES_AVAILABLE
+#undef DOGMOS_DREAMDAEMON_VIRTUAL_BYTES_AVAILABLE
+#undef DOGMOS_DREAMDAEMON_WORKING_SET_BYTES_AVAILABLE
+#undef DOGMOS_DREAMDAEMON_ALL_AVAILABLE
+#undef DOGMOS_SERVICE_RSS_BYTES_AVAILABLE
+#undef DOGMOS_SERVICE_CPU_MILLISECONDS_AVAILABLE
+#undef DOGMOS_SERVICE_ALL_AVAILABLE
 #undef DOGMOS_CALLBACK_BATCH_SIZE
 #undef DOGMOS_CALLBACK_HEADER_FIELDS
 #undef DOGMOS_CALLBACK_EVENT_FIELDS
 #undef DOGMOS_CALLBACK_EVENT_START
+#undef DOGMOS_CALLBACK_SCOPE_GENERAL
+#undef DOGMOS_CALLBACK_SCOPE_REACTION
+#undef DOGMOS_CALLBACK_TRANSACTION_WORD
+#undef DOGMOS_CALLBACK_SCOPE_FIELD
+#undef DOGMOS_CALLBACK_KIND_FIELD
+#undef DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD
+#undef DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD
+#undef DOGMOS_CALLBACK_TARGET_SLOT_FIELD
+#undef DOGMOS_CALLBACK_TARGET_GENERATION_FIELD
+#undef DOGMOS_CALLBACK_VALUES_FIELD
+#undef DOGMOS_CALLBACK_AUX_FIELD
+#undef DOGMOS_CALLBACK_CONTINUATION_TOKEN_FIELD
 #undef DOGMOS_TURF_BATCH_OPERATIONS
 #undef DOGMOS_TURF_LIFECYCLE_FIELDS
 #undef DOGMOS_TURF_ADJACENCY_FIELDS
 #undef DOGMOS_TURF_HEAT_FIELDS
 #undef DOGMOS_TURF_HEAT_ADJACENCY_FIELDS
+#undef DOGMOS_MIXTURE_CACHE_BUCKETS
+#undef DOGMOS_MIXTURE_SNAPSHOT_FIELDS
+#undef DOGMOS_MIXTURE_SNAPSHOT_GAS_COUNT
+#undef DOGMOS_MIXTURE_SNAPSHOT_TEMPERATURE
+#undef DOGMOS_MIXTURE_SNAPSHOT_VOLUME
+#undef DOGMOS_MIXTURE_SNAPSHOT_TOTAL_MOLES
+#undef DOGMOS_MIXTURE_SNAPSHOT_PRESSURE
+#undef DOGMOS_MIXTURE_SNAPSHOT_HEAT_CAPACITY
+#undef DOGMOS_MIXTURE_SNAPSHOT_IMMUTABLE
+#undef DOGMOS_MIXTURE_SNAPSHOT_GASES_START
 #undef DOGMOS_LIFECYCLE_REGISTER
 #undef DOGMOS_LIFECYCLE_UNREGISTER
 #undef DOGMOS_RESPONSE_APPLIED
@@ -1100,6 +1588,7 @@
 #undef DOGMOS_CALLBACK_FIRELOCK_CONSIDERATION
 #undef DOGMOS_CALLBACK_TURF_DESTRUCTION_REQUEST
 #undef DOGMOS_CALLBACK_RUN_DM_REACTION
+#undef DOGMOS_CALLBACK_REACTION_PROFILED
 #undef DOGMOS_TURF_DESTRUCTION_SUPERCONDUCTIVE_HEAT
 #undef DOGMOS_REACTION_PLASMA
 #undef DOGMOS_REACTION_HYDROGEN
@@ -1109,3 +1598,10 @@
 #undef DOGMOS_SIMULATION_TURF_EQUALIZE
 #undef DOGMOS_SIMULATION_TURF_HEAT
 #undef DOGMOS_SIMULATION_TURFS
+#undef DOGMOS_SIMULATION_REACTIONS
+#undef DOGMOS_STAGE_RESPONSE_FIELDS
+#undef DOGMOS_STAGE_RESPONSE_PENDING
+#undef DOGMOS_STAGE_RESPONSE_REMAINING_LOW
+#undef DOGMOS_STAGE_RESPONSE_REMAINING_HIGH
+#undef DOGMOS_STAGE_MINIMUM_BUDGET_MS
+#undef DOGMOS_STAGE_FULL_BUDGET_MS

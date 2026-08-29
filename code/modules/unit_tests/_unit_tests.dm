@@ -202,6 +202,7 @@
 #include "dogmos_kennel_overlays.dm"
 // APHELION EDIT ADDITION START - DOGMOS
 #include "dogmos_goggle_modes.dm"
+#include "dogmos_kennel_process_metrics.dm"
 // APHELION EDIT ADDITION END
 #include "dogmos_kennel_slow_mode_payload.dm"
 // APHELION EDIT ADDITION START - DOGMOS

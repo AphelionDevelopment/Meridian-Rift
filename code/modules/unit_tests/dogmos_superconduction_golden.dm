@@ -32,14 +32,25 @@
  * This mirrors dogmos_turf_registration.dm's own blocks_air case, which exists to prove heat-only
  * registration works.
  *
- * process_turf_heat() is fire-and-forget: a non-blocking try_send over a flume::bounded(1) channel to a
- * persistent worker, silently dropped if the slot is occupied, and the live SSair is also calling it
- * every ~0.5s throughout the suite. Hence the bounded retry rather than one call - a single notify has
- * no guarantee of being the one that lands.
+ * The live SSair owns frontier publication and resumable stage ordering. The test therefore activates
+ * the hot turf and observes bounded live subsystem cycles instead of calling a stage proc directly.
  */
 /datum/unit_test/dogmos_superconduction_golden
 
 /datum/unit_test/dogmos_superconduction_golden/Run()
+	// The unit-test z-level is loaded lazily by /datum/unit_test/New(), which only QUEUES its turfs
+	// into SSair.adjacent_rebuild; SSair drains that across many MC_TICK_CHECK-bounded fire() cycles.
+	// Any turf we resync while that queue is still live gets its heat edge recomputed out from under
+	// us by immediate_calculate_adjacent_turfs(). Let SSair finish before we touch topology. The bound
+	// is generous on purpose - the queue is a whole z-level drained under a tick budget shared with the
+	// rest of SSair, so a small one flakes on a loaded runner.
+	for(var/attempt in 1 to 200)
+		if(!length(SSair.adjacent_rebuild))
+			break
+		sleep(SSair.wait)
+	TEST_ASSERT(!length(SSair.adjacent_rebuild), \
+		"SSair.adjacent_rebuild still holds [length(SSair.adjacent_rebuild)] turfs after waiting; the lazy-loaded test z-level has not settled and any heat edge we build will be recomputed away.")
+
 	var/list/pair = allocate_turf_pair()
 	var/turf/open/turf_a = pair[1]
 	var/turf/open/turf_b = pair[2]
@@ -52,24 +63,39 @@
 
 	TEST_ASSERT(!(turf_b in turf_a.atmos_adjacent_turfs), \
 		"turf_b is still gas-adjacent to turf_a after being marked blocks_air - the heat edge this test depends on only exists for NON-gas-adjacent neighbors, so the setup did not take.")
+	TEST_ASSERT(!(turf_a.conductivity_blocked_directions & EAST) && !(turf_b.conductivity_blocked_directions & WEST), \
+		"The test pair's directional conductivity masks do not expose a reciprocal east-west heat edge.")
+
+	for(var/attempt in 1 to 20)
+		if(!SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
+			break
+		sleep(SSair.wait)
+	// SSair.adjacent_rebuild is re-checked here, not just above: a re-queue landing between setup and
+	// seeding would silently net our heat edge back to disconnected, which is exactly the failure mode
+	// the Dogmos-side pending dicts have no visibility into.
+	TEST_ASSERT(!length(SSdogmos.dogmos_pending_turf_heat) && !length(SSdogmos.dogmos_pending_turf_heat_adjacency) && !length(SSair.adjacent_rebuild), \
+		"The test pair's heat topology did not reach dogmosd before temperature seeding (SSair.adjacent_rebuild: [length(SSair.adjacent_rebuild)]).")
 
 	turf_a.set_temperature(700)
 	turf_b.set_temperature(T20C)
+	SSair.remove_from_active(turf_a)
+	SSair.remove_from_active(turf_b)
+	SSair.add_to_active(turf_a)
+	SSair.add_to_active(turf_b)
 
-	var/a_before = turf_a.return_temperature()
-	var/b_before = turf_b.return_temperature()
+	var/a_before = turf_a.dogmos_heat_temperature()
+	var/b_before = turf_b.dogmos_heat_temperature()
 	TEST_ASSERT(a_before > b_before, \
 		"Seeding turf_a at 700K and turf_b at T20C did not produce an asymmetric pair ([a_before] vs [b_before]) - test setup is broken, not the thing under test.")
 
 	var/a_after = a_before
-	for(var/attempt in 1 to 10)
-		SSair.process_turf_heat()
-		sleep(2)
-		a_after = turf_a.return_temperature()
+	for(var/attempt in 1 to 20)
+		sleep(SSair.wait)
+		a_after = turf_a.dogmos_heat_temperature()
 		if(a_after != a_before)
 			break
 
-	var/b_after = turf_b.return_temperature()
+	var/b_after = turf_b.dogmos_heat_temperature()
 
 	TEST_ASSERT(a_after < a_before, \
 		"turf_a's temperature ([a_before] -> [a_after]) did not decrease after conducting with cooler turf_b (cost_superconductivity [SSair.cost_superconductivity]) - heat is not flowing out of the hotter turf.")

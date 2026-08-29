@@ -62,7 +62,10 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 		requested_page = 1
 
 	var/total = 0
-	for(var/obj/machinery/machine as anything in candidates)
+	for(var/datum/candidate as anything in candidates)
+		if(!ismachinery(candidate))
+			continue
+		var/obj/machinery/machine = candidate
 		var/area/candidate_area = get_area(machine)
 		if(length(search) && !findtext("[machine.name] [candidate_area?.name]", search))
 			continue
@@ -74,7 +77,10 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 	var/last_row = min(first_row + KENNEL_BROWSE_PAGE_SIZE - 1, total)
 	var/matched_row = 0
 	var/list/rows = list()
-	for(var/obj/machinery/machine as anything in candidates)
+	for(var/datum/candidate as anything in candidates)
+		if(!ismachinery(candidate))
+			continue
+		var/obj/machinery/machine = candidate
 		var/area/candidate_area = get_area(machine)
 		if(length(search) && !findtext("[machine.name] [candidate_area?.name]", search))
 			continue
@@ -132,6 +138,7 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 	data["kennel_slow_mode"] = SSair.kennel_slow_mode
 	// APHELION EDIT ADDITION START - DOGMOS
 	data["flamethrower_directional_spread"] = SSair.flamethrower_directional_spread
+	data["process_metrics"] = dogmos_process_metrics_snapshot()
 	data["event_counts"] = list(
 		"fire_groups" = length(SSair.recent_fire_groups),
 		"high_cost_zones" = length(SSair.recent_high_cost_zones),

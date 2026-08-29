@@ -4,6 +4,19 @@
 /// Fire cycles between shared Dogmos Kennel UI updates while slow mode is enabled.
 #define KENNEL_SLOW_MODE_PUSH_INTERVAL 4
 
+// APHELION EDIT ADDITION START - DOGMOS
+/// Initial maximum service work items requested by one resumable atmosphere chunk.
+#define DOGMOS_STAGE_INITIAL_WORK_LIMIT 256
+/// Service stage id for pressure equalization.
+#define DOGMOS_SIMULATION_TURF_EQUALIZE 2
+/// Service stage id for active-turf diffusion.
+#define DOGMOS_SIMULATION_TURFS 4
+/// Service stage id for active-turf reactions.
+#define DOGMOS_SIMULATION_REACTIONS 5
+/// Largest exactly representable bounded health-preflight counter.
+#define DOGMOS_HEALTH_COUNTER_MAX 16777216
+// APHELION EDIT ADDITION END
+
 SUBSYSTEM_DEF(air)
 	name = "Atmospherics"
 	dependencies = list(
@@ -109,6 +122,22 @@ SUBSYSTEM_DEF(air)
 	/// Round-robin cursor into active_turfs for the legacy per-cycle walk (archive/current_cycle/
 	/// temperature_expose/stability check, process_active_turfs()) - see ACTIVE_TURFS_WALK_BATCH_SIZE.
 	var/active_turfs_walk_cursor = 0
+	// APHELION EDIT ADDITION START - DOGMOS
+	/// Four exact little-endian words identifying the latest published active frontier.
+	var/list/dogmos_frontier_epoch = list(0, 0, 0, 0)
+	/// Four exact little-endian words identifying the latest started service stage.
+	var/list/dogmos_stage_epoch = list(0, 0, 0, 0)
+	/// Service stage retained across SSair fires, or null between chunks.
+	var/dogmos_pending_stage
+	/// Exact frontier epoch retained while any service stage remains in this cycle.
+	var/list/dogmos_pending_frontier_epoch
+	/// Service estimate of work items remaining in the pending stage.
+	var/dogmos_stage_remaining_estimate = 0
+	/// Maximum service work items requested by the next stage chunk.
+	var/dogmos_stage_work_limit = DOGMOS_STAGE_INITIAL_WORK_LIMIT
+	/// Whether both active-turf service stages completed before a callback-drain resume.
+	var/dogmos_active_turf_stages_complete = FALSE
+	// APHELION EDIT ADDITION END
 	var/list/hotspots = list()
 	var/list/networks = list()
 	var/list/rebuild_queue = list()
@@ -195,6 +224,12 @@ SUBSYSTEM_DEF(air)
 
 
 /datum/controller/subsystem/air/fire(resumed = FALSE)
+	// APHELION EDIT ADDITION START - DOGMOS
+	SSdogmos.dogmos_health_preflight_count = min(SSdogmos.dogmos_health_preflight_count + 1, DOGMOS_HEALTH_COUNTER_MAX)
+	if(!SSdogmos.service_ready || !dogmos_service_health())
+		SSdogmos.service_ready = FALSE
+		CRASH("dogmosd became unavailable during the SSair health preflight.")
+	// APHELION EDIT ADDITION END
 	var/timer = TICK_USAGE_REAL
 
 	//Rebuilds can happen at any time, so this needs to be done outside of the normal system
@@ -358,6 +393,13 @@ SUBSYSTEM_DEF(air)
 	equalize_hard_turf_limit = SSair.equalize_hard_turf_limit
 	dogmos_blocked_turf_temperature_authority = SSair.dogmos_blocked_turf_temperature_authority
 	dogmos_equalize_performance_profile = SSair.dogmos_equalize_performance_profile
+	dogmos_frontier_epoch = SSair.dogmos_frontier_epoch.Copy()
+	dogmos_stage_epoch = SSair.dogmos_stage_epoch.Copy()
+	dogmos_pending_stage = SSair.dogmos_pending_stage
+	dogmos_pending_frontier_epoch = SSair.dogmos_pending_frontier_epoch?.Copy()
+	dogmos_stage_remaining_estimate = SSair.dogmos_stage_remaining_estimate
+	dogmos_stage_work_limit = SSair.dogmos_stage_work_limit
+	dogmos_active_turf_stages_complete = SSair.dogmos_active_turf_stages_complete
 
 	kennel_slow_mode = SSair.kennel_slow_mode
 	kennel_profile_reactions = SSair.kennel_profile_reactions
@@ -407,6 +449,9 @@ SUBSYSTEM_DEF(air)
 
 /datum/controller/subsystem/air/proc/process_adjacent_rebuild(init = FALSE)
 	var/list/queue = adjacent_rebuild
+	// APHELION EDIT ADDITION START - DOGMOS
+	SSdogmos.runtime_topology_batching = TRUE
+	// APHELION EDIT ADDITION END
 
 	while (length(queue))
 		var/turf/currT = queue[1]
@@ -424,6 +469,10 @@ SUBSYSTEM_DEF(air)
 		else
 			if(MC_TICK_CHECK)
 				break
+	// APHELION EDIT ADDITION START - DOGMOS
+	SSdogmos.runtime_topology_batching = FALSE
+	SSdogmos.flush_turf_registration_batch()
+	// APHELION EDIT ADDITION END
 
 /datum/controller/subsystem/air/proc/process_pipenets(resumed = FALSE)
 	if (!resumed)
@@ -477,22 +526,38 @@ SUBSYSTEM_DEF(air)
 	//cache for sanic speed (lists are references anyways)
 	var/list/currentrun = src.currentrun
 	while(currentrun.len)
-		var/obj/machinery/M = currentrun[currentrun.len]
+		// APHELION EDIT ADDITION START - DOGMOS
+		var/datum/processing_entry = currentrun[currentrun.len]
+		// APHELION EDIT ADDITION END
 		currentrun.len--
-		if(!M)
-			atmos_machinery -= M
+		// APHELION EDIT ADDITION START - DOGMOS
+		if(!istype(processing_entry, /obj/machinery) && !istype(processing_entry, /datum/component/gas_leaker))
+			atmos_machinery -= processing_entry
 			continue
 		var/kennel_tick_start = TICK_USAGE
-		if(M.process_atmos(wait * 0.1) == PROCESS_KILL)
-			stop_processing_machine(M)
-		check_kennel_machine_cost(M, TICK_USAGE_TO_MS(kennel_tick_start))
+		var/process_result
+		if(ismachinery(processing_entry))
+			var/obj/machinery/machine = processing_entry
+			process_result = machine.process_atmos(wait * 0.1)
+		else
+			var/datum/component/gas_leaker/gas_leaker = processing_entry
+			process_result = gas_leaker.process_atmos(wait * 0.1)
+		if(process_result == PROCESS_KILL)
+			stop_processing_machine(processing_entry)
+		if(ismachinery(processing_entry))
+			var/obj/machinery/profiled_machine = processing_entry
+			check_kennel_machine_cost(profiled_machine, TICK_USAGE_TO_MS(kennel_tick_start))
+		// APHELION EDIT ADDITION END
 		if(MC_TICK_CHECK)
 			return
 
 
 /** Requests the asynchronous Rust heat-graph worker; it does not consume SSair's tick budget. */
 /datum/controller/subsystem/air/proc/process_super_conductivity(resumed = FALSE)
-	process_turf_heat()
+	// APHELION EDIT ADDITION START - DOGMOS
+	if(process_turf_heat())
+		pause()
+	// APHELION EDIT ADDITION END
 
 /datum/controller/subsystem/air/proc/process_hotspots(resumed = FALSE)
 	if (!resumed)
@@ -511,11 +576,13 @@ SUBSYSTEM_DEF(air)
 
 /** Runs Rust's pressure equalizer, then drains any queued DM pressure movements. */
 /datum/controller/subsystem/air/proc/process_high_pressure_delta(resumed = FALSE)
-	if(!resumed)
+	// APHELION EDIT ADDITION START - DOGMOS
+	if(!resumed || dogmos_pending_stage == DOGMOS_SIMULATION_TURF_EQUALIZE)
 		var/remaining_ms = TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)
 		if(process_turf_equalize_auxtools(remaining_ms))
 			pause() // ran out of budget mid-equalize - resume next fire()
 			return
+	// APHELION EDIT ADDITION END
 
 	while (high_pressure_delta.len)
 		var/turf/open/T = high_pressure_delta[high_pressure_delta.len]
@@ -534,8 +601,24 @@ SUBSYSTEM_DEF(air)
  */
 /datum/controller/subsystem/air/proc/process_active_turfs(resumed = FALSE)
 	if(!resumed)
+		// APHELION EDIT ADDITION START - DOGMOS
+		publish_dogmos_frontier()
+		dogmos_active_turf_stages_complete = FALSE
+		// APHELION EDIT ADDITION END
 		walk_active_turfs_batch()
-		process_turfs_auxtools(TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE))
+
+	// APHELION EDIT ADDITION START - DOGMOS
+	if(!dogmos_active_turf_stages_complete)
+		if(isnull(dogmos_pending_stage) || dogmos_pending_stage == DOGMOS_SIMULATION_TURFS)
+			if(process_turfs_auxtools(TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)))
+				pause()
+				return
+		if(isnull(dogmos_pending_stage) || dogmos_pending_stage == DOGMOS_SIMULATION_REACTIONS)
+			if(process_reactions_auxtools(TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)))
+				pause()
+				return
+		dogmos_active_turf_stages_complete = TRUE
+	// APHELION EDIT ADDITION END
 
 	if(finish_turf_processing_auxtools(TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)))
 		pause() // still draining queued reactions/visuals/pressure-difference callbacks - resume next fire()
@@ -1008,27 +1091,60 @@ GLOBAL_LIST_EMPTY(colored_images)
  * Adds a given machine to the processing system for SSAIR_ATMOSMACHINERY processing.
  *
  * Arguments:
- * * machine - The machine to start processing. Can be any /obj/machinery.
+ * * machine - An atmosphere-processing machine or gas-leaker component.
  */
-/datum/controller/subsystem/air/proc/start_processing_machine(obj/machinery/machine)
-	if(machine.atmos_processing)
+/datum/controller/subsystem/air/proc/start_processing_machine(datum/machine) // APHELION EDIT CHANGE - DOGMOS - ORIGINAL: /datum/controller/subsystem/air/proc/start_processing_machine(obj/machinery/machine)
+	// APHELION EDIT ADDITION START - DOGMOS
+	if(!istype(machine, /obj/machinery) && !istype(machine, /datum/component/gas_leaker))
+		stack_trace("Attempted to add unsupported [machine?.type] to SSair atmosphere machinery processing.")
+		return
+	// APHELION EDIT ADDITION END
+	var/already_processing
+	if(ismachinery(machine))
+		var/obj/machinery/atmos_machine = machine
+		already_processing = atmos_machine.atmos_processing
+	else
+		var/datum/component/gas_leaker/gas_leaker = machine
+		already_processing = gas_leaker.atmos_processing
+	if(already_processing)
 		return
 	if(QDELETED(machine))
 		stack_trace("We tried to add a garbage collecting machine to SSair. Don't")
 		return
-	machine.atmos_processing = TRUE
+	if(ismachinery(machine))
+		var/obj/machinery/atmos_machine = machine
+		atmos_machine.atmos_processing = TRUE
+	else
+		var/datum/component/gas_leaker/gas_leaker = machine
+		gas_leaker.atmos_processing = TRUE
 	atmos_machinery += machine
 
 /**
  * Removes a given machine to the processing system for SSAIR_ATMOSMACHINERY processing.
  *
  * Arguments:
- * * machine - The machine to stop processing.
+ * * machine - The atmosphere-processing machine or gas-leaker component to stop.
  */
-/datum/controller/subsystem/air/proc/stop_processing_machine(obj/machinery/machine)
-	if(!machine.atmos_processing)
+/datum/controller/subsystem/air/proc/stop_processing_machine(datum/machine) // APHELION EDIT CHANGE - DOGMOS - ORIGINAL: /datum/controller/subsystem/air/proc/stop_processing_machine(obj/machinery/machine)
+	// APHELION EDIT ADDITION START - DOGMOS
+	if(!istype(machine, /obj/machinery) && !istype(machine, /datum/component/gas_leaker))
 		return
-	machine.atmos_processing = FALSE
+	// APHELION EDIT ADDITION END
+	var/is_processing
+	if(ismachinery(machine))
+		var/obj/machinery/atmos_machine = machine
+		is_processing = atmos_machine.atmos_processing
+	else
+		var/datum/component/gas_leaker/gas_leaker = machine
+		is_processing = gas_leaker.atmos_processing
+	if(!is_processing)
+		return
+	if(ismachinery(machine))
+		var/obj/machinery/atmos_machine = machine
+		atmos_machine.atmos_processing = FALSE
+	else
+		var/datum/component/gas_leaker/gas_leaker = machine
+		gas_leaker.atmos_processing = FALSE
 	atmos_machinery -= machine
 	// APHELION EDIT ADDITION START - DOGMOS
 	kennel_machine_cost_ewma -= REF(machine)
@@ -1155,3 +1271,8 @@ GLOBAL_LIST_EMPTY(colored_images)
 			return TRUE
 
 #undef KENNEL_SLOW_MODE_PUSH_INTERVAL
+#undef DOGMOS_STAGE_INITIAL_WORK_LIMIT
+#undef DOGMOS_SIMULATION_TURF_EQUALIZE
+#undef DOGMOS_SIMULATION_TURFS
+#undef DOGMOS_SIMULATION_REACTIONS
+#undef DOGMOS_HEALTH_COUNTER_MAX

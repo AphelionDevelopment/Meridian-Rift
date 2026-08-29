@@ -34,6 +34,22 @@ type DogmosCosts = {
   post_process: number;
 };
 
+// APHELION EDIT ADDITION START - DOGMOS
+type ProcessMetrics = {
+  dreamdaemon: {
+    private_bytes: number;
+    virtual_bytes: number;
+    working_set_bytes: number;
+    available: BooleanLike;
+  };
+  dogmosd: {
+    rss_bytes: number;
+    cpu_total_milliseconds: number;
+    available: BooleanLike;
+  };
+};
+// APHELION EDIT ADDITION END
+
 type FireGroupEntry = {
   time: string;
   jump_to: string | null;
@@ -108,6 +124,9 @@ type Data = {
     callback_enqueue_failures: number;
   };
   dogmos_costs: DogmosCosts;
+  // APHELION EDIT ADDITION START - DOGMOS
+  process_metrics: ProcessMetrics;
+  // APHELION EDIT ADDITION END
   frozen: BooleanLike;
   show_all: BooleanLike;
   realistic_space_radiation: BooleanLike;
@@ -205,6 +224,65 @@ const StageCostRow = (props: StageCostRowProps) => {
   );
 };
 
+// APHELION EDIT ADDITION START - DOGMOS
+const formatBinaryBytes = (bytes: number) => {
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+  return `${value.toFixed(unitIndex ? 2 : 0)} ${units[unitIndex]}`;
+};
+
+const ProcessMetricsPanel = () => {
+  const { data } = useBackend<Data>();
+  const { dreamdaemon, dogmosd } = data.process_metrics;
+  return (
+    <Section title="Process Snapshots (operational only)">
+      <Stack>
+        <Stack.Item grow basis="50%">
+          <Section title="DreamDaemon (32-bit host)" fill>
+            {!dreamdaemon.available ? (
+              <NoticeBox>Unavailable</NoticeBox>
+            ) : (
+              <LabeledList>
+                <LabeledList.Item label="Private bytes">
+                  {formatBinaryBytes(dreamdaemon.private_bytes)}
+                </LabeledList.Item>
+                <LabeledList.Item label="Virtual bytes">
+                  {formatBinaryBytes(dreamdaemon.virtual_bytes)}
+                </LabeledList.Item>
+                <LabeledList.Item label="Working-set bytes">
+                  {formatBinaryBytes(dreamdaemon.working_set_bytes)}
+                </LabeledList.Item>
+              </LabeledList>
+            )}
+          </Section>
+        </Stack.Item>
+        <Stack.Item grow basis="50%">
+          <Section title="dogmosd (64-bit service)" fill>
+            {!dogmosd.available ? (
+              <NoticeBox>Unavailable</NoticeBox>
+            ) : (
+              <LabeledList>
+                <LabeledList.Item label="Resident-set bytes">
+                  {formatBinaryBytes(dogmosd.rss_bytes)}
+                </LabeledList.Item>
+                <LabeledList.Item label="Cumulative CPU">
+                  {dogmosd.cpu_total_milliseconds.toLocaleString()} ms
+                </LabeledList.Item>
+              </LabeledList>
+            )}
+          </Section>
+        </Stack.Item>
+      </Stack>
+    </Section>
+  );
+};
+// APHELION EDIT ADDITION END
+
 const KennelControls = () => {
   const { act, data } = useBackend<Data>();
   return (
@@ -296,6 +374,9 @@ const OverviewPanel = (props) => {
           </Stack.Item>
         </Stack>
       </Section>
+      {/* APHELION EDIT ADDITION START - DOGMOS */}
+      <ProcessMetricsPanel />
+      {/* APHELION EDIT ADDITION END */}
       <Section title="Dogmos Stage Costs (Rust, per cycle)">
         <Table>
           <StageCostRow label="Gas FDM" cost={costs.turfs ?? 0} active />
