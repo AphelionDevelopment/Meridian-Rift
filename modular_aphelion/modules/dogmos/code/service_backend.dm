@@ -165,10 +165,18 @@
 	var/list/dogmos_pending_turf_lifecycle = list()
 	/// Pending fixed-width turf adjacency records keyed by canonical slot pair.
 	var/list/dogmos_pending_turf_adjacency = list()
+	/// Reverse index: turf slot (string) -> set of dogmos_pending_turf_adjacency keys touching it.
+	/// Lets discard_pending_turf_adjacencies() evict one turf's stale edges in O(its own degree)
+	/// instead of scanning the entire pending batch - the scan cost otherwise multiplies against
+	/// every register_dogmos_air() call in a startup/runtime rebuild, which is unnoticeable on a
+	/// handful of test turfs but quadratic-ish and multi-minute on a real map's turf count.
+	var/list/dogmos_pending_turf_adjacency_index = list()
 	/// Pending fixed-width turf heat records keyed by turf slot.
 	var/list/dogmos_pending_turf_heat = list()
 	/// Pending fixed-width turf heat-adjacency records keyed by canonical slot pair.
 	var/list/dogmos_pending_turf_heat_adjacency = list()
+	/// Reverse index: turf slot (string) -> set of dogmos_pending_turf_heat_adjacency keys touching it.
+	var/list/dogmos_pending_turf_heat_adjacency_index = list()
 	/// Whether one runtime adjacency queue is coalescing repeated turf updates.
 	var/runtime_topology_batching = FALSE
 	/// Number of runtime topology records accepted by dogmosd.
@@ -199,8 +207,10 @@
 	turf_registration_batching = TRUE
 	dogmos_pending_turf_lifecycle.Cut()
 	dogmos_pending_turf_adjacency.Cut()
+	dogmos_pending_turf_adjacency_index.Cut()
 	dogmos_pending_turf_heat.Cut()
 	dogmos_pending_turf_heat_adjacency.Cut()
+	dogmos_pending_turf_heat_adjacency_index.Cut()
 
 /** Flushes pending turf mutations in bounded batches while preserving lifecycle-before-topology ordering. */
 /datum/controller/subsystem/dogmos/proc/flush_turf_registration_batch()
@@ -248,7 +258,7 @@
 		if(dogmos_turf_adjacency_batch(adjacency_batch) != adjacency_count)
 			CRASH("dogmosd rejected a turf adjacency batch.")
 		for(var/adjacency_key in adjacency_keys)
-			dogmos_pending_turf_adjacency.Remove(adjacency_key)
+			remove_pending_gas_edge(adjacency_key)
 		if(!turf_registration_batching)
 			dogmos_runtime_topology_records += adjacency_count
 			dogmos_runtime_topology_calls++
@@ -264,7 +274,7 @@
 		if(dogmos_turf_heat_adjacency_batch(heat_adjacency_batch) != heat_adjacency_count)
 			CRASH("dogmosd rejected a turf heat-adjacency batch.")
 		for(var/heat_adjacency_key in heat_adjacency_keys)
-			dogmos_pending_turf_heat_adjacency.Remove(heat_adjacency_key)
+			remove_pending_heat_edge(heat_adjacency_key)
 		if(!turf_registration_batching)
 			dogmos_runtime_topology_records += heat_adjacency_count
 			dogmos_runtime_topology_calls++
@@ -278,24 +288,69 @@
 		|| length(dogmos_pending_turf_heat_adjacency) >= DOGMOS_TURF_BATCH_OPERATIONS)
 		flush_turf_registration_batch()
 
-/** Removes pending topology that predates a turf's latest registration state. */
+/** Adds one edge key to a slot's reverse-index bucket. Idempotent - a set, not a list of duplicates. */
+/datum/controller/subsystem/dogmos/proc/index_pending_edge(list/index, slot_key, edge_key)
+	var/list/entries = index[slot_key]
+	if(!entries)
+		entries = list()
+		index[slot_key] = entries
+	entries[edge_key] = TRUE
+
+/** Removes one edge key from a slot's reverse-index bucket, dropping the bucket once empty. */
+/datum/controller/subsystem/dogmos/proc/unindex_pending_edge(list/index, slot_key, edge_key)
+	var/list/entries = index[slot_key]
+	if(!entries)
+		return
+	entries -= edge_key
+	if(!length(entries))
+		index -= slot_key
+
+/** Removes one pending gas-adjacency edge from both the batch and its reverse index. */
+/datum/controller/subsystem/dogmos/proc/remove_pending_gas_edge(edge_key)
+	var/list/edge = dogmos_pending_turf_adjacency[edge_key]
+	if(!edge)
+		return
+	dogmos_pending_turf_adjacency.Remove(edge_key)
+	unindex_pending_edge(dogmos_pending_turf_adjacency_index, "[edge[1]]", edge_key)
+	unindex_pending_edge(dogmos_pending_turf_adjacency_index, "[edge[3]]", edge_key)
+
+/** Removes one pending heat-adjacency edge from both the batch and its reverse index. */
+/datum/controller/subsystem/dogmos/proc/remove_pending_heat_edge(edge_key)
+	var/list/edge = dogmos_pending_turf_heat_adjacency[edge_key]
+	if(!edge)
+		return
+	dogmos_pending_turf_heat_adjacency.Remove(edge_key)
+	unindex_pending_edge(dogmos_pending_turf_heat_adjacency_index, "[edge[1]]", edge_key)
+	unindex_pending_edge(dogmos_pending_turf_heat_adjacency_index, "[edge[3]]", edge_key)
+
+/**
+ * Removes pending topology that predates a turf's latest registration state.
+ *
+ * Looks up the reverse index instead of scanning the full pending batch - this runs on every
+ * register_dogmos_air() call, so an O(pending batch size) scan here multiplies against every
+ * turf touched during a startup or runtime adjacency rebuild. Unnoticeable at unit-test scale
+ * (a handful of turfs), it cost minutes on a real map's turf count.
+ */
 /datum/controller/subsystem/dogmos/proc/discard_pending_turf_adjacencies(turf/target)
 	var/slot = target.dogmos_service_slot()
 	var/generation = target.dogmos_service_generation()
-	var/list/gas_removals = list()
-	for(var/edge_key in dogmos_pending_turf_adjacency)
-		var/list/edge = dogmos_pending_turf_adjacency[edge_key]
-		if((edge[1] == slot && edge[2] == generation) || (edge[3] == slot && edge[4] == generation))
-			gas_removals += edge_key
-	for(var/edge_key in gas_removals)
-		dogmos_pending_turf_adjacency.Remove(edge_key)
-	var/list/heat_removals = list()
-	for(var/heat_edge_key in dogmos_pending_turf_heat_adjacency)
-		var/list/heat_edge = dogmos_pending_turf_heat_adjacency[heat_edge_key]
-		if((heat_edge[1] == slot && heat_edge[2] == generation) || (heat_edge[3] == slot && heat_edge[4] == generation))
-			heat_removals += heat_edge_key
-	for(var/heat_edge_key in heat_removals)
-		dogmos_pending_turf_heat_adjacency.Remove(heat_edge_key)
+	var/slot_key = "[slot]"
+	var/list/gas_candidates = dogmos_pending_turf_adjacency_index[slot_key]
+	if(gas_candidates)
+		for(var/edge_key in gas_candidates.Copy())
+			var/list/edge = dogmos_pending_turf_adjacency[edge_key]
+			if(!edge)
+				continue
+			if((edge[1] == slot && edge[2] == generation) || (edge[3] == slot && edge[4] == generation))
+				remove_pending_gas_edge(edge_key)
+	var/list/heat_candidates = dogmos_pending_turf_heat_adjacency_index[slot_key]
+	if(heat_candidates)
+		for(var/heat_edge_key in heat_candidates.Copy())
+			var/list/heat_edge = dogmos_pending_turf_heat_adjacency[heat_edge_key]
+			if(!heat_edge)
+				continue
+			if((heat_edge[1] == slot && heat_edge[2] == generation) || (heat_edge[3] == slot && heat_edge[4] == generation))
+				remove_pending_heat_edge(heat_edge_key)
 
 /** Flushes and closes startup turf mutation accumulation. */
 /datum/controller/subsystem/dogmos/proc/finish_turf_registration_batch()
@@ -1405,11 +1460,15 @@
 			var/list/gas_edge = list(slot, generation, neighbor_slot, neighbor_generation, connected, firelock)
 			var/gas_edge_key = slot < neighbor_slot ? "[slot]:[generation]:[neighbor_slot]:[neighbor_generation]" : "[neighbor_slot]:[neighbor_generation]:[slot]:[generation]"
 			SSdogmos.dogmos_pending_turf_adjacency[gas_edge_key] = gas_edge
+			SSdogmos.index_pending_edge(SSdogmos.dogmos_pending_turf_adjacency_index, "[slot]", gas_edge_key)
+			SSdogmos.index_pending_edge(SSdogmos.dogmos_pending_turf_adjacency_index, "[neighbor_slot]", gas_edge_key)
 		if(heat_present && neighbor.thermal_conductivity > 0 && neighbor.heat_capacity > 0 && init_air && neighbor.init_air && !isspaceturf(src) && !isspaceturf(neighbor))
 			var/heat_connected = !(conductivity_blocked_directions & direction) && !(neighbor.conductivity_blocked_directions & turn(direction, 180))
 			var/list/heat_edge = list(slot, generation, neighbor_slot, neighbor_generation, heat_connected)
 			var/heat_edge_key = slot < neighbor_slot ? "[slot]:[generation]:[neighbor_slot]:[neighbor_generation]" : "[neighbor_slot]:[neighbor_generation]:[slot]:[generation]"
 			SSdogmos.dogmos_pending_turf_heat_adjacency[heat_edge_key] = heat_edge
+			SSdogmos.index_pending_edge(SSdogmos.dogmos_pending_turf_heat_adjacency_index, "[slot]", heat_edge_key)
+			SSdogmos.index_pending_edge(SSdogmos.dogmos_pending_turf_heat_adjacency_index, "[neighbor_slot]", heat_edge_key)
 
 	var/queued_topology = length(SSdogmos.dogmos_pending_turf_adjacency) + length(SSdogmos.dogmos_pending_turf_heat_adjacency)
 	SSdogmos.dogmos_runtime_topology_max_queued = max(SSdogmos.dogmos_runtime_topology_max_queued, queued_topology)
