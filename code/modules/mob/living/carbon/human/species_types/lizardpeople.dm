@@ -19,6 +19,7 @@
 		/obj/item/organ/snout = "Round",
 		/obj/item/organ/spines = SPRITE_ACCESSORY_NONE,
 		/obj/item/organ/tail/lizard = "Smooth",
+		/obj/item/organ/fangs/lizard,
 	)
 	mutanttongue = /obj/item/organ/tongue/lizard
 	mutanteyes = /obj/item/organ/eyes/lizard
@@ -116,6 +117,15 @@ Lizard subspecies: ASHWALKERS
 		TRAIT_VIRUSIMMUNE,
 	)
 	// inherent_factions = list(FACTION_ASHWALKER) // NOVA EDIT REMOVAL: Moving to Ritual
+	mutant_organs = list(
+		/obj/item/organ/horns = SPRITE_ACCESSORY_NONE,
+		/obj/item/organ/frills = SPRITE_ACCESSORY_NONE,
+		/obj/item/organ/snout = "Round",
+		/obj/item/organ/spines = SPRITE_ACCESSORY_NONE,
+		/obj/item/organ/tail/lizard = "Smooth",
+		/obj/item/organ/fangs/lizard/ash,
+	)
+	inherent_factions = list(FACTION_ASHWALKER)
 	species_language_holder = /datum/language_holder/lizard/ash
 	digitigrade_customization = DIGITIGRADE_FORCED
 	examine_limb_id = SPECIES_LIZARD
