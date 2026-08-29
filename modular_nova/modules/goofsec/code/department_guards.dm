@@ -852,7 +852,7 @@
 /datum/job/customs_agent
 	title = JOB_CUSTOMS_AGENT
 	description = "Keep the Cargo Department, its Guild members, and the vital goods flowing through its supply lanes safe. \
-		Watch for contraband and anyone who would take advantage of Aphelion's free-trade hub."
+		Watch for contraband and anyone who would take advantage of the Aphelion's free-trade hub."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
