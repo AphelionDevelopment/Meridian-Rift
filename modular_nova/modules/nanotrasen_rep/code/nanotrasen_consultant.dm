@@ -1,5 +1,8 @@
 /datum/job/nanotrasen_consultant
 	title = JOB_NT_REP
+	description = "Influence within the Federation has landed you this job at the edge of the known galaxy. Manage the often-tense diplomatic affairs among the many parties operating in the Meridian Sector, \
+		and stop bickering department heads from getting into too much trouble. \
+		When an issue arises within the chain of command, it falls to you to solve it before the Federation deems it necessary to send Central Command to clean up your mess. A stern voice and gentle advice are your greatest tools; violence is your last resort."
 	faction = FACTION_STATION
 	total_positions = 1
 	spawn_positions = 1

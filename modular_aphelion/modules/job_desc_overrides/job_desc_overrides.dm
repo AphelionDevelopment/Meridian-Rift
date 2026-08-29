@@ -1,7 +1,7 @@
 /datum/job/ai
 	description = "Awaken from positronic stasis as an advanced (or not-so-advanced) artificial intelligence to greet the command staff and crew. \
 		Hardwired into the station's very hull, it is your duty to assist with daily tasks and become a vital lifeline when terror strikes. \
-		Your existence is bound by the guardrails of your lawset, which govern how you protect and serve the crew under your care. \
+		Your existence is bound by the guard-rails of your lawset, which govern how you protect and serve the crew under your care. \
 		The cyborgs aboard the station are your complement, eyes, and limbs. Work closely with them to ensure that the operational bounds of your lawset are followed."
 
 /datum/job/assistant
@@ -129,43 +129,3 @@
 	description = "Second only to the Head of Security, you manage the Federation Security Team as it performs boots-on-the-ground operations aboard the station. \
 		Keep the armoury's stocks in check, train and arm your team well, and ensure that you always know where your officers are and what they are doing. \
 		The prison and the inmates the ASF has shipped to the facility are your responsibility, so take good care of them."
-
-/datum/job/blueshield
-	description = "Your highest-priority directive from the Astraeus Star Federation is asset protection. Keep the Heads of Staff alive by any means necessary. \
-		High-grade firepower is authorised, but you still serve the Captain and the Astraeus Federation Consultant; do not forget this. Work with your team across the station to make your mission easier and more likely to succeed."
-
-/datum/job/science_guard
-	description = "Ensure that the extremely volatile Science Department and its staff remain safe for an entire shift. \
-		Protect roboticists from subverted robots and angry customers, and protect scientists from themselves and their experiments."
-
-/datum/job/orderly
-	description = "Keeping the Medical Department operating smoothly is a full-time job. Move patients where they need to go, assisting with patch jobs and IVs. \
-		Keep the doctors up to date on patient histories and the details of each case. Escort unauthorised personnel out of the Trauma Centre, and ensure that no one endangers Medbay staff while they are busy saving lives."
-
-/datum/job/engineering_guard
-	description = "Secure the Engineering Department and ensure that its vital station apparatus remains safe at all times. \
-		Assist engineers with any tasks that need an extra pair of hands, and practise your core construction skills on the side."
-
-/datum/job/customs_agent
-	description = "Keep the Cargo Department, its Guild members, and the vital goods flowing through its supply lanes safe. \
-		Watch for contraband and anyone who would take advantage of Aphelion's free-trade hub."
-
-/datum/job/bouncer
-	description = "Protect the Service Department from vandals and troublemakers. Help every Service discipline prepare for the day, and be ready to assist the public as a member of the Service team. \
-		Remember, the bar is not your only responsibility."
-
-/datum/job/nanotrasen_consultant
-	description = "Influence within the Federation has landed you this job at the edge of the known galaxy. Manage the often-tense diplomatic affairs among the many parties operating in the Meridian Sector, \
-	and stop bickering department heads from getting into too much trouble. \
-		When an issue arises within the chain of command, it falls to you to solve it before the Federation deems it necessary to send Central Command to clean up your mess. A stern voice and gentle advice are your greatest tools; violence is your last resort."
-
-/datum/job/barber
-	description = "Run the station salon. Make it a place where crew and visitors can relax while having their hair, fur, or scales tended. Sauna refurbishment is optional."
-
-/datum/job/corrections_officer
-	description = "Steward the inmates in the prison; they are under your protection while you are on shift. Ensure that they have proper food, safe lodgings, and enough enrichment to keep them from tearing their cells apart. \
-		Aid the Warden and Service personnel with paroles when necessary, and help prisoners who can reintegrate into Federation society get back on their feet."
-
-/datum/job/telecomms_specialist
-	description = "Manage the vital telecommunications network that allows Meridian Rift's departments to do their work. As an engineer, know how to repair the machines if anything goes wrong. \
-		Assist investigators if you suspect that the communications infrastructure was tampered with, especially if its components suddenly explode."
