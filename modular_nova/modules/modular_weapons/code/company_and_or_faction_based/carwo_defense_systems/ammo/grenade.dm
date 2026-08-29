@@ -36,7 +36,7 @@
 
 	range = 14
 
-	speed = 1
+	speed = 1.3
 
 	sharpness = NONE
 

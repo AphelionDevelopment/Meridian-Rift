@@ -12,7 +12,7 @@
 /datum/preference/numeric/holosynth_transparency/create_default_value()
 	return 60
 
-/datum/preference/numeric/holosynth_transparency/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/numeric/holosynth_transparency/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.dna.features["holo_transparency"] = value
 	var/datum/species/synthetic/holosynth/species = target.dna?.species
 	if(istype(species))
@@ -26,7 +26,7 @@
 	relevant_inherent_trait = TRAIT_HOLOSYNTH
 	default_value = TRUE
 
-/datum/preference/toggle/holosynth_scanline/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/toggle/holosynth_scanline/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.dna.features["holo_scanline"] = value
 	var/datum/species/synthetic/holosynth/species = target.dna?.species
 	if(istype(species))

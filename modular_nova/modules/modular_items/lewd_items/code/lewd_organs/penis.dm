@@ -23,6 +23,18 @@
 	/// The sheath accessory, or null for sheathless penises.
 	var/datum/sprite_accessory/genital/sheath/sheath_datum
 
+// taur_penis_onmob.dmi only has art for the BEHIND layer (it renders tucked behind the
+/datum/bodypart_overlay/mutant/genital/penis/get_all_overlays(obj/item/bodypart/limb)
+	var/datum/sprite_accessory/genital/genital_datum = sprite_datum
+	if(genital_datum?.uses_taur_sprite(limb?.owner))
+		set_layers(list(EXTERNAL_BEHIND = BODY_BEHIND_LAYER - (genital_stack_rank * GENITAL_STACK_STEP)))
+	else
+		set_layers(list(
+			EXTERNAL_FRONT_UNDER_CLOTHES = PENIS_LAYER,
+			EXTERNAL_BEHIND = BODY_BEHIND_LAYER,
+		))
+	return ..()
+
 /obj/item/organ/genital/penis/get_description_string(datum/sprite_accessory/genital/penis/penis)
 	var/returned_string = ""
 	var/genital_descriptor = LOWER_TEXT(get_genital_descriptor(penis))
@@ -96,6 +108,11 @@
 	update_sprite_suffix()
 	owner?.update_body()
 
+/// Re-syncs taur mode (e.g. after the "penis_taur_mode" DNA feature was toggled) and refreshes the sprite.
+/obj/item/organ/genital/penis/proc/refresh_taur_mode()
+	update_sprite_suffix()
+	owner?.update_body()
+
 /// Whether this penis has a sheath at all, regardless of arousal state.
 /// Contrast is_sheathed(), which is whether it's currently retracted into it.
 /obj/item/organ/genital/penis/proc/has_sheath()
@@ -107,6 +124,11 @@
 	var/datum/bodypart_overlay/mutant/genital/penis/our_overlay = bodypart_overlay
 	return our_overlay?.sheath_datum && aroused != AROUSAL_FULL
 
+/// Whether this penis should currently render using its taur art (if the shaft has any).
+/obj/item/organ/genital/penis/proc/uses_taur_mode()
+	var/datum/bodypart_overlay/mutant/genital/penis/our_overlay = bodypart_overlay
+	return !!our_overlay?.shaft_datum?.uses_taur_sprite(owner)
+
 /obj/item/organ/genital/penis/update_sprite_suffix()
 	// Swap the active datum BEFORE the base proc computes/stamps the suffix,
 	// so the suffix and the datum can never describe different sprites.
@@ -114,11 +136,16 @@
 	our_overlay?.set_sheathed(is_sheathed())
 	return ..()
 
+/obj/item/organ/genital/penis/on_mob_insert(mob/living/carbon/organ_owner, special, movement_flags)
+	. = ..()
+	update_sprite_suffix()
+
 /obj/item/organ/genital/penis/get_sprite_size_string()
 	if(is_sheathed())
 		var/datum/bodypart_overlay/mutant/genital/penis/our_overlay = bodypart_overlay
 		var/poking_out = (aroused == AROUSAL_PARTIAL) ? 1 : 0
-		return "[our_overlay.sheath_datum.icon_state]_[poking_out]"
+		var/sheath_state = our_overlay.sheath_datum.uses_taur_sprite(owner) ? (our_overlay.sheath_datum.taur_icon_state || our_overlay.sheath_datum.icon_state) : our_overlay.sheath_datum.icon_state
+		return "[sheath_state]_[poking_out]"
 
 	var/size_affix
 	var/measured_size = floor(genital_size)
@@ -140,9 +167,20 @@
 			size_affix = "6"
 		else
 			size_affix = "7"
-	size_affix = "[min((text2num(size_affix)), max(max_sprite_size_affix, 1))]"
-	var/passed_string = "[genital_type]_[size_affix]_[is_erect]"
-	if(uses_skintones)
+	var/datum/bodypart_overlay/mutant/genital/penis/our_overlay = bodypart_overlay
+	var/taur_mode = uses_taur_mode()
+	var/base_name
+	if(taur_mode)
+		// there's no distinct erect/non erect version for taur mode
+		is_erect = 0
+		base_name = our_overlay.shaft_datum.taur_icon_state || genital_type
+	// taur_penis_onmob.dmi only goes up to size 4, and has no skintoned "_s" variants.
+	var/affix_cap = taur_mode ? our_overlay.shaft_datum.taur_max_sprite_size_affix : max_sprite_size_affix
+	size_affix = "[min((text2num(size_affix)), max(affix_cap, 1))]"
+	if(isnull(base_name))
+		base_name = genital_type
+	var/passed_string = "[base_name]_[size_affix]_[is_erect]"
+	if(uses_skintones && !taur_mode)
 		passed_string += "_s"
 	return passed_string
 
@@ -154,8 +192,7 @@
 	return ..()
 
 /obj/item/organ/genital/penis/build_from_accessory(datum/sprite_accessory/genital/accessory, datum/dna/DNA)
-	if(DNA.features["penis_uses_skintones"])
-		uses_skintones = accessory.has_skintone_shading
+	uses_skintones = DNA.features["penis_uses_skintones"] ? accessory.has_skintone_shading : FALSE
 	return ..()
 
 /datum/bodypart_overlay/mutant/genital/penis/get_global_feature_list()

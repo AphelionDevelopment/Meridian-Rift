@@ -9,5 +9,5 @@
 /datum/preference/choiced/limp_leg/init_possible_values()
 	return list("Random", "Left leg", "Right leg")
 
-/datum/preference/choiced/limp_leg/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/limp_leg/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return

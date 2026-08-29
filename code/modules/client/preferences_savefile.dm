@@ -262,7 +262,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 			parsed_favs += path
 	favorite_outfits = unique_list(parsed_favs)
 
-	favorite_verbs = savefile.get_entry("favorite_verbs", favorite_verbs)
+	favorite_verbs = savefile.get_entry("favorite_verbs", favorite_verbs) // APHELION EDIT ADDITION
 
 	// Custom hotkeys
 	key_bindings = savefile.get_entry("key_bindings", key_bindings)
@@ -284,7 +284,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	be_special = sanitize_be_special(SANITIZE_LIST(be_special))
 	key_bindings = sanitize_keybindings(key_bindings)
 	favorite_outfits = SANITIZE_LIST(favorite_outfits)
-	favorite_verbs = SANITIZE_LIST(favorite_verbs)
+	favorite_verbs = SANITIZE_LIST(favorite_verbs) // APHELION EDIT ADDITION
 	job_assigned_profiles = SANITIZE_LIST(job_assigned_profiles)
 
 	key_bindings_by_key = get_key_bindings_by_key(key_bindings)
@@ -340,7 +340,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	savefile.set_entry("key_bindings", key_bindings)
 	savefile.set_entry("hearted_until", (hearted_until > world.realtime ? hearted_until : null))
 	savefile.set_entry("favorite_outfits", favorite_outfits)
-	savefile.set_entry("favorite_verbs", favorite_verbs)
+	savefile.set_entry("favorite_verbs", favorite_verbs) // APHELION EDIT ADDITION
 	savefile.set_entry("job_assigned_profiles", job_assigned_profiles)
 	savefile.save()
 	return TRUE
@@ -459,6 +459,11 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 		tainted_character_profiles = TRUE
 		randomise_appearance_prefs()
 		all_quirks = list()
+		// APHELION EDIT ADDITION START
+		augments = list()
+		body_markings = list()
+		languages = list()
+		// APHELION EDIT ADDITION END
 		recently_updated_keys |= /datum/preference/name/real_name
 		save_character()
 
@@ -467,6 +472,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 
 	character_preview_view.update_body()
 	SSstatpanels.update_job_estimation(ckey = parent.ckey) // update the job estimations with their new char // NOVA EDIT ADDITION
+	previous_preview_pref = null // NOVA EDIT ADDITION
 
 /datum/preferences/proc/remove_current_slot()
 	PRIVATE_PROC(TRUE)

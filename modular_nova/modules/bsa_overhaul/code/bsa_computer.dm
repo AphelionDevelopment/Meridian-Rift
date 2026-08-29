@@ -20,9 +20,32 @@
 	var/atom/target
 	/// Are we allowing the gun to target areas?
 	var/area_aim = FALSE //should also show areas for targeting
+	/// If we're showing roughly where the BSA will appear.
+	var/visualizing_position = FALSE
+	/// The centerpiece's turf when visualization started, so it can't be moved mid-deployment.
+	var/turf/visualization_center
+	/// The front piece's turf when visualization started, so it can't be rotated mid-deployment.
+	var/turf/visualization_front
+	/// Typepath of the effect used for position visualization.
+	var/visualization_type = /obj/effect/clear_color/green
+	/// List of effects being used to show where the BSA will appear.
+	var/list/visualization_effects
 
 	connectable = FALSE //connecting_computer change: since icon_state is not a typical console, it cannot be connectable.
 
+
+/obj/machinery/computer/bsa_control/Initialize(mapload, obj/item/circuitboard/circuit)
+	. = ..()
+	visualization_effects = list()
+
+/obj/machinery/computer/bsa_control/Destroy(force)
+	stop_visualizing()
+	return ..()
+
+/obj/machinery/computer/bsa_control/on_set_machine_stat(old_value)
+	. = ..()
+	if(machine_stat)
+		stop_visualizing()
 
 /obj/machinery/computer/bsa_control/ui_state(mob/user)
 	return GLOB.physical_state
@@ -47,6 +70,7 @@
 	data["capacitor_charge"] = cannon?.capacitor_power
 	data["target_capacitor_charge"] = cannon?.target_power
 	data["max_capacitor_charge"] = cannon?.max_charge
+	data["visualizing"] = visualizing_position
 	if(target)
 		data["target"] = get_target_name()
 	return data
@@ -59,6 +83,12 @@
 	switch(action)
 		if("build")
 			deploy()
+			. = TRUE
+		if("visualize")
+			start_visualizing()
+			. = TRUE
+		if("unvisualize")
+			stop_visualizing()
 			. = TRUE
 		if("fire")
 			fire(usr)
@@ -165,6 +195,44 @@
  *
  * Deploys the cannon and deletes the old parts.
  */
+/// Prior to deployment, indicates the space the cannon will occupy using effects.
+/obj/machinery/computer/bsa_control/proc/start_visualizing()
+	if(visualizing_position)
+		return
+	var/obj/machinery/bsa/full/prebuilt = locate() in range(7) //In case of adminspawn
+	if(prebuilt)
+		prebuilt.control_computer = src
+		connected_cannon = WEAKREF(prebuilt)
+		return
+
+	var/obj/machinery/bsa/middle/centerpiece = locate() in range(7)
+	if(!centerpiece)
+		notice = "No BSA parts detected nearby."
+		return
+	notice = centerpiece.check_completion()
+	if(notice)
+		return
+
+	var/list/deployment_turfs = centerpiece.get_deployment_turfs()
+	if(isnull(deployment_turfs))
+		notice = "Parts misaligned!"
+		return
+
+	visualization_center = get_turf(centerpiece)
+	visualization_front = get_turf(centerpiece.front_piece?.resolve())
+	visualizing_position = TRUE
+	for(var/turf/deployment_turf as anything in deployment_turfs)
+		visualization_effects += new visualization_type(deployment_turf)
+
+/// Clears the effects indicating where the cannon will deploy.
+/obj/machinery/computer/bsa_control/proc/stop_visualizing()
+	visualizing_position = FALSE
+	visualization_center = null
+	visualization_front = null
+	for(var/obj/effect/deployment_visualizer as anything in visualization_effects)
+		qdel(deployment_visualizer)
+	visualization_effects?.Cut()
+
 /obj/machinery/computer/bsa_control/proc/deploy(force=FALSE)
 	var/obj/machinery/bsa/full/prebuilt = locate() in range(7) //In case of adminspawn
 	if(prebuilt)
@@ -179,6 +247,17 @@
 	notice = centerpiece.check_completion()
 	if(notice)
 		return null
+	// These only apply when deployment was staged through the hologram, and must run after check_completion().
+	if(visualizing_position)
+		if(visualization_center != get_turf(centerpiece))
+			notice = "The BSA has been moved mid-deployment."
+			stop_visualizing()
+			return null
+		if(visualization_front != get_turf(centerpiece.front_piece?.resolve()))
+			notice = "The BSA has been rotated mid-deployment."
+			stop_visualizing()
+			return null
+		stop_visualizing()
 	//Totally nanite construction system not an immersion breaking spawning
 	do_smoke(4, centerpiece, get_turf(centerpiece))
 	var/obj/machinery/bsa/full/cannon = new(get_turf(centerpiece), centerpiece.get_cannon_direction())

@@ -117,6 +117,9 @@
 /obj/item/organ/tongue/jelly
 	zone = BODY_ZONE_CHEST
 	organ_flags = ORGAN_ORGANIC | ORGAN_UNREMOVABLE
+	emote_sounds = list(
+		/datum/emote/living/scream::key = 'modular_nova/modules/emotes/sound/emotes/jelly_scream.ogg',
+	)
 
 /obj/item/organ/lungs/slime
 	zone = BODY_ZONE_CHEST
@@ -155,7 +158,7 @@
 			to_chat(organ_owner, span_purple("Your body's thirst for plasma is quenched, your inner and outer membrane using it to regenerate."))
 
 	if(chem.type == /datum/reagent/water)
-		if (HAS_TRAIT(organ_owner, TRAIT_SLIME_HYDROPHOBIA) || HAS_TRAIT(organ_owner, TRAIT_WATER_BREATHING))
+		if (HAS_TRAIT(organ_owner, TRAIT_SLIME_HYDROPHOBIA) || HAS_TRAIT(organ_owner, TRAIT_NODROWN))
 			return
 
 		organ_owner.adjust_blood_volume(-3 * seconds_per_tick)
@@ -422,7 +425,7 @@
 		return
 
 	// Determine if water-breathing logic should be inverted
-	var/inverted = HAS_TRAIT(slime, TRAIT_WATER_BREATHING)
+	var/inverted = HAS_TRAIT(slime, TRAIT_NODROWN)
 	var/blood_units_to_lose = 0
 
 	if(inverted)
@@ -1192,8 +1195,20 @@
 			schlong.refresh_sheath()
 
 		if("Penis Taur Mode")
+			var/obj/item/organ/genital/penis/taur_schlong = alterer.get_organ_slot(ORGAN_SLOT_PENIS)
+			var/obj/item/organ/genital/testicles/taur_balls = alterer.get_organ_slot(ORGAN_SLOT_TESTICLES)
+			if(isnull(taur_schlong))
+				to_chat(alterer, span_warning("There's no penis to switch to a taur shape!"))
+				return
+			var/datum/bodypart_overlay/mutant/genital/penis/our_overlay = taur_schlong.bodypart_overlay
+			var/datum/sprite_accessory/genital/shaft = our_overlay?.shaft_datum
+			if(!shaft?.taur_icon)
+				to_chat(alterer, span_warning("That kind of penis can't take a taur shape!"))
+				return
 			alterer.dna.features["penis_taur_mode"] = !alterer.dna.features["penis_taur_mode"]
 			alterer.balloon_alert(alterer, "[alterer.dna.features["penis_taur_mode"] ? "using taur penis" : "not using taur penis"]")
+			taur_schlong?.refresh_taur_mode()
+			taur_balls?.refresh_taur_mode()
 
 		if("Testicles Size")
 			var/obj/item/organ/genital/testicles/avocados = alterer.get_organ_slot(ORGAN_SLOT_TESTICLES)

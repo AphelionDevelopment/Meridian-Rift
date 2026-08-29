@@ -259,7 +259,9 @@
 	relevant_mutant_bodypart = ORGAN_SLOT_PENIS
 
 /datum/preference/toggle/penis_taur_mode/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
-	target.dna.features["penis_taur_mode"] = value
+	var/datum/preference/toggle/penis_taur_mode/taur_mode_pref = GLOB.preference_entries[/datum/preference/toggle/penis_taur_mode]
+	if(taur_mode_pref.is_accessible(preferences))
+		target.dna.features["penis_taur_mode"] = value
 
 /datum/preference/toggle/penis_taur_mode/is_accessible(datum/preferences/preferences)
 	if(CONFIG_GET(flag/disable_erp_preferences))
@@ -267,7 +269,11 @@
 	var/passed_initial_check = ..(preferences)
 	var/allowed = preferences.read_preference(/datum/preference/toggle/allow_mismatched_parts)
 	var/erp_allowed = preferences.read_preference(/datum/preference/toggle/master_erp_preferences) && preferences.read_preference(/datum/preference/toggle/allow_genitals)
-	var/part_enabled = is_factual_sprite_accessory(relevant_mutant_bodypart, preferences.read_preference(/datum/preference/choiced/genital/penis))
+	var/penis_choice = preferences.read_preference(/datum/preference/choiced/genital/penis)
+	var/datum/sprite_accessory/genital/penis/penis_accessory = SSaccessories.sprite_accessories[FEATURE_PENIS][penis_choice]
+	if(!penis_accessory?.taur_icon)
+		return FALSE
+	var/part_enabled = is_factual_sprite_accessory(relevant_mutant_bodypart, penis_choice)
 	return erp_allowed && part_enabled && (passed_initial_check || allowed)
 
 /datum/preference/choiced/penis_sheath
@@ -351,7 +357,7 @@
 	var/part_enabled = is_factual_sprite_accessory(relevant_mutant_bodypart, preferences.read_preference(/datum/preference/choiced/genital/testicles))
 	return erp_allowed && part_enabled && (passed_initial_check || allowed)
 
-/datum/preference/numeric/balls_size/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/numeric/balls_size/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.dna.features["balls_size"] = value
 
 /datum/preference/numeric/balls_size/create_default_value()
@@ -473,7 +479,7 @@
 	var/part_enabled = is_factual_sprite_accessory(relevant_mutant_bodypart, preferences.read_preference(/datum/preference/choiced/genital/breasts))
 	return erp_allowed && part_enabled && (passed_initial_check || allowed)
 
-/datum/preference/choiced/breasts_size/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/choiced/breasts_size/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	target.dna.features["breasts_size"] = GLOB.breast_size_to_number[value]
 
 /datum/preference/choiced/breasts_size/create_default_value()

@@ -86,7 +86,6 @@ GLOBAL_LIST_INIT(genital_arousal_options, list(
 	var/datum/bodypart_overlay/mutant/genital/our_overlay = bodypart_overlay
 
 	our_overlay.sprite_suffix = sprite_suffix
-	our_overlay.owner = owner
 	our_overlay.organ_slot = src.slot
 
 /obj/item/organ/genital/proc/get_description_string(datum/sprite_accessory/genital/genital)
@@ -123,13 +122,13 @@ GLOBAL_LIST_INIT(genital_arousal_options, list(
 
 	var/datum/sprite_accessory/genital/accessory = SSaccessories.sprite_accessories[associated_key][bodypart.name]
 	genital_type = accessory.icon_state
+	aroused = initial(aroused)
 	build_from_accessory(accessory, DNA)
 	update_sprite_suffix()
 
 	var/datum/bodypart_overlay/mutant/genital/our_overlay = bodypart_overlay
 
 	our_overlay.color_source = uses_skin_color ? ORGAN_COLOR_INHERIT : ORGAN_COLOR_OVERRIDE
-	our_overlay.owner = owner
 	our_overlay.organ_slot = src.slot
 
 /obj/item/organ/genital/proc/get_genital_descriptor(datum/sprite_accessory/genital/genital)
@@ -141,13 +140,10 @@ GLOBAL_LIST_INIT(genital_arousal_options, list(
 
 /// for specific build_from_dna behavior that also checks the genital accessory.
 /obj/item/organ/genital/proc/build_from_accessory(datum/sprite_accessory/genital/accessory, datum/dna/DNA)
-	if(isnull(max_sprite_size_affix))
-		// snowflake for skintone alt human penis, which only has sprites up to size 4 as opposed to the non-skintone which goes to 5. and similar...
-		// This SUCKS. genitals code is simply HORRIBLE and rotted to its core. TODO: destroy and rewrite it ALL. from fucking scratch.
-		if(uses_skintones)
-			max_sprite_size_affix = accessory.skintone_max_sprite_size_affix || accessory.max_sprite_size_affix
-		else
-			max_sprite_size_affix = accessory.max_sprite_size_affix
+	if(uses_skintones)
+		max_sprite_size_affix = accessory.skintone_max_sprite_size_affix || accessory.max_sprite_size_affix
+	else
+		max_sprite_size_affix = accessory.max_sprite_size_affix
 	return
 
 /// Whether the mob's worn clothing physically covers this genital's location.
@@ -263,8 +259,6 @@ GLOBAL_LIST_INIT(genital_arousal_options, list(
 	draw_on_husks = HUSK_OVERLAY_NONE
 	/// The suffix appended to the feature_key for the overlays.
 	var/sprite_suffix
-	/// Owning human.  Used to adjust layers depending on underwear
-	var/mob/living/carbon/human/owner
 	/// Organ slot, used to get reference to the actual organ this is attached to without angering the CI gods.
 	var/organ_slot
 	/// Layering mode, determines if it tries to render above clothing or not.
@@ -279,22 +273,22 @@ GLOBAL_LIST_INIT(genital_arousal_options, list(
 	return sprite_suffix
 
 /// Whether the owning organ is set to Custom visibility, i.e. manual layer control.
-/datum/bodypart_overlay/mutant/genital/proc/is_custom_layered(layer_index)
+/datum/bodypart_overlay/mutant/genital/proc/is_custom_layered(layer_index, obj/item/bodypart/limb)
 	if(layer_index && !(layer_index == EXTERNAL_FRONT_UNDER_CLOTHES))
 		return FALSE
 	if(layer_mode == GENITAL_LAYER_NORMAL)
 		return FALSE
-	if(!istype(owner))
+	if(!istype(limb?.owner))
 		return FALSE
-	var/obj/item/organ/genital/organ = owner.get_organ_slot(organ_slot)
+	var/obj/item/organ/genital/organ = limb.owner.get_organ_slot(organ_slot)
 	return organ?.visibility_preference == GENITAL_CUSTOM
 
 /datum/bodypart_overlay/mutant/genital/icon_render_key(obj/item/bodypart/limb)
 	. = ..()
-	. += is_custom_layered() ? "[layer_mode]" : "default"
+	. += is_custom_layered(limb = limb) ? "[layer_mode]" : "default"
 
 /datum/bodypart_overlay/mutant/genital/get_overlay(obj/item/bodypart/limb, layer_index, layer_real)
-	if(is_custom_layered(layer_index))
+	if(is_custom_layered(layer_index, limb))
 		switch(layer_mode)
 			if(GENITAL_LAYER_BELOW_UNDIES)
 				layer_real = -(UNDER_UNIFORM_SOCKS_LAYER + genital_stack_rank * GENITAL_STACK_STEP)

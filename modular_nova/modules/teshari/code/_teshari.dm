@@ -23,7 +23,7 @@
 		LOADOUT_ITEM_NECK = TESHARI_NECK_ICON,
 		LOADOUT_ITEM_SUIT = TESHARI_SUIT_ICON,
 		LOADOUT_ITEM_UNIFORM = TESHARI_UNIFORM_ICON,
-		LOADOUT_ITEM_HANDS =  TESHARI_HANDS_ICON,
+		LOADOUT_ITEM_GLOVES =  TESHARI_HANDS_ICON,
 		LOADOUT_ITEM_SHOES = TESHARI_FEET_ICON,
 		LOADOUT_ITEM_GLASSES = TESHARI_EYES_ICON,
 		LOADOUT_ITEM_BELT = TESHARI_BELT_ICON,
@@ -65,6 +65,9 @@
 /obj/item/organ/tongue/teshari
 	liked_foodtypes = MEAT | GORE | RAW
 	disliked_foodtypes = GROSS | GRAIN
+	emote_sounds = list(
+		/datum/emote/living/scream::key = 'modular_nova/modules/emotes/sound/emotes/raptorscream.ogg',
+	)
 
 /datum/species/teshari/prepare_human_for_preview(mob/living/carbon/human/tesh)
 	var/base_color = "#c0965f"

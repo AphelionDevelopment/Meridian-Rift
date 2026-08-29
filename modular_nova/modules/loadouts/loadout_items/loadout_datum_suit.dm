@@ -101,9 +101,10 @@
 *	WINTER COATS
 */
 
+// Superseded by /datum/loadout_item/suit/wintercoat, which hands out the departmental coat and falls back to this same grey one.
+// Left as an abstract parent so the Christmas coats below keep their typepaths, and with them anyone's saved loadout.
 /datum/loadout_item/suit/winter_coat
-	name = "Winter Coat"
-	item_path = /obj/item/clothing/suit/hooded/wintercoat
+	abstract_type = /datum/loadout_item/suit/winter_coat
 
 /datum/loadout_item/suit/gags_wintercoat
 	name = "Winter Coat (Colorable)"

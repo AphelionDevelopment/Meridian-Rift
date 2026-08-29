@@ -51,7 +51,7 @@
 /datum/preference/numeric/tts_voice_pitch/voice_actor/create_default_value()
 	return 0
 
-/datum/preference/numeric/tts_voice_pitch/voice_actor/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/numeric/tts_voice_pitch/voice_actor/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 // Secondary chat color
@@ -60,7 +60,7 @@
 	category = PREFERENCE_CATEGORY_MANUALLY_RENDERED
 	savefile_identifier = PREFERENCE_CHARACTER
 
-/datum/preference/color/voice_actor_color/apply_to_human()
+/datum/preference/color/voice_actor_color/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 /datum/preference/color/voice_actor_color/create_default_value()

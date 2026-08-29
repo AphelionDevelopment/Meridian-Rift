@@ -58,7 +58,7 @@
 
 /// Adds the DNR HUD element if src has TRAIT_DNR. Removes it otherwise.
 /mob/living/proc/update_dnr_hud()
-	set_hud_image_state(DNR_HUD, "hud_dnr")
+	set_hud_image_state(DNR_HUD, hud_icon = MODULAR_HUDS_DMI, hud_state = "hud_dnr")
 	if(HAS_TRAIT(src, TRAIT_DNR))
 		set_hud_image_active(DNR_HUD)
 	else
@@ -224,6 +224,7 @@
 	var/obj/item/organ/tongue/cat/new_tongue = new(get_turf(human_holder))
 
 	ADD_TRAIT(human_holder, TRAIT_WATER_HATER, QUIRK_TRAIT)
+	ADD_TRAIT(human_holder, TRAIT_CATLIKE_INSTINCT, QUIRK_TRAIT)
 
 	new_tongue.copy_traits_from(human_holder.get_organ_slot(ORGAN_SLOT_TONGUE), human_holder)
 	new_tongue.Insert(human_holder, special = TRUE, movement_flags = DELETE_IF_REPLACED)
@@ -233,6 +234,7 @@
 	var/obj/item/organ/tongue/new_tongue = new human_holder.dna.species.mutanttongue
 
 	REMOVE_TRAIT(human_holder, TRAIT_WATER_HATER, QUIRK_TRAIT)
+	REMOVE_TRAIT(human_holder, TRAIT_CATLIKE_INSTINCT, QUIRK_TRAIT)
 
 	new_tongue.copy_traits_from(human_holder.get_organ_slot(ORGAN_SLOT_TONGUE), human_holder)
 	new_tongue.Insert(human_holder, special = TRUE, movement_flags = DELETE_IF_REPLACED)

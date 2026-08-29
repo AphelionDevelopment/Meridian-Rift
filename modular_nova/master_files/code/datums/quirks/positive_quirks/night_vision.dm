@@ -50,7 +50,7 @@
 
 	return /datum/quirk/night_vision::name in preferences.all_quirks
 
-/datum/preference/color/nv_color/apply_to_human(mob/living/carbon/human/target, value)
+/datum/preference/color/nv_color/apply_to_human(mob/living/carbon/human/target, value, datum/preferences/preferences)
 	return
 
 // run the Blessed Runechat Proc since it does most of what we want regarding luminance clamping anyway. could it be better? probably. is it more work? yes, it's a LOT of work.

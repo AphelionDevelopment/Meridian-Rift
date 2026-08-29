@@ -45,8 +45,8 @@
 	return ..() // will update the sprite suffix
 
 /obj/item/organ/genital/vagina/build_from_accessory(datum/sprite_accessory/genital/accessory, datum/dna/DNA)
-	if(DNA.features["vagina_uses_skintones"])
-		uses_skintones = accessory.has_skintone_shading
+	uses_skintones = DNA.features["vagina_uses_skintones"] ? accessory.has_skintone_shading : FALSE
+	return ..()
 
 /datum/bodypart_overlay/mutant/genital/vagina/get_global_feature_list()
 	return SSaccessories.sprite_accessories[ORGAN_SLOT_VAGINA]
