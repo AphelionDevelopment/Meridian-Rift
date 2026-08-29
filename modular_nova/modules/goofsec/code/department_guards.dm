@@ -552,7 +552,7 @@
 /datum/job/science_guard
 	title = JOB_SCIENCE_GUARD
 	description = "Ensure the extremely volatile Science Department and its staff stay safe for an entire shift.\
-	 Keep the roboticists from subverted roboticists and angry customers and protect the scientists from themselves and their experiments."
+		Keep the roboticists from subverted roboticists and angry customers and protect the scientists from themselves and their experiments."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -654,7 +654,7 @@
 	title = JOB_ORDERLY
 	description = "Keeping the Medical Department operating smoothly is a full time job. Move patients where they need to go aiding with patchjobs and IV’s.\
 Keep the MD’s up to date on Patient History and the story of each case. Escort unauthorized personnel out of the Trauma Center\
- and make sure that nobody endangers the vital Medbay Staff when they’re busy saving lives."
+	and make sure that nobody endangers the vital Medbay Staff when they’re busy saving lives."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -751,7 +751,7 @@ Keep the MD’s up to date on Patient History and the story of each case. Escort
 /datum/job/engineering_guard
 	title = JOB_ENGINEERING_GUARD
 	description = "Secure the Engineering Department and ensure that its vital station apparatuses are safe at all times.\
-	 Assist the engineers with any tasks they need an extra pair of hands for and practice your core construction skills on the side."
+		Assist the engineers with any tasks they need an extra pair of hands for and practice your core construction skills on the side."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2

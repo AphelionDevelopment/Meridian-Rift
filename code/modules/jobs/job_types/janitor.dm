@@ -1,7 +1,7 @@
 /datum/job/janitor
 	title = JOB_JANITOR
 	description = "Many peoples first step into deep space life. Sanitize the station, mop up spills and assist across the station with minor repairs.\
-	 You’re given a robust set of tools for the job, keeping the station clean is a humble and important duty."
+		You’re given a robust set of tools for the job, keeping the station clean is a humble and important duty."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 1

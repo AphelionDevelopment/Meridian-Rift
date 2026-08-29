@@ -1,7 +1,7 @@
 /datum/job/telecomms_specialist
 	title = JOB_TELECOMMS_SPECIALIST
 	description = "Manage the vital telecommunication network that allows the departments of Meridian Rift to do their vital work. As an engineer know how to fix the machines if anything goes wrong\
-	 and assist the investigators if you suspect the communications infrastructure was tampered with if they suddenly explode."
+		and assist the investigators if you suspect the communications infrastructure was tampered with if they suddenly explode."
 	faction = FACTION_STATION
 	total_positions = 1
 	spawn_positions = 1

@@ -1,11 +1,11 @@
 /datum/job/ai
 	title = JOB_AI
 	description = "Awake from positronic stasis as an advanced (or not so advanced) Artificial Intelligence\
- 		to greet command and crew. Hardwired into the stations very hull it is your duty to assist\
- 		with both daily tasks and become a vital lifeline when terror strikes. Your existence is bound\
- 		by the guide-rails of Ionic Laws to protect the crew under your care. The Cyborgs aboard this\
- 		station are your compliment, your eyes and your limbs. Work with them closely to ensure the\
- 		operational bounds of your lawset are being followed."
+			to greet command and crew. Hardwired into the stations very hull it is your duty to assist\
+			with both daily tasks and become a vital lifeline when terror strikes. Your existence is bound\
+			by the guide-rails of Ionic Laws to protect the crew under your care. The Cyborgs aboard this\
+			station are your compliment, your eyes and your limbs. Work with them closely to ensure the\
+			operational bounds of your lawset are being followed."
 
 	auto_deadmin_role_flags = DEADMIN_POSITION_SILICON
 	faction = FACTION_STATION

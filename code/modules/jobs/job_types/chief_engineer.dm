@@ -1,8 +1,8 @@
 /datum/job/chief_engineer
 	title = JOB_CHIEF_ENGINEER
 	description = "Aphelion and it’s stations are meant to be finely honed machines. The fact that they are truthfully second hand and running off experimental technology more often than not means the ASF\
- needs the highly experienced hands of Chief Engineers like you to keep the station together. Delegate your team to ensure the station has enough power,\
- work on megaprojects for the Federation and be ready to fix up any kind of disaster before it happens."
+	needs the highly experienced hands of Chief Engineers like you to keep the station together. Delegate your team to ensure the station has enough power,\
+	work on megaprojects for the Federation and be ready to fix up any kind of disaster before it happens."
 
 	auto_deadmin_role_flags = DEADMIN_POSITION_HEAD
 	head_announce = RADIO_CHANNEL_ENGINEERING

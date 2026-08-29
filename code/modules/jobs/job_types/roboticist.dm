@@ -1,8 +1,8 @@
 /datum/job/roboticist
 	title = JOB_ROBOTICIST
 	description = "The crews cybernetic compliment of robots, cyborgs and synthetic crewmembers require care, repair and consultation as much or more so than the organic crew.\
- Robotics crew do the job, building cyborgs and petty machines as well as managing and assisting the station AI with tasks.\
- Help build larger fabrications only when authorised by your superiors and help the whole crew with their cybernetic implants and augmentations."
+	Robotics crew do the job, building cyborgs and petty machines as well as managing and assisting the station AI with tasks.\
+	Help build larger fabrications only when authorised by your superiors and help the whole crew with their cybernetic implants and augmentations."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2

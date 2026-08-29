@@ -1,7 +1,7 @@
 /datum/job/prisoner
 	title = JOB_PRISONER
 	description = "Aphelion’s secure facilities hold those the Federation has deemed are best kept away from other worlds.\
- Either in deep storage, mid transfer or in diplomatic custody, you will be incarcerated for your stay aboard Aphelion unless your carers in Security grant you pardon."
+	Either in deep storage, mid transfer or in diplomatic custody, you will be incarcerated for your stay aboard Aphelion unless your carers in Security grant you pardon."
 
 	faction = FACTION_STATION
 	total_positions = 0

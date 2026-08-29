@@ -1,8 +1,8 @@
 /datum/job/chaplain
 	title = JOB_CHAPLAIN
 	description = "As the Astraeus Star Federation found and absorbed new worlds and cultures new faiths required their ear, new support networks criss-crossed the stars\
- offering support to those who needed it in an age of space and steel. Aphelion needs that support network and encourages the process.\
- Be the social aid for the station, holding services and offering aid to those in need. Help the station, teach your faith and the ways of your people."
+	offering support to those who needed it in an age of space and steel. Aphelion needs that support network and encourages the process.\
+	Be the social aid for the station, holding services and offering aid to those in need. Help the station, teach your faith and the ways of your people."
 
 	faction = FACTION_STATION
 	total_positions = 1

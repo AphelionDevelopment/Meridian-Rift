@@ -1,9 +1,9 @@
 /datum/job/quartermaster
 	title = JOB_QUARTERMASTER
 	description = "Whether its shipments of luxuries, essentials and mission critical goods or the mining team\ of ore-grabbers and monster-hunters it all passes through you. Represent the Interstellar\
- 		Merchant’s Guild and every contract that falls upon your table. Aid the station with the flow\
- 		of funds, resources and supplies and trade with every far traveller who docks with the\
-		 station with exotic goods for sale."
+			Merchant’s Guild and every contract that falls upon your table. Aid the station with the flow\
+			of funds, resources and supplies and trade with every far traveller who docks with the\
+		station with exotic goods for sale."
 
 	auto_deadmin_role_flags = DEADMIN_POSITION_HEAD
 	head_announce = RADIO_CHANNEL_SUPPLY

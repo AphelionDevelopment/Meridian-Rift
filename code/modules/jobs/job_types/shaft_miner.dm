@@ -1,8 +1,8 @@
 /datum/job/shaft_miner
 	title = JOB_SHAFT_MINER
 	description = "Descend down to the volcanic Iblis or it’s frigid ice moon in search of vital ores to keep the station economy alive. The station trade hub requires your bounty to thrive and will pay you handsomely with both credits\
- and more rewards that will help you better slay the monstrous wildlife found planetside. Be careful, many hunters go mad down on those planets hunting the dangerous megafauna over and over till the end of their days.\
- If they survive that long..."
+	and more rewards that will help you better slay the monstrous wildlife found planetside. Be careful, many hunters go mad down on those planets hunting the dangerous megafauna over and over till the end of their days.\
+	If they survive that long..."
 
 	faction = FACTION_STATION
 	total_positions = 3

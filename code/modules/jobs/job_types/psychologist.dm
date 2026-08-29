@@ -1,8 +1,8 @@
 /datum/job/psychologist
 	title = JOB_PSYCHOLOGIST
 	description = "Deep space is stressful. The ASF supplies Aphelion with a therapy team robust enough to aid\
- those struggling to adapt to deep space society. Help people with their work life balance, aid the medical department\
- with distressed patients and visit the prison to be a beacon of hope for those who have no one else caring for them."
+	those struggling to adapt to deep space society. Help people with their work life balance, aid the medical department\
+	with distressed patients and visit the prison to be a beacon of hope for those who have no one else caring for them."
 
 	faction = FACTION_STATION
 	total_positions = 1

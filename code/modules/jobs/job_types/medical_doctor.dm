@@ -1,8 +1,8 @@
 /datum/job/doctor
 	title = JOB_MEDICAL_DOCTOR
 	description = "The trials of medical work on a deep space station can be tough, the injuries you face can be varied.\
- 		Apply cutting edge medicines to repair bruised flesh and fix burns and take to the surgery bay to save critical patients.\
- 		Be there to help them recover and return to the world after the trauma of injury. Whenever in doubt learn from your team, you’re in this together."
+			Apply cutting edge medicines to repair bruised flesh and fix burns and take to the surgery bay to save critical patients.\
+			Be there to help them recover and return to the world after the trauma of injury. Whenever in doubt learn from your team, you’re in this together."
 	faction = FACTION_STATION
 	total_positions = 6
 	spawn_positions = 4

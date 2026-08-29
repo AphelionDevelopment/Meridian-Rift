@@ -2,7 +2,7 @@
 	title = JOB_COOK
 	description = "The Star Federation guarantees safe edible food for all employees and it’s your job to provide.\
 		Take note of any special dietary needs of the alien crew! Use service consoles and your service\
- 		team allies to help get supplies to provide a feast for the whole team."
+			team allies to help get supplies to provide a feast for the whole team."
 
 	faction = FACTION_STATION
 	total_positions = 2

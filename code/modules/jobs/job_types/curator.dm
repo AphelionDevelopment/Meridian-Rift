@@ -1,8 +1,8 @@
 /datum/job/curator
 	title = JOB_CURATOR
 	description = "Take care of the station's library, a hold of research texts, art and knowledge and a safe refuge from the chaos of day to day life.\
- Your job gives you the duty to host events, entertain the crew, keep the sometimes dull life\
- in deep space interesting while keeping everyone up to date on station events."
+	Your job gives you the duty to host events, entertain the crew, keep the sometimes dull life\
+	in deep space interesting while keeping everyone up to date on station events."
 
 	faction = FACTION_STATION
 	total_positions = 1

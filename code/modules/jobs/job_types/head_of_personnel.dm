@@ -1,10 +1,10 @@
 /datum/job/head_of_personnel
 	title = JOB_HEAD_OF_PERSONNEL
 	description = "The consoles at your fingertips hold the most power of all. Every parcel of food,\
- 		every lifeline of pay, the service department that keeps Aphelion alive and running can only\
-		 serve through you. Keep it ship shape while managing the IDs of the crew and the strangers\
- 		who visit the trading hub aboard. When disaster strikes, the mantle of responsibility falls\
- 		on you."
+			every lifeline of pay, the service department that keeps Aphelion alive and running can only\
+		serve through you. Keep it ship shape while managing the IDs of the crew and the strangers\
+			who visit the trading hub aboard. When disaster strikes, the mantle of responsibility falls\
+			on you."
 
 	auto_deadmin_role_flags = DEADMIN_POSITION_HEAD
 	head_announce = RADIO_CHANNEL_SERVICE

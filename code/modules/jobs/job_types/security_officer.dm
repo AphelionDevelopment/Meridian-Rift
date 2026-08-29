@@ -1,8 +1,8 @@
 /datum/job/security_officer
 	title = JOB_SECURITY_OFFICER
 	description = "Stand proud as a member of the Federation’s Security Team. Protect the civilian crew of the station from those who would endanger the safety and security of the station.\
- 		Work together with your team, interview the crew, investigate trouble and arm up to defend the station if anything goes terribly wrong.\
- 		Remember, Federation Law must be followed by Security Staff to the letter."
+			Work together with your team, interview the crew, investigate trouble and arm up to defend the station if anything goes terribly wrong.\
+			Remember, Federation Law must be followed by Security Staff to the letter."
 
 	auto_deadmin_role_flags = DEADMIN_POSITION_SECURITY
 	faction = FACTION_STATION

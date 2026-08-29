@@ -1,8 +1,8 @@
 /datum/job/cargo_technician
 	title = JOB_CARGO_TECHNICIAN
 	description = "Run cargo shipments for the Federation’s Aphelion station on behalf of the Interstellar Merchant’s Guild.\
- They secure your job as long as you keep packages, crates and mail flowing back and forth from the supply shuttle to the front cargo desk.\
- Learn to be a people person, the crew always has requests for the good people of the Guild."
+	They secure your job as long as you keep packages, crates and mail flowing back and forth from the supply shuttle to the front cargo desk.\
+	Learn to be a people person, the crew always has requests for the good people of the Guild."
 
 	faction = FACTION_STATION
 	total_positions = 5
