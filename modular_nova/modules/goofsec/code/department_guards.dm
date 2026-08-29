@@ -551,8 +551,6 @@
 */
 /datum/job/science_guard
 	title = JOB_SCIENCE_GUARD
-	description = "Ensure the extremely volatile Science Department and its staff stay safe for an entire shift.\
-		Keep the roboticists from subverted roboticists and angry customers and protect the scientists from themselves and their experiments."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -652,9 +650,6 @@
 */
 /datum/job/orderly
 	title = JOB_ORDERLY
-	description = "Keeping the Medical Department operating smoothly is a full time job. Move patients where they need to go aiding with patchjobs and IV’s.\
-Keep the MD’s up to date on Patient History and the story of each case. Escort unauthorized personnel out of the Trauma Center\
-	and make sure that nobody endangers the vital Medbay Staff when they’re busy saving lives."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -750,8 +745,6 @@ Keep the MD’s up to date on Patient History and the story of each case. Escort
 */
 /datum/job/engineering_guard
 	title = JOB_ENGINEERING_GUARD
-	description = "Secure the Engineering Department and ensure that its vital station apparatuses are safe at all times.\
-		Assist the engineers with any tasks they need an extra pair of hands for and practice your core construction skills on the side."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -852,7 +845,6 @@ Keep the MD’s up to date on Patient History and the story of each case. Escort
 */
 /datum/job/customs_agent
 	title = JOB_CUSTOMS_AGENT
-	description = "Keep the Cargo Department, its guild members, and all of the vital goods that flow through its supply lanes safe. Watch out for contraband and those who would take advantage of Aphelion’s free trade hub."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -945,7 +937,6 @@ Keep the MD’s up to date on Patient History and the story of each case. Escort
 */
 /datum/job/bouncer
 	title = JOB_BOUNCER
-	description = "Join the station crew to protect the Service Department from vandals and troublemakers. Help all the disciplines of service get set up and ready for the day and be ready to help the public with their needs as a member of the Service team yourself. Remember it's not only the bar under your care."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2

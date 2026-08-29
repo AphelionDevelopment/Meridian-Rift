@@ -1,9 +1,6 @@
 /datum/job/botanist
 	title = JOB_BOTANIST
-	description = "Tucked away tending to their plants, the ever-vital Hydroponics bay produces all manner of plants for the station.\
-		Help the rest of service with food and drink production and  Medbay with medicinal plants or create your own\
-		recreational floral experiments and beautify the station with all manner of flower and plant from across the galaxy."
-
+	description = "Grow plants for the cook, for medicine, and for recreation."
 	faction = FACTION_STATION
 	total_positions = 3
 	spawn_positions = 2
