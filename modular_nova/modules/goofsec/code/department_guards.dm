@@ -551,8 +551,8 @@
 */
 /datum/job/science_guard
 	title = JOB_SCIENCE_GUARD
-	description = "Ensure the extremely volatile Science Department and its staff stay safe for an entire shift.\
-		Keep the roboticists from subverted roboticists and angry customers and protect the scientists from themselves and their experiments."
+	description = "Ensure that the extremely volatile Science Department and its staff remain safe for an entire shift. \
+		Protect roboticists from subverted robots and angry customers, and protect scientists from themselves and their experiments."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -652,9 +652,8 @@
 */
 /datum/job/orderly
 	title = JOB_ORDERLY
-	description = "Keeping the Medical Department operating smoothly is a full time job. Move patients where they need to go aiding with patchjobs and IV’s.\
-Keep the MD’s up to date on Patient History and the story of each case. Escort unauthorized personnel out of the Trauma Center\
-	and make sure that nobody endangers the vital Medbay Staff when they’re busy saving lives."
+	description = "Keeping the Medical Department operating smoothly is a full-time job. Move patients where they need to go, assisting with patch jobs and IVs. \
+		Keep the doctors up to date on patient histories and the details of each case. Escort unauthorised personnel out of the Trauma Centre, and ensure that no one endangers Medbay staff while they are busy saving lives."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -750,8 +749,8 @@ Keep the MD’s up to date on Patient History and the story of each case. Escort
 */
 /datum/job/engineering_guard
 	title = JOB_ENGINEERING_GUARD
-	description = "Secure the Engineering Department and ensure that its vital station apparatuses are safe at all times.\
-		Assist the engineers with any tasks they need an extra pair of hands for and practice your core construction skills on the side."
+	description = "Secure the Engineering Department and ensure that its vital station apparatus remains safe at all times. \
+		Assist engineers with any tasks that need an extra pair of hands, and practise your core construction skills on the side."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -852,7 +851,8 @@ Keep the MD’s up to date on Patient History and the story of each case. Escort
 */
 /datum/job/customs_agent
 	title = JOB_CUSTOMS_AGENT
-	description = "Keep the Cargo Department, its guild members, and all of the vital goods that flow through its supply lanes safe. Watch out for contraband and those who would take advantage of Aphelion’s free trade hub."
+	description = "Keep the Cargo Department, its Guild members, and the vital goods flowing through its supply lanes safe. \
+		Watch for contraband and anyone who would take advantage of the Aphelion's free-trade hub."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -945,7 +945,8 @@ Keep the MD’s up to date on Patient History and the story of each case. Escort
 */
 /datum/job/bouncer
 	title = JOB_BOUNCER
-	description = "Join the station crew to protect the Service Department from vandals and troublemakers. Help all the disciplines of service get set up and ready for the day and be ready to help the public with their needs as a member of the Service team yourself. Remember it's not only the bar under your care."
+	description = "Protect the Service Department from vandals and troublemakers. Help every Service discipline prepare for the day, and be ready to assist the public as a member of the Service team. \
+		Remember, the bar is not your only responsibility."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2

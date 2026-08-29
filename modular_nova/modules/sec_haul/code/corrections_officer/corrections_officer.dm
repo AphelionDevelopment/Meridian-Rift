@@ -1,7 +1,7 @@
 /datum/job/corrections_officer
 	title = JOB_CORRECTIONS_OFFICER
-	description = "Steward the inmates in the prison for they are under your protection while you are on shift. Ensure they have proper food, that their lodgings are safe and that they have the enrichment they need to not rip their cells to shreds.\
-		Aid the Warden and Service personnel with paroles when necessary and be a vital step in helping get the few prisoners who can reintegrate back into Federation society back on their feet."
+	description = "Steward the inmates in the prison; they are under your protection while you are on shift. Ensure that they have proper food, safe lodgings, and enough enrichment to keep them from tearing their cells apart. \
+		Aid the Warden and Service personnel with paroles when necessary, and help prisoners who can reintegrate into Federation society get back on their feet."
 	auto_deadmin_role_flags = DEADMIN_POSITION_SECURITY
 	faction = FACTION_STATION
 	total_positions = 1
@@ -58,5 +58,3 @@
 	belt = /obj/item/modular_computer/pda/security
 
 	id_trim = /datum/id_trim/job/corrections_officer
-
-

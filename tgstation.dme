@@ -7305,6 +7305,7 @@
 #include "interface\fonts\spess_font.dm"
 #include "interface\fonts\tiny_unicode.dm"
 #include "interface\fonts\vcr_osd_mono.dm"
+#include "modular_aphelion\modules\job_desc_overrides\job_desc_overrides.dm"
 #include "modular_aphelion\modules\storage_navigation\code\storage_exit.dm"
 #include "modular_nova\master_files\code\_globalvars\configuration.dm"
 #include "modular_nova\master_files\code\_globalvars\regexes.dm"

@@ -1,9 +1,7 @@
 /datum/job/station_engineer
 	title = JOB_STATION_ENGINEER
-	description = "Learn the many skills together with your team and how to best apply them in the Federation’s many projects and repair jobs,\
-	not merely limited to keeping Aphelion powered and repairing the multitudes of damages that occur every shift. Aid the station’s\
-	projects when necessary and be ready to fix emergency hull damage at a moment's notice."
-
+	description = "Start the Supermatter, wire the solars, repair station hull \
+		and wiring damage."
 	faction = FACTION_STATION
 	total_positions = 5
 	spawn_positions = 5

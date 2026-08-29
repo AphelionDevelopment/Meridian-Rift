@@ -1,8 +1,7 @@
 /datum/job/blueshield
 	title = JOB_BLUESHIELD
-	description = "Priority Command from the Astraeus Star Federation. Asset Protection. Keep the Heads of Staff alive by any means possible.\
-			Allowance of high grade firepower accepted. You still serve the Captain and the AFC, do not forget this.\
-			Remember, the more you work with your team across the station the easier and more likely to succeed your mission becomes."
+	description = "Your highest-priority directive from the Astraeus Star Federation is asset protection. Keep the Heads of Staff alive by any means necessary. \
+		High-grade firepower is authorised, but you still serve the Captain and the Astraeus Federation Consultant; do not forget this. Work with your team across the station to make your mission easier and more likely to succeed."
 	auto_deadmin_role_flags = DEADMIN_POSITION_SECURITY
 	faction = FACTION_STATION
 	total_positions = 1

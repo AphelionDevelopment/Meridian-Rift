@@ -1,7 +1,7 @@
 /datum/job/detective
 	title = JOB_DETECTIVE
-	description = "When crime occurs on a Federation station it’s Detectives that are called. Investigate the strange and dangerous cases in the dark places of Meridian Rift, interrogate criminals and prisoners.\
-			Work with the rest of the Security Team, Morgue staff and the rest of the Federation crew to get your jobs done, a good crime solver can’t work entirely alone."
+	description = "Investigate crimes, gather evidence, perform interrogations, \
+		look badass, smoke cigarettes."
 	auto_deadmin_role_flags = DEADMIN_POSITION_SECURITY
 	faction = FACTION_STATION
 	total_positions = 1
