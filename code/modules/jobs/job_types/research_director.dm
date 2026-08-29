@@ -1,8 +1,11 @@
 /datum/job/research_director
 	title = JOB_RESEARCH_DIRECTOR
-	description = "Supervise research efforts, ensure Robotics is in working \
-		order, make sure the AI and its Cyborgs aren't rogue, replace them if \
-		they are."
+	description = "You have the honor of micromanaging the finest scientific minds the Astraeus Star Federation\
+	has to offer researching the bleeding edge of neo-science. Lead your team in new fields of\
+	research only Alphelion and the Meridian Sector’s strange and alien resources could allow.\
+	The AI and its cybernetic entourage are your responsibility. Know them well, their quirks and\
+	mannerisms. Only then can you know best when they will falter."
+
 	auto_deadmin_role_flags = DEADMIN_POSITION_HEAD
 	head_announce = RADIO_CHANNEL_SCIENCE
 	faction = FACTION_STATION

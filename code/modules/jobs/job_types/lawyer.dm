@@ -1,7 +1,10 @@
 /datum/job/lawyer
 	title = JOB_LAWYER
-	description = "Advocate for prisoners, create law-binding contracts, \
-		ensure Security is following protocol and Space Law."
+	description = "When injustice occurs within Federation space it is down to people like you to help put a stop to it.\
+	You have the honourable job of advocating for those in the worst positions. Aid prisoners with parole,\
+	those unfairly arrested and anyone who requires legal help with counsel and contract.\
+	Stay on the right side of the law yourself or find the Security Team becoming your worst nightmare."
+
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2

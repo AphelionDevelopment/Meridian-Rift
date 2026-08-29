@@ -5,7 +5,10 @@ Assistant
 */
 /datum/job/assistant
 	title = JOB_ASSISTANT
-	description = "Get your space legs, assist people, ask the HoP to give you a job."
+	description = "Whether you’re off duty, a visiting guest or a low-grade employee of the Federation\
+	getting your bearings on station join the fleet of crew aboard Aphelion.\
+	Contact the Head of Personnel to get a job assignment and keep out of trouble."
+
 	faction = FACTION_STATION
 	total_positions = 5
 	spawn_positions = 5

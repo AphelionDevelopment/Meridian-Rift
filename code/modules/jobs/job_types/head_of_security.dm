@@ -1,7 +1,10 @@
 /datum/job/head_of_security
 	title = JOB_HEAD_OF_SECURITY
-	description = "Coordinate security personnel, ensure they are not corrupt, \
-		make sure every department is protected."
+	description = "Command the Security Ward of Aphelion, organise investigations and sign warrants\
+			that protect the strenuous peace aboard the station. Ensure that Astraeus Security is\
+			a force for good by weeding out any bad apples that threaten to spoil your crop of\
+		peacekeepers. Coordinate with the other Heads of Staff; You are their Tactical Commander\ when the Meridian Sector is in times of Crisis."
+
 	auto_deadmin_role_flags = DEADMIN_POSITION_HEAD|DEADMIN_POSITION_SECURITY
 	head_announce = RADIO_CHANNEL_SECURITY
 	faction = FACTION_STATION

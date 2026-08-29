@@ -1,7 +1,10 @@
 /datum/job/chief_medical_officer
 	title = JOB_CHIEF_MEDICAL_OFFICER
-	description = "Coordinate doctors and other medbay employees, ensure they \
-		know how to save lives, check for injuries on the crew monitor."
+	description = "Aphelion is equipped with the finest medical bay any starstation has ever known. In such\
+			an environment your duty is primarily supervision and education. Watch with a careful eye for\
+			malpractice and be ready for crisis management if Aphelion begins to fall. When Violet alert\
+			comes the entire station waits on your command."
+
 	auto_deadmin_role_flags = DEADMIN_POSITION_HEAD
 	head_announce = RADIO_CHANNEL_MEDICAL
 	faction = FACTION_STATION

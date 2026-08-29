@@ -1,7 +1,8 @@
 /datum/job/paramedic
 	title = JOB_PARAMEDIC
-	description = "Run around the station looking for patients, respond to \
-		emergencies, give patients a roller bed ride to medbay."
+	description = "When disaster strikes the paramedical unit rushes into danger. Use the crew sensors to find injured personnel and treat the most urgent wounds on the field.\
+		Ensure you have supplies, medicine and tools for any emergency. Transport the dead and dying safely and securely to the medical bay for hand-off to the doctors."
+
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
