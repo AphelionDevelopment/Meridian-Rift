@@ -1,6 +1,6 @@
 /datum/job/telecomms_specialist
 	title = JOB_TELECOMMS_SPECIALIST
-	description = "Manage the vital telecommunications network that allows Meridian Rift's departments to do their work. As an engineer, know how to repair the machines if anything goes wrong. \
+	description = "Manage the vital telecommunications network that allows the Aphelion's departments to maintain contact. As an engineer, know how to repair the machines if anything goes wrong. \
 		Assist investigators if you suspect that the communications infrastructure was tampered with, especially if its components suddenly explode."
 	faction = FACTION_STATION
 	total_positions = 1
