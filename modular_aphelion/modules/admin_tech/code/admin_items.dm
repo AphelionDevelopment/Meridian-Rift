@@ -141,7 +141,7 @@ Admin Variants of Common Tools
 /obj/item/storage/bag/admin
 	name = "bluespace pocket"
 	desc = "An artisinally crafted pocket liner utilizing advanced technologies, techniques, and materials."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "blue-pocket"
 	worn_icon_state = null
 	storage_type = /datum/storage/admin/bag
@@ -205,7 +205,7 @@ Admin Variants of Common Tools
 	name = "bluespace construction bag"
 	desc = "An artisinally crafted pocket liner utilizing advanced technologies, techniques, and materials. \
 		Peeking inside the pocket, cherenkov-esque radiation illuminates a mass of materials and supplies."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "blue-bag"
 	worn_icon_state = null // Don't fuck with my drip
 	storage_type = /datum/storage/admin/bag
@@ -312,7 +312,7 @@ Admin Variants of Common Tools
 /obj/item/pinpointer/crew/admin//code\game\objects\items\pinpointer.dm
 	name = "subspace target locator"
 	desc = "A sleek handheld tablet with a complex looking antennae."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-sniffer"//you like sniffing subs, dont you
 	ignore_suit_sensor_level = TRUE
 	w_class = WEIGHT_CLASS_TINY
@@ -375,7 +375,7 @@ Admin Variants of Common Tools
 /obj/item/door_remote/admin
 	name = "subspace door remote"
 	desc = "This remote controls airlocks through narrative will alone. Also comes emagged, did you know that you can emag door remotes?"
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	department = "subspace"
 	region_access = REGION_ALL_GLOBAL
 	owner_trim = /datum/id_trim/admin/subspace
@@ -403,7 +403,7 @@ Admin Variants of Common Tools
 /obj/item/construction/rcd/arcd/mattermanipulator/admin
 	name = "subspace matter manipulator"
 	desc = "Holding this fabulous piece of legally distinct technology fills you with a sense of determination. Works at range, and can deconstruct reinforced walls."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-manipulator"
 	max_matter = INFINITY
 	matter = INFINITY
@@ -427,7 +427,7 @@ Admin Variants of Common Tools
 /obj/item/construction/rld/admin
 	name = "subspace rapid lighting device"
 	desc = "A device used to rapidly provide lighting sources to an area. Reload with iron, plasteel, glass or compressed matter cartridges."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-rld"
 	// The parent draws a six segment ammo bar from sub-rld_charge1 through 6, none of which admin_items.dmi has, which
 	// runtimes on every update_appearance. Matter is INFINITY here anyway, so the bar would sit full forever.
@@ -454,7 +454,7 @@ Admin Variants of Common Tools
 /obj/item/card/emag/admin
 	name = "subspace emag-doorjack"
 	desc = "It's a card with a magnetic strip attached to some circuitry that hurts to look at. No proximity needed and no blacklist honoured, so it does things the normal card politely refuses to, from across the room. Don't wave this at anything you care about."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-emag"
 	worn_icon_state = "emag"
 	prox_check = FALSE//makes wireless. be careful
@@ -474,7 +474,7 @@ Admin Variants of Common Tools
 /obj/item/lightreplacer/blue/admin
 	name = "subspace light replacer"
 	desc = "A modified light replacer that zaps lights into place by crystallizing your irritation caused by a lack of lux. Oddly, has endless material."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-lamp-replacer"
 	uses = INFINITY
 	max_uses = INFINITY
@@ -494,7 +494,7 @@ Admin Variants of Common Tools
 /obj/item/holosign_creator/atmos/admin
 	name = "subspace ATMOS holofan projector"
 	desc = "A holographic projector that creates holographic barriers that prevent changes in atmosphere conditions. Did you know that right clicking this directly while it is in your active hand can turn on a 'clearview' mode, making the signs unclickable?"
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-projector-atmos"
 	max_signs = INFINITY
 	projectable_through = list( /obj )
@@ -524,7 +524,7 @@ Admin Variants of Common Tools
 /obj/item/forcefield_projector/admin
 	name = "subspace forcefield projector"
 	desc = "An experimental device that can create several forcefields at a distance. No cap on how many, and nothing breaks them. Great for walling something off in a hurry, less great if you forget where you left them."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-projector-forcefield"
 	max_shield_integrity = INFINITY
 	shield_integrity = INFINITY
@@ -1006,7 +1006,7 @@ Admin Variants of Common Tools
 	name = "subspace botanical can"
 	desc = "A gardening can embedded with technology that leaves you with a dull pain in your head. An ominous purple crystal wobbles and glimmers from inside the device, golden fluid leaking from momentarily visible pores like bubbling lava. \
 	You suddenly find yourself afraid of spilling the contents."
-//	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+//	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 //	icon_state = "adv_watering_can"
 //	inhand_icon_state = "adv_watering_can"
 	volume = 1000
@@ -1131,7 +1131,7 @@ Admin Variants of Common Tools
 /obj/item/extinguisher/subspace
 	name = "subspace extinguisher"
 	desc = "A tiny fire extinguisher, designed for putting out small fires. It feels like it has an infinite amount of water. How you can tell this, you aren't sure."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "extinguisher0"
 	base_icon_state = "extinguisher0"
 	sprite_name = "extinguisher0"
@@ -1251,6 +1251,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	// If they didn't cancel out of the list selection, we do things. Clear-all removes anything currently loaded, and everything else attunes the cannon to a new ball type.
 	if(isnull(pick_a_sphere))
 		return
+	if(!user.client?.holder || !user.is_holding(src))
+		return
 	if(pick_a_sphere == "Clear All")
 		for(var/obj/item/stored_item as anything in loadedItems.Copy())
 			qdel(stored_item)
@@ -1331,6 +1333,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	selectable_atoms = every_vendor
 
 /obj/item/summon_beacon/vendors/debug/show_options(mob/user)
+	if(!user.client?.holder || !user.is_holding(src))
+		return
 	var/list/choices = list()
 	for(var/obj/machinery/vending/vendor as anything in selectable_atoms)
 		// A few vendor subtypes share a name, so the type gets appended to keep them apart in the list.
@@ -1341,6 +1345,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 
 	var/chosen = tgui_input_list(user, "Choose a vendor to drop", "Debug Vendor Beacon", sort_list(choices))
 	if(isnull(chosen))
+		return
+	if(!user.client?.holder || !user.is_holding(src))
 		return
 	selected_atom = choices[chosen]
 
@@ -1509,7 +1515,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 /obj/item/firing_pin/admin
 	name = "subspace firing pin"
 	desc = "A small authentication device, to be inserted into a firearm receiver to allow operation. Central Command's Technicians have had their bodies attenuated in a way that can be sampled with 'simple' technology."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-firing-pin"
 	inhand_icon_state = "pen"
 	worn_icon_state = "pen"
@@ -1545,7 +1551,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	possible_transfer_amounts = list(1, 5, 10, 50, 100)
 	volume = 250000//Lets be a LITTLE sane about this.
 	initial_reagent_flags = OPENCONTAINER | DUNKABLE
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-beaker"
 	reagent_container_liquid_sound = SFX_DEFAULT_LIQUID_SLOSH
 	/// Like Edible's food type, what kind of drink is this?
@@ -1570,7 +1576,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 /obj/item/reagent_containers/cup/beaker/admin/noreact
 	name = "stasis subspace beaker"
 	desc = "A reactionless version of the bottomless beaker."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-beaker-noreact"
 	initial_reagent_flags = OPENCONTAINER | NO_REACT | DUNKABLE
 
@@ -1586,7 +1592,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 /obj/item/reagent_containers/cup/beaker/admin/small/noreact
 	name = "fun sized stasis subspace beaker"
 	desc = "A statis variant of the adorably sized version of the bottomless beaker."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-beaker-noreact"
 	initial_reagent_flags = OPENCONTAINER | NO_REACT | DUNKABLE
 
@@ -1622,7 +1628,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 /obj/item/melee/baseball_bat/admin
 	name = "subspace baseball bat"
 	desc = "There ain't a skull in the league that can withstand a nuclear bomb on a stick."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-bat"
 	inhand_icon_state = "baseball_bat"
 	icon_angle = -45
@@ -1660,6 +1666,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 		return NONE
 	var/new_demo_mod = tgui_input_number(user, "Set demolition modifier", "Demolition Modifier", demolition_mod, 100, 0, round_value = FALSE)
 	if(isnull(new_demo_mod))
+		return
+	if(!user.client?.holder || !user.is_holding(src))
 		return
 	demolition_mod = new_demo_mod
 	to_chat(user, span_notice("\The [src]'s demolition modifier is now [demolition_mod]."))
@@ -2121,6 +2129,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	. += span_notice("Use in hand to open the synthesizer interface.")
 
 /obj/item/handheld_debug_chem_synth/attack_self(mob/user)
+	if(!user.client?.holder)
+		return
 	ui_interact(user)
 
 /obj/item/handheld_debug_chem_synth/ui_interact(mob/user, datum/tgui/ui)
@@ -2134,6 +2144,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	. = ..()
 	if(.)
 		return
+	if(!ui.user.client?.holder || !ui.user.is_holding(src))
+		return FALSE
 
 	switch(action)
 		if("input")
@@ -2142,6 +2154,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 
 			var/selected_reagent = tgui_input_list(ui.user, "Select reagent", "Reagent", GLOB.name2reagent)
 			if(!selected_reagent)
+				return FALSE
+			if(QDELETED(beaker) || !ui.user.client?.holder || !ui.user.is_holding(src))
 				return FALSE
 
 			var/datum/reagent/input_reagent = GLOB.name2reagent[selected_reagent]
@@ -2287,6 +2301,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 	var/selected_reagent = tgui_input_list(user, "Select reagent", "Reagent", GLOB.name2reagent)
 	if(!selected_reagent)
 		return
+	if(!user.client?.holder || !user.is_holding(src))
+		return
 	var/datum/reagent/input_reagent = GLOB.name2reagent[selected_reagent]
 	if(!input_reagent)
 		return
@@ -2317,6 +2333,8 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 		return NONE
 	var/new_amount = tgui_input_number(user, "Set reagent volume fired per shot", "Reagent Per Shot", reagent_per_shot, ADMIN_CHEMGUN_CAPACITY, 1)
 	if(isnull(new_amount))
+		return
+	if(!user.client?.holder || !user.is_holding(src))
 		return
 	reagent_per_shot = new_amount
 	to_chat(user, span_notice("\The [src] now fires [reagent_per_shot]u of reagent per shot."))
@@ -2461,7 +2479,7 @@ GLOBAL_LIST_INIT(subspace_ballmatter_spheres, list(
 /obj/item/multitool/admin
 	name = "subspace multitool"
 	desc = "An administrative-grade multitool with a small subspace buffer bank, holding seven buffers instead of one."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-multitool"
 	inhand_icon_state = "multitool"
 	apc_scanner = FALSE

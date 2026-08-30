@@ -79,10 +79,6 @@
 #define COLONY_FABRICATOR (1<<11)
 // NOVA EDIT END
 
-// NOVA EDIT ADDITION START - ADMIN_TECH
-/// Used by Admin fabricators to select from admin / debug / useful / fun prints
-#define ADMIN_TECHWEB (1<<12)
-// NOVA EDIT ADDITION END
 GLOBAL_LIST_INIT(build_types_to_string, list(
 	"[IMPRINTER]" = "Circuit Imprinter",
 	"[PROTOLATHE]" = "Protolathe",

@@ -198,7 +198,9 @@
 		if(found >= amount_required)
 			return // Already have enough - nothing to spawn.
 
-	atom_storage.attempt_insert(new stack_type(src, amount_required - found), user, TRUE)
+	var/obj/item/stack/manufactured_stack = new stack_type(null, amount_required - found)
+	if(!atom_storage.attempt_insert(manufactured_stack, user, TRUE))
+		qdel(manufactured_stack)
 
 /// Spawn one item per unit still missing after counting what we already hold.
 /obj/item/storage/part_replacer/bluespace/admin/proc/restock_items(mob/living/user, item_type, amount_required)
@@ -245,12 +247,21 @@
 /// Insert `amount` freshly-spawned copies of atom_type. A non-positive amount inserts nothing.
 /obj/item/storage/part_replacer/bluespace/admin/proc/spawn_shortfall(mob/living/user, atom_type, amount)
 	for(var/i in 1 to amount)
-		atom_storage.attempt_insert(new atom_type(src), user, TRUE)
+		if(!manufacture_and_insert(user, atom_type))
+			break
+
+/** Creates an item outside the RPED and destroys it if storage insertion rejects it. */
+/obj/item/storage/part_replacer/bluespace/admin/proc/manufacture_and_insert(mob/living/user, item_type)
+	var/obj/item/manufactured_item = new item_type(null)
+	if(atom_storage.attempt_insert(manufactured_item, user, override = TRUE))
+		return TRUE
+	qdel(manufactured_item)
+	return FALSE
 
 /// BSTs' special Bluespace RPED can manufacture parts on Alt-RMB, either cables, glass, machine boards, or stock parts.
 /obj/item/storage/part_replacer/bluespace/admin/click_alt_secondary(mob/user)
 	// Every other tool in this module gates its admin-only half the same way, and this one hands out infinite tier 4 parts.
-	if(!user.client?.holder)
+	if(!user.client?.holder || !user.is_holding(src))
 		return
 
 	// Ask the user what they want to make, or which of the housekeeping options they want to run.
@@ -261,7 +272,7 @@
 	if(isnull(spawn_selection))
 		return
 	// Re-check after the input resolves, so the menu can't be left open and cashed in after the holder goes away.
-	if(!user.client?.holder)
+	if(!user.client?.holder || !user.is_holding(src))
 		return
 
 	switch(spawn_selection)
@@ -282,6 +293,8 @@
 			)
 			if(isnull(new_size))
 				return
+			if(!user.client?.holder || !user.is_holding(src))
+				return
 			batch_size = new_size
 			to_chat(user, span_notice("The RPED will now produce [batch_size] of each type per selection."))
 		else
@@ -292,7 +305,8 @@
 				return
 			for(var/part_type in bulk_types)
 				for(var/i in 1 to batch_size)
-					atom_storage.attempt_insert(new part_type(src), user, override = TRUE)
+					if(!manufacture_and_insert(user, part_type))
+						break
 
 /**
  * Asks the user to pick a subtype to manufacture, one level of the type tree at a time.
@@ -336,7 +350,7 @@
 	if(isnull(chosen_label))
 		return
 	// Re-check after the input resolves, so the menu can't be left open and cashed in after the holder goes away.
-	if(!user.client?.holder)
+	if(!user.client?.holder || !user.is_holding(src))
 		return
 	var/chosen_path = paths_by_label[chosen_label]
 	if(isnull(chosen_path))
@@ -348,7 +362,8 @@
 		return
 
 	for(var/i in 1 to batch_size)
-		atom_storage.attempt_insert(new chosen_path(src), user, override = TRUE)
+		if(!manufacture_and_insert(user, chosen_path))
+			break
 
 #undef RPED_DEFAULT_BATCH_SIZE
 #undef RPED_MAX_BATCH_SIZE

@@ -15,7 +15,3 @@
 #define TRAIT_DISPLAYING_AMMO_HUD "displaying_ammo_hud"
 /// Temporary trait used while a mob is actively sliding under a door.
 #define TRAIT_SLIDING_UNDER "sliding_under"
-/// Trait which obscures identity like the Infiltration module, but provides text unique for admin techs
-#define TRAIT_ADMIN_STEALTH "admin_stealth"
-/// Trait which provides an early return TRUE on IsReachableBy() that checks for CanSeeTarget
-#define TRAIT_ADMIN_REACHABLE "admin_reachable"

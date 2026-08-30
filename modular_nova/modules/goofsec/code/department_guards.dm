@@ -75,79 +75,109 @@
 	greyscale_colors = "#39393F#57852A#57852A"
 
 /obj/item/clothing/under/rank/security/nova/skirt/cargo
+	worn_icon_digi = null
 	name = "customs agent skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/skirt/cargo"
 	greyscale_colors = "#39393F#ba832f#ba832f#39393F"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/skirt/engineering
+	worn_icon_digi = null
 	name = "engineering guard skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/skirt/engineering"
 	greyscale_colors = "#ee7900#a78962#FFE12F#FFE12F"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/skirt/science
+	worn_icon_digi = null
 	name = "science guard skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/skirt/science"
 	greyscale_colors = "#daeaf0#66748c#830085#830085"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/skirt/medical
+	worn_icon_digi = null
 	name = "orderly skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/skirt/medical"
 	greyscale_colors = "#CBCDD1#39393F#16313D#16313D"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/skirt/service
+	worn_icon_digi = null
 	name = "bouncer skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/skirt/service"
 	greyscale_colors = "#39393F#57852A#57852A#EBEBEB"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/plainskirt/cargo
+	worn_icon_digi = null
 	name = "customs agent plain skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/plainskirt/cargo"
 	greyscale_colors = "#39393F#ba832f#ba832f#39393F"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/plainskirt/engineering
+	worn_icon_digi = null
 	name = "engineering guard plain skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/plainskirt/engineering"
 	greyscale_colors = "#ee7900#a78962#FFE12F#FFE12F"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/plainskirt/science
+	worn_icon_digi = null
 	name = "science guard plain skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/plainskirt/science"
 	greyscale_colors = "#daeaf0#66748c#830085#830085"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/plainskirt/medical
+	worn_icon_digi = null
 	name = "orderly plain skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/plainskirt/medical"
 	greyscale_colors = "#CBCDD1#39393F#16313D#16313D"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/plainskirt/service
+	worn_icon_digi = null
 	name = "bouncer plain skirt"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/plainskirt/service"
 	greyscale_colors = "#39393F#57852A#57852A#EBEBEB"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/dress/cargo
+	worn_icon_digi = null
 	name = "customs agent dress"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/dress/cargo"
 	greyscale_colors = "#ba832f#39393F#ba832f"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/dress/engineering
+	worn_icon_digi = null
 	name = "engineering guard dress"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/dress/engineering"
 	greyscale_colors = "#ee7900#a78962#FFE12F"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/dress/science
+	worn_icon_digi = null
 	name = "science guard dress"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/dress/science"
 	greyscale_colors = "#daeaf0#66748c#830085"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/dress/medical
+	worn_icon_digi = null
 	name = "orderly dress"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/dress/medical"
 	greyscale_colors = "#CBCDD1#39393F#16313D"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/dress/service
+	worn_icon_digi = null
 	name = "bouncer dress"
 	icon_state = "/obj/item/clothing/under/rank/security/nova/dress/service"
 	greyscale_colors = "#57852A#39393F#EBEBEB"
+	supports_variations_flags = CLOTHING_DIGITIGRADE_VARIATION_NO_NEW_ICON | CLOTHING_BIG_LEGS_MASK
 
 /obj/item/clothing/under/rank/security/nova/shorts/cargo
 	name = "customs agent shorts"
@@ -216,6 +246,7 @@
 
 /obj/item/clothing/suit/armor/vest/blueshirt/nova/guard //Badge-less version of the blueshirt vest
 	icon_state = "guard_armor"
+	worn_icon_digi = null
 	worn_icon_state = "guard_armor"
 
 /obj/item/clothing/suit/armor/vest/blueshirt/nova/orderly
@@ -236,6 +267,7 @@
 	name = "armored customs agent coat"
 	desc = "An armored coat, with intricately woven patterns and details. This should help keep you safe from unruly customers."
 	icon_state = "customs_coat"
+	worn_icon_digi = null
 	worn_icon_state = "customs_coat"
 
 /obj/item/clothing/suit/hooded/wintercoat/security/depgag/cargo
@@ -291,26 +323,31 @@
 /obj/item/clothing/suit/armor/vest/depgag_hazard/cargo
 	name = "customs agent hazard vest"
 	icon_state = "/obj/item/clothing/suit/armor/vest/depgag_hazard/cargo"
+	worn_icon_digi = null
 	greyscale_colors = "#ba832f#EBEBEB"
 
 /obj/item/clothing/suit/armor/vest/depgag_hazard/engineering
 	name = "engineering guard hazard vest"
 	icon_state = "/obj/item/clothing/suit/armor/vest/depgag_hazard/engineering"
+	worn_icon_digi = null
 	greyscale_colors = "#ee7900#EBEBEB"
 
 /obj/item/clothing/suit/armor/vest/depgag_hazard/science
 	name = "science guard hazard vest"
 	icon_state = "/obj/item/clothing/suit/armor/vest/depgag_hazard/science"
+	worn_icon_digi = null
 	greyscale_colors = "#830085#EBEBEB"
 
 /obj/item/clothing/suit/armor/vest/depgag_hazard/medical
 	name = "orderly hazard vest"
 	icon_state = "/obj/item/clothing/suit/armor/vest/depgag_hazard/medical"
+	worn_icon_digi = null
 	greyscale_colors = "#16313D#EBEBEB"
 
 /obj/item/clothing/suit/armor/vest/depgag_hazard/service
 	name = "bouncer hazard vest"
 	icon_state = "/obj/item/clothing/suit/armor/vest/depgag_hazard/service"
+	worn_icon_digi = null
 	greyscale_colors = "#57852A#EBEBEB"
 
 /*
@@ -514,7 +551,8 @@
 */
 /datum/job/science_guard
 	title = JOB_SCIENCE_GUARD
-	description = "Figure out why the emails aren't working, keep an eye on the eggheads, protect them from their latest mistakes."
+	description = "Ensure that the extremely volatile Science Department and its staff remain safe for an entire shift. \
+		Protect roboticists from subverted robots and angry customers, and protect scientists from themselves and their experiments."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -614,7 +652,8 @@
 */
 /datum/job/orderly
 	title = JOB_ORDERLY
-	description = "Defend the medical department, hold down idiots who refuse the vaccine, assist medical with prep and/or cleanup."
+	description = "Keeping the Medical Department operating smoothly is a full-time job. Move patients where they need to go, assisting with patch jobs and IVs. \
+		Keep the doctors up to date on patient histories and the details of each case. Escort unauthorised personnel out of the Trauma Centre, and ensure that no one endangers Medbay staff while they are busy saving lives."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -710,7 +749,8 @@
 */
 /datum/job/engineering_guard
 	title = JOB_ENGINEERING_GUARD
-	description = "Monitor the supermatter, keep an eye on atmospherics, make sure everyone is wearing Proper Protective Equipment."
+	description = "Secure the Engineering Department and ensure that its vital station apparatus remains safe at all times. \
+		Assist engineers with any tasks that need an extra pair of hands, and practise your core construction skills on the side."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -811,7 +851,8 @@
 */
 /datum/job/customs_agent
 	title = JOB_CUSTOMS_AGENT
-	description = "Inspect the packages coming to and from the station, protect the cargo department, beat the shit out of people trying to ship Cocaine to the Spinward Stellar Coalition."
+	description = "Keep the Cargo Department, its Guild members, and the vital goods flowing through its supply lanes safe. \
+		Watch for contraband and anyone who would take advantage of the Aphelion's free-trade hub."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -904,7 +945,8 @@
 */
 /datum/job/bouncer
 	title = JOB_BOUNCER
-	description = "Make sure people don't jump the kitchen counter, stop Chapel vandalism, check bargoer's IDs, prevent the dreaded \"food fight\"."
+	description = "Protect the Service Department from vandals and troublemakers. Help every Service discipline prepare for the day, and be ready to assist the public as a member of the Service team. \
+		Remember, the bar is not your only responsibility."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2

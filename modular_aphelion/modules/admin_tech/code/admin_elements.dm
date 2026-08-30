@@ -1,5 +1,10 @@
 /// Stores all elements made by the Admin_Tech module.
 
+// Helper for checking if you can see something. This might be a horrible idea! Someone correct me if it is. :)
+/atom/movable/proc/can_see_target(atom/target)
+	var/mob/viewer = ismob(src) ? src : null
+	return target in view(viewer?.client?.view || world.view, src)
+
 /// Attach to clothing to grant the wearer all languages (Book of Babel effect) while worn, and revoke on unequip.
 /datum/element/babel_clothing// The base element
 
@@ -18,6 +23,8 @@
 
 /datum/element/babel_clothing/proc/on_equipped(obj/item/source, mob/equipper, slot)// Do thing when worn
 	SIGNAL_HANDLER// poke our signaller
+	if(!(slot & source.slot_flags))
+		return
 	equipper.grant_all_languages(source = LANGUAGE_BABEL)// thank you, book of babel
 	equipper.remove_blocked_language(GLOB.all_languages, source = LANGUAGE_ALL)// you saved me
 	if(equipper.mind)// all of this is directly from the book of babel itself

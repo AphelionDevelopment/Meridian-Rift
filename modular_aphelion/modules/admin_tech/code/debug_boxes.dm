@@ -191,7 +191,7 @@ GLOBAL_LIST_INIT(subspace_box_illustrations, list(
 
 	var/i_dont_even_think_once_about_blowing_stuff_up = tgui_alert(user, "Would you like to activate the subspace catalyst now?", "BYE BYE", list("Yes","No"))
 
-	if(i_dont_even_think_once_about_blowing_stuff_up != "Yes" || currently_exploding || QDELETED(user) || QDELETED(src) || !user.can_perform_action(src, NEED_DEXTERITY|NEED_HANDS|ALLOW_RESTING))
+	if(i_dont_even_think_once_about_blowing_stuff_up != "Yes" || currently_exploding || QDELETED(user) || QDELETED(src) || !user.client?.holder || !user.is_holding(src) || !user.can_perform_action(src, NEED_DEXTERITY|NEED_HANDS|ALLOW_RESTING))
 		return
 
 	explosion_timer = addtimer(CALLBACK(src, PROC_REF(think_fast_chucklenuts)), 5 SECONDS, (TIMER_UNIQUE|TIMER_OVERRIDE))
@@ -226,13 +226,18 @@ GLOBAL_LIST_INIT(subspace_box_illustrations, list(
 	var/choice = tgui_input_list(user, "Populate the Box", "Subspace Box Stuffer", GLOB.subspace_box_types)
 	if(isnull(choice))
 		return
+	if(!user.client?.holder || !user.is_holding(src))
+		return
 	if(choice == "Clear All Items")
 		empty_box()
 		return
 	// Checks contents lists with an input choice match
 	for(var/item_path in GLOB.subspace_box_contents[choice])
 		for(var/i in 1 to GLOB.subspace_box_contents[choice][item_path])
-			new item_path(src)
+			var/obj/item/spawned_item = new item_path(null)
+			if(!atom_storage.attempt_insert(spawned_item, user, override = TRUE))
+				qdel(spawned_item)
+				break
 	if(choice in GLOB.subspace_box_illustrations)
 		illustration = GLOB.subspace_box_illustrations[choice]
 	update_appearance()
@@ -252,14 +257,20 @@ GLOBAL_LIST_INIT(subspace_box_illustrations, list(
 	var/spawn_selection = tgui_input_list(user, "Populate the Box", "Box Stuffer", list("Clear All Items", "Cat", "Kitten"))
 	if(isnull(spawn_selection))
 		return
+	if(!user.client?.holder || !user.is_holding(src))
+		return
 
 	switch(spawn_selection)
 		if("Clear All Items")
 			empty_box()
 		if("Cat")
-			atom_storage.attempt_insert(new /mob/living/basic/pet/cat(src), user, override = TRUE)
+			var/mob/living/basic/pet/cat/cat = new(drop_location())
+			if(!atom_storage.attempt_insert(cat, user, override = TRUE))
+				qdel(cat)
 		if("Kitten")
-			atom_storage.attempt_insert(new /mob/living/basic/pet/cat/kitten(src), user, override = TRUE)
+			var/mob/living/basic/pet/cat/kitten/kitten = new(drop_location())
+			if(!atom_storage.attempt_insert(kitten, user, override = TRUE))
+				qdel(kitten)
 
 // Fun Boxes and Spawners//
 // Nova Plushie Spawners, no filtering
@@ -294,7 +305,7 @@ GLOBAL_LIST_INIT(subspace_box_illustrations, list(
 /obj/effect/spawner/random/entertainment/plushie/nova/donator
 	name = "nova sector donator plushie spawner"
 	icon_state = "plushie"
-	loot_subtype_path = /obj/item/toy/plush/nova/donator/
+	loot_subtype_path = /obj/item/toy/plush/nova/donator
 	loot = null
 
 //Sane item to actually be used

@@ -25,6 +25,9 @@
 /obj/machinery/rnd/production/colony_lathe/admin/give_manufacturer_examine()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
+/obj/machinery/rnd/production/colony_lathe/admin/can_interact(mob/user)
+	return user.client?.holder && ..()
+
 // Zero coefficient means has_materials() and use_materials() both ask for nothing, so everything prints free.
 /obj/machinery/rnd/production/colony_lathe/admin/build_efficiency(datum/design/design)
 	return 0
@@ -55,6 +58,48 @@
 	. = ..()
 	AddElement(/datum/element/manufacturer_examine, COMPANY_ADMIN)
 
+/obj/item/flatpacked_machine/admin/give_deployable_component()
+	AddComponent(/datum/component/deployable/admin, deploy_time, type_to_deploy)
+
+/** Restricts deployment of the administrative fabricator to active administrators. */
+/datum/component/deployable/admin
+
+/datum/component/deployable/admin/deploy(obj/source, mob/user, location, direction)
+	var/turf/deploy_location
+	var/new_direction
+
+	if(user)
+		if(!user.client?.holder || !user.is_holding(source))
+			return
+		deploy_location = get_step(user, user.dir)
+		if(deploy_location.is_blocked_turf(TRUE, parent))
+			source.balloon_alert(user, "insufficient room to deploy here.")
+			return
+		new_direction = user.dir
+		source.balloon_alert(user, "deploying...")
+		playsound(source, 'sound/items/tools/ratchet.ogg', 50, TRUE)
+		if(!do_after(user, deploy_time))
+			return
+		if(QDELETED(source) || QDELETED(user) || !user.client?.holder || !user.is_holding(source))
+			return
+		deploy_location = get_step(user, user.dir)
+		if(deploy_location.is_blocked_turf(TRUE, parent))
+			source.balloon_alert(user, "insufficient room to deploy here.")
+			return
+		new_direction = user.dir
+	else
+		deploy_location = location
+		new_direction = direction
+
+	var/atom/deployed_object = new thing_to_be_deployed(deploy_location)
+	if(direction_setting)
+		deployed_object.setDir(new_direction)
+		deployed_object.update_icon_state()
+
+	deployments -= 1
+	if(!multiple_deployments || deployments < 1)
+		qdel(source)
+
 /**
  * Base design for everything the administrative fabricator prints
  *
@@ -65,6 +110,7 @@
  * build_efficiency() to zero.
  */
 /datum/design/admin
+	abstract_type = /datum/design/admin
 	build_type = ADMIN_TECHWEB
 	materials = list(/datum/material/iron = SMALL_MATERIAL_AMOUNT)
 	// The token cost must not be stamped onto what comes out, or a printed multitool ends up made of ten iron instead

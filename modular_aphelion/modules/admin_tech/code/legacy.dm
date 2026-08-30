@@ -13,6 +13,7 @@
 /// Legacy bluespace tech armor, but keeping it for now. Minor touchups
 /obj/item/clothing/suit/armor/vest/debug
 	name = "technician's vest"
+	worn_icon_digi = null
 	desc = "A sleek piece of armour designed for Bluespace agents."
 	armor_type = /datum/armor/admin
 	w_class = WEIGHT_CLASS_TINY
@@ -38,4 +39,3 @@
 		/obj/item/summon_beacon/gas_miner/expanded/debug = 1,
 		/obj/item/choice_beacon/job_locker/debug = 1,
 	)
-

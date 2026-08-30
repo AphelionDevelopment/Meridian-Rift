@@ -86,10 +86,6 @@ DEFINE_BITFIELD(no_equip_flags, list(
 #define ITEM_SLOT_ON_BODY (ITEM_SLOT_ICLOTHING | ITEM_SLOT_OCLOTHING | ITEM_SLOT_GLOVES | ITEM_SLOT_EYES | ITEM_SLOT_EARS | \
 	ITEM_SLOT_MASK | ITEM_SLOT_HEAD | ITEM_SLOT_FEET | ITEM_SLOT_ID | ITEM_SLOT_BELT | ITEM_SLOT_BACK | ITEM_SLOT_NECK )
 
-// NOVA EDIT ADDITION START - ADMIN_TECH
-/// Admin Tool Slot Catcher
-#define ITEM_SLOT_ADMIN (ITEM_SLOT_POCKETS | ITEM_SLOT_BELT | ITEM_SLOT_SUITSTORE | ITEM_SLOT_BACK | ITEM_SLOT_ID )
-// NOVA EDIT ADDITION END
 //Bit flags for the flags_inv variable, which determine when a piece of clothing hides another. IE a helmet hiding glasses.
 //Make sure to update obscured_slots if you add more.
 #define HIDEGLOVES (1<<0)
@@ -194,18 +190,10 @@ DEFINE_BITFIELD(no_equip_flags, list(
 #define CLOTHING_SNOUTED_VARIATION (1<<3)
 /// The sprite works fine for snouts as-is.
 #define CLOTHING_SNOUTED_VARIATION_NO_NEW_ICON (1<<4)
-/// The sprite works fine for vox snouts.
-#define CLOTHING_SNOUTED_VOX_VARIATION (1<<5)
-/// The sprite works fine for vox snouts as is.
-#define CLOTHING_SNOUTED_VOX_VARIATION_NO_NEW_ICON (1<<6)
-/// The sprite works fine for vox snouts.
-#define CLOTHING_SNOUTED_BETTER_VOX_VARIATION (1<<7)
-/// The sprite works fine for vox snouts as is.
-#define CLOTHING_SNOUTED_BETTER_VOX_VARIATION_NO_NEW_ICON (1<<8)
 /// The clothing item has a custom sprite for the big legs type taur bodyshape
-#define CLOTHING_BIG_LEGS_VARIATION (1<<9)
+#define CLOTHING_BIG_LEGS_VARIATION (1<<5)
 /// The sprite mask particularly for the big legs type taur bodyshape
-#define CLOTHING_BIG_LEGS_MASK (1<<10)
+#define CLOTHING_BIG_LEGS_MASK (1<<6)
 // NOVA EDIT ADDITION END
 
 /// All variation flags which render "correctly" on a digitigrade leg setup

@@ -12,10 +12,10 @@
 /obj/item/tank/internals/admin
 	name = "subspace tank"
 	desc = "A palm-sized gas tank embedded with an ominous purple crystal. The longer your gaze lingers, the more unsettled you feel. Somewhere, a scientist yearns to print these. "
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "sub-tank"
 	inhand_icon_state = "emergency_tank"
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "sub-tank"
 	tank_holder_icon_state = "holder_emergency_engi"
 	force = 10
@@ -92,6 +92,9 @@
 
 //Now we get into some gas mixes
 //Mixes containing nitrium can be poisonous. The higher the output pressure of a mix with nitrium, the higher the likelihood or rate of poisoning, but the more impactful the boon.
+/obj/item/tank/internals/admin/mix
+	abstract_type = /obj/item/tank/internals/admin/mix
+
 //Robust Mix, courtesy of Zul.
 //This will kill you if you leave it running, but it's like stims on demand if you mind the toxin cycle.
 /obj/item/tank/internals/admin/mix/juggermol

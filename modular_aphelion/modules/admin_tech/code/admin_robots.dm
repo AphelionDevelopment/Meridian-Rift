@@ -64,7 +64,7 @@
 //	interaction_range = INFINITY
 	borg_skins = list(
 		/// 32x32 Skins
-		"Walker Tank" = list(SKIN_ICON_STATE = "tachi", SKIN_ICON = 'modular_nova/modules/admin_tech/icons/admin_robots.dmi'),
+		"Walker Tank" = list(SKIN_ICON_STATE = "tachi", SKIN_ICON = 'modular_aphelion/modules/admin_tech/icons/admin_robots.dmi'),
 	)
 	// This is where we begin the setup of the special features on the admin borgs themselves
 	var/datum/weakref/thermal_vision_ref
@@ -73,26 +73,34 @@
 
 // Destroys tailing references on admin borg destruction
 /obj/item/robot_model/admin/Destroy(force)
-	QDEL_NULL(thermal_vision_ref)
-	QDEL_NULL(disguise_action_ref)
-	QDEL_NULL(xray_vision_ref)
+	var/datum/action/thermal_vision = thermal_vision_ref?.resolve()
+	var/datum/action/disguise = disguise_action_ref?.resolve()
+	var/datum/action/xray_vision = xray_vision_ref?.resolve()
+	qdel(thermal_vision)
+	qdel(disguise)
+	qdel(xray_vision)
+	thermal_vision_ref = null
+	disguise_action_ref = null
+	xray_vision_ref = null
 	return ..()
 
 // Handles the setup of the cyborg. This is run at the cyborg being built and is part of the stall on interacting during spawn.
 /obj/item/robot_model/admin/be_transformed_to(obj/item/robot_model/old_model, forced = FALSE)
-	var/datum/action/cooldown/borg_thermal/thermal_vision = new(loc)
-	var/datum/action/cooldown/borg_disguise/disguise = new(loc)
-	var/datum/action/cooldown/borg_xray/xray_vision = new(loc)
 	. = ..()
 	if(!.)
-		return
-	thermal_vision.Grant(loc)
-	thermal_vision_ref = WEAKREF(thermal_vision)
-	disguise.Grant(loc)
-	disguise_action_ref = WEAKREF(disguise)
-	xray_vision.Grant(loc)
-	xray_vision_ref = WEAKREF(xray_vision)
+		return FALSE
 	var/mob/living/silicon/robot/borg = loc
+	if(!istype(borg))
+		return FALSE
+	var/datum/action/cooldown/borg_thermal/thermal_vision = new(borg)
+	var/datum/action/cooldown/borg_disguise/disguise = new(borg)
+	var/datum/action/cooldown/borg_xray/xray_vision = new(borg)
+	thermal_vision.Grant(borg)
+	thermal_vision_ref = WEAKREF(thermal_vision)
+	disguise.Grant(borg)
+	disguise_action_ref = WEAKREF(disguise)
+	xray_vision.Grant(borg)
+	xray_vision_ref = WEAKREF(xray_vision)
 	borg.sight_mode |= BORGXRAY
 	borg.update_sight()
 
@@ -120,8 +128,12 @@
 		return
 	if(active)
 		revert_disguise(borg)
-		return
-	apply_disguise(borg)
+		..()
+		return TRUE
+	if(apply_disguise(borg))
+		..()
+		return TRUE
+	return FALSE
 
 // Sanity catches
 /datum/action/cooldown/borg_disguise/proc/check_menu(mob/user)
@@ -218,6 +230,7 @@
 	borg.model.update_quadborg()
 	borg.model.update_tallborg()
 	build_all_button_icons()// Finalizes rebuild
+	return TRUE
 
 // Reverting to Tachi.
 /datum/action/cooldown/borg_disguise/proc/revert_disguise(mob/living/silicon/robot/borg)
@@ -234,6 +247,7 @@
 	borg.model.update_quadborg()
 	borg.model.update_tallborg()
 	build_all_button_icons()
+	return TRUE
 
 // Borg / drone vision.
 /datum/action/cooldown/borg_xray
@@ -241,6 +255,7 @@
 	desc = "Toggles perfect vision - full sight regardless of lighting, plus the ability to see mobs through walls."
 	button_icon = 'icons/mob/actions/actions_mecha.dmi'
 	button_icon_state = "meson"
+	cooldown_time = 0.5 SECONDS
 
 // Processes the action and sets our sightmodes
 /datum/action/cooldown/borg_xray/Activate()
@@ -252,10 +267,12 @@
 	else
 		borg.sight_mode |= BORGXRAY
 	borg.update_sight()
+	..()
+	return TRUE
 
 // Spawnable Mob for the base model + additional config and benefits
 /mob/living/silicon/robot/model/admin
-	icon = 'modular_nova/modules/admin_tech/icons/admin_robots.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_robots.dmi'
 	icon_state = "tachi"
 	designation = "CC"
 	faction = list(FACTION_ERT)
@@ -295,23 +312,8 @@
 
 // Subspace Walker - this is the flagship/showcase model for the subspace-tech-rework branch, so its kit doubles as a demo case for the admin_tech items themselves.
 /obj/item/robot_model/admin/subspace
+	parent_type = /obj/item/robot_model/admin/bluespace
 	name = "Subspace Walker"
-	basic_modules = list(
-		/obj/item/assembly/flash/cyborg,
-		/obj/item/crowbar/cyborg/power,
-		/obj/item/screwdriver/cyborg/power,
-		/obj/item/multitool/cyborg,
-		/obj/item/extinguisher,
-		/obj/item/handheld_debug_chem_synth,
-		/obj/item/gun/chem/admin,
-		/obj/item/gun/magic/subspace/dagenblicky,
-		/obj/item/pneumatic_cannon/subspace,
-		/obj/item/melee/baseball_bat/admin,
-		/obj/item/laser_pointer/admin,
-		/obj/item/modular_computer/pda/admin,
-		/obj/item/summon_beacon/vendors/debug,
-		/obj/item/borg_shapeshifter,
-	)
 
 // The mob for the walker itself.
 /mob/living/silicon/robot/model/admin/subspace
@@ -350,7 +352,6 @@
 		/obj/item/shockpaddles/syndicate/cyborg,
 		/obj/item/healthanalyzer,
 		/obj/item/borg/cyborg_omnitool/medical,
-		/obj/item/borg/cyborg_omnitool/medical,
 		/obj/item/blood_filter,
 		/obj/item/melee/energy/sword/saber/cyborg/saw,
 		/obj/item/emergency_bed/silicon,
@@ -380,7 +381,6 @@
 		/obj/item/weldingtool/largetank/cyborg,
 		/obj/item/analyzer,
 		/obj/item/borg/cyborg_omnitool/engineering,
-		/obj/item/borg/cyborg_omnitool/engineering,
 		/obj/item/stack/sheet/iron,
 		/obj/item/stack/sheet/glass,
 		/obj/item/borg/apparatus/sheet_manipulator,
@@ -405,24 +405,24 @@ Modules to transform pre-existing borgs into an admin borg type
 */
 /obj/item/borg/upgrade/transform/admin
 	name = "borg module picker (Central Command Administrative Walker)"
-	desc = "Allows you to to turn a cyborg into a experimental syndicate cyborg."
+	desc = "Allows you to turn a cyborg into an experimental Central Command Administrative Walker."
 	icon_state = "module_illegal"
 	new_model = /obj/item/robot_model/admin
 
 /obj/item/borg/upgrade/transform/admin/backline
 	name = "borg module picker (Central Command Backline Walker)"
-	desc = "Allows you to to turn a cyborg into a experimental syndicate cyborg."
+	desc = "Allows you to turn a cyborg into an experimental Central Command Backline Walker."
 	icon_state = "module_illegal"
 	new_model = /obj/item/robot_model/admin/backline
 
 /obj/item/borg/upgrade/transform/admin/frontline
 	name = "borg module picker (Central Command Frontline Walker)"
-	desc = "Allows you to to turn a cyborg into a experimental syndicate cyborg."
+	desc = "Allows you to turn a cyborg into an experimental Central Command Frontline Walker."
 	icon_state = "module_illegal"
 	new_model = /obj/item/robot_model/admin/frontline
 
 /obj/item/borg/upgrade/transform/admin/engineer
 	name = "borg module picker (Central Command Engineer Walker)"
-	desc = "Allows you to to turn a cyborg into a experimental syndicate cyborg."
+	desc = "Allows you to turn a cyborg into an experimental Central Command Technical Walker."
 	icon_state = "module_illegal"
 	new_model = /obj/item/robot_model/admin/engineer

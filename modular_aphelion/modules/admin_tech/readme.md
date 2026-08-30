@@ -1,12 +1,13 @@
-https://github.com/NovaSector/NovaSector/pull/6628
+# Advanced loadouts, tools, items, and machines for admins
 
-## Title: Advanced loadouts, tools, items, and machines for admins
+Aphelion PR: https://github.com/AphelionDevelopment/Meridian-Rift/pull/111
+Nova source PR: https://github.com/NovaSector/NovaSector/pull/6628
 
-MODULE ID: admin_tech
+MODULE ID: ADMIN_TECH
 
 ### Description:
 
-Add Nova-specific admin outfits, tools, debug items, and other quality of life considerations
+Adds Aphelion-specific admin outfits, tools, debug items, and other quality of life considerations
 This module aims to migrate admin 'god-hand the world is changing magically around you' into the in-character sphere by providing nearly every conceivable solution to problems that a staffer might encounter in the course of preparing for events or resolving problems with a body instead of tools like buildmode.
 
 'Bluespace' items are a baseline admin tool, usually identified by /admin as the breakpoint in its path.
@@ -24,23 +25,22 @@ Links in with icspawning module from skyrat era, integrates some of its content 
 code/datums/elements/strippable.dm - Adds NOSTRIP trait to /datum/strippable_item/proc/try_unequip
 code/modules/mob/living/carbon/examine.dm - Adds TRAIT_ADMIN_STEALTH which provides a unique obscuration flavor while blocking examines.
 code/__HELPERS/pronouns.dm - TRAIT_ADMIN_STEALTH
-code/game/atoms_movable.dm - can_see_target helper addition
+modular_aphelion/modules/admin_tech/code/admin_elements.dm - can_see_target helper addition
 code/_onclick/click.dm - TRAIT_ADMIN_REACHABLE early-return in IsReachableBy
 code/game/machinery/_machinery.dm - TRAIT_ADMIN_REACHABLE early-return in interact gating
-code/__DEFINES/inventory.dm - ITEM_SLOT_ADMIN define
-code/__DEFINES/machines.dm - ADMIN_TECHWEB define
+code/__DEFINES/~aphelion_defines/admin_tech.dm - Admin-Tech defines
 icons/map_icons/items/encryptionkey.dmi - Justification: Auto-Sprited, cant stop it
 icons/map_icons/items/pda.dmi - Justification: Auto-Sprited, cant stop it
 code/datums/storage/storage.dm - Replaces /datum/storage/proc/orient_storage() with one including a widescreen check for oversized storages, and paired var screen_max_columns_widescreen on master /datum/storage
 modular_nova/modules/cellguns/code/cellguns.dm - Updated for quality of life and stuff needed for admin and other cellgun types
 code/modules/tgui/states.dm - Modular edit to fix ui opening at distance with the subspace headset, thank you again internetizen
-modular_nova/master_files/code/modules/surgery/surgery_tools.dm - Nulls worn_icon on the surgical tools that had it set as a bad string, surfaced by admin MOD themes exposing every item to the suit_storage_icons unit test
-modular_nova/master_files/code/modules/power/lighting/light_items.dm - Same worn_icon fix, for light tubes and bulbs
-modular_nova/master_files/code/game/objects/items/plushes.dm - Same worn_icon fix, for the carp/Ratvar/Nar'Sie plushies
+modular_aphelion/master_files/code/modules/surgery/surgery_tools.dm - Nulls worn_icon on the surgical tools that had it set as a bad string, surfaced by admin MOD themes exposing every item to the suit_storage_icons unit test
+modular_aphelion/master_files/code/modules/power/lighting/light_items.dm - Same worn_icon fix, for light tubes and bulbs
+modular_aphelion/master_files/code/game/objects/items/plushes.dm - Same worn_icon fix, for the carp/Ratvar/Nar'Sie plushies
 
 ### Defines:
 
-ADMIN_OBJ_FLAGS - code/__DEFINES/~nova_defines/obj_flags.dm - code/__DEFINES/~nova_defines/_globalvars/bitfields.dm
+ADMIN_OBJ_FLAGS - code/__DEFINES/~aphelion_defines/admin_tech.dm - code/__DEFINES/~nova_defines/_globalvars/bitfields.dm
 
 These are three separate defines because they target three separate bitfields whose bits overlap - do not merge them back into one:
 ADMIN_OBJ_FLAGS goes on obj_flags, ADMIN_OBJ_FLAGS_NOVA goes on obj_flags_nova, ADMIN_CLOTHING_FLAGS goes on clothing_flags (set with |= in Initialize so the parent type's own flags survive).
@@ -61,13 +61,14 @@ Adding a printable means adding a `/datum/design/admin` subtype in admin_techweb
 TRAIT_NOSTRIP - Prevents item removal by Strip Menu
 TRAIT_ADMIN_STEALTH - Provides identity masking similar to the UNKNOWN_APPEARANCE trait, but special inspect texts
 TRAIT_ADMIN_REACHABLE - Provides early TRUE returns on IsReachableBy in code/_onclick/click.dm and can_perform_action code/modules/mob/living/living.dm. Also provides additions to code/game/machinery/_machinery.dm
-TRAIT_SHOW_ALL_WIRES - Adds another method of showing the global wire legend without having to hold an abductor multi-tool / be a borg / be holding a copy of the blueprints modular_nova/master_files/code/datums/wires/_wires.dm
+TRAIT_SHOW_ALL_WIRES - Adds another method of showing the global wire legend without having to hold an abductor multi-tool / be a borg / be holding a copy of the blueprints modular_aphelion/master_files/code/datums/wires/_wires.dm
 
 ### Included files:
 
-modular_nova/master_files/code/datums/wires/_wires.dm - TRAIT_SHOW_ALL_WIRES hook
-modular_nova/master_files/code/game/objects/objs.dm - admin obj support
-modular_nova/master_files/code/modules/research/techweb/techweb_types.dm - ADMIN_TECHWEB node registration
+modular_aphelion/master_files/code/datums/wires/_wires.dm - TRAIT_SHOW_ALL_WIRES hook
+modular_aphelion/master_files/code/game/objects/objs.dm - admin obj support
+modular_aphelion/master_files/code/modules/admin/admin.dm - Admin Combo HUD and Wallhacks keybindings and client state
+modular_aphelion/master_files/code/modules/research/techweb/techweb_types.dm - ADMIN_TECHWEB node registration
 modular_nova/modules/customization/modules/mob/living/carbon/human/MOD_sprite_accessories/mod_themes.dm - admin MOD theme support
 modular_nova/modules/icspawning/code/cards_ids.dm - trimmed for admin outfit menu integration
 modular_nova/modules/icspawning/code/observer.dm - outfit selection converted to tgui list, adds save slots

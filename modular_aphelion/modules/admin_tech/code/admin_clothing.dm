@@ -38,9 +38,9 @@
 /obj/item/radio/headset/admin
 	name = "bluespace headset"
 	desc = "Keeps you tuned in on the subspace data streams and threads, enabling you to communicate and act with ease."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "blue-headset"
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "blue-headset"
 	keyslot2 = null
 	keyslot = /obj/item/encryptionkey/admin
@@ -185,13 +185,13 @@
 /obj/item/clothing/glasses/meson/engine/admin/debug
 	name = "subspace contacts"
 	desc = "One of Central Command's best kept secrets, resting on the eyes of many of its officers, operatives, and technicians."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	icon_state = "contacts"
 	inhand_icon_state = "trayson-"
 	// The parent type's update_icon_state() (code/modules/clothing/glasses/engine_goggles.dm) overwrites icon_state,
 	// inhand_icon_state and worn_icon_state to "trayson-[mode]" on every appearance update, so worn_icon has to be a
 	// file that actually has those states - admin_items.dmi already does, being shared with the ground/inhand icon.
-	worn_icon = 'modular_nova/modules/admin_tech/icons/admin_items.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/admin_items.dmi'
 	base_icon_state = "trayson-"
 	flags_cover = GLASSESCOVERSEYES// dont ask me why were doing this we just are
 	flash_protect = FLASH_PROTECTION_WELDER//No need for the welding gas mask from before
@@ -305,9 +305,9 @@
 /obj/item/clothing/head/helmet/perceptomatrix/admin
 	name = "bluespace visor"
 	desc = "This exceptional piece of headgear seems to be one of the main reality-warping sources of the administrative kit. It feels nearly weightless on your head."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "blue-visor"
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "blue-visor"
 	base_icon_state = "blue-visor"
 	worn_icon_muzzled = "blue-visor"
@@ -326,9 +326,9 @@
 /obj/item/clothing/head/helmet/perceptomatrix/admin/subspace
 	name = "subspace visor"
 	desc = parent_type::desc + " This one stopped pretending to be armour and simply refuses to let anything reach you."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "sub-visor"
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "sub-visor"
 	base_icon_state = "sub-visor"
 	worn_icon_muzzled = "sub-visor"
@@ -362,9 +362,9 @@
 	name = "bluespace mask"
 	desc = "A proprietary filtration mask which route gasses that CentCom deems toxic directly into the space between dimensions.\
 		Wasteful? Totally. Convenient? Extremely. Has the added side effect of partially displacing you into that dimension."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "blue-mask"
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "blue-mask"
 	inhand_icon_state = null
 	max_filters = 2
@@ -390,10 +390,10 @@
 
 	admin_phasing = !admin_phasing
 	if(admin_phasing)
-		attach_clothing_traits(TRAIT_MOVE_PHASING, TRAIT_ADMIN_STEALTH, TRAIT_UNKNOWN_VOICE,)
+		attach_clothing_traits(list(TRAIT_MOVE_PHASING, TRAIT_ADMIN_STEALTH, TRAIT_UNKNOWN_VOICE))
 		add_filter("admin_active_item", 1, outline_filter(1, "#cc00ff", OUTLINE_SQUARE))
 	else
-		detach_clothing_traits(TRAIT_MOVE_PHASING, TRAIT_ADMIN_STEALTH, TRAIT_UNKNOWN_VOICE,)
+		detach_clothing_traits(list(TRAIT_MOVE_PHASING, TRAIT_ADMIN_STEALTH, TRAIT_UNKNOWN_VOICE))
 		remove_filter("admin_active_item")
 
 	balloon_alert(user, "phasing [admin_phasing ? "enabled" : "disabled"]")
@@ -419,9 +419,9 @@
 /obj/item/clothing/mask/gas/atmos/admin/subspace
 	name = "subspace mask"
 	desc = parent_type::desc + " This one displaces rather more of you, and rather more permanently."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "sub-mask"
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "sub-mask"
 	armor_type = /datum/armor/admin/badmin
 
@@ -543,11 +543,11 @@
 	name = "bluespace techsuit"
 	desc = "A perfectly tailored and customized skin suit made specifically for this technician. \
 	Composed of experimental textiles, and assembled with the legendary Bluespace Sewing Machine, it fits the body with perfect comfort, and carries an air of security."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "blue-techsuit"
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "blue-techsuit"
-	worn_icon_digi = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing_digi.dmi'
+	worn_icon_digi = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing_digi.dmi'
 	inhand_icon_state = null
 	has_sensor = NO_SENSORS//admin techs should NEVER be on sensors
 	resistance_flags = INDESTRUCTIBLE
@@ -583,8 +583,12 @@
 			continue
 		destinations["\[Player\] [player_mob.name] ([player_mob.key])"] = player_mob//anything inside brackets will be checked as a var so regulate it with \ \ to stop that behavior
 
-	for(var/area/possible_area as anything in get_sorted_areas())// populates possible areas from this sexy fucking proc that exists UGH look at that
-		destinations["\[Area\] [possible_area.name]"] = possible_area// follow our standard set above
+	var/static/list/area_destinations
+	if(isnull(area_destinations))
+		area_destinations = list()
+		for(var/area/possible_area as anything in get_sorted_areas())// populates possible areas from this sexy fucking proc that exists UGH look at that
+			area_destinations["\[Area\] [possible_area.name]"] = possible_area// follow our standard set above
+	destinations += area_destinations
 
 	for(var/obj/effect/landmark/marker as anything in GLOB.landmarks_list)// landmarks are mapped things, usually
 		destinations["\[Landmark\] [marker.name]"] = marker
@@ -602,9 +606,15 @@
 	var/picked = tgui_input_list(user, "Select a destination", "Subspace Teleport", sort_list(destinations))// sets up our option list. sortlist is also sexy.
 	if(isnull(picked))// sanity cancelling out
 		return CLICK_ACTION_BLOCKING// thanks for wasting all of the above resources :')
+	if(QDELETED(src) || !user.client?.holder || living_user.get_item_by_slot(ITEM_SLOT_ICLOTHING) != src)
+		return CLICK_ACTION_BLOCKING
 
 	var/atom/target = destinations[picked]// sets up our target from the selection through our destinations
+	if(QDELETED(target))
+		return CLICK_ACTION_BLOCKING
 	var/turf/target_turf = get_turf(target)// checks the turf at our target. this does some kinda funny stuff if you sniff further in. dont, it's ok
+	if(isnull(target_turf))
+		return CLICK_ACTION_BLOCKING
 
 	living_user.abstract_move(target_turf)// Poof!
 	log_admin("[key_name(user)] teleported via subspace techsuit to [picked].")// Log this shit because like lol lmao
@@ -622,11 +632,11 @@
 /obj/item/clothing/suit/admin
 	name = "bluespace letterman"
 	desc = "Hand-stitched by legendary tailors, these jackets are made specifically for each technician. Using the same advanced fabrics and techniques as the rest of their soft kit, the comfort of these coats is unrivaled."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "blue-jacket"
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "blue-jacket"
-	worn_icon_digi = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing_digi.dmi'
+	worn_icon_digi = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing_digi.dmi'
 	inhand_icon_state = null
 	body_parts_covered = CHEST|GROIN|LEGS|ARMS
 	armor_type = /datum/armor/admin
@@ -664,9 +674,9 @@
 	w_class = WEIGHT_CLASS_TINY
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | ACID_PROOF
 	clothing_traits = list()
-	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "blue-gauntlets"
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	// Gloves carrying anything past bio/acid/fire armour must declare the arms too, same as the punch mitts.
 	body_parts_covered = HANDS|ARMS
 	armor_type = /datum/armor/admin
@@ -680,9 +690,9 @@
 /obj/item/clothing/gloves/tackler/admin/subspace
 	name = "subspace gauntlets"
 	desc = parent_type::desc + " You feel perfectly capable of defending yourself from things that have not happened."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_clothing.dmi'
 	icon_state = "sub-gauntlets"
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	armor_type = /datum/armor/admin/badmin
 
 //Debug magbooties
@@ -691,11 +701,11 @@
 /obj/item/clothing/shoes/magboots/advance/admin//code\modules\clothing\shoes\magboots.dm
 	name = "bluespace magboots"
 	desc = "Exotic hand manufactured booties made of the finest alloys the Frontier has to offer. The bluespace crystals powering each boot gleam threateningly."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_clothing.dmi'
 	base_icon_state = "blue-magboots"
 	icon_state = "blue-magboots0"// My first icon, I am very sorry. This should probably be replaced, but watch it just stick around for a long time.
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
-	worn_icon_digi = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing_digi.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon_digi = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing_digi.dmi'
 	slowdown_active = -0.25
 	magpulse_fishing_modifier = 10
 	fishing_modifier = 10
@@ -749,8 +759,8 @@
 /obj/item/clothing/shoes/magboots/advance/admin/subspace
 	name = "subspace magboots"
 	desc = parent_type::desc + " These ones gleam a good deal more threateningly."
-	icon = 'modular_nova/modules/admin_tech/icons/admin_clothing.dmi'
+	icon = 'modular_aphelion/modules/admin_tech/icons/admin_clothing.dmi'
 	base_icon_state = "sub-magboots"
 	icon_state = "sub-magboots0"// My first icon, I am very sorry. This should probably be replaced, but watch it just stick around for a long time.
-	worn_icon = 'modular_nova/modules/admin_tech/icons/worn_admin_clothing.dmi'
+	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	armor_type = /datum/armor/admin/badmin
