@@ -131,6 +131,14 @@ SUBSYSTEM_DEF(air)
 	var/dogmos_pending_stage
 	/// Exact frontier epoch retained while any service stage remains in this cycle.
 	var/list/dogmos_pending_frontier_epoch
+	/// Turf -> TRUE mirror of what's currently committed in dogmosd's frontier, so
+	/// sync_dogmos_frontier() can send only the delta instead of re-publishing the whole
+	/// active-turf set every tick. Null until the first bootstrap publish.
+	var/list/dogmos_committed_frontier
+	/// DOGMOS_DIAG2 temporary instrumentation - remaining log_world() budget for turf_settled()'s
+	/// non-convergence diagnostic. Decrements on every logged event and stops at 0, so total
+	/// diagnostic I/O this round is bounded regardless of how often the loop runs.
+	var/dogmos_diag_settle_log_budget = 6000
 	/// Service estimate of work items remaining in the pending stage.
 	var/dogmos_stage_remaining_estimate = 0
 	/// Maximum service work items requested by the next stage chunk.
@@ -328,15 +336,20 @@ SUBSYSTEM_DEF(air)
 		currentpart = SSAIR_SUPERCONDUCTIVITY
 
 	if(currentpart == SSAIR_SUPERCONDUCTIVITY)
-		// cost_superconductivity is NOT re-averaged from TICK_USAGE_REAL here, unlike every other
-		// stage: process_super_conductivity()/process_turf_heat() is fire-and-forget (see its doc
-		// comment) and returns near-instantly, so a DM-side wall-clock measurement of this call would
-		// be near-zero every cycle and would drown out Rust's own deferred EWMA write to that var
-		// (superconduct.rs, written whenever the background thread's callback actually drains) rather
-		// than reflecting real cost the way the blocking stages' measurements do.
+		// Was never actually measured: the removed comment here claimed a Rust background thread
+		// wrote cost_superconductivity asynchronously (superconduct.rs), but that describes the
+		// legacy in-process DLL path (docs/agent/architecture-and-ownership.md puts turf heat
+		// there) - nothing in the current out-of-process service pipeline produces that write, so
+		// Kennel showed a permanent 0 regardless of whether this stage was running. Measured the
+		// same way as every other stage now.
+		timer = TICK_USAGE_REAL
+		if(!resumed)
+			cached_cost = 0
 		process_super_conductivity(resumed)
+		cached_cost += TICK_USAGE_REAL - timer
 		if(state != SS_RUNNING)
 			return
+		cost_superconductivity = MC_AVERAGE(cost_superconductivity, TICK_DELTA_TO_MS(cached_cost))
 		resumed = FALSE
 		currentpart = SSAIR_PROCESS_ATOMS
 
@@ -397,6 +410,7 @@ SUBSYSTEM_DEF(air)
 	dogmos_stage_epoch = SSair.dogmos_stage_epoch.Copy()
 	dogmos_pending_stage = SSair.dogmos_pending_stage
 	dogmos_pending_frontier_epoch = SSair.dogmos_pending_frontier_epoch?.Copy()
+	dogmos_committed_frontier = SSair.dogmos_committed_frontier?.Copy()
 	dogmos_stage_remaining_estimate = SSair.dogmos_stage_remaining_estimate
 	dogmos_stage_work_limit = SSair.dogmos_stage_work_limit
 	dogmos_active_turf_stages_complete = SSair.dogmos_active_turf_stages_complete
@@ -602,7 +616,7 @@ SUBSYSTEM_DEF(air)
 /datum/controller/subsystem/air/proc/process_active_turfs(resumed = FALSE)
 	if(!resumed)
 		// APHELION EDIT ADDITION START - DOGMOS
-		publish_dogmos_frontier()
+		sync_dogmos_frontier()
 		dogmos_active_turf_stages_complete = FALSE
 		// APHELION EDIT ADDITION END
 		walk_active_turfs_batch()
@@ -644,6 +658,11 @@ SUBSYSTEM_DEF(air)
 			LINDA_CYCLE_ARCHIVE(T)
 		T.current_cycle = times_fired
 		T.temperature_expose(T.air, T.air.return_temperature())
+		// Dogmos's Rust equalizer/FDM pass has no callback for "this turf's gas visually
+		// changed" - the legacy LINDA excited-group code used to call update_visuals() after
+		// every DM-side share(), but that whole path is bypassed now. active_turfs is the closest
+		// approximation of "turfs whose air is currently moving", so refresh here instead.
+		T.update_visuals()
 		check_kennel_reaction_of_interest(T)
 		if(turf_settled(T))
 			remove_from_active(T)
@@ -651,17 +670,48 @@ SUBSYSTEM_DEF(air)
 	// Removals may have shortened the list since batch_end was computed.
 	active_turfs_walk_cursor = (batch_end >= length(active_turfs)) ? 0 : batch_end
 
-/** Returns TRUE when a turf has no active hotspot and matches its open neighbors. */
+/** Returns TRUE when a turf has no active hotspot and matches its open neighbors.
+ * Also activates any open neighbor whose air differs from T's. Dogmos's diffusion stage only
+ * exchanges gas between two turfs that are BOTH already in the active frontier for that tick
+ * (see PackedTopology::gas_neighbors() usage in process_stage_chunk_cancellable) - without this,
+ * an active turf's untouched neighbors never join the frontier, so gas can never propagate past
+ * whatever handful of turfs happened to start active. This mirrors the old LINDA process_cell()
+ * behavior of waking neighbors as a share is found to still be needed.
+ */
 /datum/controller/subsystem/air/proc/turf_settled(turf/open/T)
-	if(T.active_hotspot)
-		return FALSE
+	var/settled = !T.active_hotspot
 	for(var/turf/neighbor as anything in T.atmos_adjacent_turfs)
 		if(!isopenturf(neighbor))
 			continue
 		var/turf/open/open_neighbor = neighbor
-		if(T.air.compare(open_neighbor.air))
-			return FALSE
-	return TRUE
+		// An immutable neighbor (space, a planetary reservoir, ...) never converges with a real
+		// turf by design - Dogmos's own diffusion already skips writing back to immutable
+		// mixtures (see commit_stage_diffusion()'s `if mixture.immutable: continue`), so chasing
+		// this pair toward equality is meaningless. Without this guard, every turf bordering one
+		// of these got perpetually re-flagged unsettled and kept re-activating its neighbors
+		// forever, even at complete idle - diagnostic logging showed exactly this: identical
+		// temperatures with one side pinned at a suspiciously round, unchanging mole total.
+		if(open_neighbor.air.is_immutable())
+			continue
+		var/differs = T.air.compare(open_neighbor.air)
+		// DOGMOS_DIAG2 temporary instrumentation - bounded to a fixed total budget (not gated by
+		// time/tick, so it can't silently run forever) so it can't contaminate cost telemetry the
+		// way the earlier unbounded version did. Logs the raw snapshot on both sides of a repeat
+		// differing pair, including dogmos_slot:generation, so the same coordinates can be grepped
+		// across lines to see whether the delta is shrinking (real, slow convergence), static (a
+		// stale-read bug), or the slot:generation itself is changing between checks (a
+		// registration churn bug).
+		if(differs && dogmos_diag_settle_log_budget > 0)
+			dogmos_diag_settle_log_budget--
+			log_world("DOGMOS_DIAG2 T=[T.x],[T.y],[T.z] N=[open_neighbor.x],[open_neighbor.y],[open_neighbor.z] \
+				tempT=[T.air.return_temperature()] tempN=[open_neighbor.air.return_temperature()] \
+				molesT=[T.air.total_moles()] molesN=[open_neighbor.air.total_moles()] \
+				slotT=[T.air.dogmos_slot]:[T.air.dogmos_generation] slotN=[open_neighbor.air.dogmos_slot]:[open_neighbor.air.dogmos_generation] \
+				budget=[dogmos_diag_settle_log_budget]")
+		if(differs)
+			settled = FALSE
+			add_to_active(open_neighbor)
+	return settled
 
 /** Runs Rust's low-pressure equalizer within the current tick budget. */
 /datum/controller/subsystem/air/proc/process_excited_groups(resumed = FALSE)

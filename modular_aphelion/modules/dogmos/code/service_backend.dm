@@ -1,4 +1,4 @@
-#define DOGMOS_REQUIRED_PROTOCOL_VERSION 9
+#define DOGMOS_REQUIRED_PROTOCOL_VERSION 10
 #define DOGMOS_MAX_EXACT_INTEGER 16777216
 #define DOGMOS_PROCESS_METRICS_WORDS 28
 #define DOGMOS_PROCESS_METRICS_LAYOUT_VERSION 1
@@ -51,6 +51,12 @@
 #define DOGMOS_MIXTURE_SNAPSHOT_HEAT_CAPACITY 9
 #define DOGMOS_MIXTURE_SNAPSHOT_IMMUTABLE 10
 #define DOGMOS_MIXTURE_SNAPSHOT_GASES_START 11
+// Mirrors Rust's MINIMUM_MOLES_DELTA_TO_MOVE (world.rs) exactly, as its own constant rather than
+// reusing DM's similarly-named MINIMUM_MOLES_DELTA_TO_MOVE (atmos_core.dm) - that one is a
+// derived, independently-tunable formula (MOLES_CELLSTANDARD * MINIMUM_AIR_RATIO_TO_MOVE) that
+// does not evaluate to the same value. compare() must match Rust's threshold exactly, not DM's.
+#define DOGMOS_COMPARE_MINIMUM_MOLES_DELTA 0.01032637
+#define DOGMOS_COMPARE_MINIMUM_TEMPERATURE_DELTA 4.0
 
 #define DOGMOS_LIFECYCLE_REGISTER 1
 #define DOGMOS_LIFECYCLE_UNREGISTER 2
@@ -122,6 +128,10 @@
 #define DOGMOS_STAGE_RESPONSE_PENDING 5
 #define DOGMOS_STAGE_RESPONSE_REMAINING_LOW 6
 #define DOGMOS_STAGE_RESPONSE_REMAINING_HIGH 7
+#define DOGMOS_STAGE_RESPONSE_EQUALIZE_SEEDS_LOW 8
+#define DOGMOS_STAGE_RESPONSE_EQUALIZE_SEEDS_HIGH 9
+#define DOGMOS_STAGE_RESPONSE_GROUP_SEEDS_LOW 10
+#define DOGMOS_STAGE_RESPONSE_GROUP_SEEDS_HIGH 11
 #define DOGMOS_STAGE_MINIMUM_BUDGET_MS 1
 #define DOGMOS_STAGE_FULL_BUDGET_MS 10
 
@@ -153,6 +163,9 @@
 	var/list/dogmos_pending_callback_batch
 	/// Zero-based event index within the retained callback batch.
 	var/dogmos_pending_callback_index = 0
+	/// Event count validated when the retained batch was received, reused across resumes so
+	/// process_atmos_callbacks() doesn't re-validate and re-walk the whole batch every call.
+	var/dogmos_pending_callback_count = 0
 	/// Number of callbacks still queued in dogmosd after the retained batch.
 	var/dogmos_pending_service_callbacks = 0
 	/// Number of stale turf callbacks rejected before invoking a gameplay proc.
@@ -177,6 +190,9 @@
 	var/list/dogmos_pending_turf_heat_adjacency = list()
 	/// Reverse index: turf slot (string) -> set of dogmos_pending_turf_heat_adjacency keys touching it.
 	var/list/dogmos_pending_turf_heat_adjacency_index = list()
+	/// Turfs whose boot-time adjacency pass bailed on an unregistered self or neighbor, keyed by
+	/// turf ref - retried once by finish_turf_registration_batch() after every turf has registered.
+	var/list/dogmos_pending_adjacency_retry = list()
 	/// Whether one runtime adjacency queue is coalescing repeated turf updates.
 	var/runtime_topology_batching = FALSE
 	/// Number of runtime topology records accepted by dogmosd.
@@ -211,6 +227,7 @@
 	dogmos_pending_turf_heat.Cut()
 	dogmos_pending_turf_heat_adjacency.Cut()
 	dogmos_pending_turf_heat_adjacency_index.Cut()
+	dogmos_pending_adjacency_retry.Cut()
 
 /** Flushes pending turf mutations in bounded batches while preserving lifecycle-before-topology ordering. */
 /datum/controller/subsystem/dogmos/proc/flush_turf_registration_batch()
@@ -356,6 +373,14 @@
 /datum/controller/subsystem/dogmos/proc/finish_turf_registration_batch()
 	if(!turf_registration_batching)
 		CRASH("Attempted to finish an inactive Dogmos turf registration batch.")
+	// Every turf has now had its Initalize_Atmos() pass, so retry any turf whose own adjacency
+	// pass bailed earlier on an unregistered self or neighbor - both sides should be registered
+	// by now, so this is the last chance to pick up edges the slot-ordered boot walk dropped.
+	if(length(dogmos_pending_adjacency_retry))
+		var/list/retry_turfs = dogmos_pending_adjacency_retry.Copy()
+		dogmos_pending_adjacency_retry.Cut()
+		for(var/turf/retry_turf as anything in retry_turfs)
+			retry_turf.__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
 	if(!flush_turf_registration_batch())
 		CRASH("Dogmos startup turf mutations were blocked by an unexpected pending stage.")
 	turf_registration_batching = FALSE
@@ -681,6 +706,15 @@
 /datum/controller/subsystem/dogmos/proc/dispatch_general_callback(list/batch, offset)
 	consume_callback_sequence(batch, offset, dogmos_next_callback_sequence)
 	var/kind = batch[offset + DOGMOS_CALLBACK_KIND_FIELD]
+
+	// Reactions evaluated during turf-stage FDM processing (not a synchronous mixture.react()
+	// call) have no open direct-reaction transaction to attach to, so dogmosd surfaces them here
+	// instead. Their subject/target fields are a mixture + holder, not turfs - dispatch them
+	// before the turf-only kind gate below ever tries to resolve_turf() them.
+	if(kind == DOGMOS_CALLBACK_REACTION_FINISHED || kind == DOGMOS_CALLBACK_REACTION_PROFILED || kind == DOGMOS_CALLBACK_RUN_DM_REACTION)
+		dispatch_general_reaction_callback(batch, offset, kind)
+		return
+
 	if(kind < DOGMOS_CALLBACK_PRESSURE_DIFFERENCE || kind > DOGMOS_CALLBACK_TURF_DESTRUCTION_REQUEST)
 		CRASH("Unexpected Dogmos callback kind [kind] during general callback processing.")
 
@@ -715,6 +749,72 @@
 			if(reason != DOGMOS_TURF_DESTRUCTION_SUPERCONDUCTIVE_HEAT)
 				CRASH("Dogmos requested unknown turf destruction reason [reason].")
 			subject.to_be_destroyed = TRUE
+
+/** Dispatches a REACTION_FINISHED, REACTION_PROFILED, or RUN_DM_REACTION callback surfaced from
+ * turf-stage FDM processing instead of a synchronous direct-reaction transaction. Mirrors the
+ * equivalent kind handling in dispatch_reaction_callbacks() - same finish handlers, same
+ * telemetry call, same continuation-resume call for a pending DM reaction - but without that
+ * path's transaction-scoped re-drain loop: a turf-stage continuation has no transaction (id 0),
+ * so any further events its resume produces route into the general queue and surface on the next
+ * ordinary callback drain instead of needing to be chased synchronously here.
+ */
+/datum/controller/subsystem/dogmos/proc/dispatch_general_reaction_callback(list/batch, offset, kind)
+	var/subject_slot = join_u32_words(batch[offset + DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD], batch[offset + DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD + 1])
+	var/subject_generation = join_u32_words(batch[offset + DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD], batch[offset + DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD + 1])
+	var/datum/gas_mixture/mixture = resolve_mixture(subject_slot, subject_generation)
+	if(!mixture)
+		record_stale_callback()
+		return
+
+	// Turf-stage reactions encode target as a turf handle (Rust's evaluate_reaction_sequence()
+	// is called with target = turf.into()), not a holder handle - those are separate slot
+	// registries. dispatch_reaction_callbacks() resolves target via resolve_holder() because its
+	// caller is the synchronous single-mixture path, which registers a real holder; this path has
+	// no holder registration and must resolve the turf directly. The finish procs below accept
+	// any datum, so passing the turf through as "holder" is valid.
+	var/target_slot = join_u32_words(batch[offset + DOGMOS_CALLBACK_TARGET_SLOT_FIELD], batch[offset + DOGMOS_CALLBACK_TARGET_SLOT_FIELD + 1])
+	var/target_generation = join_u32_words(batch[offset + DOGMOS_CALLBACK_TARGET_GENERATION_FIELD], batch[offset + DOGMOS_CALLBACK_TARGET_GENERATION_FIELD + 1])
+	var/datum/holder = resolve_turf(target_slot, target_generation)
+	var/value_one = batch[offset + DOGMOS_CALLBACK_VALUES_FIELD]
+	var/value_two = batch[offset + DOGMOS_CALLBACK_VALUES_FIELD + 1]
+	var/value_three = batch[offset + DOGMOS_CALLBACK_VALUES_FIELD + 2]
+	var/value_four = batch[offset + DOGMOS_CALLBACK_VALUES_FIELD + 3]
+	var/aux = join_u32_words(batch[offset + DOGMOS_CALLBACK_AUX_FIELD], batch[offset + DOGMOS_CALLBACK_AUX_FIELD + 1])
+
+	if(kind == DOGMOS_CALLBACK_REACTION_PROFILED)
+		var/datum/gas_reaction/profiled_reaction = dogmos_reaction_ids[aux + 1]
+		if(!istype(profiled_reaction))
+			CRASH("Dogmos profiled unknown reaction id [aux].")
+		SSair.kennel_record_reaction_cost(profiled_reaction.id, holder, value_one)
+		return
+
+	if(kind == DOGMOS_CALLBACK_RUN_DM_REACTION)
+		var/datum/gas_reaction/reaction = dogmos_reaction_ids[aux + 1]
+		if(!istype(reaction))
+			CRASH("Dogmos requested unknown DM reaction id [aux].")
+		var/reaction_result = reaction.react(mixture, holder)
+		var/list/resume_fields = batch.Copy(offset + DOGMOS_CALLBACK_CONTINUATION_TOKEN_FIELD, offset + DOGMOS_CALLBACK_CONTINUATION_TOKEN_FIELD + 10)
+		resume_fields += reaction_result
+		var/list/progress = dogmos_continuation_resume(resume_fields)
+		if(!islist(progress) || length(progress) != 8 || progress[1] != DOGMOS_RESPONSE_REACTION_PROGRESS)
+			CRASH("dogmosd returned malformed continuation progress for a turf-stage DM reaction.")
+		// Unlike dispatch_reaction_callbacks()'s transaction-scoped loop, no synchronous re-drain
+		// is needed here: this continuation has no transaction (turf-stage origin), so any further
+		// events the resume produces route back into the general queue (transaction id 0) and get
+		// picked up by the next ordinary callback drain instead of needing to be chased here.
+		return
+
+	switch(aux)
+		if(DOGMOS_REACTION_PLASMA)
+			dogmos_aphelion_plasmafire_finish(mixture, holder, value_one, value_two)
+		if(DOGMOS_REACTION_HYDROGEN)
+			dogmos_aphelion_h2fire_finish(mixture, holder, value_one, value_two)
+		if(DOGMOS_REACTION_TRITIUM)
+			dogmos_aphelion_tritfire_finish(mixture, holder, value_one, value_two, value_three, value_four)
+		if(DOGMOS_REACTION_FREON)
+			dogmos_aphelion_freonfire_finish(mixture, holder, value_one, value_two, value_three)
+		else
+			CRASH("Dogmos returned unknown native reaction kind [aux].")
 
 /** Completes a retained general callback batch without a time limit before a synchronous reaction. */
 /datum/controller/subsystem/dogmos/proc/flush_pending_general_callbacks()
@@ -1130,9 +1230,30 @@
 /datum/gas_mixture/proc/adjust_heat(heat)
 	return dogmos_command(DOGMOS_COMMAND_ADJUST_HEAT, scalar_one = heat)[2]
 
-/// Returns whether another mixture differs enough to process.
+/** Returns whether another mixture differs enough to process.
+ * Computed locally from the two mixtures' cached snapshots instead of a dogmosd round trip.
+ * compare() is pure arithmetic over already-fetched scalar/gas data - routing it through
+ * dogmos_command() correctly avoided evicting the read cache (it's in
+ * is_read_only_dogmos_command()) but never actually served from it either, so every call paid a
+ * full mutex acquire, two shim allocations, two channel handoffs, and a blocking pipe round trip.
+ * turf_settled() calls this once per open neighbor of every active turf, every tick - at a few
+ * hundred active turfs that's on the order of a thousand uncached round trips/tick, and eating
+ * enough of the tick budget there that remove_from_active() (the only path that ever shrinks
+ * active_turfs in steady-state play) got starved, which read as active_turfs never settling.
+ * Mirrors Command::Compare in world.rs exactly: temperature check gates on total moles too, and
+ * (unlike Rust, which always evaluates both regardless) short-circuits once either check finds a
+ * difference, since OR doesn't care which side proved it.
+ */
 /datum/gas_mixture/proc/compare(datum/gas_mixture/other)
-	return dogmos_command(DOGMOS_COMMAND_COMPARE, secondary = other, expected_response = DOGMOS_RESPONSE_BOOLEAN)[2]
+	var/list/snapshot = dogmos_snapshot()
+	var/list/other_snapshot = other.dogmos_snapshot()
+	if(abs(snapshot[DOGMOS_MIXTURE_SNAPSHOT_TEMPERATURE] - other_snapshot[DOGMOS_MIXTURE_SNAPSHOT_TEMPERATURE]) > DOGMOS_COMPARE_MINIMUM_TEMPERATURE_DELTA \
+			&& snapshot[DOGMOS_MIXTURE_SNAPSHOT_TOTAL_MOLES] > DOGMOS_COMPARE_MINIMUM_MOLES_DELTA)
+		return TRUE
+	for(var/i in DOGMOS_MIXTURE_SNAPSHOT_GASES_START to DOGMOS_MIXTURE_SNAPSHOT_FIELDS)
+		if(abs(snapshot[i] - other_snapshot[i]) >= DOGMOS_COMPARE_MINIMUM_MOLES_DELTA)
+			return TRUE
+	return FALSE
 
 /// Makes this mixture identical to a volume-scaled total mixture.
 /datum/gas_mixture/proc/equalize_with(datum/gas_mixture/total)
@@ -1224,8 +1345,11 @@
 /proc/dogmos_perf_set_detailed(enabled)
 	return TRUE
 
-/** Publishes the current active-turf order as one atomic bounded service frontier. */
-/datum/controller/subsystem/air/proc/publish_dogmos_frontier()
+/** Publishes the full active-turf order as one atomic bounded service frontier. Used only for
+ * the first-ever publish; every later call goes through sync_dogmos_frontier()'s incremental
+ * add/remove path instead. See sync_dogmos_frontier() for why.
+ */
+/datum/controller/subsystem/air/proc/bootstrap_dogmos_frontier()
 	if(dogmos_pending_frontier_epoch)
 		CRASH("Attempted to replace the Dogmos frontier while a simulation cycle is pending.")
 	if(!SSdogmos.flush_turf_registration_batch())
@@ -1266,6 +1390,105 @@
 		CRASH("dogmosd returned a malformed active-frontier commit for epoch [json_encode(dogmos_frontier_epoch)].")
 	dogmos_pending_frontier_epoch = dogmos_frontier_epoch.Copy()
 
+	// Stores the exact (slot, generation) pair committed for each turf, not just TRUE - removals
+	// need to send back the pair dogmosd actually has, not whatever the turf's identity happens
+	// to be later (see sync_dogmos_frontier()'s removal comment).
+	dogmos_committed_frontier = list()
+	for(var/turf/open/active_turf as anything in active_turfs)
+		dogmos_committed_frontier[active_turf] = list(active_turf.dogmos_service_slot(), active_turf.dogmos_service_generation())
+
+/** Publishes the current active-turf set to dogmosd. The first call bootstraps the frontier via
+ * the full begin/append/commit path above; every later call diffs active_turfs against
+ * dogmos_committed_frontier (the last-known-committed snapshot) and sends only the delta via the
+ * incremental frontier_add/frontier_remove ops. Re-uploading the entire active-turf set every
+ * tick (the original design) made per-tick publish cost scale with active_turfs size on every
+ * single fire() - with diffusion actually propagating turf-to-turf, active_turfs legitimately
+ * reaches the hundreds, and that dominated Atmospherics MC cost.
+ */
+/datum/controller/subsystem/air/proc/sync_dogmos_frontier()
+	if(isnull(dogmos_committed_frontier))
+		bootstrap_dogmos_frontier()
+		return
+
+	var/list/active_set = list()
+	for(var/turf/open/active_turf as anything in active_turfs)
+		active_set[active_turf] = TRUE
+
+	var/list/added = list()
+	for(var/turf/open/active_turf as anything in active_turfs)
+		if(!dogmos_committed_frontier[active_turf])
+			added += active_turf
+
+	// Removals must use the exact (slot, generation) pair captured when the turf was added, not
+	// its current identity - a turf's Dogmos registration generation can change while it sits in
+	// the frontier (e.g. adjacency/heat re-registration), and dogmosd's committed set still has
+	// the OLD pair. Recomputing the turf's current generation here would silently fail to match
+	// anything, leaving a ghost entry in dogmosd's frontier forever.
+	var/list/removed_pairs = list()
+	var/list/removed_turfs = list()
+	for(var/turf/open/committed_turf as anything in dogmos_committed_frontier)
+		if(!active_set[committed_turf])
+			removed_pairs += list(dogmos_committed_frontier[committed_turf])
+			removed_turfs += committed_turf
+
+	if(!length(added) && !length(removed_pairs))
+		// Nothing changed since the last commit, so dogmosd's committed epoch is still whatever
+		// dogmos_frontier_epoch already holds - but dogmos_pending_frontier_epoch was reset to
+		// null by the previous pass's completion (process_turf_heat()), and dogmos_run_stage()
+		// unconditionally appends it into the stage request fields. Leaving it null here sends a
+		// null field into dogmos_simulation_stage_ffi and crashes with "Value is not a number".
+		dogmos_pending_frontier_epoch = dogmos_frontier_epoch.Copy()
+		return
+
+	if(dogmos_pending_frontier_epoch)
+		CRASH("Attempted to mutate the Dogmos frontier while a simulation cycle is pending.")
+	if(!SSdogmos.flush_turf_registration_batch())
+		CRASH("Dogmos topology remained blocked before incremental frontier sync.")
+
+	if(length(added))
+		var/list/added_pairs = list()
+		for(var/turf/open/added_turf as anything in added)
+			added_pairs += list(list(added_turf.dogmos_service_slot(), added_turf.dogmos_service_generation()))
+		dogmos_frontier_send_chunks(/proc/dogmos_frontier_add, added_pairs, "add")
+		for(var/index in 1 to length(added))
+			dogmos_committed_frontier[added[index]] = added_pairs[index]
+		dogmos_pending_frontier_epoch = dogmos_frontier_epoch.Copy()
+
+	if(length(removed_pairs))
+		dogmos_frontier_send_chunks(/proc/dogmos_frontier_remove, removed_pairs, "remove")
+		for(var/turf/open/removed_turf as anything in removed_turfs)
+			dogmos_committed_frontier -= removed_turf
+		dogmos_pending_frontier_epoch = dogmos_frontier_epoch.Copy()
+
+/** Sends one incremental frontier mutation (add or remove) to dogmosd in bounded chunks. Each
+ * chunk is its own atomic add/remove call (no begin/append/commit two-phase for this path), and
+ * dogmosd requires a strictly increasing epoch per call - so the epoch is bumped once per chunk,
+ * not once for the whole added/removed list. Removing an already-absent handle is not an error
+ * (dogmosd tolerates it - see FrontierState::remove()'s doc comment), so only the add path
+ * enforces an exact accepted-count match; a short remove count is expected, not a fault.
+ */
+/datum/controller/subsystem/air/proc/dogmos_frontier_send_chunks(mutate_proc, list/pairs, label)
+	var/offset = 0
+	var/pair_total = length(pairs)
+	var/list/fields = list()
+	for(var/list/pair as anything in pairs)
+		fields += SSdogmos.split_u32_words(pair[1])
+		fields += SSdogmos.split_u32_words(pair[2])
+		offset++
+		if((offset % DOGMOS_TURF_BATCH_OPERATIONS) != 0 && offset != pair_total)
+			continue
+		var/chunk_size = offset % DOGMOS_TURF_BATCH_OPERATIONS
+		if(!chunk_size)
+			chunk_size = DOGMOS_TURF_BATCH_OPERATIONS
+		dogmos_frontier_epoch = SSdogmos.increment_u64_words(dogmos_frontier_epoch)
+		var/list/chunk_fields = dogmos_frontier_epoch.Copy()
+		chunk_fields += fields
+		var/list/response = call(mutate_proc)(chunk_fields)
+		var/accepted = SSdogmos.join_u32_words(response[1], response[2])
+		if(mutate_proc == /proc/dogmos_frontier_add && accepted != chunk_size)
+			CRASH("dogmosd rejected an incremental frontier [label] chunk at offset [offset - chunk_size].")
+		fields = list()
+
 /** Returns the next bounded work limit for the remaining SSair budget. */
 /datum/controller/subsystem/air/proc/dogmos_work_limit_for_budget(remaining_ms)
 	if(remaining_ms < DOGMOS_STAGE_MINIMUM_BUDGET_MS)
@@ -1278,7 +1501,7 @@
 	if(!SSdogmos.service_ready)
 		CRASH("dogmosd became unavailable during SSair processing.")
 	if(!dogmos_pending_frontier_epoch)
-		publish_dogmos_frontier()
+		sync_dogmos_frontier()
 	if(!isnull(dogmos_pending_stage) && dogmos_pending_stage != stage)
 		CRASH("Attempted to start Dogmos stage [stage] while stage [dogmos_pending_stage] remains pending.")
 	var/work_limit = dogmos_work_limit_for_budget(remaining_ms)
@@ -1295,7 +1518,18 @@
 	var/list/response = dogmos_simulation_stage(request)
 	if(!islist(response) || length(response) != DOGMOS_STAGE_RESPONSE_FIELDS)
 		CRASH("dogmosd returned a malformed stage response for stage [stage].")
-	SSdogmos.invalidate_mixture_snapshot_epoch()
+	// Only invalidate the snapshot cache when this chunk actually committed mutations. Five
+	// stages each running several bounded chunks means an unconditional invalidate here bumps
+	// the whole 512-bucket cache ten to thirty times a tick, turning every DM-side gas_mixture
+	// read (return_pressure(), total_moles(), heat_capacity(), atmos machinery, ...) back into a
+	// synchronous IPC round trip for the rest of the tick - defeating the cache's entire purpose.
+	if(SSdogmos.join_u32_words(response[1], response[2]))
+		SSdogmos.invalidate_mixture_snapshot_epoch()
+	// The wire response already carries how many equalize/group seeds dogmosd actually produced
+	// this chunk - num_equalize_processed/num_group_turfs_processed exist specifically to surface
+	// that (see dogmos_excited_groups.dm's unit test), but nothing was ever reading these fields.
+	num_equalize_processed += SSdogmos.join_u32_words(response[DOGMOS_STAGE_RESPONSE_EQUALIZE_SEEDS_LOW], response[DOGMOS_STAGE_RESPONSE_EQUALIZE_SEEDS_HIGH])
+	num_group_turfs_processed += SSdogmos.join_u32_words(response[DOGMOS_STAGE_RESPONSE_GROUP_SEEDS_LOW], response[DOGMOS_STAGE_RESPONSE_GROUP_SEEDS_HIGH])
 	dogmos_stage_remaining_estimate = SSdogmos.join_u32_words(response[DOGMOS_STAGE_RESPONSE_REMAINING_LOW], response[DOGMOS_STAGE_RESPONSE_REMAINING_HIGH])
 	if(response[DOGMOS_STAGE_RESPONSE_PENDING])
 		return TRUE
@@ -1435,6 +1669,10 @@
 	if(max_x != world.maxx || max_y != world.maxy)
 		CRASH("Dogmos received stale world dimensions for turf adjacency.")
 	if(isnull(dogmos_registration_generation))
+		// Boot-time slot ordering means this turf's own registration can still be pending when its
+		// pass runs. Queue a retry rather than dropping every edge this turf owns permanently.
+		if(SSdogmos.turf_registration_batching)
+			SSdogmos.dogmos_pending_adjacency_retry[src] = TRUE
 		return
 
 	var/slot = dogmos_service_slot()
@@ -1445,11 +1683,13 @@
 		if(!neighbor)
 			continue
 		var/neighbor_slot = neighbor.dogmos_service_slot()
-		if(SSdogmos.turf_registration_batching && slot >= neighbor_slot)
-			continue
 		if(neighbor.init_air)
 			neighbor.register_dogmos_air()
 		if(isnull(neighbor.dogmos_registration_generation))
+			// Same as above, but the neighbor is the one not yet registered - retry this turf's
+			// whole pass later instead of silently dropping just this one edge.
+			if(SSdogmos.turf_registration_batching)
+				SSdogmos.dogmos_pending_adjacency_retry[src] = TRUE
 			continue
 		var/neighbor_generation = neighbor.dogmos_service_generation()
 		var/turf/open/open_turf = isopenturf(src) ? src : null
@@ -1484,13 +1724,15 @@
 		drain_fields += SSdogmos.split_u32_words(DOGMOS_CALLBACK_BATCH_SIZE)
 		SSdogmos.dogmos_pending_callback_batch = dogmos_callback_drain(drain_fields)
 		SSdogmos.dogmos_pending_callback_index = 0
-		SSdogmos.validate_callback_batch(SSdogmos.dogmos_pending_callback_batch, DOGMOS_CALLBACK_SCOPE_GENERAL, list(0, 0, 0, 0))
+		// Validated once on receipt and reused on every resume below instead of re-validating and
+		// re-walking the whole retained batch on every single invocation across ticks.
+		SSdogmos.dogmos_pending_callback_count = SSdogmos.validate_callback_batch(SSdogmos.dogmos_pending_callback_batch, DOGMOS_CALLBACK_SCOPE_GENERAL, list(0, 0, 0, 0))
 		SSdogmos.dogmos_pending_service_callbacks = SSdogmos.join_u32_words(
 			SSdogmos.dogmos_pending_callback_batch[3],
 			SSdogmos.dogmos_pending_callback_batch[4],
 		)
 
-	var/returned = SSdogmos.validate_callback_batch(SSdogmos.dogmos_pending_callback_batch, DOGMOS_CALLBACK_SCOPE_GENERAL, list(0, 0, 0, 0))
+	var/returned = SSdogmos.dogmos_pending_callback_count
 	var/start_tick_usage = TICK_USAGE
 	var/time_budget_ms = max(0, remaining)
 	while(SSdogmos.dogmos_pending_callback_index < returned)
@@ -1662,5 +1904,9 @@
 #undef DOGMOS_STAGE_RESPONSE_PENDING
 #undef DOGMOS_STAGE_RESPONSE_REMAINING_LOW
 #undef DOGMOS_STAGE_RESPONSE_REMAINING_HIGH
+#undef DOGMOS_STAGE_RESPONSE_EQUALIZE_SEEDS_LOW
+#undef DOGMOS_STAGE_RESPONSE_EQUALIZE_SEEDS_HIGH
+#undef DOGMOS_STAGE_RESPONSE_GROUP_SEEDS_LOW
+#undef DOGMOS_STAGE_RESPONSE_GROUP_SEEDS_HIGH
 #undef DOGMOS_STAGE_MINIMUM_BUDGET_MS
 #undef DOGMOS_STAGE_FULL_BUDGET_MS

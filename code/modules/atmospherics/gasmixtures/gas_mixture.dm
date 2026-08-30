@@ -75,7 +75,10 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 	var/list/args_copy = args.Copy()
 	for(var/i in 1 to args_copy.len step 2)
 		args_copy[i] = gas_string_id(args_copy[i])
-	args_copy.Insert(1, src)
+	// __adjust_multi() reads dogmos_slot/dogmos_generation off its own src (this same mixture) -
+	// it does not expect src prepended into args. Inserting it here shifted every gas_id/amount
+	// pair by one, so __adjust_multi() tried to treat the mixture reference itself as a gas id
+	// ("Unknown Dogmos gas id /datum/gas_mixture.") and walked off the end of the pair list.
 	return __adjust_multi(arglist(args_copy))
 
 /// Returns the typepaths of all gases present in the mixture.
@@ -231,6 +234,11 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 	var/abs_moved_moles = 0
 
 	var/list/cached_specific_heat = GAS_META[META_GAS_SPECIFIC_HEAT]
+	// Deltas are collected and applied as two batched IPC calls after the loop instead of two
+	// adjust_moles() round trips per gas type inside it - share() is called per machine, per tick,
+	// so an unbatched loop here was doubling the pipenet reconciliation IPC cost.
+	var/list/self_deltas = list()
+	var/list/sharer_deltas = list()
 	for(var/gas_id in gas_list) //transfer gases
 		var/our_moles = get_moles(gas_id)
 		var/sharer_moles = sharer.get_moles(gas_id)
@@ -253,10 +261,15 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 			else
 				heat_capacity_sharer_to_self -= gas_heat_capacity //subtract here instead of adding the absolute value because we know that delta is negative.
 
-		adjust_moles(gas_id, -delta)
-		sharer.adjust_moles(gas_id, delta)
+		self_deltas += list(gas_id, -delta)
+		sharer_deltas += list(gas_id, delta)
 		moved_moles += delta
 		abs_moved_moles += abs(delta)
+
+	if(length(self_deltas))
+		adjust_multi(arglist(self_deltas))
+	if(length(sharer_deltas))
+		sharer.adjust_multi(arglist(sharer_deltas))
 
 	last_share = abs_moved_moles
 
