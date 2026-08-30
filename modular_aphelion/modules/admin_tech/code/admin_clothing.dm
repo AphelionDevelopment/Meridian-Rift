@@ -310,7 +310,6 @@
 	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "blue-visor"
 	base_icon_state = "blue-visor"
-	worn_icon_muzzled = "blue-visor"
 	inhand_icon_state = null
 	core_installed = TRUE
 	armor_type = /datum/armor/admin
@@ -331,7 +330,6 @@
 	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "sub-visor"
 	base_icon_state = "sub-visor"
-	worn_icon_muzzled = "sub-visor"
 	armor_type = /datum/armor/admin/badmin
 
 //Admin Gas Mask
@@ -366,6 +364,7 @@
 	icon_state = "blue-mask"
 	worn_icon = 'modular_aphelion/modules/admin_tech/icons/worn_admin_clothing.dmi'
 	worn_icon_state = "blue-mask"
+	supports_variations_flags = CLOTHING_SNOUTED_VARIATION_NO_NEW_ICON
 	inhand_icon_state = null
 	max_filters = 2
 	starting_filter_type = /obj/item/gas_filter/admin
