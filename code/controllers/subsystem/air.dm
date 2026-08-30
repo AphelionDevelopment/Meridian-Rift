@@ -566,7 +566,7 @@ SUBSYSTEM_DEF(air)
 			return
 
 
-/** Requests the asynchronous Rust heat-graph worker; it does not consume SSair's tick budget. */
+/** Runs the synchronous Dogmos heat stage within SSair's remaining tick budget. */ // APHELION EDIT CHANGE - ORIGINAL: /** Requests the asynchronous Rust heat-graph worker; it does not consume SSair's tick budget. */
 /datum/controller/subsystem/air/proc/process_super_conductivity(resumed = FALSE)
 	// APHELION EDIT ADDITION START - DOGMOS
 	if(process_turf_heat())

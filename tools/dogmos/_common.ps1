@@ -44,7 +44,11 @@ function Resolve-DogmosToolPath {
 			'HKLM:\SOFTWARE\WOW6432Node\Dantom\BYOND',
 			'HKCU:\SOFTWARE\Dantom\BYOND'
 		)) {
-			$installPath = (Get-ItemProperty -LiteralPath $registryPath -Name installpath -ErrorAction SilentlyContinue).installpath
+			$registryEntry = Get-ItemProperty -LiteralPath $registryPath -Name installpath -ErrorAction SilentlyContinue
+			if (-not $registryEntry -or -not $registryEntry.PSObject.Properties['installpath']) {
+				continue
+			}
+			$installPath = $registryEntry.installpath
 			if (-not $installPath) {
 				continue
 			}

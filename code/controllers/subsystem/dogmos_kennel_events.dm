@@ -68,7 +68,7 @@ GLOBAL_LIST_EMPTY(kennel_overlay_images_by_category)
 		structures_of_interest.Cut(KENNEL_STRUCTURE_INTEREST_CAP + 1, length(structures_of_interest) + 1)
 
 	kennel_pinned_turfs = list()
-	for(var/list/entry as anything in structures_of_interest)
+	for(var/list/entry as anything in structures_of_interest) // APHELION EDIT CHANGE - ORIGINAL: for(var/list/entry in structures_of_interest)
 		var/pinned_key = entry["ref"]
 		var/datum/weakref/old_turf_ref = old_air.kennel_pinned_turfs[pinned_key]
 		var/turf/pinned_turf = old_turf_ref?.resolve()
@@ -271,12 +271,13 @@ GLOBAL_LIST_EMPTY(kennel_overlay_images_by_category)
 	if(QDELETED(target))
 		return
 	var/key = REF(target)
-	for(var/list/entry in structures_of_interest)
+	for(var/list/entry as anything in structures_of_interest)
 		if(entry["ref"] == key)
 			entry["reason"] = reason
 			entry["expires"] = expires_in ? world.time + expires_in : null
 			// APHELION EDIT ADDITION START - DOGMOS
-			var/turf/old_turf = kennel_pinned_turfs[key]?.resolve()
+			var/datum/weakref/old_turf_ref = kennel_pinned_turfs[key]
+			var/turf/old_turf = old_turf_ref?.resolve()
 			var/turf/current_turf = get_turf(target)
 			if(old_turf != current_turf)
 				kennel_hide_overlay(old_turf, KENNEL_OVERLAY_STRUCTURE)

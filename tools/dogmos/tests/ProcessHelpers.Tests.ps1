@@ -49,6 +49,23 @@ Describe 'Dogmos verification process helpers' {
 		{ Resolve-DogmosToolPath -Path 'dm.exe' -Label 'Dream Maker' } | Should Not Throw
 	}
 
+	It 'continues registry discovery after a missing BYOND registry key' {
+		$installRoot = Join-Path $TestDrive 'BYOND'
+		$binRoot = Join-Path $installRoot 'bin'
+		$expectedPath = Join-Path $binRoot 'dm.exe'
+		New-Item -ItemType Directory -Path $binRoot | Out-Null
+		Set-Content -LiteralPath $expectedPath -Value 'test executable'
+		Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'dm.exe' }
+		Mock Get-ItemProperty {
+			if ($LiteralPath -like '*WOW6432Node*') {
+				return [pscustomobject]@{ installpath = $installRoot }
+			}
+			return $null
+		}
+
+		(Resolve-DogmosToolPath -Path 'dm.exe' -Label 'Dream Maker') | Should Be $expectedPath
+	}
+
 	It 'terminates a timed out process owned by the invocation' {
 		$result = Invoke-DogmosProcess -Executable 'powershell.exe' `
 			-Arguments @('-NoProfile', '-Command', 'Start-Sleep -Seconds 30') `

@@ -18,13 +18,21 @@
 	TEST_ASSERT(a_before > b_before, \
 		"Seeding turf_a with 3x turf_b's oxygen did not actually produce an asymmetric pair ([a_before] vs [b_before]) - test setup is broken, not the thing under test.")
 
-	SSair.active_turfs |= turf_a
-	SSair.active_turfs |= turf_b
-	SSair.process_turfs_auxtools(100)
-	SSair.finish_turf_processing_auxtools(100)
+	// APHELION EDIT ADDITION START - DOGMOS
+	SSair.remove_from_active(turf_a)
+	SSair.remove_from_active(turf_b)
+	SSair.add_to_active(turf_a)
+	SSair.add_to_active(turf_b)
 
-	var/a_after = air_a.get_moles(/datum/gas/oxygen)
-	var/b_after = air_b.get_moles(/datum/gas/oxygen)
+	var/a_after = a_before
+	var/b_after = b_before
+	for(var/attempt in 1 to 20)
+		sleep(SSair.wait)
+		a_after = air_a.get_moles(/datum/gas/oxygen)
+		b_after = air_b.get_moles(/datum/gas/oxygen)
+		if(a_after != a_before)
+			break
+	// APHELION EDIT ADDITION END
 
 	TEST_ASSERT(a_after < a_before, \
 		"turf_a's oxygen ([a_before] -> [a_after]) did not decrease after sharing with lower-oxygen turf_b - gas is not flowing out of the fuller turf.")

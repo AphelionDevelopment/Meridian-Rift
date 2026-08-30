@@ -750,6 +750,12 @@
 				CRASH("Dogmos requested unknown turf destruction reason [reason].")
 			subject.to_be_destroyed = TRUE
 
+/** Decodes a general reaction callback's exact mixture identity for fail-closed validation. */
+/datum/controller/subsystem/dogmos/proc/decode_general_reaction_subject(list/batch, offset)
+	var/subject_slot = join_u32_words(batch[offset + DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD], batch[offset + DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD + 1])
+	var/subject_generation = join_u32_words(batch[offset + DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD], batch[offset + DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD + 1])
+	return list(resolve_mixture(subject_slot, subject_generation), subject_slot, subject_generation)
+
 /** Dispatches a REACTION_FINISHED, REACTION_PROFILED, or RUN_DM_REACTION callback surfaced from
  * turf-stage FDM processing instead of a synchronous direct-reaction transaction. Mirrors the
  * equivalent kind handling in dispatch_reaction_callbacks() - same finish handlers, same
@@ -759,12 +765,11 @@
  * ordinary callback drain instead of needing to be chased synchronously here.
  */
 /datum/controller/subsystem/dogmos/proc/dispatch_general_reaction_callback(list/batch, offset, kind)
-	var/subject_slot = join_u32_words(batch[offset + DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD], batch[offset + DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD + 1])
-	var/subject_generation = join_u32_words(batch[offset + DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD], batch[offset + DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD + 1])
-	var/datum/gas_mixture/mixture = resolve_mixture(subject_slot, subject_generation)
+	var/list/subject = decode_general_reaction_subject(batch, offset)
+	var/datum/gas_mixture/mixture = subject[1]
 	if(!mixture)
 		record_stale_callback()
-		return
+		CRASH("Dogmos general reaction callback sequence [batch[offset]]:[batch[offset + 1]]:[batch[offset + 2]]:[batch[offset + 3]] kind [kind] referenced stale mixture [subject[2]]:[subject[3]].")
 
 	// Turf-stage reactions encode target as a turf handle (Rust's evaluate_reaction_sequence()
 	// is called with target = turf.into()), not a holder handle - those are separate slot
@@ -1300,6 +1305,8 @@
 
 /// Runs the complete native and DM reaction sequence through dogmosd.
 /datum/gas_mixture/proc/__react(datum/holder)
+	if(get_moles(/datum/gas/hypernoblium) >= REACTION_OPPRESSION_THRESHOLD && return_temperature() > REACTION_OPPRESSION_MIN_TEMP)
+		return STOP_REACTIONS
 	var/reaction_profile_threshold_ms
 	if(SSair.kennel_profile_reactions)
 		if(!IS_FINITE(SSair.kennel_high_cost_ms_threshold) || SSair.kennel_high_cost_ms_threshold < 0)
@@ -1719,6 +1726,10 @@
 
 /// Drains bounded Dogmos callbacks on the Dream Maker main thread.
 /proc/process_atmos_callbacks(remaining)
+	var/start_tick_usage = TICK_USAGE
+	var/time_budget_ms = max(0, remaining)
+	if(time_budget_ms <= 0)
+		return TRUE
 	if(!SSdogmos.dogmos_pending_callback_batch)
 		var/list/drain_fields = list(DOGMOS_CALLBACK_SCOPE_GENERAL, 0, 0, 0, 0)
 		drain_fields += SSdogmos.split_u32_words(DOGMOS_CALLBACK_BATCH_SIZE)
@@ -1733,14 +1744,12 @@
 		)
 
 	var/returned = SSdogmos.dogmos_pending_callback_count
-	var/start_tick_usage = TICK_USAGE
-	var/time_budget_ms = max(0, remaining)
 	while(SSdogmos.dogmos_pending_callback_index < returned)
+		if(TICK_DELTA_TO_MS(TICK_USAGE - start_tick_usage) >= time_budget_ms)
+			return TRUE
 		var/offset = DOGMOS_CALLBACK_EVENT_START + SSdogmos.dogmos_pending_callback_index * DOGMOS_CALLBACK_EVENT_FIELDS
 		SSdogmos.dispatch_general_callback(SSdogmos.dogmos_pending_callback_batch, offset)
 		SSdogmos.dogmos_pending_callback_index++
-		if(SSdogmos.dogmos_pending_callback_index < returned && TICK_DELTA_TO_MS(TICK_USAGE - start_tick_usage) >= time_budget_ms)
-			return TRUE
 
 	var/service_callbacks_remain = SSdogmos.dogmos_pending_service_callbacks
 	SSdogmos.dogmos_pending_callback_batch = null

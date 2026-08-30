@@ -77,7 +77,11 @@
 		return Fail("Dogmos assigned an invalid mixture slot [first_slot].", __FILE__, __LINE__)
 	if(first_generation <= 0 || first_generation > 16777216)
 		return Fail("Dogmos assigned an invalid mixture generation [first_generation].", __FILE__, __LINE__)
+	var/list/retired_snapshot = new/list(42)
+	SSdogmos.store_mixture_snapshot_cache(first_slot, first_generation, retired_snapshot)
 	first.__gasmixture_unregister()
+	if(SSdogmos.lookup_mixture_snapshot_cache(first_slot, first_generation))
+		return Fail("Unregistering a mixture retained its cached snapshot.", __FILE__, __LINE__)
 	qdel(first)
 
 	var/datum/gas_mixture/second = new(CELL_VOLUME)
@@ -85,6 +89,8 @@
 		return Fail("Dogmos did not reuse the released bounded mixture slot.", __FILE__, __LINE__)
 	if(second.dogmos_generation <= first_generation)
 		return Fail("Dogmos reused a mixture slot without advancing its generation.", __FILE__, __LINE__)
+	if(SSdogmos.lookup_mixture_snapshot_cache(first_slot, first_generation))
+		return Fail("A reused mixture slot resolved the retired generation's cached snapshot.", __FILE__, __LINE__)
 	qdel(second)
 
 /** Verifies the bounded direct-mapped mixture snapshot cache and mutation invalidation. */
@@ -119,6 +125,12 @@
 	if(SSdogmos.dogmos_mixture_cache_misses != misses_before + 2)
 		return Fail("A primary mixture mutation did not evict its cached snapshot.", __FILE__, __LINE__)
 
+	var/misses_before_multi = SSdogmos.dogmos_mixture_cache_misses
+	first.adjust_multi(/datum/gas/oxygen, 1, /datum/gas/nitrogen, 2)
+	first.return_temperature()
+	if(SSdogmos.dogmos_mixture_cache_misses != misses_before_multi + 1)
+		return Fail("A multi-gas mutation did not evict its cached snapshot.", __FILE__, __LINE__)
+
 	second.return_temperature()
 	var/misses_after_warm = SSdogmos.dogmos_mixture_cache_misses
 	first.copy_from(second)
@@ -147,6 +159,15 @@
 	SSdogmos.invalidate_mixture_snapshot_epoch()
 	if(SSdogmos.dogmos_mixture_cache_epoch != 1 || SSdogmos.lookup_mixture_snapshot_cache(1, 1))
 		return Fail("Exact-integer cache epoch rollover did not clear and reset the bounded cache.", __FILE__, __LINE__)
+
+	first.return_temperature()
+	var/misses_before_immutable = SSdogmos.dogmos_mixture_cache_misses
+	first.mark_immutable()
+	first.return_temperature()
+	if(SSdogmos.dogmos_mixture_cache_misses != misses_before_immutable + 1)
+		return Fail("Marking a mixture immutable did not evict its cached snapshot.", __FILE__, __LINE__)
+	if(!first.is_immutable())
+		return Fail("Dogmos did not retain the mixture's immutable state.", __FILE__, __LINE__)
 
 /datum/unit_test/dogmos_service_mixture_snapshot_cache/Destroy()
 	QDEL_NULL(first)
@@ -284,6 +305,112 @@
 	SSdogmos.dogmos_next_callback_sequence = original_sequence
 	SSdogmos.dogmos_stale_callback_count = original_stale_callbacks
 
+#define DOGMOS_TEST_CALLBACK_HEADER_FIELDS 12
+#define DOGMOS_TEST_CALLBACK_EVENT_FIELDS 36
+#define DOGMOS_TEST_CALLBACK_EVENT_START 13
+#define DOGMOS_TEST_CALLBACK_SCOPE_GENERAL 1
+#define DOGMOS_TEST_CALLBACK_SCOPE_FIELD 8
+#define DOGMOS_TEST_CALLBACK_KIND_FIELD 9
+#define DOGMOS_TEST_CALLBACK_SUBJECT_SLOT_FIELD 11
+#define DOGMOS_TEST_CALLBACK_SUBJECT_GENERATION_FIELD 13
+#define DOGMOS_TEST_CALLBACK_TURF_DESTRUCTION_REQUEST 4
+
+/** Verifies exhausted SSair budget prevents the first retained callback from dispatching. */
+/datum/unit_test/dogmos_service_callback_budget
+
+/datum/unit_test/dogmos_service_callback_budget/Run()
+	var/list/original_sequence = SSdogmos.dogmos_next_callback_sequence
+	var/list/original_pending_batch = SSdogmos.dogmos_pending_callback_batch
+	var/original_pending_index = SSdogmos.dogmos_pending_callback_index
+	var/original_pending_count = SSdogmos.dogmos_pending_callback_count
+	var/original_pending_service_callbacks = SSdogmos.dogmos_pending_service_callbacks
+	var/original_stale_callbacks = SSdogmos.dogmos_stale_callback_count
+	var/list/test_sequence = list(1, 0, 0, 0)
+	var/list/callback_batch = new/list(DOGMOS_TEST_CALLBACK_HEADER_FIELDS + DOGMOS_TEST_CALLBACK_EVENT_FIELDS)
+	var/offset = DOGMOS_TEST_CALLBACK_EVENT_START
+	for(var/word_index in 1 to 4)
+		callback_batch[offset + word_index - 1] = test_sequence[word_index]
+	callback_batch[offset + DOGMOS_TEST_CALLBACK_SCOPE_FIELD] = DOGMOS_TEST_CALLBACK_SCOPE_GENERAL
+	callback_batch[offset + DOGMOS_TEST_CALLBACK_KIND_FIELD] = DOGMOS_TEST_CALLBACK_TURF_DESTRUCTION_REQUEST
+	callback_batch[offset + DOGMOS_TEST_CALLBACK_SUBJECT_SLOT_FIELD] = 0
+	callback_batch[offset + DOGMOS_TEST_CALLBACK_SUBJECT_SLOT_FIELD + 1] = 0
+	callback_batch[offset + DOGMOS_TEST_CALLBACK_SUBJECT_GENERATION_FIELD] = 0
+	callback_batch[offset + DOGMOS_TEST_CALLBACK_SUBJECT_GENERATION_FIELD + 1] = 0
+
+	SSdogmos.dogmos_next_callback_sequence = test_sequence
+	SSdogmos.dogmos_pending_callback_batch = callback_batch
+	SSdogmos.dogmos_pending_callback_index = 0
+	SSdogmos.dogmos_pending_callback_count = 1
+	SSdogmos.dogmos_pending_service_callbacks = 0
+	process_atmos_callbacks(0)
+
+	var/failure_message
+	if(SSdogmos.dogmos_pending_callback_batch != callback_batch)
+		failure_message = "Dogmos discarded a retained callback batch without callback budget."
+	else if(SSdogmos.dogmos_pending_callback_index != 0)
+		failure_message = "Dogmos advanced the retained callback cursor without callback budget."
+	else if(SSdogmos.dogmos_next_callback_sequence[1] != 1)
+		failure_message = "Dogmos consumed a callback sequence without callback budget."
+	else if(SSdogmos.dogmos_stale_callback_count != original_stale_callbacks)
+		failure_message = "Dogmos dispatched a stale callback without callback budget."
+	else
+		process_atmos_callbacks(100)
+		if(SSdogmos.dogmos_pending_callback_batch)
+			failure_message = "Dogmos did not clear a retained callback batch after dispatch."
+		else if(SSdogmos.dogmos_next_callback_sequence[1] != 2)
+			failure_message = "Dogmos did not consume the retained callback in sequence."
+		else if(SSdogmos.dogmos_stale_callback_count != original_stale_callbacks + 1)
+			failure_message = "Dogmos did not dispatch the retained stale callback with positive budget."
+
+	SSdogmos.dogmos_next_callback_sequence = original_sequence
+	SSdogmos.dogmos_pending_callback_batch = original_pending_batch
+	SSdogmos.dogmos_pending_callback_index = original_pending_index
+	SSdogmos.dogmos_pending_callback_count = original_pending_count
+	SSdogmos.dogmos_pending_service_callbacks = original_pending_service_callbacks
+	SSdogmos.dogmos_stale_callback_count = original_stale_callbacks
+	if(failure_message)
+		return Fail(failure_message, __FILE__, __LINE__)
+
+#undef DOGMOS_TEST_CALLBACK_HEADER_FIELDS
+#undef DOGMOS_TEST_CALLBACK_EVENT_FIELDS
+#undef DOGMOS_TEST_CALLBACK_EVENT_START
+#undef DOGMOS_TEST_CALLBACK_SCOPE_GENERAL
+#undef DOGMOS_TEST_CALLBACK_SCOPE_FIELD
+#undef DOGMOS_TEST_CALLBACK_KIND_FIELD
+#undef DOGMOS_TEST_CALLBACK_SUBJECT_SLOT_FIELD
+#undef DOGMOS_TEST_CALLBACK_SUBJECT_GENERATION_FIELD
+#undef DOGMOS_TEST_CALLBACK_TURF_DESTRUCTION_REQUEST
+
+#define DOGMOS_TEST_REACTION_EVENT_OFFSET 13
+#define DOGMOS_TEST_REACTION_SUBJECT_SLOT_FIELD 11
+#define DOGMOS_TEST_REACTION_SUBJECT_GENERATION_FIELD 13
+
+/** Verifies general reaction callbacks reject stale mixture generations at the identity boundary. */
+/datum/unit_test/dogmos_service_general_reaction_subject
+
+/datum/unit_test/dogmos_service_general_reaction_subject/Run()
+	var/datum/gas_mixture/mixture = new(CELL_VOLUME)
+	var/list/callback = new/list(48)
+	callback[DOGMOS_TEST_REACTION_EVENT_OFFSET + DOGMOS_TEST_REACTION_SUBJECT_SLOT_FIELD] = mixture.dogmos_slot % 65536
+	callback[DOGMOS_TEST_REACTION_EVENT_OFFSET + DOGMOS_TEST_REACTION_SUBJECT_SLOT_FIELD + 1] = floor(mixture.dogmos_slot / 65536)
+	callback[DOGMOS_TEST_REACTION_EVENT_OFFSET + DOGMOS_TEST_REACTION_SUBJECT_GENERATION_FIELD] = mixture.dogmos_generation % 65536
+	callback[DOGMOS_TEST_REACTION_EVENT_OFFSET + DOGMOS_TEST_REACTION_SUBJECT_GENERATION_FIELD + 1] = floor(mixture.dogmos_generation / 65536)
+	var/list/live_subject = SSdogmos.decode_general_reaction_subject(callback, DOGMOS_TEST_REACTION_EVENT_OFFSET)
+	var/failure_message
+	if(live_subject[1] != mixture)
+		failure_message = "Dogmos rejected a live general-reaction mixture identity."
+	callback[DOGMOS_TEST_REACTION_EVENT_OFFSET + DOGMOS_TEST_REACTION_SUBJECT_GENERATION_FIELD]++
+	var/list/stale_subject = SSdogmos.decode_general_reaction_subject(callback, DOGMOS_TEST_REACTION_EVENT_OFFSET)
+	if(!failure_message && stale_subject[1])
+		failure_message = "Dogmos accepted a stale general-reaction mixture generation."
+	qdel(mixture)
+	if(failure_message)
+		return Fail(failure_message, __FILE__, __LINE__)
+
+#undef DOGMOS_TEST_REACTION_EVENT_OFFSET
+#undef DOGMOS_TEST_REACTION_SUBJECT_SLOT_FIELD
+#undef DOGMOS_TEST_REACTION_SUBJECT_GENERATION_FIELD
+
 /** Verifies runtime topology remains deferred for the full committed-frontier cycle. */
 /datum/unit_test/dogmos_service_topology_stage_barrier
 
@@ -299,6 +426,57 @@
 		return Fail("Dogmos flushed runtime topology while a committed frontier remained pending.", __FILE__, __LINE__)
 	if(deferrals_after != deferrals_before + 1)
 		return Fail("Dogmos did not count a committed-frontier topology deferral.", __FILE__, __LINE__)
+
+/** Verifies repeated deferred adjacency updates coalesce and drain completely. */
+/datum/unit_test/dogmos_service_topology_pressure
+
+/datum/unit_test/dogmos_service_topology_pressure/Run()
+	var/list/original_pending_frontier = SSair.dogmos_pending_frontier_epoch
+	var/original_runtime_batching = SSdogmos.runtime_topology_batching
+	var/list/original_gas_edges = SSdogmos.dogmos_pending_turf_adjacency
+	var/list/original_gas_index = SSdogmos.dogmos_pending_turf_adjacency_index
+	var/list/original_heat_edges = SSdogmos.dogmos_pending_turf_heat_adjacency
+	var/list/original_heat_index = SSdogmos.dogmos_pending_turf_heat_adjacency_index
+	var/original_max_queued = SSdogmos.dogmos_runtime_topology_max_queued
+	var/turf/target = run_loc_floor_bottom_left
+
+	SSdogmos.runtime_topology_batching = TRUE
+	SSdogmos.dogmos_pending_turf_adjacency = list()
+	SSdogmos.dogmos_pending_turf_adjacency_index = list()
+	SSdogmos.dogmos_pending_turf_heat_adjacency = list()
+	SSdogmos.dogmos_pending_turf_heat_adjacency_index = list()
+	SSdogmos.dogmos_runtime_topology_max_queued = 0
+	SSair.dogmos_pending_frontier_epoch = list(1, 0, 0, 0)
+	target.__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
+	var/first_gas_count = length(SSdogmos.dogmos_pending_turf_adjacency)
+	var/first_heat_count = length(SSdogmos.dogmos_pending_turf_heat_adjacency)
+	for(var/repetition in 1 to 20)
+		target.__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
+
+	var/failure_message
+	if(length(SSdogmos.dogmos_pending_turf_adjacency) != first_gas_count)
+		failure_message = "Deferred gas adjacency work grew with repeated updates instead of coalescing."
+	else if(length(SSdogmos.dogmos_pending_turf_heat_adjacency) != first_heat_count)
+		failure_message = "Deferred heat adjacency work grew with repeated updates instead of coalescing."
+	else if(SSdogmos.dogmos_runtime_topology_max_queued != first_gas_count + first_heat_count)
+		failure_message = "Dogmos topology pressure telemetry did not retain the unique queued edge count."
+
+	SSair.dogmos_pending_frontier_epoch = null
+	if(!SSdogmos.flush_turf_registration_batch() && !failure_message)
+		failure_message = "Dogmos did not flush deferred topology after the committed frontier cleared."
+	if((length(SSdogmos.dogmos_pending_turf_adjacency) || length(SSdogmos.dogmos_pending_turf_heat_adjacency) \
+			|| length(SSdogmos.dogmos_pending_turf_adjacency_index) || length(SSdogmos.dogmos_pending_turf_heat_adjacency_index)) && !failure_message)
+		failure_message = "Dogmos retained topology queue or reverse-index entries after a successful flush."
+
+	SSair.dogmos_pending_frontier_epoch = original_pending_frontier
+	SSdogmos.runtime_topology_batching = original_runtime_batching
+	SSdogmos.dogmos_pending_turf_adjacency = original_gas_edges
+	SSdogmos.dogmos_pending_turf_adjacency_index = original_gas_index
+	SSdogmos.dogmos_pending_turf_heat_adjacency = original_heat_edges
+	SSdogmos.dogmos_pending_turf_heat_adjacency_index = original_heat_index
+	SSdogmos.dogmos_runtime_topology_max_queued = original_max_queued
+	if(failure_message)
+		return Fail(failure_message, __FILE__, __LINE__)
 
 #undef DOGMOS_WORLD_GENERATION_WORD_MAX
 

@@ -100,6 +100,103 @@
 	TEST_ASSERT_EQUAL(SSair.resolve_kennel_jump_target(jump_key), jump_target, \
 		"SSair recovery did not rebuild the bounded Kennel jump-target index.")
 
+	var/list/dogmos_recovery_fields = list(
+		"gases_registered",
+		"service_ready",
+		"dogmos_mixture_slots",
+		"dogmos_mixture_generations",
+		"dogmos_free_mixture_slots",
+		"dogmos_gas_ids",
+		"dogmos_gas_paths",
+		"dogmos_reaction_ids",
+		"dogmos_holder_slots",
+		"dogmos_holder_generations",
+		"dogmos_free_holder_slots",
+		"dogmos_next_callback_sequence",
+		"dogmos_pending_callback_batch",
+		"dogmos_pending_callback_index",
+		"dogmos_pending_callback_count",
+		"dogmos_pending_service_callbacks",
+		"dogmos_stale_callback_count",
+		"dogmos_health_preflight_count",
+		"turf_registration_batching",
+		"dogmos_pending_turf_lifecycle",
+		"dogmos_pending_turf_adjacency",
+		"dogmos_pending_turf_adjacency_index",
+		"dogmos_pending_turf_heat",
+		"dogmos_pending_turf_heat_adjacency",
+		"dogmos_pending_turf_heat_adjacency_index",
+		"dogmos_pending_adjacency_retry",
+		"runtime_topology_batching",
+		"dogmos_runtime_topology_records",
+		"dogmos_runtime_topology_calls",
+		"dogmos_runtime_topology_max_queued",
+		"dogmos_runtime_topology_deferrals",
+		"dogmos_mixture_cache",
+		"dogmos_mixture_cache_epoch",
+		"dogmos_mixture_cache_hits",
+		"dogmos_mixture_cache_misses",
+		"dogmos_mixture_cache_collisions",
+		"dogmos_mixture_cache_epoch_invalidations",
+	)
+	var/list/original_dogmos_state = list()
+	for(var/field_name in dogmos_recovery_fields)
+		original_dogmos_state[field_name] = SSdogmos.vars[field_name]
+
+	SSdogmos.dogmos_pending_callback_batch = list("recovery callback")
+	SSdogmos.dogmos_pending_callback_index = 1
+	SSdogmos.dogmos_pending_callback_count = 1
+	SSdogmos.dogmos_pending_service_callbacks = 2
+	SSdogmos.dogmos_stale_callback_count += 11
+	SSdogmos.dogmos_health_preflight_count += 12
+	SSdogmos.dogmos_pending_turf_lifecycle = list("recovery lifecycle")
+	SSdogmos.dogmos_pending_turf_adjacency = list("recovery adjacency")
+	SSdogmos.dogmos_pending_turf_adjacency_index = list("recovery adjacency index")
+	SSdogmos.dogmos_pending_turf_heat = list("recovery heat")
+	SSdogmos.dogmos_pending_turf_heat_adjacency = list("recovery heat adjacency")
+	SSdogmos.dogmos_pending_turf_heat_adjacency_index = list("recovery heat adjacency index")
+	SSdogmos.dogmos_pending_adjacency_retry = list("recovery retry")
+	SSdogmos.dogmos_runtime_topology_records += 13
+	SSdogmos.dogmos_runtime_topology_calls += 14
+	SSdogmos.dogmos_runtime_topology_max_queued += 15
+	SSdogmos.dogmos_runtime_topology_deferrals += 16
+	SSdogmos.dogmos_mixture_cache = list("recovery cache")
+	SSdogmos.dogmos_mixture_cache_epoch += 17
+	SSdogmos.dogmos_mixture_cache_hits += 18
+	SSdogmos.dogmos_mixture_cache_misses += 19
+	SSdogmos.dogmos_mixture_cache_collisions += 20
+	SSdogmos.dogmos_mixture_cache_epoch_invalidations += 21
+	var/list/expected_dogmos_state = list()
+	for(var/field_name in dogmos_recovery_fields)
+		expected_dogmos_state[field_name] = SSdogmos.vars[field_name]
+
+	Master.subsystems += new /datum/controller/subsystem/dogmos
+
+	TEST_ASSERT_NOTEQUAL(SSdogmos, original_dogmos, \
+		"Dogmos recovery did not install the replacement subsystem datum.")
+	TEST_ASSERT(SSdogmos.ss_flags & SS_NO_INIT, \
+		"Dogmos recovery did not suppress cold service initialization.")
+	TEST_ASSERT(SSdogmos.initialized, \
+		"Dogmos recovery did not retain initialized state.")
+	for(var/field_name in dogmos_recovery_fields)
+		TEST_ASSERT_EQUAL(SSdogmos.vars[field_name], expected_dogmos_state[field_name], \
+			"Dogmos recovery did not retain [field_name].")
+	TEST_ASSERT_EQUAL(dogmos_service_pid(), original_service_pid, \
+		"Dogmos recovery replaced the healthy dogmosd process.")
+	var/list/dogmos_recovered_world_generation = dogmos_service_world_generation()
+	TEST_ASSERT_EQUAL(dogmos_recovered_world_generation[1], original_world_generation[1], \
+		"Dogmos recovery changed the low word of the dogmosd world generation.")
+	TEST_ASSERT_EQUAL(dogmos_recovered_world_generation[2], original_world_generation[2], \
+		"Dogmos recovery changed the high word of the dogmosd world generation.")
+	TEST_ASSERT(dogmos_service_health(), \
+		"dogmosd was unhealthy after Dogmos recovery.")
+	for(var/field_name in dogmos_recovery_fields)
+		SSdogmos.vars[field_name] = original_dogmos_state[field_name]
+	TEST_ASSERT_EQUAL(sentinel.return_temperature(), 321.5, \
+		"Dogmos recovery invalidated the sentinel mixture temperature.")
+	TEST_ASSERT_EQUAL(sentinel.get_moles(/datum/gas/oxygen), 7.25, \
+		"Dogmos recovery invalidated the sentinel mixture oxygen amount.")
+
 	SSair.equalize_enabled = original_equalize_enabled
 	SSair.kennel_slow_mode = original_kennel_slow_mode
 	SSair.kennel_high_cost_ms_threshold = original_threshold

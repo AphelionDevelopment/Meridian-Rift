@@ -13,6 +13,16 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 	var/browse_search = ""
 
 /datum/dogmos_kennel
+	// APHELION EDIT ADDITION START - DOGMOS
+	/// Number of process-metric snapshots requested by Kennel UI production.
+	var/producer_process_metric_samples = 0
+	/// Number of machinery candidates inspected by Kennel browse production.
+	var/producer_machinery_candidates_inspected = 0
+	/// Number of machinery browse pages built by Kennel UI production.
+	var/producer_browse_pages_built = 0
+	/// Number of open Kennel UI sessions at the latest data request.
+	var/producer_active_viewers = 0
+	// APHELION EDIT ADDITION END
 
 /datum/dogmos_kennel/ui_state(mob/user)
 	return ADMIN_STATE(R_DEBUG)
@@ -54,6 +64,10 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 
 /** Builds one bounded machinery browse page without retaining or materializing the full result set. */
 /datum/dogmos_kennel/proc/build_machinery_browse_page(list/candidates, raw_search, raw_page)
+	// APHELION EDIT ADDITION START - DOGMOS
+	producer_browse_pages_built = min(producer_browse_pages_built + 1, SHORT_REAL_LIMIT)
+	var/candidates_inspected = 0
+	// APHELION EDIT ADDITION END
 	var/search = normalize_browse_search(raw_search)
 	var/requested_page = raw_page
 	if(istext(requested_page))
@@ -63,6 +77,9 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 
 	var/total = 0
 	for(var/datum/candidate as anything in candidates)
+		// APHELION EDIT ADDITION START - DOGMOS
+		candidates_inspected++
+		// APHELION EDIT ADDITION END
 		if(!ismachinery(candidate))
 			continue
 		var/obj/machinery/machine = candidate
@@ -78,6 +95,9 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 	var/matched_row = 0
 	var/list/rows = list()
 	for(var/datum/candidate as anything in candidates)
+		// APHELION EDIT ADDITION START - DOGMOS
+		candidates_inspected++
+		// APHELION EDIT ADDITION END
 		if(!ismachinery(candidate))
 			continue
 		var/obj/machinery/machine = candidate
@@ -95,6 +115,9 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 			"area" = candidate_area?.name,
 		))
 
+	// APHELION EDIT ADDITION START - DOGMOS
+	producer_machinery_candidates_inspected = min(producer_machinery_candidates_inspected + candidates_inspected, SHORT_REAL_LIMIT)
+	// APHELION EDIT ADDITION END
 	return list(
 		"rows" = rows,
 		"page" = page,
@@ -105,6 +128,10 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 
 /** Returns live Dogmos telemetry and bounded Kennel histories for the Overview tab. */
 /datum/dogmos_kennel/ui_data(mob/user)
+	// APHELION EDIT ADDITION START - DOGMOS
+	producer_active_viewers = length(open_uis)
+	producer_process_metric_samples = min(producer_process_metric_samples + 1, SHORT_REAL_LIMIT)
+	// APHELION EDIT ADDITION END
 	var/list/data = list()
 	data["active_size"] = SSair.active_turfs.len
 	data["hotspots_size"] = SSair.hotspots.len
@@ -172,6 +199,15 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 		data["atmos_machinery_browse_pages"] = browse_page["pages"]
 		data["atmos_machinery_browse_total"] = browse_page["total"]
 		data["atmos_machinery_browse_search"] = browse_page["search"]
+
+	// APHELION EDIT ADDITION START - DOGMOS
+	data["producer_telemetry"] = list(
+		"process_metric_samples" = producer_process_metric_samples,
+		"machinery_candidates_inspected" = producer_machinery_candidates_inspected,
+		"browse_pages_built" = producer_browse_pages_built,
+		"active_viewers" = producer_active_viewers,
+	)
+	// APHELION EDIT ADDITION END
 
 	data["kennel_fire_group_notable_size"] = SSair.kennel_fire_group_notable_size
 	data["kennel_reaction_magnitude_threshold"] = SSair.kennel_reaction_magnitude_threshold
