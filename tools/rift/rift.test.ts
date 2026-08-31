@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 import {
   type OwnedProcess,
   type ProcessHooks,
+  type ProcessResult,
   type ProcessSpec,
   runProbeProcess,
   startOwnedProcess,
@@ -41,6 +42,7 @@ import {
   qualifyRepository,
   RiftError,
   removeDeployment,
+  renderMachineResult,
   resolveByond,
   runDoctorWorkflow,
   runMain,
@@ -165,6 +167,39 @@ const fakeCompileProcess =
     };
   };
 
+const fakeTerminatedProcess =
+  (
+    termination: ProcessResult['termination'],
+    exitCode: number | null = null,
+  ): ((spec: ProcessSpec, hooks: ProcessHooks) => OwnedProcess) =>
+  (spec, hooks) => {
+    const rootPid = 987_655;
+    const result = (async (): Promise<ProcessResult> => {
+      const startedAt = new Date().toISOString();
+      await hooks.onStart(rootPid);
+      const processResult = {
+        role: spec.role,
+        rootPid,
+        ownedPids: [rootPid],
+        exitCode,
+        signal: null,
+        termination,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+        durationMs: 1,
+      };
+      await hooks.onFinish?.(processResult);
+      return processResult;
+    })();
+    return {
+      rootPid,
+      result,
+      stop: async () => result,
+      snapshot: async () => [],
+      ownedPids: () => [rootPid],
+    };
+  };
+
 const validProfile = () => ({
   config_source: 'repository',
   default_map: null,
@@ -224,6 +259,21 @@ describe('profile document', () => {
     expect(() => parseProfileDocument(profileDocument(profile))).toThrow(
       'unknown profile property: unexpected',
     );
+  });
+
+  test('rejects profile timeouts above the supported controller limits', () => {
+    for (const [field, value] of [
+      ['wall_seconds', 3601],
+      ['idle_seconds', 901],
+      ['readiness_seconds', 901],
+    ] as const) {
+      const profile = validProfile();
+      profile.default_timeouts[field] = value;
+
+      expect(() => parseProfileDocument(profileDocument(profile))).toThrow(
+        `${field} must be an integer between`,
+      );
+    }
   });
 
   test('rejects unsupported schema versions', () => {
@@ -675,6 +725,66 @@ describe('run report', () => {
     });
   });
 
+  test('renders one versioned compact compile result with canonical evidence', async () => {
+    await withTempDirectory(async (root) => {
+      const recorder = await RunRecorder.create({
+        runDir: root,
+        runId: '20260831T120000Z-0123abce',
+        command: 'compile',
+        profile: 'default',
+        evidence: 'full_build',
+        networkMode: 'offline',
+      });
+      await recorder.emit('stage_started', 'compile', { mode: 'full' });
+      for (const [artifactPath, sha256] of [
+        ['artifacts/tgstation.dmb', 'a'.repeat(64)],
+        ['artifacts/tgstation.rsc', 'b'.repeat(64)],
+      ]) {
+        await recorder.addArtifact({
+          path: artifactPath,
+          size: 12,
+          sha256,
+          stage: 'compile',
+          freshness: 'reused',
+        });
+      }
+      await recorder.emit(
+        'stage_finished',
+        'compile',
+        { evidence: 'full_build', reused: true },
+        'passed',
+      );
+      const summary = await recorder.finish('passed', 0);
+
+      const line = renderMachineResult(summary);
+      expect(line.startsWith('RIFT_RESULT ')).toBe(true);
+      expect(line.split('\n')).toHaveLength(1);
+      expect(JSON.parse(line.slice('RIFT_RESULT '.length))).toEqual({
+        schema_version: 1,
+        run_id: summary.run_id,
+        command: 'compile',
+        status: 'passed',
+        evidence: 'full_build',
+        exit_code: 0,
+        reused: true,
+        artifacts: [
+          {
+            path: 'artifacts/tgstation.dmb',
+            size: 12,
+            sha256: 'a'.repeat(64),
+            freshness: 'reused',
+          },
+          {
+            path: 'artifacts/tgstation.rsc',
+            size: 12,
+            sha256: 'b'.repeat(64),
+            freshness: 'reused',
+          },
+        ],
+      });
+    });
+  });
+
   test('redacts profile paths before structured report serialization', async () => {
     await withTempDirectory(async (root) => {
       const recorder = await RunRecorder.create({
@@ -848,6 +958,50 @@ describe('CLI and preflight qualification', () => {
     expect(() =>
       parseCli(['run', '--wall-timeout-seconds', '1.5'], {}),
     ).toThrow('wall timeout must be a base-10 integer');
+  });
+
+  test('rejects CLI timeouts above the supported controller limits', () => {
+    expect(() =>
+      parseCli(
+        ['compile', '--mode', 'full', '--wall-timeout-seconds', '3601'],
+        {},
+      ),
+    ).toThrow('wall timeout must be 1-3600');
+    expect(() =>
+      parseCli(
+        ['compile', '--mode', 'full', '--idle-timeout-seconds', '901'],
+        {},
+      ),
+    ).toThrow('idle timeout must be 1-900');
+    expect(() =>
+      parseCli(['doctor', '--wait-for-lock-seconds', '301'], {}),
+    ).toThrow('lock wait must be 0-300');
+    expect(() =>
+      parseCli(['run', '--readiness-timeout-seconds', '901'], {}),
+    ).toThrow('readiness timeout must be 1-900');
+  });
+
+  test('uses validated timeout environment defaults and CLI precedence', () => {
+    const environment = {
+      MERIDIAN_RIFT_WALL_TIMEOUT_SECONDS: '1700',
+      MERIDIAN_RIFT_IDLE_TIMEOUT_SECONDS: '110',
+    };
+
+    expect(parseCli(['compile', '--mode', 'full'], environment)).toMatchObject({
+      wallTimeoutSeconds: 1700,
+      idleTimeoutSeconds: 110,
+    });
+    expect(
+      parseCli(
+        ['compile', '--mode', 'full', '--wall-timeout-seconds', '2000'],
+        environment,
+      ),
+    ).toMatchObject({ wallTimeoutSeconds: 2000, idleTimeoutSeconds: 110 });
+    expect(() =>
+      parseCli(['compile', '--mode', 'full'], {
+        MERIDIAN_RIFT_WALL_TIMEOUT_SECONDS: '3601',
+      }),
+    ).toThrow('wall timeout must be 1-3600');
   });
 
   test('deduplicates valid unit-test focus paths and rejects executable text', () => {
@@ -1227,12 +1381,16 @@ describe('Windows launchers', () => {
         'compile',
         '--mode',
         'full',
+        '--format',
+        'result',
       ]);
       expect(JSON.parse(forced.stdout.trim()).args).toEqual([
         'compile',
         '--mode',
         'full',
         '--force',
+        '--format',
+        'result',
       ]);
     });
   });
@@ -1788,6 +1946,51 @@ describe('compile workflows', () => {
       expect(await Bun.file(outcome.rsc).text()).toContain('full rsc');
     });
   });
+
+  test('preserves full compile timeout and cancellation classifications', async () => {
+    await withTempDirectory(async (root) => {
+      await createRepositoryFixture(root);
+      const repository = await qualifyRepository(root);
+      const { runId, runDir } = await allocateRun(repository.runsRoot);
+      const recorder = await RunRecorder.create({
+        runDir,
+        runId,
+        command: 'compile',
+        profile: 'default',
+        evidence: 'full_build',
+        networkMode: 'offline',
+      });
+      const request = {
+        runId,
+        repository,
+        byond: {
+          dm: 'fixture-dm.exe',
+          dreamDaemon: 'fixture-dreamdaemon.exe',
+          version: '516.1687',
+          source: 'DM_EXE' as const,
+        },
+        recorder,
+        environment: {},
+        defines: [],
+        wallTimeoutMs: 10_000,
+        idleTimeoutMs: 10_000,
+        force: false,
+      };
+
+      await expect(
+        compileFull({
+          ...request,
+          buildProcessRunner: fakeTerminatedProcess('wall_timeout'),
+        }),
+      ).rejects.toMatchObject({ code: 'wall_timeout', exitCode: 6 });
+      await expect(
+        compileFull({
+          ...request,
+          buildProcessRunner: fakeTerminatedProcess('cancelled'),
+        }),
+      ).rejects.toMatchObject({ code: 'cancelled', exitCode: 130 });
+    });
+  });
 });
 
 describe('isolated deployment', () => {
@@ -2282,6 +2485,41 @@ console.log('ready-and-returned');
           recorder,
         }),
       ).rejects.toThrow('readiness_timeout');
+    });
+  });
+
+  test('preserves process timeout classification before readiness', async () => {
+    await withTempDirectory(async (root) => {
+      const recorder = await RunRecorder.create({
+        runDir: root,
+        runId: '20260831T000000Z-1234abce',
+        command: 'run',
+        profile: 'default',
+        evidence: 'boot',
+        networkMode: 'offline',
+      });
+      const deployment = {
+        root: path.join(root, 'workspace'),
+        data: path.join(root, 'workspace', 'data'),
+        gameLogDir: path.join(root, 'workspace', 'data', 'logs', 'rift'),
+        dmb: path.join(root, 'workspace', 'tgstation.dmb'),
+        rsc: path.join(root, 'workspace', 'tgstation.rsc'),
+      };
+      await fs.mkdir(deployment.gameLogDir, { recursive: true });
+      const owned = fakeTerminatedProcess('idle_timeout')(
+        processSpec(path.join(root, 'unused.ts')),
+        processHooks(),
+      );
+
+      await expect(
+        waitForReadiness({
+          deployment,
+          profile: validProfile(),
+          process: owned,
+          timeoutMs: 1_000,
+          recorder,
+        }),
+      ).rejects.toMatchObject({ code: 'idle_timeout', exitCode: 6 });
     });
   });
 

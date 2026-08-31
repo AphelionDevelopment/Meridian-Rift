@@ -16,6 +16,7 @@ import {
   type EvidenceClass,
   hashArtifact,
   normalizeRuntimeSignature,
+  RIFT_SCHEMA_VERSION,
   type RiftFailure,
   type RiftSummary,
   RunRecorder,
@@ -67,6 +68,11 @@ export type ProfileDocument = {
   schema_version: 1;
   profiles: Record<string, RiftProfile>;
 };
+
+export const MAX_WALL_TIMEOUT_SECONDS = 3600;
+export const MAX_IDLE_TIMEOUT_SECONDS = 900;
+export const MAX_READINESS_TIMEOUT_SECONDS = 900;
+export const MAX_LOCK_WAIT_SECONDS = 300;
 
 const PROFILE_KEYS = new Set([
   'config_source',
@@ -121,11 +127,22 @@ const requireBoolean = (value: unknown, label: string): boolean => {
   return value;
 };
 
-const requireInteger = (value: unknown, label: string, minimum = 0): number => {
-  if (!Number.isInteger(value) || (value as number) < minimum) {
-    throw new Error(
-      `${label} must be an integer greater than or equal to ${minimum}`,
-    );
+const requireInteger = (
+  value: unknown,
+  label: string,
+  minimum = 0,
+  maximum?: number,
+): number => {
+  if (
+    !Number.isInteger(value) ||
+    (value as number) < minimum ||
+    (maximum !== undefined && (value as number) > maximum)
+  ) {
+    const range =
+      maximum === undefined
+        ? `greater than or equal to ${minimum}`
+        : `between ${minimum} and ${maximum}`;
+    throw new Error(`${label} must be an integer ${range}`);
   }
   return value as number;
 };
@@ -357,12 +374,23 @@ const validateProfile = (value: unknown): RiftProfile => {
     required_children: requiredChildren,
     artifact_rules: artifactRules,
     default_timeouts: {
-      wall_seconds: requireInteger(timeouts.wall_seconds, 'wall_seconds', 1),
-      idle_seconds: requireInteger(timeouts.idle_seconds, 'idle_seconds', 1),
+      wall_seconds: requireInteger(
+        timeouts.wall_seconds,
+        'wall_seconds',
+        1,
+        MAX_WALL_TIMEOUT_SECONDS,
+      ),
+      idle_seconds: requireInteger(
+        timeouts.idle_seconds,
+        'idle_seconds',
+        1,
+        MAX_IDLE_TIMEOUT_SECONDS,
+      ),
       readiness_seconds: requireInteger(
         timeouts.readiness_seconds,
         'readiness_seconds',
         1,
+        MAX_READINESS_TIMEOUT_SECONDS,
       ),
     },
     minimum_tests: requireInteger(profile.minimum_tests, 'minimum_tests', 1),
@@ -416,8 +444,10 @@ export const loadProfiles = async (
   return new Map(Object.entries(document.profiles));
 };
 
+export type OutputFormat = 'human' | 'jsonl' | 'result';
+
 type CommonOptions = {
-  format: 'human' | 'jsonl';
+  format: OutputFormat;
   networkMode: 'offline' | 'allow';
   profile: string;
   wallTimeoutSeconds: number | null;
@@ -511,8 +541,24 @@ export const parseCli = (
   let format: CommonOptions['format'] = 'human';
   let networkMode: CommonOptions['networkMode'] = environmentNetwork;
   let profile: string | null = null;
-  let wallTimeoutSeconds: number | null = null;
-  let idleTimeoutSeconds: number | null = null;
+  let wallTimeoutSeconds: number | null =
+    environment.MERIDIAN_RIFT_WALL_TIMEOUT_SECONDS === undefined
+      ? null
+      : parseInteger(
+          environment.MERIDIAN_RIFT_WALL_TIMEOUT_SECONDS,
+          'wall timeout',
+          1,
+          MAX_WALL_TIMEOUT_SECONDS,
+        );
+  let idleTimeoutSeconds: number | null =
+    environment.MERIDIAN_RIFT_IDLE_TIMEOUT_SECONDS === undefined
+      ? null
+      : parseInteger(
+          environment.MERIDIAN_RIFT_IDLE_TIMEOUT_SECONDS,
+          'idle timeout',
+          1,
+          MAX_IDLE_TIMEOUT_SECONDS,
+        );
   let waitForLockSeconds = 0;
   let keepWorkspace = false;
   let command: string | null = null;
@@ -590,8 +636,12 @@ export const parseCli = (
 
     switch (option) {
       case '--format':
-        if (optionValue !== 'human' && optionValue !== 'jsonl') {
-          throw new Error('format must be human or jsonl');
+        if (
+          optionValue !== 'human' &&
+          optionValue !== 'jsonl' &&
+          optionValue !== 'result'
+        ) {
+          throw new Error('format must be human, jsonl, or result');
         }
         format = optionValue;
         break;
@@ -608,13 +658,28 @@ export const parseCli = (
         profile = optionValue!;
         break;
       case '--wall-timeout-seconds':
-        wallTimeoutSeconds = parseInteger(optionValue!, 'wall timeout', 1);
+        wallTimeoutSeconds = parseInteger(
+          optionValue!,
+          'wall timeout',
+          1,
+          MAX_WALL_TIMEOUT_SECONDS,
+        );
         break;
       case '--idle-timeout-seconds':
-        idleTimeoutSeconds = parseInteger(optionValue!, 'idle timeout', 1);
+        idleTimeoutSeconds = parseInteger(
+          optionValue!,
+          'idle timeout',
+          1,
+          MAX_IDLE_TIMEOUT_SECONDS,
+        );
         break;
       case '--wait-for-lock-seconds':
-        waitForLockSeconds = parseInteger(optionValue!, 'lock wait', 0);
+        waitForLockSeconds = parseInteger(
+          optionValue!,
+          'lock wait',
+          0,
+          MAX_LOCK_WAIT_SECONDS,
+        );
         break;
       case '--keep-workspace':
         keepWorkspace = true;
@@ -665,6 +730,7 @@ export const parseCli = (
           optionValue!,
           'readiness timeout',
           1,
+          MAX_READINESS_TIMEOUT_SECONDS,
         );
         break;
       case '--run-seconds':
@@ -1449,10 +1515,8 @@ export const compileFast = async (
       },
       compileHooks(request.recorder, 'compile', output),
     ).result;
-    if (
-      processResult.termination !== 'natural' ||
-      processResult.exitCode !== 0
-    ) {
+    throwForProcessTermination(processResult, 'compile');
+    if (processResult.exitCode !== 0) {
       throw new Error(
         `compile_process_failed: ${processResult.termination} ${String(processResult.exitCode)}`,
       );
@@ -1570,7 +1634,8 @@ export const compileFull = async (
     compileHooks(request.recorder, 'compile', output),
     request.buildProcessRunner ?? request.processRunner ?? startOwnedProcess,
   );
-  if (result.termination !== 'natural' || result.exitCode !== 0) {
+  throwForProcessTermination(result, 'compile');
+  if (result.exitCode !== 0) {
     throw new Error(
       `full_build_failed: ${result.termination} ${String(result.exitCode)}`,
     );
@@ -2118,6 +2183,7 @@ export const waitForReadiness = async (options: {
     const observation = await Promise.race([
       observeUntilReady({ ...options, signal: abort.signal, cursor }),
       options.process.result.then((result) => {
+        throwForProcessTermination(result, 'server');
         throw new Error(
           `process_exited_before_ready: ${result.termination} ${String(result.exitCode)}`,
         );
@@ -2314,6 +2380,7 @@ export const runServerWorkflow = async (
         throw new Error('server_monitor_stopped');
       }
       if (bounded.kind === 'exit') {
+        throwForProcessTermination(bounded.result, 'server');
         throw new Error(
           `process_exited_before_requested_stop: ${bounded.result.termination} ${String(bounded.result.exitCode)}`,
         );
@@ -2751,6 +2818,7 @@ export const runSoakWorkflow = async (
       );
     }
     if (outcome.kind === 'exit') {
+      throwForProcessTermination(outcome.result, 'soak');
       throw new Error(
         `process_exited_before_requested_stop: ${outcome.result.termination} ${String(outcome.result.exitCode)}`,
       );
@@ -2905,6 +2973,7 @@ export const waitForTestCompletion = async (options: {
         5,
       );
     }
+    throwForProcessTermination(outcome.result, 'test');
     return {
       processResult: outcome.result,
       runtimeSignatures: [...signatures.values()],
@@ -2975,8 +3044,8 @@ const invokeTestBuildPrerequisites = async (request: CompileRequest) => {
     compileHooks(request.recorder, 'compile', output),
     request.buildProcessRunner ?? startOwnedProcess,
   );
+  throwForProcessTermination(help, 'compile');
   if (
-    help.termination !== 'natural' ||
     ![0, 1].includes(help.exitCode ?? -1) ||
     !/(^|\s)icon-cutter($|\s)/m.test(output.join('\n'))
   ) {
@@ -3005,7 +3074,8 @@ const invokeTestBuildPrerequisites = async (request: CompileRequest) => {
       compileHooks(request.recorder, 'compile', []),
       request.buildProcessRunner ?? startOwnedProcess,
     );
-    if (result.termination !== 'natural' || result.exitCode !== 0) {
+    throwForProcessTermination(result, 'compile');
+    if (result.exitCode !== 0) {
       throw new Error(`build_failed: ${target}`);
     }
   }
@@ -3058,10 +3128,8 @@ export const prepareUnitTestCompile = async (
       },
       compileHooks(request.recorder, 'compile', output),
     ).result;
-    if (
-      processResult.termination !== 'natural' ||
-      processResult.exitCode !== 0
-    ) {
+    throwForProcessTermination(processResult, 'compile');
+    if (processResult.exitCode !== 0) {
       throw new Error(
         `compile_process_failed: ${processResult.termination} ${String(processResult.exitCode)}`,
       );
@@ -3845,7 +3913,7 @@ const RUN_ID = /^\d{8}T\d{6}Z-[0-9a-f]{8}$/;
 export const runReportCommand = async (
   runsRoot: string,
   runId: string,
-  format: 'human' | 'jsonl',
+  format: OutputFormat,
 ): Promise<string> => {
   if (!RUN_ID.test(runId)) {
     throw new Error(`invalid run ID: ${runId}`);
@@ -3854,6 +3922,9 @@ export const runReportCommand = async (
   const stored = await readStoredRun(runDir);
   if (format === 'human') {
     return `${renderHumanSummary(stored.summary)}\n`;
+  }
+  if (format === 'result') {
+    return `${renderMachineResult(stored.summary)}\n`;
   }
   return stored.events.length > 0
     ? `${stored.events.map((event) => JSON.stringify(event)).join('\n')}\n`
@@ -3870,6 +3941,65 @@ export class RiftError extends Error {
     super(message);
   }
 }
+
+const throwForProcessTermination = (
+  result: ProcessResult,
+  stage: string,
+): void => {
+  switch (result.termination) {
+    case 'wall_timeout':
+      throw new RiftError(
+        'wall_timeout',
+        stage,
+        `${stage} process exceeded its wall timeout`,
+        6,
+      );
+    case 'idle_timeout':
+      throw new RiftError(
+        'idle_timeout',
+        stage,
+        `${stage} process exceeded its idle timeout`,
+        6,
+      );
+    case 'cancelled':
+      throw new RiftError(
+        'cancelled',
+        stage,
+        `${stage} process cancelled`,
+        130,
+      );
+    case 'natural':
+    case 'requested':
+      return;
+  }
+};
+
+export const renderMachineResult = (summary: RiftSummary): string => {
+  const compilePhase = summary.phases.findLast(
+    (phase) => phase.stage === 'compile' && typeof phase.reused === 'boolean',
+  );
+  const artifacts = summary.artifacts
+    .filter((artifact) => artifact.stage === 'compile')
+    .map((artifact) => ({
+      path: artifact.path,
+      size: artifact.size,
+      sha256: artifact.sha256,
+      freshness: artifact.freshness,
+    }));
+  return `RIFT_RESULT ${JSON.stringify({
+    schema_version: RIFT_SCHEMA_VERSION,
+    run_id: summary.run_id,
+    command: summary.command,
+    status: summary.status,
+    evidence: summary.evidence,
+    exit_code: summary.exit_code,
+    reused:
+      summary.command === 'compile' && compilePhase
+        ? compilePhase.reused
+        : null,
+    artifacts,
+  })}`;
+};
 
 const rethrowAsRiftError = (
   error: unknown,
@@ -3970,10 +4100,14 @@ const readGitMetadata = async (
 const printStoredResult = async (
   repository: RepositoryPaths,
   summary: RiftSummary,
-  format: 'human' | 'jsonl',
+  format: OutputFormat,
 ) => {
   if (format === 'human') {
     console.log(renderHumanSummary(summary));
+    return;
+  }
+  if (format === 'result') {
+    console.log(renderMachineResult(summary));
     return;
   }
   process.stdout.write(
