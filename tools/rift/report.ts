@@ -75,7 +75,7 @@ export type RiftSummary = {
   }>;
   resource_maxima: Array<Record<string, unknown>>;
   artifacts: Array<Record<string, unknown>>;
-  cleanup: { passed: boolean; leftovers: string[] };
+  cleanup: { passed: boolean; leftovers: string[]; retained: string[] };
   failures: RiftFailure[];
 };
 
@@ -107,6 +107,27 @@ const redactUserPaths = (value: string) =>
     .replaceAll(/([A-Za-z]:\\Users\\)[^\\\r\n]+/g, '$1<profile>')
     .replaceAll(/(\/Users\/)[^/\r\n]+/g, '$1<profile>');
 
+const redactStructuredValue = (value: unknown): unknown => {
+  if (typeof value === 'string') {
+    return redactUserPaths(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(redactStructuredValue);
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        key,
+        redactStructuredValue(entry),
+      ]),
+    );
+  }
+  return value;
+};
+
+const redactRecord = (value: Record<string, unknown>) =>
+  redactStructuredValue(value) as Record<string, unknown>;
+
 export class RunRecorder {
   readonly stdoutPath: string;
   readonly stderrPath: string;
@@ -117,6 +138,8 @@ export class RunRecorder {
   #writes: Promise<void> = Promise.resolve();
   #summary: RiftSummary;
   #finished: RiftSummary | null = null;
+  #finishing = false;
+  #finishPromise: Promise<RiftSummary> | null = null;
 
   private constructor(
     readonly runDir: string,
@@ -148,7 +171,7 @@ export class RunRecorder {
       runtime_signatures: [],
       resource_maxima: [],
       artifacts: [],
-      cleanup: { passed: true, leftovers: [] },
+      cleanup: { passed: true, leftovers: [], retained: [] },
       failures: [],
     };
   }
@@ -176,6 +199,12 @@ export class RunRecorder {
     return queued;
   }
 
+  #assertOpen() {
+    if (this.#finishing || this.#finished) {
+      throw new Error('run recorder is finished');
+    }
+  }
+
   #appendEvent(
     kind: RiftEvent['kind'],
     stage: string,
@@ -190,7 +219,7 @@ export class RunRecorder {
       timestamp: new Date().toISOString(),
       kind,
       stage,
-      data,
+      data: redactRecord(data),
       ...(status ? { status } : {}),
     };
     return fs.appendFile(
@@ -206,11 +235,17 @@ export class RunRecorder {
     data: Record<string, unknown>,
     status?: RiftStatus,
   ): Promise<void> {
+    try {
+      this.#assertOpen();
+    } catch (error) {
+      return Promise.reject(error);
+    }
     return this.#queue(async () => {
+      const redactedData = redactRecord(data);
       const now = Date.now();
       if (kind === 'stage_started') {
         this.#summary.phases.push({
-          ...structuredClone(data),
+          ...structuredClone(redactedData),
           stage,
           status: 'running',
           started_at: new Date(now).toISOString(),
@@ -221,7 +256,7 @@ export class RunRecorder {
           (entry) => entry.stage === stage && entry.finished_at === undefined,
         );
         if (phase) {
-          Object.assign(phase, structuredClone(data));
+          Object.assign(phase, structuredClone(redactedData));
           phase.stage = stage;
           phase.status = status ?? 'passed';
           phase.finished_at = new Date(now).toISOString();
@@ -232,7 +267,7 @@ export class RunRecorder {
           delete phase.started_at_ms;
         }
       }
-      await this.#appendEvent(kind, stage, data, status);
+      await this.#appendEvent(kind, stage, redactedData, status);
     });
   }
 
@@ -242,49 +277,76 @@ export class RunRecorder {
     stream: 'stdout' | 'stderr',
     line: string,
   ): Promise<void> {
+    try {
+      this.#assertOpen();
+    } catch (error) {
+      return Promise.reject(error);
+    }
     return this.#queue(async () => {
       const outputPath =
         stream === 'stdout' ? this.stdoutPath : this.stderrPath;
       await fs.appendFile(outputPath, `${line}\n`, 'utf8');
-      await this.#appendEvent('process_output', stage, { role, stream, line });
+      await this.#appendEvent('process_output', stage, {
+        role,
+        stream,
+        line: redactUserPaths(line),
+      });
     });
   }
 
   async addFailure(failure: RiftFailure): Promise<void> {
-    this.#summary.failures.push({ ...failure });
-    await this.emit('failure', failure.stage, { ...failure }, 'failed');
+    this.#assertOpen();
+    const redacted = {
+      ...failure,
+      message: redactUserPaths(failure.message),
+    };
+    await this.#queue(async () => {
+      this.#summary.failures.push(redacted);
+      await this.#appendEvent('failure', redacted.stage, redacted, 'failed');
+    });
   }
 
   async addArtifact(record: ArtifactRecord): Promise<void> {
-    this.#summary.artifacts.push({ ...record });
-    await this.emit('artifact', record.stage, { ...record });
+    this.#assertOpen();
+    await this.#queue(async () => {
+      const redacted = redactRecord(
+        record as unknown as Record<string, unknown>,
+      );
+      this.#summary.artifacts.push(redacted as unknown as ArtifactRecord);
+      await this.#appendEvent('artifact', record.stage, redacted);
+    });
   }
 
   async setTests(tests: NonNullable<RiftSummary['tests']>): Promise<void> {
+    this.#assertOpen();
     await this.#queue(async () => {
       this.#summary.tests = { ...tests };
     });
   }
 
   async setRepository(revision: string, dirty: boolean): Promise<void> {
+    this.#assertOpen();
     await this.#queue(async () => {
       this.#summary.repository = { revision, dirty };
     });
   }
 
   async setToolVersions(versions: Record<string, string>): Promise<void> {
+    this.#assertOpen();
     await this.#queue(async () => {
       this.#summary.tool_versions = { ...versions };
     });
   }
 
   async addPhase(phase: Record<string, unknown>): Promise<void> {
+    this.#assertOpen();
     await this.#queue(async () => {
-      this.#summary.phases.push(structuredClone(phase));
+      this.#summary.phases.push(structuredClone(redactRecord(phase)));
     });
   }
 
   async addProcess(result: ProcessResult): Promise<void> {
+    this.#assertOpen();
     await this.#queue(async () => {
       this.#summary.processes.push({
         role: result.role,
@@ -303,6 +365,7 @@ export class RunRecorder {
   async setRuntimeSignatures(
     signatures: RiftSummary['runtime_signatures'],
   ): Promise<void> {
+    this.#assertOpen();
     await this.#queue(async () => {
       this.#summary.runtime_signatures = structuredClone(signatures);
     });
@@ -311,17 +374,30 @@ export class RunRecorder {
   async setResourceMaxima(
     maxima: Array<Record<string, unknown>>,
   ): Promise<void> {
+    this.#assertOpen();
     await this.#queue(async () => {
       this.#summary.resource_maxima = structuredClone(maxima);
     });
   }
 
   async setCleanup(cleanup: RiftSummary['cleanup']): Promise<void> {
+    this.#assertOpen();
     await this.#queue(async () => {
       this.#summary.cleanup = {
         passed: cleanup.passed,
         leftovers: [...cleanup.leftovers],
+        retained: [...cleanup.retained],
       };
+    });
+  }
+
+  async addCleanupLeftover(leftover: string): Promise<void> {
+    this.#assertOpen();
+    await this.#queue(async () => {
+      this.#summary.cleanup.passed = false;
+      if (!this.#summary.cleanup.leftovers.includes(leftover)) {
+        this.#summary.cleanup.leftovers.push(leftover);
+      }
     });
   }
 
@@ -329,7 +405,17 @@ export class RunRecorder {
     if (this.#finished) {
       return structuredClone(this.#finished);
     }
-    await this.emit('run_finished', 'run', { exit_code: exitCode }, status);
+    if (!this.#finishPromise) {
+      this.#finishing = true;
+      this.#finishPromise = this.#finalize(status, exitCode);
+    }
+    return structuredClone(await this.#finishPromise);
+  }
+
+  async #finalize(status: RiftStatus, exitCode: number): Promise<RiftSummary> {
+    await this.#queue(() =>
+      this.#appendEvent('run_finished', 'run', { exit_code: exitCode }, status),
+    );
     await this.#writes;
 
     const finishedAtMs = Date.now();
@@ -392,31 +478,134 @@ export const normalizeRuntimeSignature = (message: string): string =>
     .replaceAll(/\d+/g, 'N')
     .trim();
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const RIFT_STATUSES = new Set<RiftStatus>([
+  'passed',
+  'failed',
+  'timed_out',
+  'cancelled',
+  'ready_then_stopped',
+]);
+const EVIDENCE_CLASSES = new Set<EvidenceClass>([
+  'inspection',
+  'compiler',
+  'full_build',
+  'boot',
+  'focused_test',
+  'full_test',
+  'soak',
+]);
+const EVENT_KINDS = new Set<RiftEvent['kind']>([
+  'run_started',
+  'stage_started',
+  'process_started',
+  'process_output',
+  'observation',
+  'artifact',
+  'stage_finished',
+  'failure',
+  'run_finished',
+]);
+
+const validateStoredSummary = (value: unknown): RiftSummary => {
+  if (!isRecord(value)) {
+    throw new Error('invalid stored summary');
+  }
+  if (value.schema_version !== RIFT_SCHEMA_VERSION) {
+    throw new Error(
+      `unsupported report schema: ${String(value.schema_version)}`,
+    );
+  }
+  if (
+    typeof value.run_id !== 'string' ||
+    typeof value.command !== 'string' ||
+    typeof value.profile !== 'string' ||
+    !RIFT_STATUSES.has(value.status as RiftStatus) ||
+    !EVIDENCE_CLASSES.has(value.evidence as EvidenceClass) ||
+    !Number.isInteger(value.exit_code) ||
+    typeof value.started_at !== 'string' ||
+    typeof value.finished_at !== 'string' ||
+    !Number.isInteger(value.duration_ms) ||
+    !isRecord(value.repository) ||
+    typeof value.repository.revision !== 'string' ||
+    typeof value.repository.dirty !== 'boolean' ||
+    !isRecord(value.tool_versions) ||
+    (value.network_mode !== 'offline' && value.network_mode !== 'allow') ||
+    !Array.isArray(value.phases) ||
+    !Array.isArray(value.processes) ||
+    !Array.isArray(value.runtime_signatures) ||
+    !Array.isArray(value.resource_maxima) ||
+    !Array.isArray(value.artifacts) ||
+    !Array.isArray(value.failures) ||
+    !isRecord(value.cleanup) ||
+    typeof value.cleanup.passed !== 'boolean' ||
+    !Array.isArray(value.cleanup.leftovers) ||
+    (value.cleanup.retained !== undefined &&
+      !Array.isArray(value.cleanup.retained))
+  ) {
+    throw new Error('invalid stored summary');
+  }
+  value.cleanup.retained ??= [];
+  return value as unknown as RiftSummary;
+};
+
+const validateStoredEvent = (
+  value: unknown,
+  runId: string,
+  expectedSequence: number,
+): RiftEvent => {
+  if (!isRecord(value)) {
+    throw new Error(`invalid stored event at sequence ${expectedSequence}`);
+  }
+  if (value.schema_version !== RIFT_SCHEMA_VERSION) {
+    throw new Error(
+      `unsupported event schema: ${String(value.schema_version)}`,
+    );
+  }
+  if (value.sequence !== expectedSequence) {
+    throw new Error(
+      `invalid event sequence: expected ${expectedSequence}, received ${String(value.sequence)}`,
+    );
+  }
+  if (
+    value.run_id !== runId ||
+    typeof value.timestamp !== 'string' ||
+    !EVENT_KINDS.has(value.kind as RiftEvent['kind']) ||
+    typeof value.stage !== 'string' ||
+    !isRecord(value.data) ||
+    (value.status !== undefined &&
+      !RIFT_STATUSES.has(value.status as RiftStatus))
+  ) {
+    throw new Error(`invalid stored event at sequence ${expectedSequence}`);
+  }
+  return value as unknown as RiftEvent;
+};
+
 export const readStoredRun = async (
   runDir: string,
 ): Promise<{ summary: RiftSummary; events: RiftEvent[] }> => {
-  const summary = (await Bun.file(
-    path.join(runDir, 'summary.json'),
-  ).json()) as RiftSummary;
-  if (summary.schema_version !== RIFT_SCHEMA_VERSION) {
-    throw new Error(
-      `unsupported report schema: ${String(summary.schema_version)}`,
-    );
-  }
+  const summary = validateStoredSummary(
+    await Bun.file(path.join(runDir, 'summary.json')).json(),
+  );
 
   const eventText = await Bun.file(path.join(runDir, 'events.ndjson')).text();
   const events = eventText.trim()
     ? eventText
         .trim()
         .split('\n')
-        .map((line) => JSON.parse(line) as RiftEvent)
+        .map((line, index) =>
+          validateStoredEvent(JSON.parse(line), summary.run_id, index + 1),
+        )
     : [];
-  for (const event of events) {
-    if (event.schema_version !== RIFT_SCHEMA_VERSION) {
-      throw new Error(
-        `unsupported event schema: ${String(event.schema_version)}`,
-      );
-    }
+  const terminal = events.at(-1);
+  if (
+    terminal?.kind !== 'run_finished' ||
+    terminal.status !== summary.status ||
+    terminal.data.exit_code !== summary.exit_code
+  ) {
+    throw new Error('stored run terminal event does not match summary');
   }
   return { summary, events };
 };

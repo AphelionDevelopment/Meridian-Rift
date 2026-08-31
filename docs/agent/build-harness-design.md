@@ -56,7 +56,7 @@ Meridian-MCP rift_compile
   -> RIFT.cmd compile --mode full [--force]
 ```
 
-The implementation uses Bun/TypeScript standard and Node-compatible APIs. Windows-specific process discovery/resource reads use fixed encoded PowerShell programs internal to `process.ts`; callers cannot supply program text. Exact tree termination uses `taskkill /PID <root> /T /F` followed by exact observed-PID verification.
+The implementation uses Bun/TypeScript standard and Node-compatible APIs. Windows-specific process discovery/resource reads use fixed encoded PowerShell programs internal to `process.ts`; callers cannot supply program text. Tree termination first requests shutdown through the owned Bun process handle, then force-stops only observed descendants whose PID, executable name, and creation time still match the captured process instance.
 
 ## Repository and tool qualification
 
@@ -108,13 +108,13 @@ DreamDaemon receives direct argument elements for the DMB, port, profile flags, 
 
 `run` compiles, deploys, reaches readiness, optionally monitors a bounded window, then intentionally stops and returns `ready_then_stopped`. It continues fatal-log monitoring during a requested post-readiness window.
 
-`test` runs fixed Juke prerequisites, appends validated `TEST_FOCUS()` macros to the run scratch DME, compiles with `CBT` and `CIBUILDING`, deploys under the selected profile, and requires strict unit-test JSON/minimum/artifact/process policies. CI uses MetaStation by default. BYOND 516.1687/Bun 1.3.5 produced different Windows native exits (224 and 176) for clean natural MetaStation shutdowns. RIFT records that value as process evidence but makes fresh passing result JSON, zero runtime failures, required clean artifacts, and natural termination authoritative.
+`test` defaults to the `ci` profile, runs fixed Juke prerequisites, appends validated `TEST_FOCUS()` macros to the run scratch DME, compiles with `CBT` and `CIBUILDING`, deploys under the selected profile, and requires strict unit-test JSON/minimum/artifact/process policies. Alternate test profiles must retain the CI config, `-close`, and required nonempty unit-test and clean-run artifacts. CI uses MetaStation by default. BYOND 516.1687/Bun 1.3.5 produced different Windows native exits (224 and 176) for clean natural MetaStation shutdowns. RIFT records that value as process evidence but makes fresh passing result JSON, zero runtime failures, required clean artifacts, and natural termination authoritative.
 
 `soak` requires 30-1800 seconds after readiness. It continuously evaluates fatal/child rules and samples private/working-set bytes by stable role. It fails immediately on policy violations. Optional Dogmos shim/service inputs must be supplied together, be nonempty files, and are copied only into the workspace under fixed names.
 
 ## Process ownership and cancellation
 
-Every owned root records descendants discovered from Windows process parentage. The supervisor streams stdout/stderr, samples resources, observes activity files, and enforces independent idle/wall limits. Stop and cancellation target only the owned tree and verify observed PIDs are gone. Unrelated processes are never selected by executable name.
+Every owned root records descendants discovered from Windows process parentage. The supervisor streams stdout/stderr, samples resources, observes activity files, and enforces independent idle/wall limits. Stop and cancellation target only captured process instances and verify that those exact identities are gone. PID reuse cannot redirect cleanup to an unrelated process, and unrelated processes are never selected by executable name alone.
 
 Ctrl+C/Ctrl+Break set controller cancellation state, stop all active owned processes with cancellation semantics, allow workflow artifact/cleanup handling, publish the summary, and return 130.
 
@@ -136,7 +136,7 @@ Evidence classes are:
 
 Parser success, process liveness, focused tests, and full builds are not interchangeable evidence.
 
-Each run has ordered `events.ndjson`, raw controller child output logs, atomically published `summary.json`, copied/hashed artifacts, and a transient workspace. The summary includes phase durations, supervised process termination/native exits, stable CLI exit, tests, runtime signatures, resource maxima, cleanup state, and failures. Artifact paths are run-relative. Human paths are redacted; environments and secret-bearing command strings are not serialized.
+Each run has ordered `events.ndjson`, raw controller child output logs, atomically published `summary.json`, copied/hashed artifacts, and a transient workspace. The summary includes phase durations, supervised process termination/native exits, stable CLI exit, tests, runtime signatures, resource maxima, cleanup state, and failures. Artifact paths are run-relative. Structured reports recursively redact user-profile path segments; raw child output remains exact local evidence. Environments and secret-bearing command strings are not serialized. Cleanup records intentional retention separately from removal failures.
 
 Stable exits are 0 success, 2 usage, 3 preflight, 4 compile, 5 runtime/test/policy/artifact/cleanup, 6 timeout, 7 lock, and 130 cancellation. Native child exits remain process evidence.
 

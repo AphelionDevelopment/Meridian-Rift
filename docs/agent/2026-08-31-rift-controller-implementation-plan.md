@@ -93,6 +93,16 @@ Final run records:
 
 The focused-test investigation also measured three different native DreamDaemon exits (224, 176, and 160) for clean natural shutdowns with the same passing result/clean-run contract. Native exit is retained as process evidence; it is not used instead of fresh game evidence.
 
+Post-review repairs added inherited Bun offline configuration, enforced representative-map and CI test-profile contracts, continuous post-readiness monitoring, cancellable bounded tasks, process-instance identity checks, race-safe lock reaping and finalization, typed exit classification, recursive structured-report redaction, stored-report validation, and explicit retained-workspace reporting. Fresh repair evidence:
+
+- doctor: `20260831T035633Z-4ae3d8fb`;
+- fast compile: `20260831T035643Z-31c650ce`;
+- bounded MetaStation boot: `20260831T035854Z-1bf7f38d`;
+- focused MetaStation CI test: `20260831T040216Z-ef0689c5`;
+- 30-second full RuntimeStation soak: `20260831T041132Z-f3f2d903`;
+- controller tests: 78 passed, 0 failed with Bun 1.3.5;
+- Biome: all `tools/rift` files checked with no diagnostics.
+
 ## Handoff boundary
 
 Leave all changes uncommitted. Report exact tool versions, run IDs, evidence scopes, process/lock/worktree cleanliness, and remaining gates. Do not describe focused MetaStation evidence as a full test suite, hosted CI, or production/live-round result.

@@ -57,7 +57,9 @@ The checked-in profiles are:
 - `default`: repository configuration, suitable for normal boot/soak work.
 - `ci`: `tools/ci/ci_config.txt`, `-close`, required clean-run and unit-test artifacts, and `_maps/metastation.json` by default.
 
-Map test commands must use a representative map. Use `_maps/metastation.json` or `_maps/runtimestation.json`; do not use `_maps/runtimestation_minimal.json` as completion evidence.
+`test` selects `ci` when `--profile` is omitted; other commands select `default`. A test profile is rejected unless it uses the CI config, requests natural `-close` shutdown, and requires nonempty unit-test and clean-run artifacts.
+
+Run, test, and soak commands enforce a representative map. The only accepted completion-evidence maps are `_maps/metastation.json` and `_maps/runtimestation.json`; `_maps/runtimestation_minimal.json` and other debug maps are rejected.
 
 Examples:
 
@@ -85,7 +87,7 @@ BYOND resolution checks `DM_EXE`, the optional default entry in `tools/build/dm_
 
 `compile --mode full` validates the protected build contract and invokes the fixed inherited `tools/build/build.bat build` target. `--force` removes only canonical `tgstation.dmb` and `tgstation.rsc` immediately before the build and requires fresh replacements. Without `--force`, artifacts are classified as rebuilt or reused.
 
-`run`, `test`, and `soak` deploy required inputs into the run's `workspace` directory. Repository configuration and map files are copied; they are never rewritten for a run. DreamDaemon starts in that isolated directory, readiness and fatal rules consume structured logs, and the exact owned process tree is stopped by PID. `run` returns `ready_then_stopped` after readiness or the requested bounded window.
+`run`, `test`, and `soak` deploy required inputs into the run's `workspace` directory. Repository configuration and map files are copied; they are never rewritten for a run. DreamDaemon starts in that isolated directory, and readiness and fatal rules are monitored continuously until natural completion or requested stop. Process cleanup targets only descendants captured with matching PID, executable name, and creation time; a PID without verified instance identity is never force-killed. `run` returns `ready_then_stopped` after readiness or the requested bounded window.
 
 `test` performs a `CIBUILDING` compile and validates `data/unit_tests.json`, minimum counts, failures, profile artifacts, and natural DreamDaemon termination. BYOND 516.1687/Bun 1.3.5 on Windows produced different native exit values (224 and 176) for otherwise identical clean MetaStation test shutdowns. RIFT therefore records the native value but does not use it as the success classifier after natural termination; fresh passing result JSON, minimum counts, zero runtime failures, and required clean artifacts are authoritative. The CI profile uses MetaStation by default. Database-backed game tests still require the repository's configured MariaDB service. A disposable local MariaDB container is one optional way to supply it, but Docker is not configured or managed by RIFT.
 
@@ -106,7 +108,9 @@ artifacts/
 workspace/        # only while running or with --keep-workspace
 ```
 
-`events.ndjson` is ordered and append-only. `summary.json` is written atomically at completion. It contains the command/status, evidence class, stable exit, Git revision/dirty state, tool versions, network mode, phase durations, supervised process results, test counts, runtime signatures, resource maxima, hashed run-relative artifacts, cleanup result, and failures. User-profile path segments are redacted from human output; environment blocks and arbitrary external paths are not serialized.
+`events.ndjson` is ordered and append-only. `summary.json` is written atomically at completion. It contains the command/status, evidence class, stable exit, Git revision/dirty state, tool versions, network mode, phase durations, supervised process results, test counts, runtime signatures, resource maxima, hashed run-relative artifacts, cleanup result, and failures. Structured events and summaries redact user-profile path segments recursively; environment blocks and arbitrary external paths are not serialized. Raw `stdout.log` and `stderr.log` preserve exact child output for debugging and must be handled as potentially sensitive local evidence.
+
+Cleanup distinguishes failures from intentional retention: `cleanup.leftovers` names paths that should have been removed, while `cleanup.retained` names paths kept by request such as `workspace` under `--keep-workspace`.
 
 Evidence labels are `inspection`, `compiler`, `full_build`, `boot`, `focused_test`, `full_test`, and `soak`. These scopes are intentionally distinct.
 

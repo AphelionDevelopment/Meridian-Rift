@@ -510,7 +510,7 @@ export const parseCli = (
 
   let format: CommonOptions['format'] = 'human';
   let networkMode: CommonOptions['networkMode'] = environmentNetwork;
-  let profile = 'default';
+  let profile: string | null = null;
   let wallTimeoutSeconds: number | null = null;
   let idleTimeoutSeconds: number | null = null;
   let waitForLockSeconds = 0;
@@ -731,7 +731,7 @@ export const parseCli = (
   const common: CommonOptions = {
     format,
     networkMode,
-    profile,
+    profile: profile ?? (command === 'test' ? 'ci' : 'default'),
     wallTimeoutSeconds,
     idleTimeoutSeconds,
     waitForLockSeconds,
@@ -907,6 +907,7 @@ const isContainedPath = (parent: string, child: string) => {
 export const validateMapPath = (
   repositoryRoot: string,
   value: string,
+  completionEvidence = false,
 ): string => {
   const mapsRoot = fsSync.realpathSync(path.join(repositoryRoot, '_maps'));
   const candidate = path.resolve(repositoryRoot, value);
@@ -925,7 +926,19 @@ export const validateMapPath = (
   if (!isContainedPath(mapsRoot.toLowerCase(), realCandidate.toLowerCase())) {
     throw new Error('map path escapes _maps');
   }
-  return path.relative(repositoryRoot, realCandidate).replaceAll('\\', '/');
+  const relativePath = path
+    .relative(repositoryRoot, realCandidate)
+    .replaceAll('\\', '/');
+  if (
+    completionEvidence &&
+    relativePath.toLowerCase() !== '_maps/metastation.json' &&
+    relativePath.toLowerCase() !== '_maps/runtimestation.json'
+  ) {
+    throw new Error(
+      'completion evidence requires a representative map: _maps/metastation.json or _maps/runtimestation.json',
+    );
+  }
+  return relativePath;
 };
 
 export type ByondTools = {
@@ -1161,7 +1174,7 @@ export const preflightOffline = async (
   };
   try {
     await fs.writeFile(
-      path.join(temporaryRoot, 'bunfig.toml'),
+      path.join(temporaryRoot, '.bunfig.toml'),
       [
         'telemetry = false',
         'env = false',
@@ -1192,7 +1205,7 @@ export const preflightOffline = async (
     for (const cwd of [repository.root, path.join(repository.root, 'tgui')]) {
       const result = await runProbe(
         tools.bun,
-        ['install', '--offline', '--frozen-lockfile', '--dry-run'],
+        ['install', '--dry-run'],
         cwd,
         childEnvironment,
       );
@@ -1221,7 +1234,7 @@ export const createCancellationController = (
   let cancelled = false;
   const runner: ProcessRunner = (spec, hooks) => {
     if (cancelled) {
-      throw new Error('cancelled');
+      throw new RiftError('cancelled', 'run', 'cancelled', 130);
     }
     const owned = delegate(spec, hooks);
     active.add(owned);
@@ -1281,6 +1294,7 @@ export type WorkflowContext = {
   serverPort?: number;
   now?: () => number;
   sleep?: (milliseconds: number) => Promise<void>;
+  wasCancelled?: () => boolean;
 };
 
 export type ResourceSample = {
@@ -1770,7 +1784,7 @@ export const removeDeployment = async (
   runDir: string,
   keepWorkspace: boolean,
   removeTree: RemoveTree = fs.rm,
-): Promise<{ passed: boolean; leftovers: string[] }> => {
+): Promise<{ passed: boolean; leftovers: string[]; retained: string[] }> => {
   const runRoot = path.resolve(runDir);
   const deploymentRoot = path.resolve(deployment.root);
   if (
@@ -1780,7 +1794,7 @@ export const removeDeployment = async (
     throw new Error('deployment cleanup path escaped run directory');
   }
   if (keepWorkspace) {
-    return { passed: true, leftovers: [] };
+    return { passed: true, leftovers: [], retained: ['workspace'] };
   }
   try {
     await removeTree(deploymentRoot, { recursive: true, force: true });
@@ -1788,11 +1802,12 @@ export const removeDeployment = async (
     return {
       passed: false,
       leftovers: [path.relative(runRoot, deploymentRoot).replaceAll('\\', '/')],
+      retained: [],
     };
   }
   return fsSync.existsSync(deploymentRoot)
-    ? { passed: false, leftovers: ['workspace'] }
-    : { passed: true, leftovers: [] };
+    ? { passed: false, leftovers: ['workspace'], retained: [] }
+    : { passed: true, leftovers: [], retained: [] };
 };
 
 export type StructuredLogRecord = {
@@ -1832,9 +1847,16 @@ export const matchesLogRule = (
 type WatchedLogRecord = {
   file: string;
   record: StructuredLogRecord;
+  batchComplete: boolean;
 };
 
 type LogFileState = { offset: number; partial: string };
+type LogMonitorCursor = {
+  files: Map<string, LogFileState>;
+  fatalCounts: Map<string, number>;
+};
+
+const observationCursors = new WeakMap<LogObservation, LogMonitorCursor>();
 
 const readNewLogRecords = async (
   filePath: string,
@@ -1891,6 +1913,7 @@ export async function* watchGameLogs(options: {
   signal?: AbortSignal;
   pollMs?: number;
   startAtEnd?: boolean;
+  states?: Map<string, LogFileState>;
 }): AsyncGenerator<WatchedLogRecord> {
   const structuredRelative = options.profile.readiness_rule.file.replaceAll(
     '\\',
@@ -1898,7 +1921,7 @@ export async function* watchGameLogs(options: {
   );
   const structuredPath = path.join(options.deployment.root, structuredRelative);
   const plainPath = path.join(options.deployment.gameLogDir, 'runtime.log');
-  const states = new Map<string, LogFileState>();
+  const states = options.states ?? new Map<string, LogFileState>();
   const stateFor = (filePath: string) => {
     let state = states.get(filePath);
     if (!state) {
@@ -1922,12 +1945,17 @@ export async function* watchGameLogs(options: {
         ? { path: plainPath, file: structuredRelative, structured: false }
         : null;
     if (selected) {
-      for (const record of await readNewLogRecords(
+      const records = await readNewLogRecords(
         selected.path,
         stateFor(selected.path),
         selected.structured,
-      )) {
-        yield { file: selected.file, record };
+      );
+      for (const [index, record] of records.entries()) {
+        yield {
+          file: selected.file,
+          record,
+          batchComplete: index === records.length - 1,
+        };
       }
     }
     await Bun.sleep(options.pollMs ?? 25);
@@ -1978,8 +2006,9 @@ const observeUntilReady = async (options: {
   process: OwnedProcess;
   recorder: RunRecorder;
   signal: AbortSignal;
+  cursor: LogMonitorCursor;
 }): Promise<LogObservation> => {
-  const counts = new Map<string, number>();
+  let readinessSeen = false;
   const signatures = new Map<
     string,
     { signature: string; count: number; first_seen: string }
@@ -1988,6 +2017,7 @@ const observeUntilReady = async (options: {
     deployment: options.deployment,
     profile: options.profile,
     signal: options.signal,
+    states: options.cursor.files,
   })) {
     const { record } = item;
     if (typeof record.msg === 'string' && /runtime error:/i.test(record.msg)) {
@@ -2008,8 +2038,8 @@ const observeUntilReady = async (options: {
         continue;
       }
       if (matchesLogRule(rule, record)) {
-        const count = (counts.get(rule.id) ?? 0) + 1;
-        counts.set(rule.id, count);
+        const count = (options.cursor.fatalCounts.get(rule.id) ?? 0) + 1;
+        options.cursor.fatalCounts.set(rule.id, count);
         if (count > rule.max_occurrences) {
           const failure: RiftFailure = {
             code:
@@ -2044,6 +2074,9 @@ const observeUntilReady = async (options: {
         readiness_rule: options.profile.readiness_rule.id,
         owned_pids: options.process.ownedPids(),
       });
+      readinessSeen = true;
+    }
+    if (readinessSeen && item.batchComplete) {
       return {
         ready: true,
         fatalFailures: [],
@@ -2062,16 +2095,28 @@ export const waitForReadiness = async (options: {
   recorder: RunRecorder;
 }): Promise<LogObservation> => {
   const abort = new AbortController();
+  const cursor: LogMonitorCursor = {
+    files: new Map(),
+    fatalCounts: new Map(),
+  };
   let timeout: ReturnType<typeof setTimeout> | null = null;
   const timedOut = new Promise<never>((_resolve, reject) => {
     timeout = setTimeout(
-      () => reject(new Error('readiness_timeout')),
+      () =>
+        reject(
+          new RiftError(
+            'readiness_timeout',
+            'server',
+            'readiness_timeout: deadline elapsed',
+            6,
+          ),
+        ),
       options.timeoutMs,
     );
   });
   try {
-    return await Promise.race([
-      observeUntilReady({ ...options, signal: abort.signal }),
+    const observation = await Promise.race([
+      observeUntilReady({ ...options, signal: abort.signal, cursor }),
       options.process.result.then((result) => {
         throw new Error(
           `process_exited_before_ready: ${result.termination} ${String(result.exitCode)}`,
@@ -2079,6 +2124,8 @@ export const waitForReadiness = async (options: {
       }),
       timedOut,
     ]);
+    observationCursors.set(observation, cursor);
+    return observation;
   } finally {
     if (timeout !== null) {
       clearTimeout(timeout);
@@ -2140,10 +2187,15 @@ export const runServerWorkflow = async (
       processRunner: context.processRunner,
       buildProcessRunner: context.buildProcessRunner,
     };
-    const compile =
-      command.compileMode === 'fast'
-        ? await compileFast(request)
-        : await compileFull({ ...request, force: false });
+    let compile: CompileOutcome;
+    try {
+      compile =
+        command.compileMode === 'fast'
+          ? await compileFast(request)
+          : await compileFull({ ...request, force: false });
+    } catch (error) {
+      rethrowAsRiftError(error, 'compile_failed', 'compile', 4);
+    }
     await context.recorder.emit(
       'stage_finished',
       'compile',
@@ -2218,7 +2270,7 @@ export const runServerWorkflow = async (
         command.keepWorkspace,
       );
       await context.recorder.setCleanup(cleanup);
-      return context.recorder.finish('failed', 5);
+      return finishRunWithLock(context.recorder, context.lock, 'failed', 5);
     }
     for (const signature of observation.runtimeSignatures) {
       runtimeSignatures.set(signature.signature, { ...signature });
@@ -2232,11 +2284,16 @@ export const runServerWorkflow = async (
         stage: 'server',
         signal: monitorAbort.signal,
         signatures: runtimeSignatures,
+        cursor: observationCursors.get(observation),
       });
+      const duration = sleepUntilAborted(
+        command.runSeconds * 1000,
+        monitorAbort.signal,
+      ).then((completed) => ({
+        kind: completed ? ('duration' as const) : ('monitor_stopped' as const),
+      }));
       const bounded = await Promise.race([
-        Bun.sleep(command.runSeconds * 1000).then(() => ({
-          kind: 'duration' as const,
-        })),
+        duration,
         logMonitor.then((failure) => ({
           kind: 'monitor' as const,
           failure,
@@ -2244,11 +2301,14 @@ export const runServerWorkflow = async (
         server.result.then((result) => ({ kind: 'exit' as const, result })),
       ]);
       monitorAbort.abort();
-      await logMonitor.catch(() => undefined);
+      await Promise.allSettled([duration, logMonitor]);
       if (bounded.kind === 'monitor') {
         if (bounded.failure) {
-          throw new Error(
-            `${bounded.failure.code}: ${bounded.failure.message}`,
+          throw new RiftError(
+            bounded.failure.code,
+            'server',
+            bounded.failure.message,
+            5,
           );
         }
         throw new Error('server_monitor_stopped');
@@ -2257,6 +2317,9 @@ export const runServerWorkflow = async (
         throw new Error(
           `process_exited_before_requested_stop: ${bounded.result.termination} ${String(bounded.result.exitCode)}`,
         );
+      }
+      if (bounded.kind !== 'duration') {
+        throw new Error('server_monitor_stopped');
       }
     }
     await context.recorder.setRuntimeSignatures([
@@ -2286,9 +2349,14 @@ export const runServerWorkflow = async (
         stage: 'cleanup',
         message: `workspace cleanup left: ${cleanup.leftovers.join(', ')}`,
       });
-      return context.recorder.finish('failed', 5);
+      return finishRunWithLock(context.recorder, context.lock, 'failed', 5);
     }
-    return context.recorder.finish('ready_then_stopped', 0);
+    return finishRunWithLock(
+      context.recorder,
+      context.lock,
+      'ready_then_stopped',
+      0,
+    );
   } catch (error) {
     await server?.stop('requested').catch(() => undefined);
     await context.recorder
@@ -2304,19 +2372,30 @@ export const runServerWorkflow = async (
         deployment,
         context.runDir,
         command.keepWorkspace,
-      ).catch(() => ({ passed: false, leftovers: ['workspace'] }));
+      ).catch(() => ({
+        passed: false,
+        leftovers: ['workspace'],
+        retained: [],
+      }));
       await context.recorder.setCleanup(cleanup).catch(() => undefined);
     }
     const message = error instanceof Error ? error.message : String(error);
-    const code = message.split(':', 1)[0] || 'server_failed';
-    await context.recorder.addFailure({ code, stage: 'server', message });
-    return context.recorder.finish(
-      message.includes('cancelled')
-        ? 'cancelled'
-        : message.includes('timeout')
-          ? 'timed_out'
-          : 'failed',
-      message.includes('cancelled') ? 130 : message.includes('timeout') ? 6 : 5,
+    const failure = classifyWorkflowFailure(
+      error,
+      'server',
+      'server_failed',
+      context.wasCancelled?.() ?? false,
+    );
+    await context.recorder.addFailure({
+      code: failure.code,
+      stage: failure.stage,
+      message,
+    });
+    return finishRunWithLock(
+      context.recorder,
+      context.lock,
+      statusForExitCode(failure.exitCode),
+      failure.exitCode,
     );
   }
 };
@@ -2330,13 +2409,15 @@ const monitorRuntimeLogs = async (options: {
     string,
     { signature: string; count: number; first_seen: string }
   >;
+  cursor?: LogMonitorCursor;
 }): Promise<RiftFailure | null> => {
-  const counts = new Map<string, number>();
+  const counts = options.cursor?.fatalCounts ?? new Map<string, number>();
   for await (const item of watchGameLogs({
     deployment: options.deployment,
     profile: options.profile,
     signal: options.signal,
-    startAtEnd: true,
+    startAtEnd: options.cursor === undefined,
+    states: options.cursor?.files,
   })) {
     const { record } = item;
     if (typeof record.msg === 'string' && /runtime error:/i.test(record.msg)) {
@@ -2441,6 +2522,44 @@ const applySoakOverlays = async (
   }
 };
 
+const sleepUntilAborted = async (
+  milliseconds: number,
+  signal: AbortSignal,
+  injectedSleep?: (milliseconds: number) => Promise<void>,
+): Promise<boolean> => {
+  if (signal.aborted) {
+    return false;
+  }
+  return new Promise<boolean>((resolve, reject) => {
+    let settled = false;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    const settle = (completed: boolean) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      signal.removeEventListener('abort', onAbort);
+      if (timeout !== null) {
+        clearTimeout(timeout);
+      }
+      resolve(completed);
+    };
+    const onAbort = () => settle(false);
+    signal.addEventListener('abort', onAbort, { once: true });
+    if (injectedSleep) {
+      void injectedSleep(milliseconds).then(
+        () => settle(!signal.aborted),
+        (error) => {
+          signal.removeEventListener('abort', onAbort);
+          reject(error);
+        },
+      );
+      return;
+    }
+    timeout = setTimeout(() => settle(true), milliseconds);
+  });
+};
+
 export const runSoakWorkflow = async (
   context: WorkflowContext,
   command: Extract<RiftCommand, { command: 'soak' }>,
@@ -2484,10 +2603,15 @@ export const runSoakWorkflow = async (
       processRunner: context.processRunner,
       buildProcessRunner: context.buildProcessRunner,
     };
-    const compile =
-      command.compileMode === 'fast'
-        ? await compileFast(request)
-        : await compileFull({ ...request, force: false });
+    let compile: CompileOutcome;
+    try {
+      compile =
+        command.compileMode === 'fast'
+          ? await compileFast(request)
+          : await compileFull({ ...request, force: false });
+    } catch (error) {
+      rethrowAsRiftError(error, 'compile_failed', 'compile', 4);
+    }
     await context.recorder.emit(
       'stage_finished',
       'compile',
@@ -2568,14 +2692,17 @@ export const runSoakWorkflow = async (
       stage: 'soak',
       signal: monitorAbort.signal,
       signatures: runtimeSignatures,
+      cursor: observationCursors.get(readiness),
     });
     const now = context.now ?? Date.now;
-    const sleep = context.sleep ?? Bun.sleep;
     const durationMs = command.runSeconds * 1000;
     const intervalMs = context.profile.resource_sample_seconds * 1000;
     const startedAt = now();
     const duration = (async () => {
       for (;;) {
+        if (monitorAbort.signal.aborted) {
+          return { kind: 'monitor_stopped' as const };
+        }
         await captureSoakResources({
           process: server!,
           recorder: context.recorder,
@@ -2594,7 +2721,14 @@ export const runSoakWorkflow = async (
         if (remaining <= 0) {
           return { kind: 'duration' as const };
         }
-        await sleep(Math.min(intervalMs, remaining));
+        const completed = await sleepUntilAborted(
+          Math.min(intervalMs, remaining),
+          monitorAbort.signal,
+          context.sleep,
+        );
+        if (!completed) {
+          return { kind: 'monitor_stopped' as const };
+        }
       }
     })();
     const outcome = await Promise.race([
@@ -2607,9 +2741,14 @@ export const runSoakWorkflow = async (
       server.result.then((result) => ({ kind: 'exit' as const, result })),
     ]);
     monitorAbort.abort();
-    await logMonitor.catch(() => undefined);
+    await Promise.allSettled([duration, logMonitor]);
     if (outcome.kind === 'failure') {
-      throw new Error(`${outcome.failure.code}: ${outcome.failure.message}`);
+      throw new RiftError(
+        outcome.failure.code,
+        'soak',
+        outcome.failure.message,
+        5,
+      );
     }
     if (outcome.kind === 'exit') {
       throw new Error(
@@ -2642,7 +2781,7 @@ export const runSoakWorkflow = async (
     if (!cleanup.passed) {
       throw new Error(`cleanup_failed: ${cleanup.leftovers.join(', ')}`);
     }
-    return context.recorder.finish('passed', 0);
+    return finishRunWithLock(context.recorder, context.lock, 'passed', 0);
   } catch (error) {
     await server?.stop('requested').catch(() => undefined);
     await persistObservations().catch(() => undefined);
@@ -2656,19 +2795,30 @@ export const runSoakWorkflow = async (
         deployment,
         context.runDir,
         command.keepWorkspace,
-      ).catch(() => ({ passed: false, leftovers: ['workspace'] }));
+      ).catch(() => ({
+        passed: false,
+        leftovers: ['workspace'],
+        retained: [],
+      }));
       await context.recorder.setCleanup(cleanup).catch(() => undefined);
     }
     const message = error instanceof Error ? error.message : String(error);
-    const code = message.split(':', 1)[0] || 'soak_failed';
-    await context.recorder.addFailure({ code, stage: 'soak', message });
-    return context.recorder.finish(
-      message.includes('cancelled')
-        ? 'cancelled'
-        : message.includes('timeout')
-          ? 'timed_out'
-          : 'failed',
-      message.includes('cancelled') ? 130 : message.includes('timeout') ? 6 : 5,
+    const failure = classifyWorkflowFailure(
+      error,
+      'soak',
+      'soak_failed',
+      context.wasCancelled?.() ?? false,
+    );
+    await context.recorder.addFailure({
+      code: failure.code,
+      stage: failure.stage,
+      message,
+    });
+    return finishRunWithLock(
+      context.recorder,
+      context.lock,
+      statusForExitCode(failure.exitCode),
+      failure.exitCode,
     );
   }
 };
@@ -2677,6 +2827,92 @@ export type UnitTestResult = {
   name: string;
   message: string;
   status: 0 | 1 | 2;
+};
+
+export const validateTestProfile = (profile: RiftProfile): void => {
+  const requiredArtifacts = new Set(
+    profile.artifact_rules
+      .filter((rule) => rule.required && rule.nonempty)
+      .map((rule) => rule.path.replaceAll('\\', '/').toLowerCase()),
+  );
+  if (
+    profile.config_source !== 'ci' ||
+    !profile.dreamdaemon_flags.some(
+      (flag) => flag.toLowerCase() === '-close',
+    ) ||
+    !requiredArtifacts.has('data/unit_tests.json') ||
+    !requiredArtifacts.has('data/logs/rift/clean_run.lk')
+  ) {
+    throw new Error(
+      'test profile must use CI config, natural close, and required nonempty unit-test and clean-run artifacts',
+    );
+  }
+};
+
+export const waitForTestCompletion = async (options: {
+  deployment: Deployment;
+  profile: RiftProfile;
+  process: OwnedProcess;
+  recorder: RunRecorder;
+  readiness: LogObservation;
+}): Promise<{
+  processResult: ProcessResult;
+  runtimeSignatures: LogObservation['runtimeSignatures'];
+}> => {
+  const signatures = new Map(
+    options.readiness.runtimeSignatures.map((signature) => [
+      signature.signature,
+      { ...signature },
+    ]),
+  );
+  const abort = new AbortController();
+  const monitor = monitorRuntimeLogs({
+    deployment: options.deployment,
+    profile: options.profile,
+    stage: 'server',
+    signal: abort.signal,
+    signatures,
+    cursor: observationCursors.get(options.readiness),
+  });
+  try {
+    const outcome = await Promise.race([
+      monitor.then((failure) => ({ kind: 'monitor' as const, failure })),
+      options.process.result.then((result) => ({
+        kind: 'exit' as const,
+        result,
+      })),
+    ]);
+    if (outcome.kind === 'monitor') {
+      if (outcome.failure) {
+        throw new RiftError(
+          outcome.failure.code,
+          'test',
+          outcome.failure.message,
+          5,
+        );
+      }
+      throw new Error('unit_test_monitor_stopped');
+    }
+    const finalObservation = await Promise.race([
+      monitor.then((failure) => ({ failure })),
+      Bun.sleep(50).then(() => ({ failure: null })),
+    ]);
+    if (finalObservation.failure) {
+      throw new RiftError(
+        finalObservation.failure.code,
+        'test',
+        finalObservation.failure.message,
+        5,
+      );
+    }
+    return {
+      processResult: outcome.result,
+      runtimeSignatures: [...signatures.values()],
+    };
+  } finally {
+    abort.abort();
+    await monitor.catch(() => undefined);
+  }
 };
 
 export type UnitTestSummary = {
@@ -2893,28 +3129,34 @@ export const runTestWorkflow = async (
   let deployment: Deployment | null = null;
   let server: OwnedProcess | null = null;
   try {
+    validateTestProfile(context.profile);
     await context.recorder.emit('stage_started', 'compile', {
       mode: 'unit_test',
     });
-    const compile = await prepareUnitTestCompile(
-      {
-        runId: context.runId,
-        repository: context.repository,
-        byond: context.byond,
-        recorder: context.recorder,
-        environment: context.environment,
-        defines: context.profile.compile_defines,
-        wallTimeoutMs:
-          (command.wallTimeoutSeconds ??
-            context.profile.default_timeouts.wall_seconds) * 1000,
-        idleTimeoutMs:
-          (command.idleTimeoutSeconds ??
-            context.profile.default_timeouts.idle_seconds) * 1000,
-        processRunner: context.processRunner,
-        buildProcessRunner: context.buildProcessRunner,
-      },
-      command.focus,
-    );
+    let compile: CompileOutcome;
+    try {
+      compile = await prepareUnitTestCompile(
+        {
+          runId: context.runId,
+          repository: context.repository,
+          byond: context.byond,
+          recorder: context.recorder,
+          environment: context.environment,
+          defines: context.profile.compile_defines,
+          wallTimeoutMs:
+            (command.wallTimeoutSeconds ??
+              context.profile.default_timeouts.wall_seconds) * 1000,
+          idleTimeoutMs:
+            (command.idleTimeoutSeconds ??
+              context.profile.default_timeouts.idle_seconds) * 1000,
+          processRunner: context.processRunner,
+          buildProcessRunner: context.buildProcessRunner,
+        },
+        command.focus,
+      );
+    } catch (error) {
+      rethrowAsRiftError(error, 'compile_failed', 'compile', 4);
+    }
     await context.recorder.emit(
       'stage_finished',
       'compile',
@@ -2982,7 +3224,15 @@ export const runTestWorkflow = async (
     if (!observation.ready || observation.runtimeSignatures.length > 0) {
       throw new Error(observation.fatalFailures[0]?.code ?? 'runtime_error');
     }
-    const processResult = await server.result;
+    const completion = await waitForTestCompletion({
+      deployment,
+      profile: context.profile,
+      process: server,
+      recorder: context.recorder,
+      readiness: observation,
+    });
+    await context.recorder.setRuntimeSignatures(completion.runtimeSignatures);
+    const processResult = completion.processResult;
     if (processResult.termination !== 'natural') {
       throw new Error(
         `unit_test_process_failed: ${processResult.termination} ${String(processResult.exitCode)}`,
@@ -3037,7 +3287,7 @@ export const runTestWorkflow = async (
     if (!cleanup.passed) {
       throw new Error(`cleanup_failed: ${cleanup.leftovers.join(', ')}`);
     }
-    return context.recorder.finish('passed', 0);
+    return finishRunWithLock(context.recorder, context.lock, 'passed', 0);
   } catch (error) {
     await server?.stop('requested').catch(() => undefined);
     if (deployment) {
@@ -3050,22 +3300,30 @@ export const runTestWorkflow = async (
         deployment,
         context.runDir,
         command.keepWorkspace,
-      ).catch(() => ({ passed: false, leftovers: ['workspace'] }));
+      ).catch(() => ({
+        passed: false,
+        leftovers: ['workspace'],
+        retained: [],
+      }));
       await context.recorder.setCleanup(cleanup).catch(() => undefined);
     }
     const message = error instanceof Error ? error.message : String(error);
+    const failure = classifyWorkflowFailure(
+      error,
+      'test',
+      'unit_test_failed',
+      context.wasCancelled?.() ?? false,
+    );
     await context.recorder.addFailure({
-      code: message.split(':', 1)[0] || 'unit_test_failed',
-      stage: 'test',
+      code: failure.code,
+      stage: failure.stage,
       message,
     });
-    return context.recorder.finish(
-      message.includes('cancelled')
-        ? 'cancelled'
-        : message.includes('timeout')
-          ? 'timed_out'
-          : 'failed',
-      message.includes('cancelled') ? 130 : message.includes('timeout') ? 6 : 5,
+    return finishRunWithLock(
+      context.recorder,
+      context.lock,
+      statusForExitCode(failure.exitCode),
+      failure.exitCode,
     );
   }
 };
@@ -3118,10 +3376,10 @@ const defaultProcessExists = (pid: number) => {
   }
 };
 
-const readLockRecord = async (lockPath: string): Promise<LockRecord> => {
+const parseLockRecord = (raw: string): LockRecord => {
   let value: unknown;
   try {
-    value = JSON.parse(await fs.readFile(lockPath, 'utf8'));
+    value = JSON.parse(raw);
   } catch {
     throw new Error('invalid RIFT workflow lock');
   }
@@ -3137,6 +3395,101 @@ const readLockRecord = async (lockPath: string): Promise<LockRecord> => {
     throw new Error('invalid RIFT workflow lock');
   }
   return value as LockRecord;
+};
+
+const readLockRecord = async (lockPath: string): Promise<LockRecord> =>
+  parseLockRecord(await fs.readFile(lockPath, 'utf8'));
+
+const tryReadLockSnapshot = async (
+  lockPath: string,
+): Promise<{ raw: string; record: LockRecord | null } | null> => {
+  let raw: string;
+  try {
+    raw = await fs.readFile(lockPath, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
+  try {
+    return { raw, record: parseLockRecord(raw) };
+  } catch {
+    return { raw, record: null };
+  }
+};
+
+const acquireReapGuard = async (
+  guardPath: string,
+): Promise<(() => Promise<void>) | null> => {
+  const token = crypto.randomUUID().replaceAll('-', '');
+  const guard = `${JSON.stringify({
+    schema_version: 1,
+    token,
+    pid: process.pid,
+    started_at: new Date().toISOString(),
+  })}\n`;
+  const candidatePath = `${guardPath}.${token}.tmp`;
+  try {
+    const handle = await fs.open(candidatePath, 'wx');
+    try {
+      await handle.writeFile(guard, 'utf8');
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    await fs.link(candidatePath, guardPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      return null;
+    }
+    throw error;
+  } finally {
+    await fs.rm(candidatePath, { force: true });
+  }
+  return async () => {
+    const current = await fs.readFile(guardPath, 'utf8').catch(() => '');
+    if (current === guard) {
+      await fs.rm(guardPath, { force: true });
+    }
+  };
+};
+
+const clearAbandonedReapGuard = async (
+  guardPath: string,
+  processExists: (pid: number) => boolean,
+): Promise<boolean> => {
+  let raw: string;
+  try {
+    raw = await fs.readFile(guardPath, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return true;
+    }
+    throw error;
+  }
+  let pid = 0;
+  let startedAt = 0;
+  try {
+    const value = JSON.parse(raw) as Record<string, unknown>;
+    if (value.schema_version === 1 && typeof value.token === 'string') {
+      pid = Number(value.pid);
+      startedAt = Date.parse(String(value.started_at));
+    }
+  } catch {
+    // A published guard is complete, so malformed content is abandoned.
+  }
+  const guardExpired =
+    !Number.isFinite(startedAt) || Date.now() - startedAt > 60_000;
+  if (Number.isInteger(pid) && pid > 0 && processExists(pid) && !guardExpired) {
+    return false;
+  }
+  const current = await fs.readFile(guardPath, 'utf8').catch(() => '');
+  if (current !== raw) {
+    return false;
+  }
+  await fs.rm(guardPath, { force: true });
+  return true;
 };
 
 export const archiveStaleLock = async (
@@ -3162,9 +3515,20 @@ export const acquireRunLock = async (
 ): Promise<RunLock> => {
   await fs.mkdir(runsRoot, { recursive: true });
   const lockPath = path.join(runsRoot, '.active.lock');
+  const guardPath = path.join(runsRoot, '.active.lock.reap');
   const deadline = Date.now() + waitSeconds * 1000;
 
   for (;;) {
+    if (fsSync.existsSync(guardPath)) {
+      if (await clearAbandonedReapGuard(guardPath, processExists)) {
+        continue;
+      }
+      if (Date.now() >= deadline) {
+        throw new Error('RIFT workflow lock maintenance is active');
+      }
+      await Bun.sleep(Math.min(25, Math.max(1, deadline - Date.now())));
+      continue;
+    }
     const record: LockRecord = {
       schema_version: 1,
       token: crypto.randomUUID().replaceAll('-', ''),
@@ -3180,6 +3544,17 @@ export const acquireRunLock = async (
         await handle.sync();
       } finally {
         await handle.close();
+      }
+      if (fsSync.existsSync(guardPath)) {
+        const current = await readLockRecord(lockPath).catch(() => null);
+        if (current?.token === record.token) {
+          await fs.rm(lockPath, { force: true });
+        }
+        if (Date.now() >= deadline) {
+          throw new Error('RIFT workflow lock maintenance is active');
+        }
+        await Bun.sleep(Math.min(25, Math.max(1, deadline - Date.now())));
+        continue;
       }
       return {
         path: lockPath,
@@ -3209,22 +3584,35 @@ export const acquireRunLock = async (
       }
     }
 
-    const existing = await readLockRecord(lockPath).catch((error) => {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return null;
-      }
-      throw error;
-    });
-    if (existing === null) {
+    const snapshot = await tryReadLockSnapshot(lockPath);
+    if (snapshot === null) {
       continue;
     }
-    if (!processExists(existing.pid)) {
+    const existing = snapshot.record;
+    if (existing === null || !processExists(existing.pid)) {
+      const releaseGuard = await acquireReapGuard(guardPath);
+      if (!releaseGuard) {
+        continue;
+      }
       try {
-        await archiveStaleLock(runsRoot, lockPath, existing);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-          throw error;
+        const guarded = await tryReadLockSnapshot(lockPath);
+        if (guarded === null || guarded.raw !== snapshot.raw) {
+          continue;
         }
+        if (guarded.record && processExists(guarded.record.pid)) {
+          continue;
+        }
+        const archivalRecord = guarded.record ?? {
+          schema_version: 1,
+          token: `malformed-${crypto.randomUUID().replaceAll('-', '')}`,
+          pid: 0,
+          command: 'unknown',
+          run_id: 'unknown',
+          started_at: new Date().toISOString(),
+        };
+        await archiveStaleLock(runsRoot, lockPath, archivalRecord);
+      } finally {
+        await releaseGuard();
       }
       continue;
     }
@@ -3235,6 +3623,27 @@ export const acquireRunLock = async (
     }
     await Bun.sleep(Math.min(250, Math.max(1, deadline - Date.now())));
   }
+};
+
+export const finishRunWithLock = async (
+  recorder: RunRecorder,
+  lock: RunLock,
+  status: Parameters<RunRecorder['finish']>[0],
+  exitCode: number,
+): Promise<RiftSummary> => {
+  try {
+    await lock.release();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await recorder.addCleanupLeftover('.active.lock');
+    await recorder.addFailure({
+      code: 'lock_release_failed',
+      stage: 'cleanup',
+      message,
+    });
+    return recorder.finish('failed', 5);
+  }
+  return recorder.finish(status, exitCode);
 };
 
 export type DoctorObservation = {
@@ -3462,6 +3871,23 @@ export class RiftError extends Error {
   }
 }
 
+const rethrowAsRiftError = (
+  error: unknown,
+  code: string,
+  stage: string,
+  exitCode: 2 | 3 | 4 | 5 | 6 | 7 | 130,
+): never => {
+  if (error instanceof RiftError) {
+    throw error;
+  }
+  throw new RiftError(
+    code,
+    stage,
+    error instanceof Error ? error.message : String(error),
+    exitCode,
+  );
+};
+
 const evidenceForCommand = (command: RiftCommand): EvidenceClass => {
   switch (command.command) {
     case 'doctor':
@@ -3479,44 +3905,44 @@ const evidenceForCommand = (command: RiftCommand): EvidenceClass => {
   }
 };
 
-const classifyFailure = (
+export const classifyFailure = (
   error: unknown,
 ): { code: string; stage: string; exitCode: 2 | 3 | 4 | 5 | 6 | 7 | 130 } => {
   if (error instanceof RiftError) {
-    return error;
+    return {
+      code: error.code,
+      stage: error.stage,
+      exitCode: error.exitCode,
+    };
   }
-  const message = error instanceof Error ? error.message : String(error);
-  if (/cancelled/i.test(message)) {
-    return { code: 'cancelled', stage: 'run', exitCode: 130 };
+  return { code: 'workflow_failed', stage: 'run', exitCode: 5 };
+};
+
+const classifyWorkflowFailure = (
+  error: unknown,
+  stage: string,
+  fallbackCode: string,
+  cancelled: boolean,
+): ReturnType<typeof classifyFailure> => {
+  if (cancelled) {
+    return { code: 'cancelled', stage, exitCode: 130 };
   }
-  if (/timeout/i.test(message)) {
-    const code = message.split(':', 1)[0] || 'wall_timeout';
-    return { code, stage: 'run', exitCode: 6 };
+  if (error instanceof RiftError) {
+    return classifyFailure(error);
   }
-  if (/workflow lock|lock_busy/i.test(message)) {
-    return { code: 'lock_busy', stage: 'lock', exitCode: 7 };
+  return { code: fallbackCode, stage, exitCode: 5 };
+};
+
+const statusForExitCode = (
+  exitCode: ReturnType<typeof classifyFailure>['exitCode'],
+): 'failed' | 'timed_out' | 'cancelled' => {
+  if (exitCode === 6) {
+    return 'timed_out';
   }
-  if (/compile|build_failed|build process/i.test(message)) {
-    const code = message.split(':', 1)[0] || 'compile_failed';
-    return { code, stage: 'compile', exitCode: 4 };
+  if (exitCode === 130) {
+    return 'cancelled';
   }
-  if (
-    /usage|unknown command|missing command|requires --|valid only|invalid profile|profile not found|map path|map file|--force|run ID/i.test(
-      message,
-    )
-  ) {
-    return { code: 'usage_error', stage: 'usage', exitCode: 2 };
-  }
-  if (
-    /repository|offline|tool_not_found|tool version|pinned BYOND|build contract/i.test(
-      message,
-    )
-  ) {
-    const code = message.split(':', 1)[0] || 'tool_not_found';
-    return { code, stage: 'preflight', exitCode: 3 };
-  }
-  const code = message.split(':', 1)[0] || 'workflow_failed';
-  return { code, stage: 'run', exitCode: 5 };
+  return 'failed';
 };
 
 const readGitMetadata = async (
@@ -3571,36 +3997,89 @@ export const runMain = async (
   process.once('SIGINT', handleInterrupt);
   process.once('SIGBREAK', handleInterrupt);
   try {
-    command = parseCli(argv, environment);
+    try {
+      command = parseCli(argv, environment);
+    } catch (error) {
+      throw new RiftError(
+        'usage_error',
+        'usage',
+        error instanceof Error ? error.message : String(error),
+        2,
+      );
+    }
     const moduleRepositoryRoot = path.resolve(import.meta.dir, '..', '..');
     if (command.command === 'report') {
       const output = await runReportCommand(
         path.join(moduleRepositoryRoot, 'data', 'rift-runs'),
         command.runId,
         command.format,
-      );
+      ).catch((error) => rethrowAsRiftError(error, 'usage_error', 'usage', 2));
       process.stdout.write(output);
       return 0;
     }
 
-    repository = await qualifyRepository(moduleRepositoryRoot);
-    const pins = parseDependencyPins(
-      await fs.readFile(repository.dependencies, 'utf8'),
-    );
-    const profiles = await loadProfiles(
-      path.join(repository.root, 'tools', 'rift', 'profiles.json'),
-    );
+    try {
+      repository = await qualifyRepository(moduleRepositoryRoot);
+    } catch (error) {
+      rethrowAsRiftError(error, 'repository_contract_mismatch', 'preflight', 3);
+    }
+    let pins: DependencyPins;
+    let profiles: Map<string, RiftProfile>;
+    try {
+      pins = parseDependencyPins(
+        await fs.readFile(repository.dependencies, 'utf8'),
+      );
+      profiles = await loadProfiles(
+        path.join(repository.root, 'tools', 'rift', 'profiles.json'),
+      );
+    } catch (error) {
+      rethrowAsRiftError(error, 'repository_contract_mismatch', 'preflight', 3);
+    }
     const profile = profiles.get(command.profile);
     if (!profile) {
-      throw new Error(`profile not found: ${command.profile}`);
+      throw new RiftError(
+        'usage_error',
+        'usage',
+        `profile not found: ${command.profile}`,
+        2,
+      );
+    }
+    if (command.command === 'test') {
+      try {
+        validateTestProfile(profile);
+      } catch (error) {
+        throw new RiftError(
+          'usage_error',
+          'usage',
+          error instanceof Error ? error.message : String(error),
+          2,
+        );
+      }
     }
     if (
-      (command.command === 'run' ||
-        command.command === 'test' ||
-        command.command === 'soak') &&
-      command.map !== null
+      command.command === 'run' ||
+      command.command === 'test' ||
+      command.command === 'soak'
     ) {
-      command.map = validateMapPath(repository.root, command.map);
+      const selectedMap = command.map ?? profile.default_map;
+      if (selectedMap === null) {
+        throw new RiftError(
+          'usage_error',
+          'usage',
+          `${command.command} requires --map or a profile default map`,
+          2,
+        );
+      }
+      try {
+        command.map = validateMapPath(repository.root, selectedMap, true);
+      } catch (error) {
+        throw new RiftError(
+          'usage_error',
+          'usage',
+          error instanceof Error ? error.message : String(error),
+          2,
+        );
+      }
     }
 
     const { runId, runDir } = await allocateRun(repository.runsRoot);
@@ -3629,19 +4108,25 @@ export const runMain = async (
         pinnedPython = preflight.tools.python;
       } catch (error) {
         if (command.command !== 'doctor') {
-          throw error;
+          rethrowAsRiftError(error, 'offline_preflight_failed', 'preflight', 3);
         }
       }
     }
-    const byond = await resolveByond(
-      repository,
-      pins,
-      runProbeProcess,
-      environment,
-    );
-    const git = await readGitMetadata(repository, childEnvironment);
+    let byond: ByondTools;
+    let git: Awaited<ReturnType<typeof readGitMetadata>>;
+    try {
+      byond = await resolveByond(
+        repository,
+        pins,
+        runProbeProcess,
+        environment,
+      );
+      git = await readGitMetadata(repository, childEnvironment);
+    } catch (error) {
+      rethrowAsRiftError(error, 'toolchain_preflight_failed', 'preflight', 3);
+    }
     if (cancellation.wasCancelled()) {
-      throw new Error('cancelled');
+      throw new RiftError('cancelled', 'run', 'cancelled', 130);
     }
     await recorder.setRepository(git.revision, git.dirty);
     await recorder.setToolVersions({
@@ -3667,12 +4152,16 @@ export const runMain = async (
       return result.summary.exit_code;
     }
 
-    lock = await acquireRunLock(
-      repository.runsRoot,
-      command.command,
-      runId,
-      command.waitForLockSeconds,
-    );
+    try {
+      lock = await acquireRunLock(
+        repository.runsRoot,
+        command.command,
+        runId,
+        command.waitForLockSeconds,
+      );
+    } catch (error) {
+      rethrowAsRiftError(error, 'lock_busy', 'lock', 7);
+    }
     const context: WorkflowContext = {
       repository,
       pins,
@@ -3689,6 +4178,7 @@ export const runMain = async (
       networkMode: command.networkMode,
       processRunner: cancellation.runner,
       buildProcessRunner: cancellation.runner,
+      wasCancelled: cancellation.wasCancelled,
     };
     let summary: RiftSummary;
     switch (command.command) {
@@ -3713,17 +4203,22 @@ export const runMain = async (
           processRunner: cancellation.runner,
           buildProcessRunner: cancellation.runner,
         };
-        const result =
-          command.mode === 'fast'
-            ? await compileFast(request)
-            : await compileFull({ ...request, force: command.force });
+        let result: CompileOutcome;
+        try {
+          result =
+            command.mode === 'fast'
+              ? await compileFast(request)
+              : await compileFull({ ...request, force: command.force });
+        } catch (error) {
+          rethrowAsRiftError(error, 'compile_failed', 'compile', 4);
+        }
         await recorder.emit(
           'stage_finished',
           'compile',
           { evidence: result.evidence, reused: result.reused },
           'passed',
         );
-        summary = await recorder.finish('passed', 0);
+        summary = await finishRunWithLock(recorder, lock, 'passed', 0);
         break;
       }
       case 'run':
@@ -3736,7 +4231,12 @@ export const runMain = async (
         summary = await runSoakWorkflow(context, command);
         break;
       default:
-        throw new Error(`unknown command: ${String(command)}`);
+        throw new RiftError(
+          'workflow_failed',
+          'run',
+          `unknown command: ${String(command)}`,
+          5,
+        );
     }
     await printStoredResult(repository, summary, command.format);
     return summary.exit_code;
@@ -3749,13 +4249,10 @@ export const runMain = async (
         stage: failure.stage,
         message,
       });
-      const status =
-        failure.exitCode === 6
-          ? 'timed_out'
-          : failure.exitCode === 130
-            ? 'cancelled'
-            : 'failed';
-      const summary = await recorder.finish(status, failure.exitCode);
+      const status = statusForExitCode(failure.exitCode);
+      const summary = lock
+        ? await finishRunWithLock(recorder, lock, status, failure.exitCode)
+        : await recorder.finish(status, failure.exitCode);
       await printStoredResult(repository, summary, command?.format ?? 'human');
     } else {
       console.error(`[${failure.code}] ${message}`);

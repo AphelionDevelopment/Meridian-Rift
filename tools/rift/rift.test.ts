@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -23,6 +24,7 @@ import {
   acquireRunLock,
   allocateRun,
   assertDmDiagnostics,
+  classifyFailure,
   collectDeploymentArtifacts,
   compileFast,
   compileFull,
@@ -37,9 +39,11 @@ import {
   preflightOffline,
   prepareUnitTestCompile,
   qualifyRepository,
+  RiftError,
   removeDeployment,
   resolveByond,
   runDoctorWorkflow,
+  runMain,
   runReportCommand,
   runServerWorkflow,
   runSoakWorkflow,
@@ -670,9 +674,128 @@ describe('run report', () => {
       expect(renderHumanSummary(summary)).not.toContain('ExampleUser');
     });
   });
+
+  test('redacts profile paths before structured report serialization', async () => {
+    await withTempDirectory(async (root) => {
+      const recorder = await RunRecorder.create({
+        runDir: root,
+        runId: '20260831T120000Z-0123abcd',
+        command: 'doctor',
+        profile: 'default',
+        evidence: 'inspection',
+        networkMode: 'offline',
+      });
+      await recorder.appendOutput(
+        'preflight',
+        'fixture',
+        'stderr',
+        'C:\\Users\\SensitiveProfile\\secret.txt',
+      );
+      await recorder.addFailure({
+        code: 'private_path',
+        stage: 'preflight',
+        message: '/Users/SensitiveProfile/secret.txt',
+      });
+      await recorder.finish('failed', 3);
+
+      const structured = [
+        await Bun.file(path.join(root, 'summary.json')).text(),
+        await Bun.file(path.join(root, 'events.ndjson')).text(),
+      ].join('\n');
+      expect(structured).not.toContain('SensitiveProfile');
+      expect(structured).toContain('<profile>');
+    });
+  });
+
+  test('rejects event writes after the final summary is published', async () => {
+    await withTempDirectory(async (root) => {
+      const recorder = await RunRecorder.create({
+        runDir: root,
+        runId: '20260831T120000Z-0123abcd',
+        command: 'doctor',
+        profile: 'default',
+        evidence: 'inspection',
+        networkMode: 'offline',
+      });
+      await recorder.finish('passed', 0);
+
+      await expect(
+        recorder.emit('observation', 'doctor', { late: true }),
+      ).rejects.toThrow('run recorder is finished');
+      expect(await readNdjson(path.join(root, 'events.ndjson'))).toHaveLength(
+        2,
+      );
+    });
+  });
+
+  test('publishes one terminal event for concurrent finalization', async () => {
+    await withTempDirectory(async (root) => {
+      const recorder = await RunRecorder.create({
+        runDir: root,
+        runId: '20260831T120000Z-abcdef12',
+        command: 'doctor',
+        profile: 'default',
+        evidence: 'inspection',
+        networkMode: 'offline',
+      });
+
+      const [first, second] = await Promise.all([
+        recorder.finish('passed', 0),
+        recorder.finish('passed', 0),
+      ]);
+
+      expect(second).toEqual(first);
+      expect(
+        (await readNdjson(path.join(root, 'events.ndjson'))).filter(
+          ({ kind }) => kind === 'run_finished',
+        ),
+      ).toHaveLength(1);
+    });
+  });
+
+  test('rejects inconsistent stored event streams', async () => {
+    await withTempDirectory(async (root) => {
+      const recorder = await RunRecorder.create({
+        runDir: root,
+        runId: '20260831T120000Z-0123abcd',
+        command: 'doctor',
+        profile: 'default',
+        evidence: 'inspection',
+        networkMode: 'offline',
+      });
+      await recorder.finish('passed', 0);
+      const events = await readNdjson(path.join(root, 'events.ndjson'));
+      events[1].sequence = 7;
+      await Bun.write(
+        path.join(root, 'events.ndjson'),
+        `${events.map((event) => JSON.stringify(event)).join('\n')}\n`,
+      );
+
+      await expect(readStoredRun(root)).rejects.toThrow('event sequence');
+    });
+  });
 });
 
 describe('CLI and preflight qualification', () => {
+  test('classifies failures by type rather than message text', () => {
+    expect(
+      classifyFailure(new Error('compile timeout in a harmless filename')),
+    ).toEqual({
+      code: 'workflow_failed',
+      stage: 'run',
+      exitCode: 5,
+    });
+    expect(
+      classifyFailure(
+        new RiftError('readiness_timeout', 'server', 'deadline elapsed', 6),
+      ),
+    ).toEqual({
+      code: 'readiness_timeout',
+      stage: 'server',
+      exitCode: 6,
+    });
+  });
+
   test('parses global and compile options without reading developer environment', () => {
     expect(
       parseCli(['--network=allow', 'compile', '--mode', 'full', '--force'], {}),
@@ -696,6 +819,20 @@ describe('CLI and preflight qualification', () => {
     expect(() =>
       parseCli(['doctor'], { MERIDIAN_RIFT_BUILD_NETWORK: 'internet' }),
     ).toThrow('network mode must be offline or allow');
+  });
+
+  test('uses the CI profile by default for unit tests', () => {
+    expect(parseCli(['test'], {})).toMatchObject({
+      command: 'test',
+      profile: 'ci',
+    });
+  });
+
+  test('returns usage exit codes for malformed CLI input', async () => {
+    expect(
+      await runMain(['doctor', '--wall-timeout-seconds', 'nope'], {}),
+    ).toBe(2);
+    expect(await runMain(['doctor', '--mystery'], {})).toBe(2);
   });
 
   test('rejects duplicate, missing, unknown, and fractional options', () => {
@@ -769,6 +906,19 @@ describe('CLI and preflight qualification', () => {
       expect(() => validateMapPath(repository.root, '../fixture.json')).toThrow(
         'map path escapes _maps',
       );
+      await Bun.write(
+        path.join(root, '_maps', 'runtimestation_minimal.json'),
+        '{}\n',
+      );
+      expect(() =>
+        (
+          validateMapPath as (
+            repositoryRoot: string,
+            selectedMap: string,
+            completionEvidence: boolean,
+          ) => string
+        )(repository.root, '_maps/runtimestation_minimal.json', true),
+      ).toThrow('representative map');
     });
   });
 
@@ -884,6 +1034,65 @@ describe('CLI and preflight qualification', () => {
         ),
       ).rejects.toThrow('offline prerequisites missing');
       expect(probes).toBe(0);
+    });
+  });
+
+  test('installs inherited offline policy through the Bun global config', async () => {
+    await withTempDirectory(async (root) => {
+      await createRepositoryFixture(root);
+      const repository = await qualifyRepository(root);
+      const pins = parseDependencyPins(
+        await Bun.file(repository.dependencies).text(),
+      );
+      const cache = path.join(root, 'cache');
+      const pythonRoot = path.join(cache, `python-${pins.PYTHON_VERSION}`);
+      const required = [
+        path.join(cache, `bun-v${pins.BUN_VERSION}-x64`, 'bun.exe'),
+        path.join(pythonRoot, 'python.exe'),
+        path.join(pythonRoot, 'Scripts', 'pip.exe'),
+        path.join(
+          root,
+          'tools',
+          'icon_cutter',
+          'cache',
+          `hypnagogic${pins.CUTTER_VERSION.replaceAll('.', '-')}.exe`,
+        ),
+        path.join(root, 'bun.lock'),
+        path.join(root, 'tgui', 'bun.lock'),
+      ];
+      const requirements = path.join(root, 'tools', 'requirements.txt');
+      const marker = path.join(pythonRoot, 'requirements.txt');
+      for (const filePath of [...required, requirements, marker]) {
+        await fs.mkdir(path.dirname(filePath), { recursive: true });
+        await Bun.write(
+          filePath,
+          filePath === requirements || filePath === marker
+            ? 'pin\n'
+            : 'fixture',
+        );
+      }
+      let installProbes = 0;
+      const preflight = await preflightOffline(
+        repository,
+        pins,
+        { TG_BOOTSTRAP_CACHE: cache },
+        async (_executable, args, _cwd, environment) => {
+          if (args[0] === '--version') {
+            return { exitCode: 0, stdout: `${pins.BUN_VERSION}\n`, stderr: '' };
+          }
+          installProbes += 1;
+          expect(args).toEqual(['install', '--dry-run']);
+          const configPath = path.join(
+            environment.XDG_CONFIG_HOME,
+            '.bunfig.toml',
+          );
+          expect(await Bun.file(configPath).text()).toContain('offline = true');
+          return { exitCode: 0, stdout: '', stderr: '' };
+        },
+      );
+
+      expect(installProbes).toBe(2);
+      await preflight.cleanup();
     });
   });
 });
@@ -1090,6 +1299,133 @@ describe('run allocation and locking', () => {
     });
   });
 
+  test('does not archive a replacement lock that appeared during stale detection', async () => {
+    await withTempDirectory(async (root) => {
+      const lockPath = path.join(root, '.active.lock');
+      const stale = {
+        schema_version: 1,
+        token: 'stale-token',
+        pid: 424_242,
+        command: 'compile',
+        run_id: 'stale-run',
+        started_at: '2026-08-31T12:00:00.000Z',
+      };
+      const replacement = {
+        ...stale,
+        token: 'live-token',
+        pid: 525_252,
+        command: 'test',
+        run_id: 'live-run',
+      };
+      await Bun.write(lockPath, JSON.stringify(stale));
+      let replaced = false;
+
+      await expect(
+        acquireRunLock(root, 'soak', 'contender', 0, (pid) => {
+          if (pid === stale.pid && !replaced) {
+            replaced = true;
+            fsSync.writeFileSync(lockPath, JSON.stringify(replacement));
+            return false;
+          }
+          return pid === replacement.pid;
+        }),
+      ).rejects.toThrow('RIFT workflow lock is active');
+      expect(JSON.parse(await Bun.file(lockPath).text()).token).toBe(
+        'live-token',
+      );
+    });
+  });
+
+  test('archives malformed stale locks instead of blocking permanently', async () => {
+    await withTempDirectory(async (root) => {
+      await Bun.write(path.join(root, '.active.lock'), '{partial');
+
+      const lock = await acquireRunLock(
+        root,
+        'test',
+        'new-run',
+        0,
+        () => false,
+      );
+
+      expect(lock.record.run_id).toBe('new-run');
+      expect(await fs.readdir(path.join(root, 'stale-locks'))).toHaveLength(1);
+      await lock.release();
+    });
+  });
+
+  test('recovers a reap guard abandoned by a dead controller', async () => {
+    await withTempDirectory(async (root) => {
+      await Bun.write(
+        path.join(root, '.active.lock.reap'),
+        JSON.stringify({
+          schema_version: 1,
+          token: 'abandoned-guard',
+          pid: 424_242,
+          started_at: '2026-08-31T12:00:00.000Z',
+        }),
+      );
+
+      const lock = await acquireRunLock(
+        root,
+        'test',
+        'new-run',
+        0,
+        () => false,
+      );
+
+      expect(lock.record.run_id).toBe('new-run');
+      expect(
+        await Bun.file(path.join(root, '.active.lock.reap')).exists(),
+      ).toBe(false);
+      await lock.release();
+    });
+  });
+
+  test('turns lock-release failure into final cleanup failure', async () => {
+    await withTempDirectory(async (root) => {
+      const rift = (await import('./rift')) as typeof import('./rift') & {
+        finishRunWithLock: (
+          recorder: RunRecorder,
+          lock: Awaited<ReturnType<typeof acquireRunLock>>,
+          status: 'passed',
+          exitCode: number,
+        ) => Promise<Awaited<ReturnType<RunRecorder['finish']>>>;
+      };
+      const recorder = await RunRecorder.create({
+        runDir: root,
+        runId: '20260831T120000Z-fedcba98',
+        command: 'compile',
+        profile: 'default',
+        evidence: 'compiler',
+        networkMode: 'offline',
+      });
+      const lock = {
+        path: path.join(root, '.active.lock'),
+        record: {
+          schema_version: 1 as const,
+          token: 'fixture',
+          pid: process.pid,
+          command: 'compile',
+          run_id: 'fixture',
+          started_at: new Date().toISOString(),
+        },
+        release: async () => {
+          throw new Error('fixture release failure');
+        },
+      };
+
+      const summary = await rift.finishRunWithLock(recorder, lock, 'passed', 0);
+
+      expect(summary).toMatchObject({
+        status: 'failed',
+        exit_code: 5,
+        cleanup: { passed: false, leftovers: ['.active.lock'] },
+        failures: [{ code: 'lock_release_failed', stage: 'cleanup' }],
+      });
+    });
+  });
+
   test('release refuses to remove a replaced lock', async () => {
     await withTempDirectory(async (root) => {
       const lock = await acquireRunLock(
@@ -1129,6 +1465,41 @@ describe('run allocation and locking', () => {
 });
 
 describe('Windows process supervision', () => {
+  test('distinguishes a reused PID from the owned process instance', async () => {
+    const processModule = (await import(
+      './process'
+    )) as typeof import('./process') & {
+      sameProcessInstance: (
+        expected: {
+          pid: number;
+          parentPid: number | null;
+          name: string;
+          creationTime: string;
+        },
+        current: {
+          pid: number;
+          parentPid: number | null;
+          name: string;
+          creationTime: string;
+        },
+      ) => boolean;
+    };
+    const owned = {
+      pid: 1200,
+      parentPid: 1100,
+      name: 'dreamdaemon.exe',
+      creationTime: '2026-08-31T12:00:00.000Z',
+    };
+
+    expect(processModule.sameProcessInstance(owned, { ...owned })).toBe(true);
+    expect(
+      processModule.sameProcessInstance(owned, {
+        ...owned,
+        creationTime: '2026-08-31T12:01:00.000Z',
+      }),
+    ).toBe(false);
+  });
+
   test('cancellation stops every active owned process and rejects new work', async () => {
     await withTempDirectory(async (root) => {
       const fixture = path.join(root, 'cancel-controller.ts');
@@ -1640,13 +2011,34 @@ describe('isolated deployment', () => {
       expect(failedCleanup).toEqual({
         passed: false,
         leftovers: ['workspace'],
+        retained: [],
       });
       expect(await Bun.file(deployment.dmb).exists()).toBe(true);
       expect(await removeDeployment(deployment, runDir, false)).toEqual({
         passed: true,
         leftovers: [],
+        retained: [],
       });
       expect(await Bun.file(deployment.dmb).exists()).toBe(false);
+    });
+  });
+
+  test('reports an intentionally retained workspace explicitly', async () => {
+    await withTempDirectory(async (root) => {
+      await createRepositoryFixture(root);
+      const repository = await qualifyRepository(root);
+      const { runDir } = await allocateRun(repository.runsRoot);
+      const deployment = {
+        root: path.join(runDir, 'workspace'),
+      } as Parameters<typeof removeDeployment>[0];
+      await fs.mkdir(deployment.root, { recursive: true });
+
+      expect(await removeDeployment(deployment, runDir, true)).toEqual({
+        passed: true,
+        leftovers: [],
+        retained: ['workspace'],
+      });
+      expect((await fs.stat(deployment.root)).isDirectory()).toBe(true);
     });
   });
 });
@@ -1719,6 +2111,56 @@ describe('structured readiness and run lifecycle', () => {
         ready: true,
         fatalFailures: [],
         runtimeSignatures: [],
+      });
+    });
+  });
+
+  test('does not lose a fatal record in the readiness batch', async () => {
+    await withTempDirectory(async (root) => {
+      const recorder = await RunRecorder.create({
+        runDir: root,
+        runId: '20260831T000000Z-0123abcd',
+        command: 'run',
+        profile: 'default',
+        evidence: 'boot',
+        networkMode: 'offline',
+      });
+      const deployment = {
+        root: path.join(root, 'workspace'),
+        data: path.join(root, 'workspace', 'data'),
+        gameLogDir: path.join(root, 'workspace', 'data', 'logs', 'rift'),
+        dmb: path.join(root, 'workspace', 'tgstation.dmb'),
+        rsc: path.join(root, 'workspace', 'tgstation.rsc'),
+      };
+      await fs.mkdir(deployment.gameLogDir, { recursive: true });
+      await Bun.write(
+        path.join(deployment.gameLogDir, 'runtime.log.json'),
+        [
+          '{"cat":"runtime","msg":"Initializations complete within 1 second!"}',
+          '{"cat":"runtime","msg":"runtime error: same batch [0x200001f] at 42"}',
+          '',
+        ].join('\n'),
+      );
+      const pending = new Promise<never>(() => {});
+      const owned: OwnedProcess = {
+        rootPid: 102,
+        result: pending,
+        stop: async () => pending,
+        snapshot: async () => [],
+        ownedPids: () => [102],
+      };
+
+      expect(
+        await waitForReadiness({
+          deployment,
+          profile: validProfile(),
+          process: owned,
+          timeoutMs: 1_000,
+          recorder,
+        }),
+      ).toMatchObject({
+        ready: false,
+        fatalFailures: [{ code: 'runtime_error' }],
       });
     });
   });
@@ -2202,9 +2644,16 @@ describe('bounded soak workflow', () => {
         runSoakWorkflow(context, { ...command, runSeconds: 29 }),
       ).rejects.toThrow('soak duration must be 30-1800 seconds');
       const summary = await runSoakWorkflow(context, command);
+      const eventPath = path.join(runDir, 'events.ndjson');
+      const eventCount = (await readNdjson(eventPath)).length;
+      const snapshotsAtReturn = snapshotCount;
+      await Bun.sleep(75);
       return {
         summary,
         stopped,
+        virtualNow,
+        eventCountStable: (await readNdjson(eventPath)).length === eventCount,
+        snapshotCountStable: snapshotCount === snapshotsAtReturn,
         workspaceExists: await Bun.file(
           path.join(runDir, 'workspace'),
         ).exists(),
@@ -2238,6 +2687,9 @@ describe('bounded soak workflow', () => {
       code: 'runtime_error',
       stage: 'soak',
     });
+    expect(result.virtualNow).toBeLessThan(30_000);
+    expect(result.eventCountStable).toBe(true);
+    expect(result.snapshotCountStable).toBe(true);
     expect(result.stopped).toBe(true);
     expect(result.workspaceExists).toBe(false);
   });
@@ -2255,6 +2707,107 @@ describe('bounded soak workflow', () => {
 });
 
 describe('isolated unit-test workflow', () => {
+  test('rejects profiles without the unit-test completion contract', async () => {
+    const rift = (await import('./rift')) as typeof import('./rift') & {
+      validateTestProfile: (profile: ReturnType<typeof validProfile>) => void;
+    };
+
+    expect(() => rift.validateTestProfile(validProfile())).toThrow(
+      'test profile',
+    );
+  });
+
+  test('fails when a fatal runtime appears after test readiness', async () => {
+    await withTempDirectory(async (root) => {
+      const rift = (await import('./rift')) as typeof import('./rift') & {
+        waitForTestCompletion: (options: {
+          deployment: {
+            root: string;
+            data: string;
+            gameLogDir: string;
+            dmb: string;
+            rsc: string;
+          };
+          profile: ReturnType<typeof validProfile>;
+          process: OwnedProcess;
+          recorder: RunRecorder;
+          readiness: Awaited<ReturnType<typeof waitForReadiness>>;
+        }) => Promise<unknown>;
+      };
+      const recorder = await RunRecorder.create({
+        runDir: root,
+        runId: '20260831T000000Z-4567abcd',
+        command: 'test',
+        profile: 'ci',
+        evidence: 'focused_test',
+        networkMode: 'offline',
+      });
+      const deployment = {
+        root: path.join(root, 'workspace'),
+        data: path.join(root, 'workspace', 'data'),
+        gameLogDir: path.join(root, 'workspace', 'data', 'logs', 'rift'),
+        dmb: path.join(root, 'workspace', 'tgstation.dmb'),
+        rsc: path.join(root, 'workspace', 'tgstation.rsc'),
+      };
+      await fs.mkdir(deployment.gameLogDir, { recursive: true });
+      const started = Date.now();
+      let resolveResult!: (result: Awaited<OwnedProcess['result']>) => void;
+      const result = new Promise<Awaited<OwnedProcess['result']>>((resolve) => {
+        resolveResult = resolve;
+      });
+      const owned: OwnedProcess = {
+        rootPid: 103,
+        result,
+        stop: async (reason) => {
+          const stopped = {
+            role: 'dreamdaemon',
+            rootPid: 103,
+            ownedPids: [103],
+            exitCode: 0,
+            signal: null,
+            termination: reason,
+            startedAt: new Date(started).toISOString(),
+            finishedAt: new Date().toISOString(),
+            durationMs: Date.now() - started,
+          };
+          resolveResult(stopped);
+          return stopped;
+        },
+        snapshot: async () => [],
+        ownedPids: () => [103],
+      };
+      const logPath = path.join(deployment.gameLogDir, 'runtime.log.json');
+      await Bun.write(
+        logPath,
+        '{"cat":"runtime","msg":"Initializations complete within 1 second!"}\n',
+      );
+      const profile = validProfile();
+      const readiness = await waitForReadiness({
+        deployment,
+        profile,
+        process: owned,
+        timeoutMs: 1_000,
+        recorder,
+      });
+      const completion = Promise.resolve().then(() =>
+        rift.waitForTestCompletion({
+          deployment,
+          profile,
+          process: owned,
+          recorder,
+          readiness,
+        }),
+      );
+      await fs.appendFile(
+        logPath,
+        '{"cat":"runtime","msg":"runtime error: after readiness"}\n',
+      );
+
+      await expect(completion).rejects.toThrow('runtime_error');
+      await owned.stop('requested');
+    });
+  });
+
   test('parses pass, failure, and skip results without losing failure messages', () => {
     expect(
       parseUnitTestResults({

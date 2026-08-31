@@ -33,6 +33,7 @@ export type ProcessSnapshot = {
   pid: number;
   parentPid: number | null;
   name: string;
+  creationTime?: string;
   role: string;
   privateBytes: number;
   workingSetBytes: number;
@@ -58,6 +59,14 @@ type CimProcess = {
   ProcessId: number;
   ParentProcessId: number;
   Name: string;
+  CreationTime: string;
+};
+
+export type ProcessIdentity = {
+  pid: number;
+  parentPid: number | null;
+  name: string;
+  creationTime: string;
 };
 
 type ResourceProcess = {
@@ -68,7 +77,14 @@ type ResourceProcess = {
 
 const CIM_PROGRAM = `
 $ErrorActionPreference = 'Stop'
-@(Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, Name) |
+@(Get-CimInstance Win32_Process | ForEach-Object {
+  [pscustomobject]@{
+    ProcessId = $_.ProcessId
+    ParentProcessId = $_.ParentProcessId
+    Name = $_.Name
+    CreationTime = if ($null -eq $_.CreationDate) { '' } else { $_.CreationDate.ToUniversalTime().ToString('O') }
+  }
+}) |
   ConvertTo-Json -Compress
 `;
 
@@ -81,6 +97,20 @@ $ids = @($tokens | ForEach-Object { [int]$_ })
 @(Get-Process -Id $ids -ErrorAction SilentlyContinue |
   Select-Object Id, PrivateMemorySize64, WorkingSet64) |
   ConvertTo-Json -Compress
+`;
+
+const STOP_IDENTITIES_PROGRAM = `
+$ErrorActionPreference = 'Stop'
+$expected = $env:RIFT_PROCESS_IDENTITIES | ConvertFrom-Json
+$currentById = @{}
+Get-CimInstance Win32_Process | ForEach-Object { $currentById[[int]$_.ProcessId] = $_ }
+foreach ($identity in @($expected)) {
+  $current = $currentById[[int]$identity.pid]
+  if ($null -eq $current) { continue }
+  $created = if ($null -eq $current.CreationDate) { '' } else { $current.CreationDate.ToUniversalTime().ToString('O') }
+  if ($current.Name -ine $identity.name -or $created -ne $identity.creationTime) { continue }
+  Stop-Process -Id $identity.pid -Force -ErrorAction SilentlyContinue
+}
 `;
 
 const encodePowerShell = (program: string) =>
@@ -127,6 +157,49 @@ const parseJsonArray = <T>(text: string): T[] => {
   return Array.isArray(value) ? value : [value];
 };
 
+const readProcessTable = async (): Promise<CimProcess[]> => {
+  const tableResult = await runEncodedPowerShell(CIM_PROGRAM);
+  if (tableResult.exitCode !== 0) {
+    throw new Error(`process snapshot failed: ${tableResult.stderr.trim()}`);
+  }
+  return parseJsonArray<CimProcess>(tableResult.stdout);
+};
+
+export const sameProcessInstance = (
+  expected: ProcessIdentity,
+  current: ProcessIdentity,
+): boolean =>
+  expected.creationTime.length > 0 &&
+  current.creationTime.length > 0 &&
+  expected.pid === current.pid &&
+  expected.name.toLowerCase() === current.name.toLowerCase() &&
+  expected.creationTime === current.creationTime;
+
+const identityFromCim = (
+  entry: CimProcess,
+  rootPid?: number,
+): ProcessIdentity => ({
+  pid: entry.ProcessId,
+  parentPid:
+    rootPid !== undefined && entry.ProcessId === rootPid
+      ? null
+      : entry.ParentProcessId,
+  name: entry.Name,
+  creationTime: entry.CreationTime,
+});
+
+const stopMatchingProcesses = async (identities: ProcessIdentity[]) => {
+  if (identities.length === 0) {
+    return;
+  }
+  const result = await runEncodedPowerShell(STOP_IDENTITIES_PROGRAM, {
+    RIFT_PROCESS_IDENTITIES: JSON.stringify(identities),
+  });
+  if (result.exitCode !== 0) {
+    throw new Error(`owned process cleanup failed: ${result.stderr.trim()}`);
+  }
+};
+
 export const snapshotDescendants = async (
   rootPid: number,
   rootRole = 'process',
@@ -134,11 +207,7 @@ export const snapshotDescendants = async (
   if (!Number.isInteger(rootPid) || rootPid <= 0) {
     throw new Error('root PID must be a positive integer');
   }
-  const tableResult = await runEncodedPowerShell(CIM_PROGRAM);
-  if (tableResult.exitCode !== 0) {
-    throw new Error(`process snapshot failed: ${tableResult.stderr.trim()}`);
-  }
-  const table = parseJsonArray<CimProcess>(tableResult.stdout);
+  const table = await readProcessTable();
   const rowsByParent = new Map<number, CimProcess[]>();
   for (const row of table) {
     const children = rowsByParent.get(row.ParentProcessId) ?? [];
@@ -186,6 +255,7 @@ export const snapshotDescendants = async (
         pid: entry.ProcessId,
         parentPid: entry.ProcessId === rootPid ? null : entry.ParentProcessId,
         name: entry.Name,
+        creationTime: entry.CreationTime,
         role:
           entry.ProcessId === rootPid
             ? rootRole
@@ -210,44 +280,63 @@ export const stopOwnedProcessTree = async (
   rootPid: number,
   ownedPids: Iterable<number>,
   child?: ReturnType<typeof Bun.spawn>,
+  ownedIdentities: Map<number, ProcessIdentity> = new Map(),
 ) => {
   const owned = [...new Set(ownedPids)].filter(
     (pid) => Number.isInteger(pid) && pid > 0,
   );
+  const finalSnapshot = await snapshotDescendants(rootPid).catch(() => []);
+  for (const sample of finalSnapshot) {
+    if (!owned.includes(sample.pid)) {
+      owned.push(sample.pid);
+    }
+    if (sample.creationTime && !ownedIdentities.has(sample.pid)) {
+      ownedIdentities.set(sample.pid, {
+        pid: sample.pid,
+        parentPid: sample.parentPid,
+        name: sample.name,
+        creationTime: sample.creationTime,
+      });
+    }
+  }
   if (child && processExists(rootPid)) {
     child.kill();
-    await Promise.race([child.exited, Bun.sleep(5_000)]);
+    await Promise.race([child.exited, Bun.sleep(500)]);
   }
 
-  if (processExists(rootPid)) {
-    const taskkill = Bun.spawn({
-      cmd: ['taskkill.exe', '/PID', String(rootPid), '/T', '/F'],
-      stdout: 'ignore',
-      stderr: 'ignore',
-      windowsHide: true,
-    });
-    await taskkill.exited;
-  }
-  for (const pid of owned.toReversed()) {
-    if (pid !== rootPid && processExists(pid)) {
-      try {
-        process.kill(pid, 'SIGKILL');
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ESRCH') {
-          throw error;
-        }
-      }
-    }
+  const identities = owned
+    .map((pid) => ownedIdentities.get(pid))
+    .filter((identity): identity is ProcessIdentity => identity !== undefined)
+    .toReversed();
+  await stopMatchingProcesses(identities);
+
+  const unverifiedPids = owned.filter(
+    (pid) => !ownedIdentities.has(pid) && processExists(pid),
+  );
+  if (unverifiedPids.length > 0) {
+    throw new Error(
+      `owned process cleanup identity unavailable: ${unverifiedPids.join(',')}`,
+    );
   }
 
   const deadline = Date.now() + 5_000;
   for (;;) {
-    const leftovers = owned.filter(processExists);
+    const remainingTable = await readProcessTable().catch(() => []);
+    const remainingByPid = new Map(
+      remainingTable.map((entry) => [entry.ProcessId, identityFromCim(entry)]),
+    );
+    const leftovers = identities.filter((expected) => {
+      const pid = expected.pid;
+      const current = remainingByPid.get(pid);
+      return Boolean(current && sameProcessInstance(expected, current));
+    });
     if (leftovers.length === 0) {
       return;
     }
     if (Date.now() >= deadline) {
-      throw new Error(`owned process cleanup failed: ${leftovers.join(',')}`);
+      throw new Error(
+        `owned process cleanup failed: ${leftovers.map(({ pid }) => pid).join(',')}`,
+      );
     }
     await Bun.sleep(50);
   }
@@ -298,6 +387,7 @@ export const startOwnedProcess = (
   });
   const rootPid = child.pid;
   const owned = new Set([rootPid]);
+  const ownedIdentities = new Map<number, ProcessIdentity>();
   const startedAtMs = Date.now();
   let lastActivityMs = startedAtMs;
   let requestedTermination: 'requested' | 'cancelled' | null = null;
@@ -334,7 +424,7 @@ export const startOwnedProcess = (
       for (;;) {
         if (requestedTermination) {
           termination = requestedTermination;
-          await stopOwnedProcessTree(rootPid, owned, child);
+          await stopOwnedProcessTree(rootPid, owned, child, ownedIdentities);
           break;
         }
         if (naturalExited) {
@@ -347,6 +437,14 @@ export const startOwnedProcess = (
           const previousSize = owned.size;
           for (const sample of samples) {
             owned.add(sample.pid);
+            if (sample.creationTime && !ownedIdentities.has(sample.pid)) {
+              ownedIdentities.set(sample.pid, {
+                pid: sample.pid,
+                parentPid: sample.parentPid,
+                name: sample.name,
+                creationTime: sample.creationTime,
+              });
+            }
           }
           if (owned.size !== previousSize) {
             await hooks.onOwnedPids(
@@ -372,12 +470,12 @@ export const startOwnedProcess = (
 
         if (Date.now() - startedAtMs >= spec.wallTimeoutMs) {
           termination = 'wall_timeout';
-          await stopOwnedProcessTree(rootPid, owned, child);
+          await stopOwnedProcessTree(rootPid, owned, child, ownedIdentities);
           break;
         }
         if (Date.now() - lastActivityMs >= spec.idleTimeoutMs) {
           termination = 'idle_timeout';
-          await stopOwnedProcessTree(rootPid, owned, child);
+          await stopOwnedProcessTree(rootPid, owned, child, ownedIdentities);
           break;
         }
         await Bun.sleep(25);
@@ -390,7 +488,12 @@ export const startOwnedProcess = (
           (pid) => pid !== rootPid && processExists(pid),
         );
         if (liveDescendants.length > 0) {
-          await stopOwnedProcessTree(rootPid, owned);
+          await stopOwnedProcessTree(
+            rootPid,
+            owned,
+            undefined,
+            ownedIdentities,
+          );
         }
       } else {
         naturalExitCode = await child.exited;
@@ -410,7 +513,9 @@ export const startOwnedProcess = (
       await hooks.onFinish?.(processResult);
       resolveResult(processResult);
     } catch (error) {
-      await stopOwnedProcessTree(rootPid, owned, child).catch(() => undefined);
+      await stopOwnedProcessTree(rootPid, owned, child, ownedIdentities).catch(
+        () => undefined,
+      );
       rejectResult(error);
     }
   };
