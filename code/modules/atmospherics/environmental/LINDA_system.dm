@@ -166,7 +166,8 @@
 	if(!init_air || !DOGMOS)
 		return
 	conductivity_blocked_directions = ALL_CARDINALS & ~conductivity_directions()
-	register_dogmos_air()
+	if(!SSdogmos.turf_registration_batching || !dogmos_air_registration_is_current())
+		register_dogmos_air()
 	__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
 
 /**

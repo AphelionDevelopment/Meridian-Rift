@@ -266,6 +266,7 @@
 			pipeline_list |= atmos_machine.return_pipenets_for_reconcilation(src)
 			gas_mixture_list += atmos_machine.return_airs_for_reconcilation(src)
 
+	/* // APHELION EDIT REMOVAL START - DOGMOS
 	var/total_thermal_energy = 0
 	var/total_heat_capacity = 0
 
@@ -310,6 +311,10 @@
 	//Update individual gas_mixtures by volume ratio
 	for(var/datum/gas_mixture/gas_mixture as anything in gas_mixture_list)
 		gas_mixture.copy_from_ratio(total_gas_mixture, gas_mixture.return_volume() / volume_sum)
+	*/ // APHELION EDIT REMOVAL END
+	// APHELION EDIT ADDITION START - DOGMOS
+	dogmos_reconcile_pipeline_mixtures(gas_mixture_list)
+	// APHELION EDIT ADDITION END
 
 //--------------------
 // GAS VISUALS STUFF

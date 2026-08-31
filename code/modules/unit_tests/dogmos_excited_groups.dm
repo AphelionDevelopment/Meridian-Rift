@@ -16,7 +16,14 @@
 	SSair.finish_turf_processing_auxtools(100)
 
 	var/before = SSair.num_group_turfs_processed
+	/* // NOVA EDIT REMOVAL START - DOGMOS
 	SSair.process_excited_groups_auxtools(100)
+	*/ // NOVA EDIT REMOVAL END
+	// NOVA EDIT ADDITION START - DOGMOS
+	var/stage_pending = TRUE
+	while(stage_pending)
+		stage_pending = SSair.process_excited_groups_auxtools(100)
+	// NOVA EDIT ADDITION END
 	var/after = SSair.num_group_turfs_processed
 
 	TEST_ASSERT(after > 0, \

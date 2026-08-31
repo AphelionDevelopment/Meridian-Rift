@@ -5,6 +5,10 @@
 	var/static/next_dogmos_registration_generation = 0
 	/// Initial temperature used when Dogmos first registers the turf's heat node.
 	var/initial_temperature
+	/// Mixture slot last queued for this turf's current Dogmos registration.
+	var/dogmos_registered_mixture_slot
+	/// Mixture generation last queued for this turf's current Dogmos registration.
+	var/dogmos_registered_mixture_generation
 	/// Directions blocked for Dogmos heat conduction.
 	var/conductivity_blocked_directions = NONE
 	/// Whether decompression may strip this turf's floor surface.
@@ -13,6 +17,22 @@
 /// Advances the callback generation used to fence ChangeTurf() replacements.
 /turf/proc/mark_dogmos_turf_replacement()
 	dogmos_registration_generation = ++next_dogmos_registration_generation
+	dogmos_registered_mixture_slot = null
+	dogmos_registered_mixture_generation = null
+
+/**
+ * Returns whether startup registration already reflects the turf's current gas mixture.
+ *
+ * Arguments:
+ * * register_space_boundary - Whether an open space turf registers its shared boundary mixture.
+ */
+/turf/proc/dogmos_air_registration_is_current(register_space_boundary = FALSE)
+	if(isnull(dogmos_registration_generation))
+		return FALSE
+	var/turf/open/open_turf = isopenturf(src) ? src : null
+	var/datum/gas_mixture/expected_mixture = (open_turf?.air && (register_space_boundary || !blocks_air)) ? open_turf.air : null
+	return (dogmos_registered_mixture_slot || 0) == (expected_mixture?.dogmos_slot || 0) \
+		&& (dogmos_registered_mixture_generation || 0) == (expected_mixture?.dogmos_generation || 0)
 
 /turf/Initalize_Atmos(time)
 	register_dogmos_air()

@@ -13,21 +13,22 @@
 	TEST_ASSERT(before_moles > 0, \
 		"The interior test turf has no gas to begin with - test setup is broken, not the thing under test.")
 
-	var/before_boundary_count = dogmos_space_boundary_count()
-
 	var/list/conversion = convert_neighbor_to_space(interior)
+	var/turf/open/space/vacuum_neighbor = conversion[1]
 	original_neighbor_type = conversion[2]
 
-	TEST_ASSERT(dogmos_space_boundary_count() > before_boundary_count, \
-		"dogmos_space_boundary_count() did not increase after a real space neighbor was discovered as an adjacent turf - the space turf did not register into Dogmos' gas graph (see the register_dogmos_air() override on /turf/open/space).")
+	TEST_ASSERT(vacuum_neighbor.dogmos_air_registration_is_current(register_space_boundary = TRUE), \
+		"The real space neighbor did not retain the current shared-boundary mixture identity after registration.")
 
-	// Use a fixed budget so suite timing cannot starve this focused cycle.
-	SSair.process_turfs_auxtools(100)
-	SSair.finish_turf_processing_auxtools(100)
-
-	var/after_moles = air_interior.total_moles()
+	SSair.add_to_active(interior)
+	var/after_moles = before_moles
+	for(var/attempt in 1 to 10)
+		sleep(1 SECONDS)
+		after_moles = air_interior.total_moles()
+		if(after_moles < before_moles)
+			break
 	TEST_ASSERT(after_moles < before_moles, \
-		"The interior turf's total moles ([before_moles] -> [after_moles]) did not decrease after a real FDM cycle with a registered space neighbor - gas is not actually diffusing into space.")
+		"The interior turf's total moles ([before_moles] -> [after_moles]) did not decrease across ten real SSair cycles with a registered space neighbor - gas is not actually diffusing into space.")
 
 	restore_neighbor_from_space(interior, original_neighbor_type)
 	original_neighbor_type = null
@@ -39,3 +40,69 @@
 	restore_neighbor_from_space(run_loc_floor_bottom_left, original_neighbor_type)
 	restore_atmos()
 	return ..()
+
+// APHELION EDIT ADDITION START - DOGMOS
+/** Verifies an immutable space frontier entry settles after waking its mutable neighbor. */
+/datum/unit_test/dogmos_space_boundary_frontier_settlement
+	/// The EAST neighbor's original type, restored even when the test fails.
+	var/original_neighbor_type
+	/// SSair's active-turf queue before the isolated frontier walk.
+	var/list/original_active_turfs
+	/// SSair's active-turf walk cursor before the isolated frontier walk.
+	var/original_active_turfs_walk_cursor
+	/// Whether the mutable interior turf was active before the isolated frontier walk.
+	var/original_interior_excited
+	/// Whether the immutable space turf was active before the isolated frontier walk.
+	var/original_vacuum_excited
+	/// Mutable turf that must be activated when the immutable source observes a difference.
+	var/turf/open/interior
+	/// Immutable frontier source that must leave the active queue after one comparison walk.
+	var/turf/open/space/vacuum_neighbor
+
+/datum/unit_test/dogmos_space_boundary_frontier_settlement/Run()
+	interior = run_loc_floor_bottom_left
+	TEST_ASSERT(istype(interior), "run_loc_floor_bottom_left is not an open turf - this test needs one.")
+
+	var/list/conversion = convert_neighbor_to_space(interior)
+	vacuum_neighbor = conversion[1]
+	original_neighbor_type = conversion[2]
+	original_active_turfs = SSair.active_turfs
+	original_active_turfs_walk_cursor = SSair.active_turfs_walk_cursor
+	original_interior_excited = interior.excited
+	original_vacuum_excited = vacuum_neighbor.excited
+
+	interior.excited = FALSE
+	vacuum_neighbor.excited = TRUE
+	SSair.active_turfs = list(vacuum_neighbor)
+	SSair.active_turfs_walk_cursor = 0
+	SSair.walk_active_turfs_batch()
+
+	var/vacuum_settled = !(vacuum_neighbor in SSair.active_turfs)
+	var/interior_activated = (interior in SSair.active_turfs)
+	restore_frontier_test_state()
+
+	TEST_ASSERT(vacuum_settled, \
+		"An immutable space turf remained in SSair.active_turfs after comparing its mutable neighbor - immutable frontier sources cannot converge and must settle after waking mutable neighbors.")
+	TEST_ASSERT(interior_activated, \
+		"The mutable interior turf was not activated when an immutable space frontier source observed a gas difference.")
+
+/** Restores the temporary active-turf queue and converted space turf. */
+/datum/unit_test/dogmos_space_boundary_frontier_settlement/proc/restore_frontier_test_state()
+	if(!isnull(original_active_turfs))
+		SSair.active_turfs = original_active_turfs
+		SSair.active_turfs_walk_cursor = original_active_turfs_walk_cursor
+		original_active_turfs = null
+	if(interior)
+		interior.excited = original_interior_excited
+	if(vacuum_neighbor)
+		vacuum_neighbor.excited = original_vacuum_excited
+	restore_neighbor_from_space(interior, original_neighbor_type)
+	original_neighbor_type = null
+	interior = null
+	vacuum_neighbor = null
+
+/datum/unit_test/dogmos_space_boundary_frontier_settlement/Destroy()
+	restore_frontier_test_state()
+	restore_atmos()
+	return ..()
+// APHELION EDIT ADDITION END

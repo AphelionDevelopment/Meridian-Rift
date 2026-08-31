@@ -155,6 +155,9 @@ GLOBAL_DATUM_INIT(dogmos_kennel, /datum/dogmos_kennel, new())
 		"highpressure" = SSair.cost_highpressure,
 		"equalize" = SSair.cost_equalize,
 		"superconductivity" = SSair.cost_superconductivity,
+		// APHELION EDIT ADDITION START - DOGMOS
+		"pipenets" = SSair.cost_pipenets,
+		// APHELION EDIT ADDITION END
 		"post_process" = SSair.cost_post_process,
 	)
 	data["frozen"] = SSair.can_fire

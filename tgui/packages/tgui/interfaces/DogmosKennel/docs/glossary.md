@@ -1,69 +1,121 @@
 # Dogmos Glossary
 
+## Active Turf
+
+An open turf currently retained for atmospheric flow or reaction processing. Active Turfs is a live
+queue size, not the number processed in a cycle. A disturbed area may take several FDM passes to
+settle and leave the queue.
+
+## Atmospherics MC
+
+The Master Controller subsystem that schedules atmospheric work in DreamDaemon. Its tick duration
+includes Dream Maker processing, waits for dogmosd, and native work completed before control
+returns.
+
 ## Auxmos
 
-The atmospheric simulation lineage Dogmos was ported from. Dogmos keeps the useful numerical
-foundation while adapting its integration, scheduling, callbacks, and player-facing contracts for
-Meridian Rift.
+The Rust atmospheric project from which Dogmos descends. Dogmos changes the integration, service
+boundary, scheduling, telemetry, and gameplay callbacks for Meridian Rift.
+
+## Callback
+
+A bounded message from dogmosd asking Dream Maker to apply a gameplay-side effect or continue a
+reaction. Handles and generations are checked before a callback target is used.
+
+## Component count
+
+The amount of connected pressure or excited-group work reported by a native cycle. It is not
+necessarily a count of unique turfs and should be read together with the current queue sizes.
 
 ## Dogmos
 
-The Rust-backed atmospheric processing layer in this project. Think of it as the kennel's working
-pack: gas flow, reactions, pressure equalization, and blocked-path heat conduction are coordinated
-through shared DM/Rust handles.
+Meridian Rift's service-backed atmospheric implementation. It stores gas mixtures in a native arena
+and runs numerical atmosphere stages while preserving Dream Maker's public mixture and gameplay
+contracts.
+
+## dogmosd
+
+The 64-bit service process that owns the native world and performs Dogmos operations. Its memory and
+CPU telemetry are separate from the 32-bit DreamDaemon host.
+
+## DreamDaemon
+
+BYOND's game-server process. Meridian Rift's DreamDaemon is 32-bit, so private bytes and virtual
+address-space pressure are operational limits distinct from dogmosd RSS.
 
 ## EWMA
 
-An exponentially weighted moving average. The Kennel uses it for per-machine processing cost so one
-brief noisy tick does not immediately leash a machine, while a repeatedly expensive machine remains
-visible. The current sample is blended with the previous estimate through the existing
-`MC_AVERAGE` rule.
+Exponentially weighted moving average. Stage and per-machine cost displays smooth recent samples so
+one noisy tick has less influence than repeated expensive work.
+
+## Excited Group
+
+A connected low-pressure region maintained for bounded group processing. Excited-group work is
+separate from the main FDM turf pass.
 
 ## FDM
 
-Finite-difference method. Dogmos uses bounded FDM steps to estimate gas movement between registered
-turf mixtures. Each step works from the current graph and queues only the DM callbacks needed for
-effects and bookkeeping.
+Finite-difference method. Dogmos performs a configured number of bounded, resumable passes over the
+active-turf frontier to converge gas composition and temperature.
+
+## Frontier
+
+The committed set of active turf handles for one Dogmos processing cycle. Its epoch prevents runtime
+topology mutations from changing the graph while a stage is still using it.
+
+## Gas overlay
+
+Tile-local visual feedback for a turf's gas state. A hard visual edge may be correct when a wall,
+door, firelock, or other boundary separates atmospheric networks.
 
 ## Hotspot
 
-A DM fire datum attached to an open turf. Reactions determine gas changes; hotspots turn those
-changes into temperature, fire growth, fuel checks, visual stages, and `fire_act()` consequences.
+A Dream Maker fire datum on an open turf. Native reactions change the mixture; Dream Maker applies
+fire growth, visuals, exposure, and other gameplay consequences.
 
-## Katmos
+## Katmos / Pressure Equalizer
 
-Dogmos' pressure equalizer. It handles pressure differences, bounded redistribution, hull-breach
-flood fills, and the callbacks that need to return to DM. It runs after the main FDM flow pass.
+Dogmos' bounded pressure redistribution stage. It processes pressure-connected components and emits
+the Dream Maker callbacks required for decompression effects and firelock behavior.
 
 ## Kennel
 
-The Dogmos diagnostic interface. It is intentionally bounded: event histories expire or cap their
-size, target references are validated when followed, and expensive instrumentation is opt-in.
+The Dogmos operational and diagnostic interface. Its event histories are bounded, jump targets are
+validated, and expensive reaction timing is opt-in.
 
-## LINDA
+## Negative timing sample
 
-The inherited DM atmospheric system and the surrounding gameplay contracts. Dogmos replaces the
-repeated numerical flow work, but LINDA's names and DM-side effects remain important integration
-points for hotspots, machines, firelocks, and compatibility behavior.
+Invalid telemetry produced when a measured interval crosses an incompatible tick boundary or is
+otherwise malformed. It means the instrumentation cannot report that sample; it never means that a
+stage performed negative work.
+
+## Pipenet
+
+A connected atmospheric machinery network whose member gas mixtures are reconciled to a common
+composition and temperature. Pipenet cost includes mixture snapshots, service IPC, and network
+reaction work.
 
 ## Reaction event
 
-A recorded reaction amount change at or above the configured event threshold. This answers “what
-changed enough to matter?” It is not a timing sample.
+A recorded reaction amount change at or above the event threshold. It answers what changed; it is
+not a timing sample.
 
 ## Reaction profiling
 
-Optional instrumentation that measures each Rust reaction call and records calls meeting the
-high-cost threshold. It answers “which individual reaction calls cost time?” Because the timer is
-paid on every call while enabled, profiling belongs in a short diagnostic run.
+Optional per-call reaction timing. Calls at or above the configured threshold are recorded as
+high-cost samples. Profiling adds overhead and should be enabled only during a bounded investigation.
+
+## Stage cost
+
+A smoothed wall-clock duration measured around one Atmospherics controller stage. It may include
+Dream Maker code, service IPC, and native execution. It is not a pure Rust benchmark.
+
+## TIDI
+
+Time dilation reported by the Master Controller. Rising TIDI means the server cannot execute its
+scheduled work at real-time pace; it is an outcome metric, not an Atmospherics-only timing.
 
 ## TurfHeat
 
-Dogmos' heat-conduction graph for blocked atmospheric paths such as walls, windows, and doors. It
-keeps thermal work separate from ordinary gas adjacency and updates DM temperatures through guarded
-callbacks.
-
-## Excited group
-
-A bounded group of low-pressure turfs maintained by the atmospheric subsystem. Group processing lets
-the station handle connected regions without repeatedly treating every tile as an unrelated scent.
+Dogmos' heat-conduction graph for blocked gas paths such as walls, windows, and doors. Gas adjacency
+and heat adjacency are tracked separately.

@@ -20,13 +20,13 @@
 	SSair.active_turfs_walk_cursor = 0
 
 	var/start_tick_usage = TICK_USAGE_REAL
-	SSair.process_active_turfs()
+	SSair.walk_active_turfs_batch() // NOVA EDIT CHANGE - ORIGINAL: SSair.process_active_turfs()
 	var/cost_ms = TICK_USAGE_TO_MS(start_tick_usage)
 
 	SSair.active_turfs = original_active_turfs
 	SSair.active_turfs_walk_cursor = original_cursor
 
 	TEST_ASSERT(cost_ms < ACTIVE_TURFS_BLOAT_TEST_MAX_MS, \
-		"process_active_turfs() took [cost_ms]ms against a ~3800-entry list (bound: [ACTIVE_TURFS_BLOAT_TEST_MAX_MS]ms); work should stay within ACTIVE_TURFS_WALK_BATCH_SIZE.")
+		"walk_active_turfs_batch() took [cost_ms]ms against a ~3800-entry list (bound: [ACTIVE_TURFS_BLOAT_TEST_MAX_MS]ms); work should stay within ACTIVE_TURFS_WALK_BATCH_SIZE.") // NOVA EDIT CHANGE - ORIGINAL: "process_active_turfs() took [cost_ms]ms against a ~3800-entry list (bound: [ACTIVE_TURFS_BLOAT_TEST_MAX_MS]ms); work should stay within ACTIVE_TURFS_WALK_BATCH_SIZE.")
 
 #undef ACTIVE_TURFS_BLOAT_TEST_MAX_MS

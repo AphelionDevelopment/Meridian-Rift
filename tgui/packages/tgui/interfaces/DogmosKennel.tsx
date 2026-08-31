@@ -31,6 +31,9 @@ type DogmosCosts = {
   highpressure: number;
   equalize: number;
   superconductivity: number;
+  // APHELION EDIT ADDITION START - DOGMOS
+  pipenets: number;
+  // APHELION EDIT ADDITION END
   post_process: number;
 };
 
@@ -203,12 +206,21 @@ type StageCostRowProps = {
 /// Displays one Dogmos stage cost with its activity state and severity band.
 const StageCostRow = (props: StageCostRowProps) => {
   const { label, cost, active, inactiveTooltip } = props;
-  const color = !active ? 'grey' : cost >= 10 ? 'bad' : cost >= 5 ? 'average' : 'good';
+  // APHELION EDIT ADDITION START - DOGMOS
+  const validCost = Number.isFinite(cost) && cost >= 0;
+  const displayCost = validCost ? cost : 0;
+  const tooltip = !validCost
+    ? 'Invalid timing sample. Negative and non-finite values are instrumentation errors, not work completed in reverse.'
+    : !active
+      ? inactiveTooltip
+      : undefined;
+  // APHELION EDIT ADDITION END
+  const color = !validCost ? 'bad' : !active ? 'grey' : cost >= 10 ? 'bad' : cost >= 5 ? 'average' : 'good';
   return (
     <Table.Row>
       <Table.Cell collapsing align="center">
-        {!active && inactiveTooltip ? (
-          <Tooltip content={inactiveTooltip}>
+        {tooltip ? (
+          <Tooltip content={tooltip}>
             <Icon name="paw" color={color} />
           </Tooltip>
         ) : (
@@ -216,8 +228,13 @@ const StageCostRow = (props: StageCostRowProps) => {
         )}
       </Table.Cell>
       <Table.Cell>
-        <ProgressBar value={cost} maxValue={STAGE_COST_MAX} ranges={STAGE_COST_RANGES}>
-          {label} {cost.toFixed(2)}ms
+        <ProgressBar
+          value={displayCost}
+          maxValue={STAGE_COST_MAX}
+          ranges={STAGE_COST_RANGES}
+          color={validCost ? undefined : 'bad'}
+        >
+          {label} {validCost ? `${cost.toFixed(2)}ms` : 'invalid sample'}
         </ProgressBar>
       </Table.Cell>
     </Table.Row>
@@ -344,7 +361,7 @@ const OverviewPanel = (props) => {
               <LabeledList.Item label="Low / High Pressure Turfs">
                 {data.low_pressure_turfs} / {data.high_pressure_turfs}
               </LabeledList.Item>
-              <LabeledList.Item label="Group / Equalize Processed">
+              <LabeledList.Item label="Group / Equalize Components">
                 {data.group_turfs_processed} / {data.equalize_processed}
               </LabeledList.Item>
             </LabeledList>
@@ -377,23 +394,17 @@ const OverviewPanel = (props) => {
       {/* APHELION EDIT ADDITION START - DOGMOS */}
       <ProcessMetricsPanel />
       {/* APHELION EDIT ADDITION END */}
-      <Section title="Dogmos Stage Costs (Rust, per cycle)">
+      <Section title="Atmospherics Stage Costs (smoothed wall time)">
         <Table>
-          <StageCostRow label="Gas FDM" cost={costs.turfs ?? 0} active />
+          <StageCostRow label="Active Turfs / FDM" cost={costs.turfs ?? 0} active />
           <StageCostRow
             label="Excited Groups"
             cost={costs.groups ?? 0}
             active
           />
           <StageCostRow
-            label="High Pressure"
+            label="Pressure Equalization"
             cost={costs.highpressure ?? 0}
-            active={equalizeActive}
-            inactiveTooltip="Katmos Pressure Equalizer is off (below)"
-          />
-          <StageCostRow
-            label="Equalize"
-            cost={costs.equalize ?? 0}
             active={equalizeActive}
             inactiveTooltip="Katmos Pressure Equalizer is off (below)"
           />
@@ -402,11 +413,9 @@ const OverviewPanel = (props) => {
             cost={costs.superconductivity ?? 0}
             active
           />
-          <StageCostRow
-            label="Post Process"
-            cost={costs.post_process ?? 0}
-            active
-          />
+          {/* APHELION EDIT ADDITION START - DOGMOS */}
+          <StageCostRow label="Pipenets" cost={costs.pipenets ?? 0} active />
+          {/* APHELION EDIT ADDITION END */}
         </Table>
       </Section>
       {!!data.kennel_slow_mode && (

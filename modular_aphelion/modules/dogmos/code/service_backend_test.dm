@@ -1,6 +1,12 @@
 #if defined(UNIT_TESTS) || defined(SPACEMAN_DMM)
 
 #define DOGMOS_WORLD_GENERATION_WORD_MAX 65535
+#define DOGMOS_TEST_STAGE_EXCITED_GROUPS 1
+#define DOGMOS_TEST_STAGE_EQUALIZE 2
+#define DOGMOS_TEST_STAGE_TURF_HEAT 3
+#define DOGMOS_TEST_STAGE_REACTIONS 5
+#define DOGMOS_TEST_STAGE_RESPONSE_FIELDS 13
+#define DOGMOS_PIPELINE_TEST_EPSILON 0.001
 
 /** Verifies startup identity mismatches report exact expected and actual values. */
 /datum/unit_test/dogmos_service_contract_identity
@@ -175,6 +181,54 @@
 	SSdogmos.reset_mixture_snapshot_cache()
 	return ..()
 
+/** Verifies pipenet reconciliation uses one atomic state batch while conserving mixture state. */
+/datum/unit_test/dogmos_service_pipeline_batch_reconcile
+	/// Pipeline released during teardown.
+	var/datum/pipeline/test_pipeline
+	/// First service-backed mixture released during teardown.
+	var/datum/gas_mixture/first
+	/// Second service-backed mixture released during teardown.
+	var/datum/gas_mixture/second
+
+/datum/unit_test/dogmos_service_pipeline_batch_reconcile/Run()
+	if(!SSdogmos.service_ready)
+		return Fail("dogmosd did not pass startup identity and health checks.", __FILE__, __LINE__)
+
+	first = new(100)
+	second = new(300)
+	first.set_volume(100)
+	second.set_volume(300)
+	first.set_temperature(300)
+	second.set_temperature(600)
+	first.set_moles(/datum/gas/oxygen, 4)
+	second.set_moles(/datum/gas/nitrogen, 12)
+	var/expected_temperature = (first.return_temperature() * first.heat_capacity() + second.return_temperature() * second.heat_capacity()) / (first.heat_capacity() + second.heat_capacity())
+
+	test_pipeline = new
+	test_pipeline.set_air(first)
+	test_pipeline.other_airs = list(second)
+	var/invalidations_before = SSdogmos.dogmos_mixture_cache_epoch_invalidations
+	test_pipeline.reconcile_air()
+
+	if(SSdogmos.dogmos_mixture_cache_epoch_invalidations != invalidations_before + 1)
+		return Fail("Pipenet reconciliation did not invalidate the mixture snapshot cache exactly once.", __FILE__, __LINE__)
+	var/first_oxygen = first.get_moles(/datum/gas/oxygen)
+	var/second_oxygen = second.get_moles(/datum/gas/oxygen)
+	if(abs(first_oxygen - 1) > DOGMOS_PIPELINE_TEST_EPSILON || abs(second_oxygen - 3) > DOGMOS_PIPELINE_TEST_EPSILON)
+		return Fail("Pipenet reconciliation did not distribute oxygen by volume ratio: [first_oxygen] / [second_oxygen].", __FILE__, __LINE__)
+	var/first_nitrogen = first.get_moles(/datum/gas/nitrogen)
+	var/second_nitrogen = second.get_moles(/datum/gas/nitrogen)
+	if(abs(first_nitrogen - 3) > DOGMOS_PIPELINE_TEST_EPSILON || abs(second_nitrogen - 9) > DOGMOS_PIPELINE_TEST_EPSILON)
+		return Fail("Pipenet reconciliation did not distribute nitrogen by volume ratio: [first_nitrogen] / [second_nitrogen].", __FILE__, __LINE__)
+	if(abs(first.return_temperature() - expected_temperature) > DOGMOS_PIPELINE_TEST_EPSILON || abs(second.return_temperature() - expected_temperature) > DOGMOS_PIPELINE_TEST_EPSILON)
+		return Fail("Pipenet reconciliation did not conserve thermal energy.", __FILE__, __LINE__)
+
+/datum/unit_test/dogmos_service_pipeline_batch_reconcile/Destroy()
+	QDEL_NULL(test_pipeline)
+	QDEL_NULL(first)
+	QDEL_NULL(second)
+	return ..()
+
 /** Verifies non-conducting turfs remain absent from the service heat graph. */
 /datum/unit_test/dogmos_service_turf_heat_absence
 	/// Turf restored after the assertion run.
@@ -266,6 +320,69 @@
 		neighbor.init_air = original_neighbor_init_air
 		neighbor.register_dogmos_air()
 	return ..()
+
+/** Verifies startup adjacency rebuilds do not re-register current turfs. */
+/datum/unit_test/dogmos_service_startup_registration_deduplication
+
+/datum/unit_test/dogmos_service_startup_registration_deduplication/Run()
+	var/turf/target = run_loc_floor_bottom_left
+	var/turf/neighbor = get_step(target, EAST)
+	if(!target.init_air || isnull(target.dogmos_registration_generation) || !neighbor?.init_air || isnull(neighbor.dogmos_registration_generation))
+		return Fail("The Dogmos startup registration test requires two registered atmosphere turfs.", __FILE__, __LINE__)
+
+	var/original_batching = SSdogmos.turf_registration_batching
+	var/list/original_lifecycle = SSdogmos.dogmos_pending_turf_lifecycle
+	var/list/original_adjacency = SSdogmos.dogmos_pending_turf_adjacency
+	var/list/original_adjacency_index = SSdogmos.dogmos_pending_turf_adjacency_index
+	var/list/original_heat = SSdogmos.dogmos_pending_turf_heat
+	var/list/original_heat_adjacency = SSdogmos.dogmos_pending_turf_heat_adjacency
+	var/list/original_heat_adjacency_index = SSdogmos.dogmos_pending_turf_heat_adjacency_index
+	var/list/original_retry = SSdogmos.dogmos_pending_adjacency_retry
+	SSdogmos.turf_registration_batching = TRUE
+	SSdogmos.dogmos_pending_turf_lifecycle = list()
+	SSdogmos.dogmos_pending_turf_adjacency = list()
+	SSdogmos.dogmos_pending_turf_adjacency_index = list()
+	SSdogmos.dogmos_pending_turf_heat = list()
+	SSdogmos.dogmos_pending_turf_heat_adjacency = list()
+	SSdogmos.dogmos_pending_turf_heat_adjacency_index = list()
+	SSdogmos.dogmos_pending_adjacency_retry = list()
+	var/target_key = "[target.dogmos_service_slot()]"
+	var/neighbor_key = "[neighbor.dogmos_service_slot()]"
+	SSdogmos.dogmos_pending_turf_lifecycle[target_key] = list("target sentinel")
+	SSdogmos.dogmos_pending_turf_lifecycle[neighbor_key] = list("neighbor sentinel")
+
+	target.sync_dogmos_adjacency()
+
+	var/list/target_lifecycle = SSdogmos.dogmos_pending_turf_lifecycle[target_key]
+	var/list/neighbor_lifecycle = SSdogmos.dogmos_pending_turf_lifecycle[neighbor_key]
+	var/failure_message
+	if(target_lifecycle?[1] != "target sentinel")
+		failure_message = "Dogmos re-registered the current turf during startup adjacency synchronization."
+	else if(neighbor_lifecycle?[1] != "neighbor sentinel")
+		failure_message = "Dogmos re-registered a current neighbor during startup adjacency synchronization."
+	var/original_registered_mixture_slot = target.dogmos_registered_mixture_slot
+	var/original_registered_mixture_generation = target.dogmos_registered_mixture_generation
+	if(!failure_message)
+		target.dogmos_registered_mixture_slot = null
+		target.dogmos_registered_mixture_generation = null
+		SSdogmos.dogmos_pending_turf_lifecycle[target_key] = list("stale target sentinel")
+		target.sync_dogmos_adjacency()
+		target_lifecycle = SSdogmos.dogmos_pending_turf_lifecycle[target_key]
+		if(target_lifecycle?[1] == "stale target sentinel")
+			failure_message = "Dogmos did not refresh a startup turf whose gas mixture became available."
+	target.dogmos_registered_mixture_slot = original_registered_mixture_slot
+	target.dogmos_registered_mixture_generation = original_registered_mixture_generation
+
+	SSdogmos.turf_registration_batching = original_batching
+	SSdogmos.dogmos_pending_turf_lifecycle = original_lifecycle
+	SSdogmos.dogmos_pending_turf_adjacency = original_adjacency
+	SSdogmos.dogmos_pending_turf_adjacency_index = original_adjacency_index
+	SSdogmos.dogmos_pending_turf_heat = original_heat
+	SSdogmos.dogmos_pending_turf_heat_adjacency = original_heat_adjacency
+	SSdogmos.dogmos_pending_turf_heat_adjacency_index = original_heat_adjacency_index
+	SSdogmos.dogmos_pending_adjacency_retry = original_retry
+	if(failure_message)
+		return Fail(failure_message, __FILE__, __LINE__)
 
 /** Verifies callback turf resolution rejects stale generations without invoking gameplay handlers. */
 /datum/unit_test/dogmos_service_callback_identity
@@ -384,6 +501,7 @@
 #define DOGMOS_TEST_REACTION_EVENT_OFFSET 13
 #define DOGMOS_TEST_REACTION_SUBJECT_SLOT_FIELD 11
 #define DOGMOS_TEST_REACTION_SUBJECT_GENERATION_FIELD 13
+#define DOGMOS_TEST_CALLBACK_REACTION_FINISHED 2
 
 /** Verifies general reaction callbacks reject stale mixture generations at the identity boundary. */
 /datum/unit_test/dogmos_service_general_reaction_subject
@@ -403,6 +521,13 @@
 	var/list/stale_subject = SSdogmos.decode_general_reaction_subject(callback, DOGMOS_TEST_REACTION_EVENT_OFFSET)
 	if(!failure_message && stale_subject[1])
 		failure_message = "Dogmos accepted a stale general-reaction mixture generation."
+	var/original_stale_callbacks = SSdogmos.dogmos_stale_callback_count
+	var/stale_dispatch_result = SSdogmos.dispatch_general_reaction_callback(callback, DOGMOS_TEST_REACTION_EVENT_OFFSET, DOGMOS_TEST_CALLBACK_REACTION_FINISHED)
+	if(!failure_message && (!isnum(stale_dispatch_result) || stale_dispatch_result != FALSE))
+		failure_message = "Dogmos did not explicitly discard a stale finished-reaction callback."
+	if(!failure_message && SSdogmos.dogmos_stale_callback_count != original_stale_callbacks + 1)
+		failure_message = "Dogmos did not count a discarded stale finished-reaction callback."
+	SSdogmos.dogmos_stale_callback_count = original_stale_callbacks
 	qdel(mixture)
 	if(failure_message)
 		return Fail(failure_message, __FILE__, __LINE__)
@@ -410,6 +535,7 @@
 #undef DOGMOS_TEST_REACTION_EVENT_OFFSET
 #undef DOGMOS_TEST_REACTION_SUBJECT_SLOT_FIELD
 #undef DOGMOS_TEST_REACTION_SUBJECT_GENERATION_FIELD
+#undef DOGMOS_TEST_CALLBACK_REACTION_FINISHED
 
 /** Verifies runtime topology remains deferred for the full committed-frontier cycle. */
 /datum/unit_test/dogmos_service_topology_stage_barrier
@@ -426,6 +552,138 @@
 		return Fail("Dogmos flushed runtime topology while a committed frontier remained pending.", __FILE__, __LINE__)
 	if(deferrals_after != deferrals_before + 1)
 		return Fail("Dogmos did not count a committed-frontier topology deferral.", __FILE__, __LINE__)
+
+/** Verifies an exhausted MC budget returns control without sleeping inside SSair. */
+/datum/unit_test/dogmos_service_stage_budget_progress
+
+/datum/unit_test/dogmos_service_stage_budget_progress/Run()
+	var/original_work_limit = SSair.dogmos_stage_work_limit
+	SSair.dogmos_stage_work_limit = 128
+	var/zero_budget_limit = SSair.dogmos_work_limit_for_budget(0)
+	var/overrun_budget_limit = SSair.dogmos_work_limit_for_budget(-1)
+	SSair.dogmos_stage_work_limit = original_work_limit
+	var/defer_start = world.time
+	var/deferred = SSair.dogmos_defer_stage_for_budget()
+
+	if(zero_budget_limit)
+		return Fail("Dogmos scheduled service work despite an exhausted MC budget.", __FILE__, __LINE__)
+	if(overrun_budget_limit)
+		return Fail("Dogmos scheduled service work after an MC overrun.", __FILE__, __LINE__)
+	if(!deferred)
+		return Fail("Dogmos did not report an exhausted stage as deferred.", __FILE__, __LINE__)
+	if(world.time != defer_start)
+		return Fail("Dogmos slept inside SSair while deferring an exhausted stage.", __FILE__, __LINE__)
+
+/** Verifies one Dogmos turf-processing call performs the configured bounded FDM passes. */
+/datum/unit_test/dogmos_service_fdm_multi_pass
+
+/datum/unit_test/dogmos_service_fdm_multi_pass/Run()
+	if(!isnull(SSair.dogmos_pending_stage))
+		return Fail("Dogmos began the FDM multi-pass test with a service stage already pending.", __FILE__, __LINE__)
+	var/original_share_max_steps = SSair.share_max_steps
+	var/original_fdm_steps_completed = SSair.dogmos_fdm_steps_completed
+	SSair.share_max_steps = 4
+	SSair.dogmos_fdm_steps_completed = 0
+	var/pending = TRUE
+	var/chunks = 0
+	while(pending && chunks < 20)
+		pending = SSair.process_turfs_auxtools(100)
+		chunks++
+	var/completed_steps = SSair.dogmos_fdm_steps_completed
+
+	for(var/stage in list(DOGMOS_TEST_STAGE_REACTIONS, DOGMOS_TEST_STAGE_EXCITED_GROUPS, DOGMOS_TEST_STAGE_EQUALIZE, DOGMOS_TEST_STAGE_TURF_HEAT))
+		var/stage_pending = TRUE
+		var/stage_chunks = 0
+		while(stage_pending && stage_chunks < 20)
+			stage_pending = SSair.dogmos_run_stage(stage, 100)
+			stage_chunks++
+		if(stage_pending)
+			pending = TRUE
+	SSair.dogmos_pending_frontier_epoch = null
+
+	SSair.share_max_steps = original_share_max_steps
+	SSair.dogmos_fdm_steps_completed = original_fdm_steps_completed
+
+	if(pending)
+		return Fail("Dogmos did not complete the bounded FDM test cycle within its chunk limit.", __FILE__, __LINE__)
+	if(completed_steps != 4)
+		return Fail("Dogmos completed [completed_steps] FDM passes instead of the configured four.", __FILE__, __LINE__)
+
+/** Verifies malformed stage responses are rejected before SSair reads their fields. */
+/datum/unit_test/dogmos_service_stage_response_failure
+
+/datum/unit_test/dogmos_service_stage_response_failure/Run()
+	var/list/valid_response = new/list(DOGMOS_TEST_STAGE_RESPONSE_FIELDS)
+	for(var/field_index in 1 to DOGMOS_TEST_STAGE_RESPONSE_FIELDS)
+		valid_response[field_index] = 0
+	var/list/short_response = valid_response.Copy()
+	short_response.Cut(length(short_response), length(short_response) + 1)
+	var/list/non_numeric_response = valid_response.Copy()
+	non_numeric_response[1] = "invalid"
+
+	if(SSair.dogmos_stage_response_is_valid(DOGMOS_TEST_STAGE_EQUALIZE, null))
+		return Fail("Dogmos accepted a null stage response.", __FILE__, __LINE__)
+	if(SSair.dogmos_stage_response_is_valid(DOGMOS_TEST_STAGE_EQUALIZE, 1))
+		return Fail("Dogmos accepted a scalar stage response.", __FILE__, __LINE__)
+	if(SSair.dogmos_stage_response_is_valid(DOGMOS_TEST_STAGE_EQUALIZE, short_response))
+		return Fail("Dogmos accepted a short stage response.", __FILE__, __LINE__)
+	if(SSair.dogmos_stage_response_is_valid(DOGMOS_TEST_STAGE_EQUALIZE, non_numeric_response))
+		return Fail("Dogmos accepted a non-numeric stage response.", __FILE__, __LINE__)
+	if(!SSair.dogmos_stage_response_is_valid(DOGMOS_TEST_STAGE_EQUALIZE, valid_response))
+		return Fail("Dogmos rejected a fixed-width numeric stage response.", __FILE__, __LINE__)
+
+	var/original_pending_stage = SSair.dogmos_pending_stage
+	var/list/original_pending_frontier = SSair.dogmos_pending_frontier_epoch
+	var/original_remaining_estimate = SSair.dogmos_stage_remaining_estimate
+	var/original_active_stages_complete = SSair.dogmos_active_turf_stages_complete
+	var/original_fdm_steps_completed = SSair.dogmos_fdm_steps_completed
+	var/original_can_fire = SSair.can_fire
+	var/original_service_ready = SSdogmos.service_ready
+	SSair.dogmos_pending_stage = DOGMOS_TEST_STAGE_REACTIONS
+	SSair.dogmos_pending_frontier_epoch = list(1, 0, 0, 0)
+	SSair.dogmos_stage_remaining_estimate = 77
+	SSair.dogmos_active_turf_stages_complete = TRUE
+	SSair.dogmos_fdm_steps_completed = 3
+	var/failure_pending = SSair.dogmos_fail_closed_stage(DOGMOS_TEST_STAGE_REACTIONS, FALSE)
+	var/failure_message
+	if(!failure_pending)
+		failure_message = "Dogmos did not pause SSair after an irrecoverable stage response."
+	else if(!isnull(SSair.dogmos_pending_stage) || !isnull(SSair.dogmos_pending_frontier_epoch))
+		failure_message = "Dogmos retained failed stage state for another retry."
+	else if(SSair.dogmos_stage_remaining_estimate || SSair.dogmos_active_turf_stages_complete || SSair.dogmos_fdm_steps_completed)
+		failure_message = "Dogmos retained failed-cycle progress after the stage failure."
+	else if(SSair.can_fire || SSdogmos.service_ready)
+		failure_message = "Dogmos did not fail closed after the stage failure."
+
+	SSair.dogmos_pending_stage = original_pending_stage
+	SSair.dogmos_pending_frontier_epoch = original_pending_frontier
+	SSair.dogmos_stage_remaining_estimate = original_remaining_estimate
+	SSair.dogmos_active_turf_stages_complete = original_active_stages_complete
+	SSair.dogmos_fdm_steps_completed = original_fdm_steps_completed
+	SSair.can_fire = original_can_fire
+	SSdogmos.service_ready = original_service_ready
+	if(failure_message)
+		return Fail(failure_message, __FILE__, __LINE__)
+
+/** Verifies a resumed SSair stage does not repeat the cycle health preflight. */
+/datum/unit_test/dogmos_service_resumed_health_preflight
+
+/datum/unit_test/dogmos_service_resumed_health_preflight/Run()
+	if(SSair.dogmos_health_preflight_required(TRUE))
+		return Fail("A resumed SSair stage repeated the Dogmos cycle health preflight.", __FILE__, __LINE__)
+	if(!SSair.dogmos_health_preflight_required(FALSE))
+		return Fail("A new SSair cycle skipped the Dogmos health preflight.", __FILE__, __LINE__)
+
+/** Verifies SSair completes a real Runtime Station or MetaStation cycle after startup. */
+/datum/unit_test/dogmos_service_idle_cycle_progress
+
+/datum/unit_test/dogmos_service_idle_cycle_progress/Run()
+	var/initial_fire_count = SSair.times_fired
+	var/deadline = world.time + 30 SECONDS
+	while(SSair.times_fired <= initial_fire_count && world.time < deadline)
+		sleep(1 SECONDS)
+	if(SSair.times_fired <= initial_fire_count)
+		return Fail("Dogmos did not allow SSair to complete an idle cycle within 30 seconds.", __FILE__, __LINE__)
 
 /** Verifies repeated deferred adjacency updates coalesce and drain completely. */
 /datum/unit_test/dogmos_service_topology_pressure
@@ -478,6 +736,51 @@
 	if(failure_message)
 		return Fail(failure_message, __FILE__, __LINE__)
 
+/** Verifies turf replacement discards queued topology from an older generation. */
+/datum/unit_test/dogmos_service_stale_topology_discard
+
+/datum/unit_test/dogmos_service_stale_topology_discard/Run()
+	var/list/original_gas_edges = SSdogmos.dogmos_pending_turf_adjacency
+	var/list/original_gas_index = SSdogmos.dogmos_pending_turf_adjacency_index
+	var/list/original_heat_edges = SSdogmos.dogmos_pending_turf_heat_adjacency
+	var/list/original_heat_index = SSdogmos.dogmos_pending_turf_heat_adjacency_index
+	var/turf/target = run_loc_floor_bottom_left
+	var/target_slot = target.dogmos_service_slot()
+	var/stale_generation = target.dogmos_service_generation() + 1
+	var/neighbor_slot = target_slot + 1
+	var/edge_key = "[target_slot]:[stale_generation]:[neighbor_slot]:1"
+
+	SSdogmos.dogmos_pending_turf_adjacency = list()
+	SSdogmos.dogmos_pending_turf_adjacency[edge_key] = list(target_slot, stale_generation, neighbor_slot, 1, TRUE, FALSE)
+	SSdogmos.dogmos_pending_turf_adjacency_index = list()
+	SSdogmos.index_pending_edge(SSdogmos.dogmos_pending_turf_adjacency_index, "[target_slot]", edge_key)
+	SSdogmos.index_pending_edge(SSdogmos.dogmos_pending_turf_adjacency_index, "[neighbor_slot]", edge_key)
+	SSdogmos.dogmos_pending_turf_heat_adjacency = list()
+	SSdogmos.dogmos_pending_turf_heat_adjacency[edge_key] = list(target_slot, stale_generation, neighbor_slot, 1, TRUE)
+	SSdogmos.dogmos_pending_turf_heat_adjacency_index = list()
+	SSdogmos.index_pending_edge(SSdogmos.dogmos_pending_turf_heat_adjacency_index, "[target_slot]", edge_key)
+	SSdogmos.index_pending_edge(SSdogmos.dogmos_pending_turf_heat_adjacency_index, "[neighbor_slot]", edge_key)
+
+	SSdogmos.discard_pending_turf_adjacencies(target)
+	var/failure_message
+	if(length(SSdogmos.dogmos_pending_turf_adjacency) || length(SSdogmos.dogmos_pending_turf_adjacency_index))
+		failure_message = "Dogmos retained stale gas topology after a turf generation changed."
+	else if(length(SSdogmos.dogmos_pending_turf_heat_adjacency) || length(SSdogmos.dogmos_pending_turf_heat_adjacency_index))
+		failure_message = "Dogmos retained stale heat topology after a turf generation changed."
+
+	SSdogmos.dogmos_pending_turf_adjacency = original_gas_edges
+	SSdogmos.dogmos_pending_turf_adjacency_index = original_gas_index
+	SSdogmos.dogmos_pending_turf_heat_adjacency = original_heat_edges
+	SSdogmos.dogmos_pending_turf_heat_adjacency_index = original_heat_index
+	if(failure_message)
+		return Fail(failure_message, __FILE__, __LINE__)
+
 #undef DOGMOS_WORLD_GENERATION_WORD_MAX
+#undef DOGMOS_TEST_STAGE_EXCITED_GROUPS
+#undef DOGMOS_TEST_STAGE_EQUALIZE
+#undef DOGMOS_TEST_STAGE_TURF_HEAT
+#undef DOGMOS_TEST_STAGE_REACTIONS
+#undef DOGMOS_TEST_STAGE_RESPONSE_FIELDS
+#undef DOGMOS_PIPELINE_TEST_EPSILON
 
 #endif

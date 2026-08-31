@@ -14,5 +14,6 @@
 /turf/open/space/sync_dogmos_adjacency()
 	if(!DOGMOS)
 		return
-	register_dogmos_air()
+	if(!SSdogmos.turf_registration_batching || !dogmos_air_registration_is_current(register_space_boundary = TRUE))
+		register_dogmos_air()
 	__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)

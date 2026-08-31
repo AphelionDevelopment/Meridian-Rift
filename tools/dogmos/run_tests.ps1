@@ -3,6 +3,7 @@ param(
 	[string[]]$Focus,
 	[ValidateRange(1, 7200)][int]$TimeoutSeconds = 2400,
 	[ValidateRange(0, 10000)][int]$MinimumTests = 400,
+	[ValidateSet('RuntimeStation', 'MetaStation')][string]$Map = 'RuntimeStation',
 	[string]$ShimPath,
 	[string]$ServicePath
 )
@@ -14,11 +15,14 @@ $gameRepository = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $dmePath = Join-Path $gameRepository 'tgstation.dme'
 $focusPath = Join-Path $gameRepository 'code\modules\unit_tests\_zzz_dogmos_focus.dm'
 $resultsPath = Join-Path $gameRepository 'data\unit_tests.json'
+$nextMapPath = Join-Path $gameRepository 'data\next_map.json'
 $runtimeLog = Join-Path $gameRepository 'data\logs\ci\runtime.log'
 $cleanMarker = Join-Path $gameRepository 'data\logs\ci\clean_run.lk'
 $mapPreviewPath = Join-Path $gameRepository 'icons\obj\fluff\map_previews.dmi'
 $originalDme = $null
 $originalMapPreview = $null
+$originalNextMap = $null
+$originalNextMapExists = $false
 $originalShim = $null
 $originalService = $null
 
@@ -54,8 +58,19 @@ try {
 	if (Test-Path -LiteralPath $mapPreviewPath -PathType Leaf) {
 		$originalMapPreview = [System.IO.File]::ReadAllBytes($mapPreviewPath)
 	}
-	Copy-Item -LiteralPath (Join-Path $gameRepository '_maps\runtimestation_minimal.json') `
-		-Destination (Join-Path $gameRepository 'data\next_map.json') -Force
+	if (Test-Path -LiteralPath $nextMapPath -PathType Leaf) {
+		$originalNextMapExists = $true
+		$originalNextMap = [System.IO.File]::ReadAllBytes($nextMapPath)
+	}
+	$mapSelector = if ($Focus) {
+		switch ($Map) {
+			'RuntimeStation' { '_maps\runtimestation.json' }
+			'MetaStation' { '_maps\metastation.json' }
+		}
+	} else {
+		'_maps\runtimestation_minimal.json'
+	}
+	Copy-Item -LiteralPath (Join-Path $gameRepository $mapSelector) -Destination $nextMapPath -Force
 	Remove-DogmosScratchPaths -Paths @($resultsPath, $runtimeLog, $cleanMarker, (Join-Path $gameRepository 'dogmos_panic.log'))
 
 	$arguments = @('/d', '/c', 'tools\build\build.bat', 'dm-test', '--define=MINIMAL_CENTCOM', '--define=SKIP_LAVALAND', '--define=SKIP_SPACE_LEVELS')
@@ -100,6 +115,11 @@ try {
 	Remove-DogmosScratchPaths -Paths @($focusPath)
 	if ($null -ne $originalMapPreview) {
 		Write-DogmosFileBytesWithRetry -Path $mapPreviewPath -Bytes $originalMapPreview
+	}
+	if ($null -ne $originalNextMap) {
+		Write-DogmosFileBytesWithRetry -Path $nextMapPath -Bytes $originalNextMap
+	} elseif (-not $originalNextMapExists) {
+		Remove-DogmosScratchPaths -Paths @($nextMapPath)
 	}
 	if ($null -ne $originalShim) {
 		Write-DogmosFileBytesWithRetry -Path (Join-Path $gameRepository 'dogmos.dll') -Bytes $originalShim

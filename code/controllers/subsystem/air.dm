@@ -1,5 +1,5 @@
 /// Number of active turfs visited per fire cycle by the legacy maintenance walk.
-#define ACTIVE_TURFS_WALK_BATCH_SIZE 400
+#define ACTIVE_TURFS_WALK_BATCH_SIZE 100 // NOVA EDIT CHANGE - DOGMOS - ORIGINAL: #define ACTIVE_TURFS_WALK_BATCH_SIZE 400
 
 /// Fire cycles between shared Dogmos Kennel UI updates while slow mode is enabled.
 #define KENNEL_SLOW_MODE_PUSH_INTERVAL 4
@@ -47,7 +47,7 @@ SUBSYSTEM_DEF(air)
 	var/cost_equalize = 0
 
 	/// Maximum FDM iterations per Dogmos processing call.
-	var/share_max_steps = 1
+	var/share_max_steps = 4 // APHELION EDIT CHANGE - DOGMOS - ORIGINAL: var/share_max_steps = 1
 	/// Whether the Katmos pressure equalizer runs after FDM.
 	var/equalize_enabled = TRUE
 	/// Whether space-adjacent heat loss uses blackbody radiation instead of the gameplay sink.
@@ -135,16 +135,16 @@ SUBSYSTEM_DEF(air)
 	/// sync_dogmos_frontier() can send only the delta instead of re-publishing the whole
 	/// active-turf set every tick. Null until the first bootstrap publish.
 	var/list/dogmos_committed_frontier
-	/// DOGMOS_DIAG2 temporary instrumentation - remaining log_world() budget for turf_settled()'s
-	/// non-convergence diagnostic. Decrements on every logged event and stops at 0, so total
-	/// diagnostic I/O this round is bounded regardless of how often the loop runs.
-	var/dogmos_diag_settle_log_budget = 6000
 	/// Service estimate of work items remaining in the pending stage.
 	var/dogmos_stage_remaining_estimate = 0
 	/// Maximum service work items requested by the next stage chunk.
 	var/dogmos_stage_work_limit = DOGMOS_STAGE_INITIAL_WORK_LIMIT
 	/// Whether both active-turf service stages completed before a callback-drain resume.
 	var/dogmos_active_turf_stages_complete = FALSE
+	/// Number of FDM passes completed in the current active-turf service cycle.
+	var/dogmos_fdm_steps_completed = 0
+	/// Active-turf walk batch awaiting a post-simulation visual refresh.
+	var/list/dogmos_visual_refresh_batch = list()
 	// APHELION EDIT ADDITION END
 	var/list/hotspots = list()
 	var/list/networks = list()
@@ -231,12 +231,19 @@ SUBSYSTEM_DEF(air)
 	return SS_INIT_SUCCESS
 
 
+// APHELION EDIT ADDITION START - DOGMOS
+/** Returns whether this invocation begins a new SSair cycle health preflight. */
+/datum/controller/subsystem/air/proc/dogmos_health_preflight_required(resumed)
+	return !resumed
+// APHELION EDIT ADDITION END
+
 /datum/controller/subsystem/air/fire(resumed = FALSE)
 	// APHELION EDIT ADDITION START - DOGMOS
-	SSdogmos.dogmos_health_preflight_count = min(SSdogmos.dogmos_health_preflight_count + 1, DOGMOS_HEALTH_COUNTER_MAX)
-	if(!SSdogmos.service_ready || !dogmos_service_health())
-		SSdogmos.service_ready = FALSE
-		CRASH("dogmosd became unavailable during the SSair health preflight.")
+	if(dogmos_health_preflight_required(resumed))
+		SSdogmos.dogmos_health_preflight_count = min(SSdogmos.dogmos_health_preflight_count + 1, DOGMOS_HEALTH_COUNTER_MAX)
+		if(!SSdogmos.service_ready || !dogmos_service_health())
+			SSdogmos.service_ready = FALSE
+			CRASH("dogmosd became unavailable during the SSair health preflight.")
 	// APHELION EDIT ADDITION END
 	var/timer = TICK_USAGE_REAL
 
@@ -414,6 +421,8 @@ SUBSYSTEM_DEF(air)
 	dogmos_stage_remaining_estimate = SSair.dogmos_stage_remaining_estimate
 	dogmos_stage_work_limit = SSair.dogmos_stage_work_limit
 	dogmos_active_turf_stages_complete = SSair.dogmos_active_turf_stages_complete
+	dogmos_fdm_steps_completed = SSair.dogmos_fdm_steps_completed
+	dogmos_visual_refresh_batch = SSair.dogmos_visual_refresh_batch?.Copy() || list()
 
 	kennel_slow_mode = SSair.kennel_slow_mode
 	kennel_profile_reactions = SSair.kennel_profile_reactions
@@ -611,15 +620,16 @@ SUBSYSTEM_DEF(air)
 			return
 
 /** Runs the Rust gas pass while retaining DM exposure callbacks and a bounded legacy walk.
- * Compute each Rust budget after the walk so it reflects current tick usage.
+ * The walk settles and awakens turfs before their frontier is published for this cycle.
  */
 /datum/controller/subsystem/air/proc/process_active_turfs(resumed = FALSE)
 	if(!resumed)
 		// APHELION EDIT ADDITION START - DOGMOS
-		sync_dogmos_frontier()
 		dogmos_active_turf_stages_complete = FALSE
-		// APHELION EDIT ADDITION END
+		dogmos_fdm_steps_completed = 0
 		walk_active_turfs_batch()
+		sync_dogmos_frontier()
+		// APHELION EDIT ADDITION END
 
 	// APHELION EDIT ADDITION START - DOGMOS
 	if(!dogmos_active_turf_stages_complete)
@@ -636,6 +646,8 @@ SUBSYSTEM_DEF(air)
 
 	if(finish_turf_processing_auxtools(TICK_DELTA_TO_MS(Master.current_ticklimit - TICK_USAGE)))
 		pause() // still draining queued reactions/visuals/pressure-difference callbacks - resume next fire()
+		return
+	refresh_dogmos_visuals()
 
 /** Processes a bounded round-robin batch without iterating the live list while removing entries. */
 /datum/controller/subsystem/air/proc/walk_active_turfs_batch()
@@ -650,6 +662,7 @@ SUBSYSTEM_DEF(air)
 
 	var/batch_end = min(active_turfs_walk_cursor + ACTIVE_TURFS_WALK_BATCH_SIZE, turf_count)
 	var/list/batch = turfs.Copy(active_turfs_walk_cursor + 1, batch_end + 1)
+	dogmos_visual_refresh_batch = batch
 
 	for(var/turf/open/T as anything in batch)
 		if(!T || !T.air)
@@ -658,59 +671,40 @@ SUBSYSTEM_DEF(air)
 			LINDA_CYCLE_ARCHIVE(T)
 		T.current_cycle = times_fired
 		T.temperature_expose(T.air, T.air.return_temperature())
-		// Dogmos's Rust equalizer/FDM pass has no callback for "this turf's gas visually
-		// changed" - the legacy LINDA excited-group code used to call update_visuals() after
-		// every DM-side share(), but that whole path is bypassed now. active_turfs is the closest
-		// approximation of "turfs whose air is currently moving", so refresh here instead.
-		T.update_visuals()
-		check_kennel_reaction_of_interest(T)
 		if(turf_settled(T))
 			remove_from_active(T)
 
 	// Removals may have shortened the list since batch_end was computed.
 	active_turfs_walk_cursor = (batch_end >= length(active_turfs)) ? 0 : batch_end
 
+/** Refreshes the walked turfs after their gas diffusion, reactions, and callbacks are complete. */
+/datum/controller/subsystem/air/proc/refresh_dogmos_visuals()
+	for(var/turf/open/active_turf as anything in dogmos_visual_refresh_batch)
+		if(!active_turf?.air)
+			continue
+		active_turf.update_visuals()
+		check_kennel_reaction_of_interest(active_turf)
+	dogmos_visual_refresh_batch.Cut()
+
 /** Returns TRUE when a turf has no active hotspot and matches its open neighbors.
- * Also activates any open neighbor whose air differs from T's. Dogmos's diffusion stage only
- * exchanges gas between two turfs that are BOTH already in the active frontier for that tick
- * (see PackedTopology::gas_neighbors() usage in process_stage_chunk_cancellable) - without this,
- * an active turf's untouched neighbors never join the frontier, so gas can never propagate past
- * whatever handful of turfs happened to start active. This mirrors the old LINDA process_cell()
- * behavior of waking neighbors as a share is found to still be needed.
+ * Mutable neighbors with different air are activated before this cycle's frontier publication.
+ * Immutable sources settle after waking mutable neighbors. Immutable boundaries remain fixed, but
+ * keep a mutable source active until it converges within the normal comparison tolerance.
  */
 /datum/controller/subsystem/air/proc/turf_settled(turf/open/T)
-	var/settled = !T.active_hotspot
+	// APHELION EDIT ADDITION START - DOGMOS
+	var/source_is_immutable = T.air.is_immutable()
+	// APHELION EDIT ADDITION END
+	var/settled = source_is_immutable || !T.active_hotspot // APHELION EDIT CHANGE - DOGMOS - ORIGINAL: var/settled = !T.active_hotspot
 	for(var/turf/neighbor as anything in T.atmos_adjacent_turfs)
 		if(!isopenturf(neighbor))
 			continue
 		var/turf/open/open_neighbor = neighbor
-		// An immutable neighbor (space, a planetary reservoir, ...) never converges with a real
-		// turf by design - Dogmos's own diffusion already skips writing back to immutable
-		// mixtures (see commit_stage_diffusion()'s `if mixture.immutable: continue`), so chasing
-		// this pair toward equality is meaningless. Without this guard, every turf bordering one
-		// of these got perpetually re-flagged unsettled and kept re-activating its neighbors
-		// forever, even at complete idle - diagnostic logging showed exactly this: identical
-		// temperatures with one side pinned at a suspiciously round, unchanging mole total.
-		if(open_neighbor.air.is_immutable())
-			continue
 		var/differs = T.air.compare(open_neighbor.air)
-		// DOGMOS_DIAG2 temporary instrumentation - bounded to a fixed total budget (not gated by
-		// time/tick, so it can't silently run forever) so it can't contaminate cost telemetry the
-		// way the earlier unbounded version did. Logs the raw snapshot on both sides of a repeat
-		// differing pair, including dogmos_slot:generation, so the same coordinates can be grepped
-		// across lines to see whether the delta is shrinking (real, slow convergence), static (a
-		// stale-read bug), or the slot:generation itself is changing between checks (a
-		// registration churn bug).
-		if(differs && dogmos_diag_settle_log_budget > 0)
-			dogmos_diag_settle_log_budget--
-			log_world("DOGMOS_DIAG2 T=[T.x],[T.y],[T.z] N=[open_neighbor.x],[open_neighbor.y],[open_neighbor.z] \
-				tempT=[T.air.return_temperature()] tempN=[open_neighbor.air.return_temperature()] \
-				molesT=[T.air.total_moles()] molesN=[open_neighbor.air.total_moles()] \
-				slotT=[T.air.dogmos_slot]:[T.air.dogmos_generation] slotN=[open_neighbor.air.dogmos_slot]:[open_neighbor.air.dogmos_generation] \
-				budget=[dogmos_diag_settle_log_budget]")
 		if(differs)
-			settled = FALSE
-			add_to_active(open_neighbor)
+			settled = source_is_immutable // APHELION EDIT CHANGE - DOGMOS - ORIGINAL: settled = FALSE
+			if(!open_neighbor.air.is_immutable())
+				add_to_active(open_neighbor)
 	return settled
 
 /** Runs Rust's low-pressure equalizer within the current tick budget. */
