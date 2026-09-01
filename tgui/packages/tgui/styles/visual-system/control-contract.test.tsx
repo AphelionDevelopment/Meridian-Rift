@@ -36,23 +36,33 @@ const UNCHECKED_ARIA = {
 let productionStyle: HTMLStyleElement;
 
 beforeAll(async () => {
-  const [themeCss, componentCss, decorationCss, tabsCss, preferencesCss] =
-    await Promise.all(
-      [
-        '_themes.scss',
-        '_components.scss',
-        '_decoration.scss',
-        '../../../../node_modules/tgui-core/styles/components/Tabs.scss',
-        '../interfaces/PreferencesMenu.scss',
-      ].map(
-        async (file) => (await compileAsync(join(import.meta.dir, file))).css,
-      ),
-    );
+  const [
+    controlsCss,
+    tabsCss,
+    themeCss,
+    componentCss,
+    decorationCss,
+    preferencesCss,
+  ] = await Promise.all(
+    [
+      // Dropdown @uses Button, so this entry includes both legacy margin
+      // contracts in the same order as production core styles.
+      '../../../../node_modules/tgui-core/styles/components/Dropdown.scss',
+      '../../../../node_modules/tgui-core/styles/components/Tabs.scss',
+      '_themes.scss',
+      '_components.scss',
+      '_decoration.scss',
+      '../interfaces/PreferencesMenu.scss',
+    ].map(
+      async (file) => (await compileAsync(join(import.meta.dir, file))).css,
+    ),
+  );
   productionStyle = document.createElement('style');
   // happy-dom does not resolve custom properties in background shorthands.
   // Substitute two sentinel colors so the real compiled selectors and import
   // order can still prove that Highline's inverse state wins the cascade.
   productionStyle.textContent = (
+    controlsCss +
     tabsCss +
     themeCss +
     componentCss +
@@ -80,9 +90,26 @@ describe('MeridianOS shared control geometry', () => {
       const view = render(
         <div
           className={`theme-console theme-${theme}`}
-          style={{ '--tab-indicator-size': '3px' } as CSSProperties}
+          style={
+            {
+              '--space-xs': '2px',
+              '--tab-indicator-size': '3px',
+            } as CSSProperties
+          }
         >
-          <Button aria-label="Icon only" icon="rotate" />
+          <Button aria-label="Ungrouped legacy button">Ungrouped</Button>
+          <div className="MeridianShowcase__switcherControls">
+            <Button aria-label="Switcher inherit" icon="undo" selected>
+              Inherit
+            </Button>
+            <Button aria-label="Icon only" icon="rotate" />
+            <div className="Dropdown">
+              <div className="Dropdown__control">
+                <span className="Dropdown__selected-text">Aligned option</span>
+                <span className="Dropdown__icon">V</span>
+              </div>
+            </div>
+          </div>
           <Button aria-label="Short inline height" height="20px">
             Short
           </Button>
@@ -104,11 +131,14 @@ describe('MeridianOS shared control geometry', () => {
             <span className="Tab__text">Selected tab</span>
             <span className="Tab__right">R</span>
           </div>
-          <div className="Dropdown">
-            <div className="Dropdown__control">
-              <span className="Dropdown__selected-text">Aligned option</span>
-              <span className="Dropdown__icon">V</span>
+          <div className="Section__buttons">
+            <div className="Dropdown">
+              <div className="Dropdown__control">
+                <span className="Dropdown__selected-text">Section option</span>
+                <span className="Dropdown__icon">V</span>
+              </div>
             </div>
+            <Button aria-label="Section action">Apply</Button>
           </div>
           <Tabs className={LOADOUT_CATEGORY_TABS_CLASS} fluid>
             <Tabs.Tab selected>
@@ -123,6 +153,8 @@ describe('MeridianOS shared control geometry', () => {
       );
 
       const fixture = view.container.firstElementChild as HTMLElement;
+      const ungroupedButton = view.getByLabelText('Ungrouped legacy button');
+      const switcherInherit = view.getByLabelText('Switcher inherit');
       const iconOnly = view.getByLabelText('Icon only');
       const compact = view.getByLabelText('Compact icon');
       const denseJobPriority = view.getByLabelText('Dense job priority');
@@ -135,10 +167,19 @@ describe('MeridianOS shared control geometry', () => {
         .getByText('Selected tab')
         .closest('.Tab') as HTMLElement;
       const dropdownControl = view.getByText('Aligned option').parentElement!;
+      const switcherDropdown = dropdownControl.closest('.Dropdown')!;
+      const sectionDropdownControl =
+        view.getByText('Section option').parentElement!;
+      const sectionDropdown = sectionDropdownControl.closest('.Dropdown')!;
+      const sectionAction = view.getByLabelText('Section action');
+      const sectionButtons = sectionAction.parentElement!;
       const loadoutCategoryTab = view
         .getByText('Head')
         .closest('.Tab') as HTMLElement;
       const iconContent = iconOnly.querySelector(
+        '.Button__content',
+      ) as HTMLElement;
+      const compactContent = compact.querySelector(
         '.Button__content',
       ) as HTMLElement;
       const checkedGlyph = checked.querySelector(
@@ -151,6 +192,8 @@ describe('MeridianOS shared control geometry', () => {
       ).toBe('22px');
       expect(getComputedStyle(iconContent).display).toBe('flex');
       expect(getComputedStyle(iconContent).alignItems).toBe('center');
+      expect(getComputedStyle(iconContent).minHeight).toBe('22px');
+      expect(getComputedStyle(compactContent).minHeight).not.toBe('22px');
       expect(getComputedStyle(iconOnly).minWidth).toBe('24px');
       expect(getComputedStyle(iconOnly).minHeight).toBe('24px');
       expect(getComputedStyle(shortInlineHeight).minHeight).toBe('24px');
@@ -173,6 +216,22 @@ describe('MeridianOS shared control geometry', () => {
         theme === 'meridian_highline' ? '1' : '0.58',
       );
       expect(getComputedStyle(dropdownControl).height).toBe('24px');
+      expect(getComputedStyle(sectionDropdownControl).height).toBe('24px');
+      expect(getComputedStyle(sectionButtons).gap).toBe('2px');
+
+      expect(getComputedStyle(ungroupedButton).marginRight).toBe('2px');
+      expect(getComputedStyle(ungroupedButton).marginBottom).toBe('2px');
+      for (const groupedControl of [
+        switcherInherit,
+        iconOnly,
+        switcherDropdown,
+        sectionDropdown,
+        sectionAction,
+      ]) {
+        expect(getComputedStyle(groupedControl).marginRight).toBe('0px');
+        expect(getComputedStyle(groupedControl).marginBottom).toBe('0px');
+      }
+
       expect(getComputedStyle(loadoutCategoryTab).paddingTop).toBe('3px');
       expect(getComputedStyle(loadoutCategoryTab).paddingBottom).toBe('3px');
       expect(

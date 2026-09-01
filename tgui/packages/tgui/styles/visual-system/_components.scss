@@ -168,6 +168,13 @@
     justify-content: center;
   }
 
+  .Button--hasIcon:not(.Button--compact) > .Button__content {
+    // A percentage height cannot resolve against the Button's min-height.
+    // Give icon-bearing controls a definite inner row so glyphs center inside
+    // the shared 24px border box even when there is no text line to size it.
+    min-height: var(--button-height);
+  }
+
   .Button--empty.Button--hasIcon > .Button__content > .Button--icon {
     margin: 0;
   }
@@ -261,6 +268,7 @@
     display: flex;
     flex: 0 1 auto;
     align-items: center;
+    gap: var(--space-xs);
     max-width: 70%;
     min-width: 0;
     margin: 0 0 0 auto;
@@ -269,6 +277,12 @@
 
   .Section__buttons > * {
     min-width: 0;
+  }
+
+  .Section__buttons > :is(.Button, .Dropdown, .NumberInput) {
+    // These controls carry legacy inline-flow margins. Section actions are a
+    // flex group, so its gap owns spacing and every border box shares a center.
+    margin: 0;
   }
 
   .Input,
@@ -501,6 +515,12 @@
     align-items: center;
     flex-wrap: wrap;
     gap: var(--console-space-1);
+  }
+
+  &__switcherControls > :is(.Button, .Dropdown, .NumberInput),
+  &__controlRow > :is(.Button, .Dropdown, .NumberInput) {
+    // Do not combine tgui-core's inline margins with a gap-owned flex row.
+    margin: 0;
   }
 
   &__board {
