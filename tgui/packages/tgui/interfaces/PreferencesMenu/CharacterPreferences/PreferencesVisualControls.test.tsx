@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, mock } from 'bun:test';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 
 import { PriorityButton } from './JobsPage';
+import { LoadoutActionButton } from './loadout';
 import { SpeciesPerk } from './SpeciesPage';
 
 afterEach(cleanup);
@@ -69,5 +70,47 @@ describe('Preferences visual controls', () => {
 
     expect(cell).not.toBeNull();
     expect(cell?.querySelector('.Icon')).not.toBeNull();
+  });
+
+  it('routes Loadout icon actions through the shared centered-button contract', () => {
+    const configure = mock(() => undefined);
+    const remove = mock(() => undefined);
+    const view = render(
+      <>
+        <LoadoutActionButton
+          icon="cogs"
+          iconColor="grey"
+          iconSize={1.8}
+          label="Configure test item"
+          onClick={configure}
+        />
+        <LoadoutActionButton
+          icon="times"
+          iconColor="red"
+          iconSize={2}
+          label="Remove test item"
+          onClick={remove}
+        />
+      </>,
+    );
+
+    for (const label of ['Configure test item', 'Remove test item']) {
+      const button = view.getByRole('button', { name: label });
+      const content = button.querySelector('.Button__content');
+      const icon = content?.firstElementChild;
+
+      expect(button.classList).toContain('Button--empty');
+      expect(button.classList).toContain('Button--flex');
+      expect(button.classList).toContain('Button--hasIcon');
+      expect(button.style.height).not.toBe('');
+      expect(button.style.height).toBe(button.style.width);
+      expect(content?.childElementCount).toBe(1);
+      expect(icon?.classList).toContain('Button--icon');
+    }
+
+    fireEvent.click(view.getByRole('button', { name: 'Configure test item' }));
+    fireEvent.click(view.getByRole('button', { name: 'Remove test item' }));
+    expect(configure).toHaveBeenCalledTimes(1);
+    expect(remove).toHaveBeenCalledTimes(1);
   });
 });
