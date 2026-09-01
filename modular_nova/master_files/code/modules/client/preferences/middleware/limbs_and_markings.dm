@@ -115,15 +115,15 @@
 
 	// The augments that appear in the Internal Implants tab - in the order they should be remdered
 	var/list/internal_augments_categories = list(
-		AUGMENT_SLOT_BRAIN,
-		AUGMENT_SLOT_HEART,
-		AUGMENT_SLOT_LUNGS,
-		AUGMENT_SLOT_LIVER,
-		AUGMENT_SLOT_STOMACH,
-		AUGMENT_SLOT_EARS,
-		AUGMENT_SLOT_EYES,
-		AUGMENT_SLOT_TONGUE,
-		AUGMENT_SLOT_MOUTH_IMPLANT,
+		AUGMENT_SLOT_BRAIN = "brain",
+		AUGMENT_SLOT_HEART = "heart",
+		AUGMENT_SLOT_LUNGS = "lungs",
+		AUGMENT_SLOT_LIVER = "liver",
+		AUGMENT_SLOT_STOMACH = "stomach",
+		AUGMENT_SLOT_EARS = "ears",
+		AUGMENT_SLOT_EYES = "eyes",
+		AUGMENT_SLOT_TONGUE = "tongue",
+		AUGMENT_SLOT_MOUTH_IMPLANT = "mouth",
 	)
 
 	// Bodypart augment slots
@@ -154,6 +154,7 @@
 		// Now build the category entry for this bodypart augment slot
 		augment_slots_with_items += list(list(
 			"slot"            = limb_aug_path::slot,
+			"preview_region"  = limb_aug_path::body_zone,
 			"body_zone"       = limb_aug_path::body_zone,
 			"slot_flag"       = limb_aug_path::slot_flag,
 			"is_bodypart"     = TRUE,
@@ -163,7 +164,7 @@
 		))
 
 	// Internal implant slots
-	for(var/slot in internal_augments_categories)
+	for(var/slot, preview_region in internal_augments_categories)
 		// Build the implant options for this internal implants slot
 		var/list/internal_implants = internal_implant_slots[slot]
 		var/list/options = list(list(
@@ -176,10 +177,11 @@
 			options += internal_implants["options"]
 		// Now build the category entry for this internal implants slot
 		augment_slots_with_items += list(list(
-			"slot"        = slot,
-			"is_bodypart" = FALSE,
-			"icon"        = internal_implants?["icon"],
-			"aug_options" = options,
+			"slot"           = slot,
+			"preview_region" = preview_region,
+			"is_bodypart"    = FALSE,
+			"icon"           = internal_implants?["icon"],
+			"aug_options"     = options,
 		))
 
 	return augment_slots_with_items

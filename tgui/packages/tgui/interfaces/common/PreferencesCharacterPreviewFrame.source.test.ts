@@ -18,7 +18,10 @@ describe('Preferences character preview integration', () => {
     }
 
     const limbs = read('../PreferencesMenu/CharacterPreferences/LimbsPage.tsx');
-    expect(limbs).toContain('decoration={props.decoration}');
+    const workbench = read(
+      '../PreferencesMenu/CharacterPreferences/AugmentsWorkbench.tsx',
+    );
+    expect(workbench).toContain('decoration={decoration}');
     expect(limbs).toContain("[AugmentsTab.Markings]: 'augmentation_markings'");
     expect(limbs).toContain(
       "[AugmentsTab.BodyParts]: 'augmentation_body_parts'",
@@ -27,8 +30,9 @@ describe('Preferences character preview integration', () => {
       "[AugmentsTab.InternalImplants]: 'augmentation_implants'",
     );
     expect(limbs).toContain(
-      'usePreferencesCharacterPreviewDecoration(act, previewDecoration)',
+      'usePreferencesCharacterPreviewDecoration(\n    act,\n    previewDecoration,\n    activeRegion || null,\n  )',
     );
+    expect(limbs).toContain('<AugmentsWorkbench');
 
     const coordinator = read(
       '../PreferencesMenu/CharacterPreferences/index.tsx',
@@ -59,6 +63,9 @@ describe('Preferences character preview integration', () => {
     expect(previewStyles).toContain('&--bottomRight');
     expect(previewStyles).toContain('&--bottomLeft');
     expect(previewStyles).toContain('&--augmentation');
+    expect(previewStyles).not.toContain('&__orientation');
+    expect(previewStyles).not.toContain('&__rail');
+    expect(previewStyles).not.toContain('&__leader');
     expect(previewStyles).not.toMatch(/\banimation\s*:/);
     expect(previewStyles).not.toMatch(/\bfilter\s*:/);
     expect(previewStyles).not.toMatch(/overflow:\s*hidden/);
@@ -81,5 +88,14 @@ describe('Preferences character preview integration', () => {
     expect(uiAct).toBeGreaterThan(-1);
     expect(decorationAction).toBeGreaterThan(uiAct);
     expect(decorationAction).toBeLessThan(creatorGate);
+    expect(preferencesDm).toContain(
+      'set_meridian_decoration(params["mode"], params["region"])',
+    );
+    expect(preferencesDm).toContain(
+      '/atom/movable/screen/map_view/char_preview/setDir(newdir)',
+    );
+    expect(preferencesDm).toContain(
+      'meridian_decoration_overlay.dir = preview_direction',
+    );
   });
 });

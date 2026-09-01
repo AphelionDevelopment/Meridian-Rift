@@ -241,7 +241,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	// Window-local presentation state must remain clearable even when character
 	// creation is disabled after the Preferences window has already opened.
 	if(action == "set_preview_decoration")
-		return character_preview_view?.set_meridian_decoration(params["mode"])
+		return character_preview_view?.set_meridian_decoration(params["mode"], params["region"])
 
 	if(SSlag_switch.measures[DISABLE_CREATOR] && action != "change_slot")
 		to_chat(usr, "The creator has been disabled. Please do not ahelp.")
@@ -457,15 +457,26 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	var/last_canvas_state
 	/// Window-local presentation state. It is never written to preferences.
 	var/meridian_decoration_mode = MERIDIAN_PREVIEW_DECORATION_NONE
+	/// Validated region whose single native leader is shown, or null for base chrome.
+	var/meridian_decoration_region
+	/// Current overlay image, retained for direction synchronization and cleanup.
+	var/image/meridian_decoration_overlay
 	// NOVA EDIT ADDITION END
 
 /atom/movable/screen/map_view/char_preview/Initialize(mapload, datum/hud/hud_owner, datum/preferences/preferences)
 	. = ..()
 	src.preferences = preferences
 
+/atom/movable/screen/map_view/char_preview/setDir(newdir)
+	var/old_dir = dir
+	. = ..()
+	if(dir != old_dir)
+		rebuild_meridian_canvas_overlays()
+
 /atom/movable/screen/map_view/char_preview/Destroy()
 	// NOVA EDIT ADDITION START: Better character preview
 	canvas?.cut_overlays()
+	meridian_decoration_overlay = null
 	canvas = null
 	// NOVA EDIT ADDITION END
 	QDEL_NULL(body)
@@ -475,6 +486,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 
 /// Updates the currently displayed body
 /atom/movable/screen/map_view/char_preview/proc/update_body()
+	var/preview_direction = dir
 	if (isnull(body))
 		create_body()
 	else
@@ -508,32 +520,95 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	last_canvas_size = canvas_size
 	last_canvas_state = canvas_state
 
+	// `appearance =` above may carry the rendered dummy's direction. Preserve
+	// the user's current rotation before rebuilding the directional canvas.
+	dir = preview_direction
 	rebuild_meridian_canvas_overlays()
 	// NOVA EDIT ADDITION END
 
-/// Applies a finite, window-local preview decoration mode.
-/atom/movable/screen/map_view/char_preview/proc/set_meridian_decoration(requested_mode)
+/// Returns whether a region belongs to the requested finite decoration mode.
+/atom/movable/screen/map_view/char_preview/proc/is_valid_meridian_decoration_region(requested_mode, requested_region)
+	var/static/list/body_regions = list(
+		BODY_ZONE_HEAD,
+		BODY_ZONE_CHEST,
+		BODY_ZONE_L_ARM,
+		BODY_ZONE_PRECISE_L_HAND,
+		BODY_ZONE_L_LEG,
+		BODY_ZONE_R_ARM,
+		BODY_ZONE_PRECISE_R_HAND,
+		BODY_ZONE_R_LEG,
+	)
+	var/static/list/implant_regions = list(
+		"brain",
+		"eyes",
+		"tongue",
+		"heart",
+		"stomach",
+		"ears",
+		"mouth",
+		"lungs",
+		"liver",
+	)
+
 	switch(requested_mode)
 		if(
-			MERIDIAN_PREVIEW_DECORATION_NONE,
+			MERIDIAN_PREVIEW_DECORATION_AUGMENTATION_MARKINGS,
+			MERIDIAN_PREVIEW_DECORATION_AUGMENTATION_BODY_PARTS,
+		)
+			return requested_region in body_regions
+		if(MERIDIAN_PREVIEW_DECORATION_AUGMENTATION_IMPLANTS)
+			return requested_region in implant_regions
+
+	return FALSE
+
+/// Resolves the reviewed base or selected-region DMI state.
+/atom/movable/screen/map_view/char_preview/proc/get_meridian_decoration_state()
+	if(meridian_decoration_mode == MERIDIAN_PREVIEW_DECORATION_NONE)
+		return null
+	if(isnull(meridian_decoration_region))
+		return meridian_decoration_mode
+	return "[meridian_decoration_mode]--[meridian_decoration_region]"
+
+/// Applies a finite, window-local preview decoration mode and region.
+/atom/movable/screen/map_view/char_preview/proc/set_meridian_decoration(requested_mode, requested_region)
+	var/normalized_region
+	if(isnull(requested_region) || requested_region == "")
+		normalized_region = null
+	else if(!istext(requested_region))
+		return FALSE
+	else
+		normalized_region = requested_region
+
+	switch(requested_mode)
+		if(MERIDIAN_PREVIEW_DECORATION_NONE)
+			if(!isnull(normalized_region))
+				return FALSE
+		if(
 			MERIDIAN_PREVIEW_DECORATION_AUGMENTATION_MARKINGS,
 			MERIDIAN_PREVIEW_DECORATION_AUGMENTATION_BODY_PARTS,
 			MERIDIAN_PREVIEW_DECORATION_AUGMENTATION_IMPLANTS,
 		)
-			if(meridian_decoration_mode == requested_mode)
-				return TRUE
-			meridian_decoration_mode = requested_mode
-			rebuild_meridian_canvas_overlays()
-			return TRUE
+			if(!isnull(normalized_region) && !is_valid_meridian_decoration_region(requested_mode, normalized_region))
+				return FALSE
+		else
+			return FALSE
 
-	return FALSE
+	if(meridian_decoration_mode == requested_mode && meridian_decoration_region == normalized_region)
+		return TRUE
+	meridian_decoration_mode = requested_mode
+	meridian_decoration_region = normalized_region
+	rebuild_meridian_canvas_overlays()
+	return TRUE
 
 /// Rebuilds the equal-size canvas stack in body-then-decoration order.
 /atom/movable/screen/map_view/char_preview/proc/rebuild_meridian_canvas_overlays()
 	if(isnull(canvas))
 		return
 
+	var/preview_direction = dir
+	canvas.dir = preview_direction
 	canvas.cut_overlays()
+	meridian_decoration_overlay = null
 	if(!isnull(body))
 		canvas.add_overlay(body.appearance)
 
@@ -548,9 +623,11 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 				decoration_icon = 'modular_nova/modules/character_preview_background/icons/preview_decoration_96x96.dmi'
 
 		if(decoration_icon)
-			var/image/decoration = image(decoration_icon, icon_state = meridian_decoration_mode)
-			decoration.mouse_opacity = MOUSE_OPACITY_TRANSPARENT
-			canvas.add_overlay(decoration)
+			var/decoration_state = get_meridian_decoration_state()
+			meridian_decoration_overlay = image(decoration_icon, icon_state = decoration_state)
+			meridian_decoration_overlay.dir = preview_direction
+			meridian_decoration_overlay.mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+			canvas.add_overlay(meridian_decoration_overlay)
 
 	appearance = canvas.appearance
 /atom/movable/screen/map_view/char_preview/proc/create_body()

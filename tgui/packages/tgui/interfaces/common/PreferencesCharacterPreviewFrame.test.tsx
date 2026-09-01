@@ -10,7 +10,7 @@ import {
 afterEach(cleanup);
 
 describe('PreferencesCharacterPreviewFrame', () => {
-  it('renders pointer-transparent Markings chrome without resizing its child contract', () => {
+  it('renders text-free Markings chrome without resizing its child contract', () => {
     const view = render(
       <PreferencesCharacterPreviewFrame
         decoration="augmentation_markings"
@@ -32,26 +32,20 @@ describe('PreferencesCharacterPreviewFrame', () => {
     expect(
       chrome.querySelectorAll('.PreferencesCharacterPreviewFrame__corner'),
     ).toHaveLength(4);
+    expect(chrome.textContent).toBe('');
     expect(
-      chrome.querySelectorAll('.PreferencesCharacterPreviewFrame__datum'),
-    ).toHaveLength(2);
+      chrome.querySelector('.PreferencesCharacterPreviewFrame__rail'),
+    ).toBeNull();
     expect(
-      chrome.querySelectorAll('.PreferencesCharacterPreviewFrame__leader'),
-    ).toHaveLength(2);
-    expect(
-      chrome.querySelectorAll('.PreferencesCharacterPreviewFrame__orientation'),
-    ).toHaveLength(2);
-    expect(view.getByText('MARKINGS')).toBeDefined();
-    expect(view.getByText('REGION MAP')).toBeDefined();
+      chrome.querySelector('.PreferencesCharacterPreviewFrame__leader'),
+    ).toBeNull();
   });
 
-  it('gives Augmentation its stronger identity and supports bounded label overrides', () => {
+  it('gives every finite Augments mode its stronger identity', () => {
     const view = render(
       <PreferencesCharacterPreviewFrame
         decoration="augmentation_implants"
         height="96px"
-        status="CALIBRATED"
-        title="MODULE MAP"
         width="96px"
       >
         <div data-testid="native-map" />
@@ -65,8 +59,7 @@ describe('PreferencesCharacterPreviewFrame', () => {
     expect(frame.classList).toContain(
       'PreferencesCharacterPreviewFrame--augmentation_implants',
     );
-    expect(view.getByText('MODULE MAP')).toBeDefined();
-    expect(view.getByText('CALIBRATED')).toBeDefined();
+    expect(frame.textContent).toBe('');
   });
 
   it('keeps none free of ornamental DOM', () => {
@@ -124,35 +117,42 @@ describe('PreferencesCharacterPreviewFrame', () => {
         | 'augmentation_markings'
         | 'augmentation_body_parts'
         | 'augmentation_implants';
+      region: string | null;
     }) => {
-      usePreferencesCharacterPreviewDecoration(act, props.mode);
+      usePreferencesCharacterPreviewDecoration(act, props.mode, props.region);
       return null;
     };
-    const view = render(<Harness mode="augmentation_markings" />);
+    const view = render(<Harness mode="augmentation_markings" region="head" />);
 
     expect(calls).toEqual([
       {
         action: 'set_preview_decoration',
-        payload: { mode: 'augmentation_markings' },
+        payload: { mode: 'augmentation_markings', region: 'head' },
       },
     ]);
 
-    view.rerender(<Harness mode="augmentation_body_parts" />);
+    view.rerender(<Harness mode="augmentation_markings" region="chest" />);
     expect(calls).toEqual([
       {
         action: 'set_preview_decoration',
-        payload: { mode: 'augmentation_markings' },
+        payload: { mode: 'augmentation_markings', region: 'head' },
       },
       {
         action: 'set_preview_decoration',
-        payload: { mode: 'augmentation_body_parts' },
+        payload: { mode: 'augmentation_markings', region: 'chest' },
       },
     ]);
+
+    view.rerender(<Harness mode="augmentation_body_parts" region="l_arm" />);
+    expect(calls.at(-1)).toEqual({
+      action: 'set_preview_decoration',
+      payload: { mode: 'augmentation_body_parts', region: 'l_arm' },
+    });
 
     view.unmount();
     expect(calls.at(-1)).toEqual({
       action: 'set_preview_decoration',
-      payload: { mode: 'none' },
+      payload: { mode: 'none', region: null },
     });
   });
 });

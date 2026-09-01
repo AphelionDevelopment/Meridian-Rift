@@ -26,31 +26,25 @@ export const normalizePreferencesCharacterPreviewDecorationMode = (
 ): PreferencesCharacterPreviewDecorationMode =>
   isPreferencesCharacterPreviewDecorationMode(value) ? value : 'none';
 
-const augmentationFrameCopy: Record<
-  Exclude<PreferencesCharacterPreviewDecorationMode, 'none'>,
-  { status: string; title: string }
-> = {
-  augmentation_markings: { status: 'REGION MAP', title: 'MARKINGS' },
-  augmentation_body_parts: { status: 'LIMB MAP', title: 'BODY PARTS' },
-  augmentation_implants: { status: 'INTERNAL MAP', title: 'IMPLANTS' },
-};
-
 /**
- * Synchronizes the finite, non-persistent decoration mode with DM. Changing
- * tabs replaces the current state; leaving Augments or closing Preferences
- * unmounts the owner and clears it.
+ * Synchronizes the finite, non-persistent decoration mode and selected region
+ * with DM. Changing tabs or regions replaces the current state; leaving
+ * Augments or closing Preferences unmounts the owner and clears it.
  */
 export function usePreferencesCharacterPreviewDecoration(
   act: typeof sendAct,
   mode: PreferencesCharacterPreviewDecorationMode,
+  selectedRegion: string | null,
 ) {
+  const region = mode === 'none' ? null : selectedRegion;
+
   useEffect(() => {
-    act('set_preview_decoration', { mode });
-  }, [act, mode]);
+    act('set_preview_decoration', { mode, region });
+  }, [act, mode, region]);
 
   useEffect(
     () => () => {
-      act('set_preview_decoration', { mode: 'none' });
+      act('set_preview_decoration', { mode: 'none', region: null });
     },
     [act],
   );
@@ -61,8 +55,6 @@ export type PreferencesCharacterPreviewFrameProps = {
   className?: string;
   decoration: PreferencesCharacterPreviewDecorationMode;
   height: string;
-  status?: ReactNode;
-  title?: ReactNode;
   width: string;
 };
 
@@ -76,19 +68,7 @@ export type PreferencesCharacterPreviewFrameProps = {
 export function PreferencesCharacterPreviewFrame(
   props: PreferencesCharacterPreviewFrameProps,
 ) {
-  const {
-    children,
-    className,
-    decoration,
-    height,
-    status = decoration === 'none'
-      ? undefined
-      : augmentationFrameCopy[decoration].status,
-    title = decoration === 'none'
-      ? undefined
-      : augmentationFrameCopy[decoration].title,
-    width,
-  } = props;
+  const { children, className, decoration, height, width } = props;
   const style = { height, width } satisfies CSSProperties;
 
   return (
@@ -113,24 +93,6 @@ export function PreferencesCharacterPreviewFrame(
           <span className="PreferencesCharacterPreviewFrame__corner PreferencesCharacterPreviewFrame__corner--topRight" />
           <span className="PreferencesCharacterPreviewFrame__corner PreferencesCharacterPreviewFrame__corner--bottomRight" />
           <span className="PreferencesCharacterPreviewFrame__corner PreferencesCharacterPreviewFrame__corner--bottomLeft" />
-          <span className="PreferencesCharacterPreviewFrame__datum PreferencesCharacterPreviewFrame__datum--left" />
-          <span className="PreferencesCharacterPreviewFrame__datum PreferencesCharacterPreviewFrame__datum--right" />
-          <span className="PreferencesCharacterPreviewFrame__leader PreferencesCharacterPreviewFrame__leader--left" />
-          <span className="PreferencesCharacterPreviewFrame__leader PreferencesCharacterPreviewFrame__leader--right" />
-          <span className="PreferencesCharacterPreviewFrame__orientation PreferencesCharacterPreviewFrame__orientation--north">
-            N
-          </span>
-          <span className="PreferencesCharacterPreviewFrame__orientation PreferencesCharacterPreviewFrame__orientation--south">
-            S
-          </span>
-          <span className="PreferencesCharacterPreviewFrame__rail">
-            <span className="PreferencesCharacterPreviewFrame__title">
-              {title}
-            </span>
-            <span className="PreferencesCharacterPreviewFrame__status">
-              {status}
-            </span>
-          </span>
         </div>
       )}
     </div>

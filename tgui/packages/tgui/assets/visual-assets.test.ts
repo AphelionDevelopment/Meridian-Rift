@@ -11,14 +11,38 @@ const previewAssetRoot = resolve(
   repositoryRoot,
   'modular_nova/modules/character_preview_background/icons',
 );
+const previewCalloutSchema = JSON.parse(
+  readFileSync(
+    resolve(
+      repositoryRoot,
+      'tgui/packages/tgui/interfaces/PreferencesMenu/CharacterPreferences/augmentation-preview-callouts.json',
+    ),
+    'utf8',
+  ),
+) as {
+  modes: Record<string, string>;
+  profiles: Record<string, Array<{ region: string }>>;
+};
+const expectedPreviewStates = Object.entries(
+  previewCalloutSchema.modes,
+).flatMap(([mode, profile]) => [
+  mode,
+  ...previewCalloutSchema.profiles[profile].map(
+    ({ region }) => `${mode}--${region}`,
+  ),
+]);
+const previewDirectionCount = 4;
+const previewFrameCount =
+  expectedPreviewStates.length * previewDirectionCount;
+const previewSheetCells = Math.ceil(Math.sqrt(previewFrameCount));
 const loaderStylePath = resolve(
   import.meta.dir,
   '../styles/visual-system/_loader.scss',
 );
 const previewAssetSha256 = {
-  32: 'ee6917af0ff19439d49bc2b78ab6fd728b8afcd15fdbc1dc09ac6f7dda589509',
-  64: 'fcd6a76226b976d46db03384be494abab068c395e23b8aa31db0098da3757b17',
-  96: '055907767962dae5f31a7e156f947a640bbcacc153e012db359138ec5c745c0a',
+  32: '26c5afda2fd80bc215fa8c6ec0a5a47cdc41542dd44d184905b14cb209d2d2ea',
+  64: '7acc8a3696e05c9576f34caca464090433c2cdc9b638b9e244fa92dd8056fc89',
+  96: '81299f6eae11c5428f25a72808a3fe4be51b8eb49f7917f511ad200261d20e1a',
 } as const;
 
 function pngChunks(png: Buffer) {
@@ -76,7 +100,8 @@ function decodeRgbaAlpha(png: Buffer, width: number, height: number) {
     for (let column = 0; column < stride; column++) {
       const raw = payload[sourceOffset++];
       const target = row * stride + column;
-      const left = column >= bytesPerPixel ? decoded[target - bytesPerPixel] : 0;
+      const left =
+        column >= bytesPerPixel ? decoded[target - bytesPerPixel] : 0;
       const up = row > 0 ? decoded[target - stride] : 0;
       const upperLeft =
         row > 0 && column >= bytesPerPixel
@@ -159,17 +184,15 @@ describe('MeridianOS visual assets', () => {
       );
       combinedBytes += dmi.byteLength;
 
-      expect(dmi.subarray(0, 8).toString('hex')).toBe(
-        '89504e470d0a1a0a',
-      );
-      expect(dmi.readUInt32BE(16)).toBe(size * 2);
-      expect(dmi.readUInt32BE(20)).toBe(size * 2);
+      expect(dmi.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+      expect(dmi.readUInt32BE(16)).toBe(size * previewSheetCells);
+      expect(dmi.readUInt32BE(20)).toBe(size * previewSheetCells);
       expect(dmi[24]).toBe(8);
       expect(dmi[25]).toBe(6);
       expect(dmi.byteLength).toBeLessThan(25 * 1024);
-      // Pixel labels have almost no room for error. Treat the visually reviewed
-      // atlases as goldens so a missing glyph or overlapping callout cannot
-      // silently pass the structural checks below.
+      // The cross-surface leader geometry has almost no room for error. Treat
+      // the visually reviewed atlases as goldens so an endpoint cannot drift
+      // away from its matching browser-side callout undetected.
       expect(createHash('sha256').update(dmi).digest('hex')).toBe(
         previewAssetSha256[size],
       );
@@ -177,36 +200,63 @@ describe('MeridianOS visual assets', () => {
       const description = readDmiDescription(dmi);
       expect(description).toContain(`\twidth = ${size}`);
       expect(description).toContain(`\theight = ${size}`);
-      expect(description.match(/^state = /gm)).toHaveLength(3);
-      expect(description).toContain('state = "augmentation_markings"');
-      expect(description).toContain('state = "augmentation_body_parts"');
-      expect(description).toContain('state = "augmentation_implants"');
+      expect(
+        [...description.matchAll(/^state = "([^"]+)"$/gm)].map(
+          (match) => match[1],
+        ),
+      ).toEqual(expectedPreviewStates);
+      expect(description.match(/^\tdirs = 4$/gm)).toHaveLength(
+        expectedPreviewStates.length,
+      );
+      expect(description.match(/^\tframes = 1$/gm)).toHaveLength(
+        expectedPreviewStates.length,
+      );
 
-      const sheetWidth = size * 2;
-      const alpha = decodeRgbaAlpha(dmi, sheetWidth, size * 2);
-      const stateCells = [
-        [0, 0],
-        [1, 0],
-        [0, 1],
-      ] as const;
-      for (const [cellX, cellY] of stateCells) {
+      const sheetWidth = size * previewSheetCells;
+      const sheetHeight = size * previewSheetCells;
+      const alpha = decodeRgbaAlpha(dmi, sheetWidth, sheetHeight);
+      const readCellAlpha = (cellIndex: number) => {
+        const cellX = cellIndex % previewSheetCells;
+        const cellY = Math.floor(cellIndex / previewSheetCells);
         const stateAlpha: number[] = [];
         for (let y = 0; y < size; y++) {
           const start = (cellY * size + y) * sheetWidth + cellX * size;
           stateAlpha.push(...alpha.subarray(start, start + size));
         }
+        return stateAlpha;
+      };
+
+      for (let cell = 0; cell < previewFrameCount; cell++) {
+        const stateAlpha = readCellAlpha(cell);
         expect(stateAlpha.some((value) => value === 0)).toBe(true);
         expect(stateAlpha.some((value) => value > 0)).toBe(true);
       }
 
-      const unusedCellAlpha: number[] = [];
-      for (let y = size; y < size * 2; y++) {
-        const start = y * sheetWidth + size;
-        unusedCellAlpha.push(...alpha.subarray(start, start + size));
+      for (
+        let cell = previewFrameCount;
+        cell < previewSheetCells ** 2;
+        cell++
+      ) {
+        expect(readCellAlpha(cell).every((value) => value === 0)).toBe(true);
       }
-      expect(unusedCellAlpha.every((value) => value === 0)).toBe(true);
+
+      const firstBaseFrame = readCellAlpha(0);
+      for (let direction = 1; direction < previewDirectionCount; direction++) {
+        expect(readCellAlpha(direction)).toEqual(firstBaseFrame);
+      }
+
+      const asymmetricState = expectedPreviewStates.indexOf(
+        'augmentation_markings--l_arm',
+      );
+      const asymmetricFrame = asymmetricState * previewDirectionCount;
+      expect(readCellAlpha(asymmetricFrame)).not.toEqual(
+        readCellAlpha(asymmetricFrame + 1),
+      );
+      expect(readCellAlpha(asymmetricFrame + 2)).not.toEqual(
+        readCellAlpha(asymmetricFrame + 3),
+      );
     }
 
-    expect(combinedBytes).toBeLessThan(5 * 1024);
+    expect(combinedBytes).toBeLessThan(25 * 1024);
   });
 });
