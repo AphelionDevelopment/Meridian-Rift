@@ -242,8 +242,8 @@ SUBSYSTEM_DEF(air)
 	if(dogmos_health_preflight_required(resumed))
 		SSdogmos.dogmos_health_preflight_count = min(SSdogmos.dogmos_health_preflight_count + 1, DOGMOS_HEALTH_COUNTER_MAX)
 		if(!SSdogmos.service_ready || !dogmos_service_health())
-			SSdogmos.service_ready = FALSE
-			CRASH("dogmosd became unavailable during the SSair health preflight.")
+			dogmos_fail_closed_stage("health preflight")
+			return
 	// APHELION EDIT ADDITION END
 	var/timer = TICK_USAGE_REAL
 
@@ -628,7 +628,9 @@ SUBSYSTEM_DEF(air)
 		dogmos_active_turf_stages_complete = FALSE
 		dogmos_fdm_steps_completed = 0
 		walk_active_turfs_batch()
-		sync_dogmos_frontier()
+		if(!sync_dogmos_frontier())
+			dogmos_fail_closed_stage(DOGMOS_SIMULATION_TURFS)
+			return
 		// APHELION EDIT ADDITION END
 
 	// APHELION EDIT ADDITION START - DOGMOS

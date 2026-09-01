@@ -142,6 +142,8 @@
 /datum/controller/subsystem/dogmos
 	/// Whether the production service passed identity and health checks.
 	var/service_ready = FALSE
+	/// Whether the first authoritative service failure has already emitted its diagnostic.
+	var/service_failure_latched = FALSE
 	/// Weak mixture references indexed by bounded IPC slot.
 	var/list/dogmos_mixture_slots = list()
 	/// Current generation for every allocated mixture slot.
@@ -409,10 +411,31 @@
 		CRASH("Dogmos startup turf mutations were blocked by an unexpected pending stage.")
 	turf_registration_batching = FALSE
 
+/** Publishes an accepted mixture registration or fails the atmosphere subsystem closed.
+ *
+ * Arguments:
+ * * mixture - Mixture receiving the accepted service identity.
+ * * slot - Allocated service slot.
+ * * generation - Allocated service generation.
+ * * response - Native lifecycle response for this registration.
+ * * schedule_reboot - Whether rejection schedules the production reboot.
+ */
+/datum/controller/subsystem/dogmos/proc/finalize_mixture_registration(datum/gas_mixture/mixture, slot, generation, response, schedule_reboot = TRUE)
+	if(response != 1)
+		SSair.dogmos_fail_closed_stage("mixture registration", schedule_reboot)
+		return FALSE
+	dogmos_mixture_slots[slot] = WEAKREF(mixture)
+	mixture.dogmos_slot = slot
+	mixture.dogmos_generation = generation
+	mixture._extools_pointer_gasmixture = TRUE
+	return TRUE
+
 /** Registers one gas mixture with a stale-handle-safe numeric identity. */
 /datum/controller/subsystem/dogmos/proc/register_mixture(datum/gas_mixture/mixture)
 	if(!service_ready)
-		CRASH("Attempted to register a gas mixture while dogmosd is unavailable.")
+		if(!service_failure_latched)
+			CRASH("Attempted to register a gas mixture while dogmosd is unavailable.")
+		return
 
 	var/slot
 	if(length(dogmos_free_mixture_slots))
@@ -429,13 +452,8 @@
 	if(generation > DOGMOS_MAX_EXACT_INTEGER)
 		CRASH("Dogmos mixture generation exhausted for slot [slot].")
 
-	if(dogmos_mixture_lifecycle_batch(list(DOGMOS_LIFECYCLE_REGISTER, slot, generation)) != 1)
-		CRASH("dogmosd rejected mixture registration for [slot]:[generation].")
-
-	dogmos_mixture_slots[slot] = WEAKREF(mixture)
-	mixture.dogmos_slot = slot
-	mixture.dogmos_generation = generation
-	mixture._extools_pointer_gasmixture = TRUE
+	var/response = dogmos_mixture_lifecycle_batch(list(DOGMOS_LIFECYCLE_REGISTER, slot, generation))
+	finalize_mixture_registration(mixture, slot, generation, response)
 
 /** Unregisters one gas mixture and makes its slot eligible for generational reuse. */
 /datum/controller/subsystem/dogmos/proc/unregister_mixture(datum/gas_mixture/mixture)
@@ -538,6 +556,13 @@
 	var/list/cached = lookup_mixture_snapshot_cache(slot, generation)
 	if(cached)
 		return cached
+	if(!service_ready)
+		var/list/failed_snapshot = new/list(DOGMOS_MIXTURE_SNAPSHOT_FIELDS)
+		failed_snapshot[1] = slot || 0
+		failed_snapshot[2] = generation || 0
+		failed_snapshot[DOGMOS_MIXTURE_SNAPSHOT_TEMPERATURE] = T20C
+		failed_snapshot[DOGMOS_MIXTURE_SNAPSHOT_VOLUME] = CELL_VOLUME
+		return failed_snapshot
 	dogmos_mixture_cache_misses++
 	var/list/snapshot = dogmos_mixture_snapshot(list(slot, generation))
 	if(!islist(snapshot) || length(snapshot) != DOGMOS_MIXTURE_SNAPSHOT_FIELDS)
@@ -623,6 +648,15 @@
 		return FALSE
 	for(var/word_index in 1 to 4)
 		if(left[word_index] != right[word_index])
+			return FALSE
+	return TRUE
+
+/** Returns whether a list is one exact unsigned 32-bit value encoded as two 16-bit words. */
+/datum/controller/subsystem/dogmos/proc/u32_words_are_valid(list/words)
+	if(!islist(words) || length(words) != 2)
+		return FALSE
+	for(var/word in words)
+		if(!isnum(word) || !IS_FINITE(word) || word < 0 || word > DOGMOS_PROCESS_WORD_MAX || round(word) != word)
 			return FALSE
 	return TRUE
 
@@ -882,7 +916,12 @@
 /** Validates and returns a typed mixture-command response. */
 /datum/controller/subsystem/dogmos/proc/mixture_command(list/fields, expected_response)
 	if(!service_ready)
-		CRASH("dogmosd became unavailable; in-process atmosphere fallback is forbidden.")
+		if(!service_failure_latched)
+			CRASH("dogmosd became unavailable; in-process atmosphere fallback is forbidden.")
+		var/failed_length = expected_response == DOGMOS_RESPONSE_REACTION_PROGRESS ? 8 : 4
+		var/list/failed_response = new/list(failed_length)
+		failed_response[1] = expected_response
+		return failed_response
 	var/list/response = dogmos_mixture_command(fields)
 	var/expected_length = expected_response == DOGMOS_RESPONSE_REACTION_PROGRESS ? 8 : 4
 	if(!islist(response) || length(response) != expected_length || response[1] != expected_response)
@@ -1001,6 +1040,7 @@
 
 /** Starts dogmosd, validates the generated contract, and installs metadata. */
 /proc/auxtools_atmos_init(gas_data)
+	SSdogmos.service_failure_latched = FALSE
 	var/contract_protocol_version = DOGMOS_CONTRACT_PROTOCOL_VERSION
 	if(contract_protocol_version != DOGMOS_REQUIRED_PROTOCOL_VERSION)
 		stack_trace("Dogmos contract protocol [DOGMOS_CONTRACT_PROTOCOL_VERSION] is stale; protocol [DOGMOS_REQUIRED_PROTOCOL_VERSION] is required.")
@@ -1154,6 +1194,8 @@
  * * gas_mixture_list - Candidate mixtures gathered from the pipenet and custom reconcilers.
  */
 /proc/dogmos_reconcile_pipeline_mixtures(list/datum/gas_mixture/gas_mixture_list)
+	if(!SSdogmos.service_ready)
+		return
 	var/static/process_id = 0
 	process_id = WRAP_UID(process_id + 1)
 	var/list/datum/gas_mixture/unique_mixtures = list()
@@ -1212,6 +1254,8 @@
 
 /// Applies native string gas id and delta pairs in one bounded request.
 /datum/gas_mixture/proc/__adjust_multi(...)
+	if(!SSdogmos.service_ready)
+		return 0
 	var/list/fields = list(dogmos_slot, dogmos_generation)
 	for(var/index in 1 to length(args) step 2)
 		fields += dogmos_gas_id(args[index])
@@ -1387,6 +1431,8 @@
 
 /// Runs the complete native and DM reaction sequence through dogmosd.
 /datum/gas_mixture/proc/__react(datum/holder)
+	if(!SSdogmos.service_ready)
+		return NO_REACTION
 	if(get_moles(/datum/gas/hypernoblium) >= REACTION_OPPRESSION_THRESHOLD && return_temperature() > REACTION_OPPRESSION_MIN_TEMP)
 		return STOP_REACTIONS
 	var/reaction_profile_threshold_ms
@@ -1441,42 +1487,47 @@
 /datum/controller/subsystem/air/proc/bootstrap_dogmos_frontier()
 	if(dogmos_pending_frontier_epoch)
 		CRASH("Attempted to replace the Dogmos frontier while a simulation cycle is pending.")
-	if(!SSdogmos.flush_turf_registration_batch())
-		CRASH("Dogmos topology remained blocked before active-frontier publication.")
-	dogmos_frontier_epoch = SSdogmos.increment_u64_words(dogmos_frontier_epoch)
+	var/list/frontier_pairs = dogmos_prepare_frontier_pairs(active_turfs)
+	if(isnull(frontier_pairs))
+		return FALSE
+	var/list/candidate_epoch = SSdogmos.increment_u64_words(dogmos_frontier_epoch)
 	var/list/count_words = SSdogmos.split_u32_words(length(active_turfs))
-	var/list/begin_fields = dogmos_frontier_epoch.Copy()
+	var/list/begin_fields = candidate_epoch.Copy()
 	begin_fields += count_words
 	var/list/accepted_epoch = dogmos_frontier_begin(begin_fields)
-	if(!SSdogmos.equal_u64_words(accepted_epoch, dogmos_frontier_epoch))
-		CRASH("dogmosd accepted the wrong active-frontier epoch.")
+	if(!SSdogmos.equal_u64_words(accepted_epoch, candidate_epoch))
+		stack_trace("dogmosd rejected or returned a malformed active-frontier begin response.")
+		return FALSE
 
 	var/offset = 0
-	var/list/append_fields = dogmos_frontier_epoch.Copy()
+	var/list/append_fields = candidate_epoch.Copy()
 	append_fields += SSdogmos.split_u32_words(offset)
 	for(var/turf/open/active_turf as anything in active_turfs)
-		if(!active_turf || !active_turf.air)
-			CRASH("SSair active frontier contains an invalid turf at offset [offset].")
-		append_fields += SSdogmos.split_u32_words(active_turf.dogmos_service_slot())
-		append_fields += SSdogmos.split_u32_words(active_turf.dogmos_service_generation())
+		var/list/pair = frontier_pairs[active_turf]
+		append_fields += SSdogmos.split_u32_words(pair[1])
+		append_fields += SSdogmos.split_u32_words(pair[2])
 		offset++
 		if((offset % DOGMOS_TURF_BATCH_OPERATIONS) != 0)
 			continue
 		var/list/accepted_count = dogmos_frontier_append(append_fields)
-		if(SSdogmos.join_u32_words(accepted_count[1], accepted_count[2]) != DOGMOS_TURF_BATCH_OPERATIONS)
-			CRASH("dogmosd rejected a full active-frontier append at offset [offset - DOGMOS_TURF_BATCH_OPERATIONS].")
-		append_fields = dogmos_frontier_epoch.Copy()
+		if(!SSdogmos.u32_words_are_valid(accepted_count) || SSdogmos.join_u32_words(accepted_count[1], accepted_count[2]) != DOGMOS_TURF_BATCH_OPERATIONS)
+			stack_trace("dogmosd rejected a full active-frontier append at offset [offset - DOGMOS_TURF_BATCH_OPERATIONS].")
+			return FALSE
+		append_fields = candidate_epoch.Copy()
 		append_fields += SSdogmos.split_u32_words(offset)
 
 	var/trailing_count = offset % DOGMOS_TURF_BATCH_OPERATIONS
 	if(trailing_count)
 		var/list/accepted_trailing = dogmos_frontier_append(append_fields)
-		if(SSdogmos.join_u32_words(accepted_trailing[1], accepted_trailing[2]) != trailing_count)
-			CRASH("dogmosd rejected the trailing active-frontier append at offset [offset - trailing_count].")
+		if(!SSdogmos.u32_words_are_valid(accepted_trailing) || SSdogmos.join_u32_words(accepted_trailing[1], accepted_trailing[2]) != trailing_count)
+			stack_trace("dogmosd rejected the trailing active-frontier append at offset [offset - trailing_count].")
+			return FALSE
 
-	var/list/committed = dogmos_frontier_commit(dogmos_frontier_epoch.Copy())
-	if(!islist(committed) || length(committed) != 6 || !SSdogmos.equal_u64_words(committed.Copy(1, 5), dogmos_frontier_epoch) || SSdogmos.join_u32_words(committed[5], committed[6]) != offset)
-		CRASH("dogmosd returned a malformed active-frontier commit for epoch [json_encode(dogmos_frontier_epoch)].")
+	var/list/committed = dogmos_frontier_commit(candidate_epoch.Copy())
+	if(!islist(committed) || length(committed) != 6 || !SSdogmos.equal_u64_words(committed.Copy(1, 5), candidate_epoch) || !SSdogmos.u32_words_are_valid(committed.Copy(5, 7)) || SSdogmos.join_u32_words(committed[5], committed[6]) != offset)
+		stack_trace("dogmosd returned a malformed active-frontier commit for candidate epoch [json_encode(candidate_epoch)].")
+		return FALSE
+	dogmos_frontier_epoch = candidate_epoch
 	dogmos_pending_frontier_epoch = dogmos_frontier_epoch.Copy()
 
 	// Stores the exact (slot, generation) pair committed for each turf, not just TRUE - removals
@@ -1484,7 +1535,52 @@
 	// to be later (see sync_dogmos_frontier()'s removal comment).
 	dogmos_committed_frontier = list()
 	for(var/turf/open/active_turf as anything in active_turfs)
-		dogmos_committed_frontier[active_turf] = list(active_turf.dogmos_service_slot(), active_turf.dogmos_service_generation())
+		dogmos_committed_frontier[active_turf] = frontier_pairs[active_turf]
+	return TRUE
+
+/** Registers stale active turfs, flushes their topology, and returns validated frontier pairs. */
+/datum/controller/subsystem/air/proc/dogmos_prepare_frontier_pairs(list/frontier_turfs)
+	var/original_runtime_batching = SSdogmos.runtime_topology_batching
+	SSdogmos.runtime_topology_batching = TRUE
+	for(var/turf/open/active_turf as anything in frontier_turfs)
+		if(!active_turf || !active_turf.air)
+			SSdogmos.runtime_topology_batching = original_runtime_batching
+			stack_trace("SSair active frontier contains an invalid turf reference.")
+			return null
+		if(!dogmos_frontier_turf_registration_is_current(active_turf))
+			active_turf.register_dogmos_air()
+		active_turf.__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
+	SSdogmos.runtime_topology_batching = original_runtime_batching
+	if(!SSdogmos.flush_turf_registration_batch())
+		stack_trace("Dogmos topology remained blocked before active-frontier publication.")
+		return null
+
+	var/list/frontier_pairs = list()
+	for(var/turf/open/active_turf as anything in frontier_turfs)
+		var/datum/gas_mixture/mixture = active_turf.air
+		var/generation = active_turf.dogmos_registration_generation
+		var/slot = active_turf.dogmos_service_slot()
+		var/list/pair = list(slot, generation)
+		if(!dogmos_frontier_pair_is_valid(pair) || !dogmos_frontier_turf_registration_is_current(active_turf))
+			stack_trace("Dogmos active frontier turf [active_turf.type] at [active_turf.x],[active_turf.y],[active_turf.z] remained invalid after registration catch-up: init_air=[active_turf.init_air], air=[!isnull(mixture)], generation=[generation], registered_mixture=[active_turf.dogmos_registered_mixture_slot]:[active_turf.dogmos_registered_mixture_generation], current_mixture=[mixture?.dogmos_slot]:[mixture?.dogmos_generation].")
+			return null
+		frontier_pairs[active_turf] = pair
+	return frontier_pairs
+
+/** Returns whether a frontier pair contains two positive exact IPC identities. */
+/datum/controller/subsystem/air/proc/dogmos_frontier_pair_is_valid(list/pair)
+	if(!islist(pair) || length(pair) != 2)
+		return FALSE
+	for(var/field in pair)
+		if(!isnum(field) || !IS_FINITE(field) || field <= 0 || field > DOGMOS_MAX_EXACT_INTEGER || round(field) != field)
+			return FALSE
+	return TRUE
+
+/** Returns whether an active turf has a valid current service identity. */
+/datum/controller/subsystem/air/proc/dogmos_frontier_turf_registration_is_current(turf/open/active_turf)
+	var/generation = active_turf?.dogmos_registration_generation
+	return active_turf?.air && isnum(generation) && IS_FINITE(generation) \
+		&& generation > 0 && generation <= DOGMOS_MAX_EXACT_INTEGER && round(generation) == generation
 
 /** Returns whether a committed frontier pair matches the turf's current service identity.
  *
@@ -1493,9 +1589,10 @@
  * * committed_pair - Previously committed slot and generation.
  */
 /datum/controller/subsystem/air/proc/dogmos_frontier_pair_is_current(turf/open/active_turf, list/committed_pair)
-	return islist(committed_pair) && length(committed_pair) == 2 \
+	return dogmos_frontier_turf_registration_is_current(active_turf) \
+		&& islist(committed_pair) && length(committed_pair) == 2 \
 		&& committed_pair[1] == active_turf.dogmos_service_slot() \
-		&& committed_pair[2] == active_turf.dogmos_service_generation()
+		&& committed_pair[2] == active_turf.dogmos_registration_generation
 
 /** Publishes the current active-turf set to dogmosd. The first call bootstraps the frontier via
  * the full begin/append/commit path above; every later call diffs active_turfs against
@@ -1507,8 +1604,7 @@
  */
 /datum/controller/subsystem/air/proc/sync_dogmos_frontier()
 	if(isnull(dogmos_committed_frontier))
-		bootstrap_dogmos_frontier()
-		return
+		return bootstrap_dogmos_frontier()
 
 	var/list/active_set = list()
 	for(var/turf/open/active_turf as anything in active_turfs)
@@ -1542,21 +1638,19 @@
 		// unconditionally appends it into the stage request fields. Leaving it null here sends a
 		// null field into dogmos_simulation_stage_ffi and crashes with "Value is not a number".
 		dogmos_pending_frontier_epoch = dogmos_frontier_epoch.Copy()
-		return
+		return TRUE
 
 	if(dogmos_pending_frontier_epoch)
-		CRASH("Attempted to mutate the Dogmos frontier while a simulation cycle is pending.")
+		return TRUE
+	var/list/added_pairs_by_turf = list()
 	if(length(added))
-		var/original_runtime_batching = SSdogmos.runtime_topology_batching
-		SSdogmos.runtime_topology_batching = TRUE
-		for(var/turf/open/added_turf as anything in added)
-			added_turf.__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
-		SSdogmos.runtime_topology_batching = original_runtime_batching
-	if(!SSdogmos.flush_turf_registration_batch())
-		CRASH("Dogmos topology remained blocked before incremental frontier sync.")
+		added_pairs_by_turf = dogmos_prepare_frontier_pairs(added)
+		if(isnull(added_pairs_by_turf))
+			return FALSE
 
 	if(length(removed_pairs))
-		dogmos_frontier_send_chunks(/proc/dogmos_frontier_remove, removed_pairs, "remove")
+		if(!dogmos_frontier_send_chunks(/proc/dogmos_frontier_remove, removed_pairs, "remove"))
+			return FALSE
 		for(var/turf/open/removed_turf as anything in removed_turfs)
 			dogmos_committed_frontier -= removed_turf
 		dogmos_pending_frontier_epoch = dogmos_frontier_epoch.Copy()
@@ -1564,11 +1658,13 @@
 	if(length(added))
 		var/list/added_pairs = list()
 		for(var/turf/open/added_turf as anything in added)
-			added_pairs += list(list(added_turf.dogmos_service_slot(), added_turf.dogmos_service_generation()))
-		dogmos_frontier_send_chunks(/proc/dogmos_frontier_add, added_pairs, "add")
+			added_pairs += list(added_pairs_by_turf[added_turf])
+		if(!dogmos_frontier_send_chunks(/proc/dogmos_frontier_add, added_pairs, "add"))
+			return FALSE
 		for(var/index in 1 to length(added))
 			dogmos_committed_frontier[added[index]] = added_pairs[index]
 		dogmos_pending_frontier_epoch = dogmos_frontier_epoch.Copy()
+	return TRUE
 
 /** Sends one incremental frontier mutation (add or remove) to dogmosd in bounded chunks. Each
  * chunk is its own atomic add/remove call (no begin/append/commit two-phase for this path), and
@@ -1578,6 +1674,10 @@
  * enforces an exact accepted-count match; a short remove count is expected, not a fault.
  */
 /datum/controller/subsystem/air/proc/dogmos_frontier_send_chunks(mutate_proc, list/pairs, label)
+	for(var/list/pair as anything in pairs)
+		if(!dogmos_frontier_pair_is_valid(pair))
+			log_game("Dogmos rejected a malformed incremental frontier [label] pair before service mutation.")
+			return FALSE
 	var/offset = 0
 	var/pair_total = length(pairs)
 	var/list/fields = list()
@@ -1590,14 +1690,20 @@
 		var/chunk_size = offset % DOGMOS_TURF_BATCH_OPERATIONS
 		if(!chunk_size)
 			chunk_size = DOGMOS_TURF_BATCH_OPERATIONS
-		dogmos_frontier_epoch = SSdogmos.increment_u64_words(dogmos_frontier_epoch)
-		var/list/chunk_fields = dogmos_frontier_epoch.Copy()
+		var/list/candidate_epoch = SSdogmos.increment_u64_words(dogmos_frontier_epoch)
+		var/list/chunk_fields = candidate_epoch.Copy()
 		chunk_fields += fields
 		var/list/response = call(mutate_proc)(chunk_fields)
+		if(!SSdogmos.u32_words_are_valid(response))
+			log_game("dogmosd returned a malformed incremental frontier [label] response at offset [offset - chunk_size].")
+			return FALSE
 		var/accepted = SSdogmos.join_u32_words(response[1], response[2])
-		if(mutate_proc == /proc/dogmos_frontier_add && accepted != chunk_size)
-			CRASH("dogmosd rejected an incremental frontier [label] chunk at offset [offset - chunk_size].")
+		if(accepted > chunk_size || (mutate_proc == /proc/dogmos_frontier_add && accepted != chunk_size))
+			log_game("dogmosd rejected an incremental frontier [label] chunk at offset [offset - chunk_size].")
+			return FALSE
+		dogmos_frontier_epoch = candidate_epoch
 		fields = list()
+	return TRUE
 
 /** Returns the next bounded work limit for the remaining SSair budget. */
 /datum/controller/subsystem/air/proc/dogmos_work_limit_for_budget(remaining_ms)
@@ -1632,6 +1738,7 @@
 	dogmos_active_turf_stages_complete = FALSE
 	dogmos_fdm_steps_completed = 0
 	can_fire = FALSE
+	SSdogmos.service_failure_latched = TRUE
 	SSdogmos.service_ready = FALSE
 	if(schedule_reboot)
 		var/reason = "Dogmos atmosphere stage [stage] failed; authoritative atmosphere processing is unavailable."
@@ -1642,9 +1749,12 @@
 /** Runs or resumes one service simulation stage and returns TRUE while work remains. */
 /datum/controller/subsystem/air/proc/dogmos_run_stage(stage, remaining_ms)
 	if(!SSdogmos.service_ready)
-		CRASH("dogmosd became unavailable during SSair processing.")
+		if(!SSdogmos.service_failure_latched)
+			CRASH("dogmosd became unavailable during SSair processing.")
+		return TRUE
 	if(!dogmos_pending_frontier_epoch)
-		sync_dogmos_frontier()
+		if(!sync_dogmos_frontier())
+			return dogmos_fail_closed_stage(stage)
 	if(!isnull(dogmos_pending_stage) && dogmos_pending_stage != stage)
 		CRASH("Attempted to start Dogmos stage [stage] while stage [dogmos_pending_stage] remains pending.")
 	var/work_limit = dogmos_work_limit_for_budget(remaining_ms)
@@ -1743,8 +1853,9 @@
 /** Registers or removes this turf's service-owned gas and heat state. */
 /turf/proc/update_air_ref(flag)
 	if(!SSdogmos.service_ready)
-		SSdogmos.service_ready = FALSE
-		CRASH("Attempted to update a turf while dogmosd is unavailable.")
+		if(!SSdogmos.service_failure_latched)
+			CRASH("Attempted to update a turf while dogmosd is unavailable.")
+		return
 
 	var/slot = dogmos_service_slot()
 	var/generation = dogmos_service_generation()

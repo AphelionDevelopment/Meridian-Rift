@@ -21,11 +21,11 @@
       "format": "elf",
       "platform": "linux",
       "role": "shim",
-      "sha256": "251ab8228a16e1a42af55b68c78830c98079a62901954e86d984ec043fbc8b04",
+      "sha256": "0ab2832122b11200b12117120fc249d6201bd8ec0f47e6cc3f544d2d9cfb1bab",
       "size": 1139812,
       "symbols": {
         "file": "linux/libdogmos.so.debug",
-        "sha256": "3c8359cf0d294ca988e7c78b6c43308d659c9643fbdb850262bf47e1989702ac",
+        "sha256": "38383e5f20d7d7fe87d8422ce6078f31c1e393f25bc4f46fd767a19b44442773",
         "size": 9767132
       },
       "target": "i686-unknown-linux-gnu"
@@ -36,12 +36,12 @@
       "format": "pe",
       "platform": "windows",
       "role": "service",
-      "sha256": "9ff48152025de650d229674ce78b5ca61237ec4f35c22a64ee1809a95f0b7cc9",
-      "size": 871424,
+      "sha256": "1702b576256dfcee991a97f7d0f7b95ea7ee59d46c0fe2955a8220e89e3936fd",
+      "size": 873984,
       "symbols": {
         "file": "windows/dogmosd.pdb",
-        "sha256": "909286b3b6e4b47d40a262430fc41b3454b6a01b155ccddd3619398319ebcf36",
-        "size": 14446592
+        "sha256": "4aa37136659234c85d4b5a962bc05aa4157a54a4973c2b3da1fde1f295277a7c",
+        "size": 14471168
       },
       "target": "x86_64-pc-windows-msvc"
     },
@@ -51,11 +51,11 @@
       "format": "pe",
       "platform": "windows",
       "role": "shim",
-      "sha256": "e30db9b32e920faafcff4a13578cce89cdac53236fc06af7321a0ac59c3b9d03",
+      "sha256": "132dc7a8840bc4a0fb0390c46a875f772086fd758e6640f9aba137f3c9eea48e",
       "size": 652800,
       "symbols": {
         "file": "windows/dogmos.pdb",
-        "sha256": "dd85f54642185dac640be20ff8769bd35d42c67382a80dd36383343a717b5a83",
+        "sha256": "bc63b684fdfa6a1ff125537950d8553269e1d22cd1651a43cc507083d27fbd93",
         "size": 9506816
       },
       "target": "i686-pc-windows-msvc"
@@ -78,7 +78,7 @@
     ]
   },
   "schema_version": 1,
-  "source_revision": "c09f33974d4e51f2035899c825b5b1da847b200d",
+  "source_revision": "713840d74ec61c19acd29dc5b5ae804790c57593",
   "toolchain": {
     "byond": "516.1687",
     "byondapi_revision": "721dd4690b60954687e41d8691d0040f398d91a6",

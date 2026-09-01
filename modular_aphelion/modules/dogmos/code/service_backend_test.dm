@@ -12,6 +12,11 @@
 #define DOGMOS_TEST_OVERSIZED_PIPELINE_MIXTURES 228
 #define DOGMOS_TEST_IDLE_MC_SETTLE_TIME 30 SECONDS
 #define DOGMOS_TEST_IDLE_MC_COST_LIMIT 2
+#define DOGMOS_TEST_RESPONSE_APPLIED 1
+
+/** Returns a malformed frontier response without touching the production service. */
+/proc/dogmos_test_reject_frontier_chunk(list/fields)
+	return null
 
 /** Verifies startup identity mismatches report exact expected and actual values. */
 /datum/unit_test/dogmos_service_contract_identity
@@ -687,6 +692,174 @@
 	if(SSair.dogmos_frontier_pair_is_current(target, stale_pair))
 		return Fail("Dogmos treated a mismatched turf generation as a current frontier identity.", __FILE__, __LINE__)
 
+/** Verifies a rejected incremental frontier chunk cannot publish its candidate epoch. */
+/datum/unit_test/dogmos_service_frontier_rejection_preserves_epoch
+
+/datum/unit_test/dogmos_service_frontier_rejection_preserves_epoch/Run()
+	var/list/original_epoch = SSair.dogmos_frontier_epoch
+	var/list/start_epoch = list(41, 0, 0, 0)
+	SSair.dogmos_frontier_epoch = start_epoch.Copy()
+	var/accepted = SSair.dogmos_frontier_send_chunks(
+		/proc/dogmos_test_reject_frontier_chunk,
+		list(list(1, 1)),
+		"test rejection",
+	)
+	var/epoch_changed = !SSdogmos.equal_u64_words(SSair.dogmos_frontier_epoch, start_epoch)
+	SSair.dogmos_frontier_epoch = original_epoch
+	if(accepted)
+		return Fail("Dogmos accepted a malformed incremental frontier response.", __FILE__, __LINE__)
+	if(epoch_changed)
+		return Fail("Dogmos published a frontier epoch before the service accepted its chunk.", __FILE__, __LINE__)
+
+/** Verifies frontier changes wait without publication while an older stage remains resumable. */
+/datum/unit_test/dogmos_service_frontier_mutation_waits_for_pending_stage
+
+/datum/unit_test/dogmos_service_frontier_mutation_waits_for_pending_stage/Run()
+	var/reached_stage_boundary = FALSE
+	for(var/attempt in 1 to DOGMOS_TEST_STAGE_BOUNDARY_ATTEMPTS)
+		if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch)
+			reached_stage_boundary = TRUE
+			break
+		sleep(SSair.wait)
+	if(!reached_stage_boundary)
+		return Fail("Dogmos did not reach a safe stage boundary before the pending-stage frontier test.", __FILE__, __LINE__)
+
+	var/turf/open/target = run_loc_floor_bottom_left
+	var/was_active = SSair.active_turfs.Find(target)
+	var/list/original_pair = SSair.dogmos_committed_frontier[target]
+	var/original_committed_count = length(SSair.dogmos_committed_frontier)
+	var/list/original_epoch = SSair.dogmos_frontier_epoch.Copy()
+	var/original_pending_stage = SSair.dogmos_pending_stage
+	var/list/original_pending_frontier = SSair.dogmos_pending_frontier_epoch
+	if(original_pair)
+		SSair.active_turfs -= target
+	else
+		SSair.active_turfs |= target
+	SSair.dogmos_pending_stage = DOGMOS_TEST_STAGE_EQUALIZE
+	SSair.dogmos_pending_frontier_epoch = original_epoch.Copy()
+	var/synced = SSair.sync_dogmos_frontier()
+	var/epoch_changed = !SSdogmos.equal_u64_words(SSair.dogmos_frontier_epoch, original_epoch)
+	var/frontier_changed = length(SSair.dogmos_committed_frontier) != original_committed_count || SSair.dogmos_committed_frontier[target] != original_pair
+	var/pending_changed = SSair.dogmos_pending_stage != DOGMOS_TEST_STAGE_EQUALIZE || !SSdogmos.equal_u64_words(SSair.dogmos_pending_frontier_epoch, original_epoch)
+	if(was_active)
+		SSair.active_turfs |= target
+	else
+		SSair.active_turfs -= target
+	SSair.dogmos_pending_stage = original_pending_stage
+	SSair.dogmos_pending_frontier_epoch = original_pending_frontier
+	if(!synced)
+		return Fail("Dogmos rejected a deferred frontier mutation while an older stage was pending.", __FILE__, __LINE__)
+	if(epoch_changed || frontier_changed || pending_changed)
+		return Fail("Dogmos published or changed frontier state while an older stage was pending.", __FILE__, __LINE__)
+
+/** Verifies frontier preparation repairs an active turf whose normal registration was missed. */
+/datum/unit_test/dogmos_service_frontier_registration_catchup
+
+/datum/unit_test/dogmos_service_frontier_registration_catchup/Run()
+	var/reached_stage_boundary = FALSE
+	for(var/attempt in 1 to DOGMOS_TEST_STAGE_BOUNDARY_ATTEMPTS)
+		if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
+			reached_stage_boundary = TRUE
+			break
+		sleep(SSair.wait)
+	if(!reached_stage_boundary)
+		return Fail("Dogmos did not reach a safe stage boundary before the frontier registration catch-up test.", __FILE__, __LINE__)
+
+	var/turf/open/target = run_loc_floor_bottom_left
+	if(!istype(target) || !target.air)
+		return Fail("The Dogmos frontier registration catch-up test requires an atmosphere-enabled open turf.", __FILE__, __LINE__)
+	var/list/original_epoch = SSair.dogmos_frontier_epoch.Copy()
+	var/list/original_committed_frontier = SSair.dogmos_committed_frontier
+	target.dogmos_registration_generation = null
+	target.dogmos_registered_mixture_slot = null
+	target.dogmos_registered_mixture_generation = null
+	var/list/prepared = SSair.dogmos_prepare_frontier_pairs(list(target))
+	var/list/pair = prepared?[target]
+	if(!SSair.dogmos_frontier_pair_is_valid(pair))
+		return Fail("Dogmos did not repair the active turf's missing service generation before frontier publication.", __FILE__, __LINE__)
+	if(pair[2] != target.dogmos_registration_generation || !target.dogmos_air_registration_is_current())
+		return Fail("Dogmos prepared a frontier pair that did not match the repaired turf registration.", __FILE__, __LINE__)
+	if(!SSdogmos.equal_u64_words(SSair.dogmos_frontier_epoch, original_epoch) || SSair.dogmos_committed_frontier != original_committed_frontier)
+		return Fail("Dogmos published frontier state during registration catch-up.", __FILE__, __LINE__)
+
+/** Verifies a latched service failure stops stage work without another FFI attempt. */
+/datum/unit_test/dogmos_service_failure_latch_stops_stage
+
+/datum/unit_test/dogmos_service_failure_latch_stops_stage/Run()
+	var/original_service_ready = SSdogmos.service_ready
+	var/original_failure_latched = SSdogmos.service_failure_latched
+	var/original_pending_stage = SSair.dogmos_pending_stage
+	var/list/original_pending_frontier = SSair.dogmos_pending_frontier_epoch
+	var/turf/open/target = run_loc_floor_bottom_left
+	var/datum/gas_mixture/mixture = target.air
+	var/mixture_slot = mixture.dogmos_slot
+	var/mixture_generation = mixture.dogmos_generation
+	var/mixture_slot_count = length(SSdogmos.dogmos_mixture_slots)
+	var/turf_key = "[target.dogmos_service_slot()]"
+	var/list/original_turf_lifecycle = SSdogmos.dogmos_pending_turf_lifecycle[turf_key]
+	SSdogmos.service_ready = FALSE
+	SSdogmos.service_failure_latched = TRUE
+	var/stage_stopped = SSair.dogmos_run_stage(DOGMOS_TEST_STAGE_EQUALIZE, 1)
+	var/list/failed_response = SSdogmos.mixture_command(list(), DOGMOS_TEST_RESPONSE_APPLIED)
+	SSdogmos.register_mixture(mixture)
+	target.update_air_ref(DOGMOS_SIMULATION_ALL)
+	var/stage_changed = SSair.dogmos_pending_stage != original_pending_stage || SSair.dogmos_pending_frontier_epoch != original_pending_frontier
+	var/mixture_changed = mixture.dogmos_slot != mixture_slot || mixture.dogmos_generation != mixture_generation || length(SSdogmos.dogmos_mixture_slots) != mixture_slot_count
+	var/turf_changed = SSdogmos.dogmos_pending_turf_lifecycle[turf_key] != original_turf_lifecycle
+	SSdogmos.service_ready = original_service_ready
+	SSdogmos.service_failure_latched = original_failure_latched
+	if(!stage_stopped)
+		return Fail("Dogmos reported a failed service stage as complete.", __FILE__, __LINE__)
+	if(stage_changed)
+		return Fail("Dogmos mutated stage state after the service failure latch was set.", __FILE__, __LINE__)
+	if(!islist(failed_response) || length(failed_response) != 4 || failed_response[1] != DOGMOS_TEST_RESPONSE_APPLIED)
+		return Fail("Dogmos returned a malformed inert mixture response after the service failure latch was set.", __FILE__, __LINE__)
+	if(mixture_changed)
+		return Fail("Dogmos mutated mixture registration after the service failure latch was set.", __FILE__, __LINE__)
+	if(turf_changed)
+		return Fail("Dogmos queued a turf lifecycle mutation after the service failure latch was set.", __FILE__, __LINE__)
+
+/** Verifies rejected mixture registration fails closed without publishing an invalid identity. */
+/datum/unit_test/dogmos_service_rejected_mixture_registration_fails_closed
+
+/datum/unit_test/dogmos_service_rejected_mixture_registration_fails_closed/Run()
+	var/original_service_ready = SSdogmos.service_ready
+	var/original_failure_latched = SSdogmos.service_failure_latched
+	var/original_can_fire = SSair.can_fire
+	var/original_pending_stage = SSair.dogmos_pending_stage
+	var/list/original_pending_frontier = SSair.dogmos_pending_frontier_epoch
+	var/original_remaining_estimate = SSair.dogmos_stage_remaining_estimate
+	var/original_active_complete = SSair.dogmos_active_turf_stages_complete
+	var/original_fdm_steps = SSair.dogmos_fdm_steps_completed
+	var/turf/open/target = run_loc_floor_bottom_left
+	var/datum/gas_mixture/mixture = target.air
+	var/original_slot = mixture.dogmos_slot
+	var/original_generation = mixture.dogmos_generation
+	var/original_pointer = mixture._extools_pointer_gasmixture
+	var/accepted = SSdogmos.finalize_mixture_registration(
+		mixture,
+		length(SSdogmos.dogmos_mixture_slots) + 1,
+		1,
+		null,
+		FALSE,
+	)
+	var/identity_changed = mixture.dogmos_slot != original_slot || mixture.dogmos_generation != original_generation || mixture._extools_pointer_gasmixture != original_pointer
+	var/failed_closed = !SSair.can_fire && !SSdogmos.service_ready && SSdogmos.service_failure_latched
+	SSdogmos.service_ready = original_service_ready
+	SSdogmos.service_failure_latched = original_failure_latched
+	SSair.can_fire = original_can_fire
+	SSair.dogmos_pending_stage = original_pending_stage
+	SSair.dogmos_pending_frontier_epoch = original_pending_frontier
+	SSair.dogmos_stage_remaining_estimate = original_remaining_estimate
+	SSair.dogmos_active_turf_stages_complete = original_active_complete
+	SSair.dogmos_fdm_steps_completed = original_fdm_steps
+	if(accepted)
+		return Fail("Dogmos accepted a rejected mixture lifecycle response.", __FILE__, __LINE__)
+	if(identity_changed)
+		return Fail("Dogmos published a mixture identity after the service rejected it.", __FILE__, __LINE__)
+	if(!failed_closed)
+		return Fail("Dogmos did not fail closed after the service rejected a mixture registration.", __FILE__, __LINE__)
+
 /** Verifies an exhausted MC budget returns control without sleeping inside SSair. */
 /datum/unit_test/dogmos_service_stage_budget_progress
 
@@ -781,6 +954,7 @@
 	var/original_fdm_steps_completed = SSair.dogmos_fdm_steps_completed
 	var/original_can_fire = SSair.can_fire
 	var/original_service_ready = SSdogmos.service_ready
+	var/original_failure_latched = SSdogmos.service_failure_latched
 	SSair.dogmos_pending_stage = DOGMOS_TEST_STAGE_REACTIONS
 	SSair.dogmos_pending_frontier_epoch = list(1, 0, 0, 0)
 	SSair.dogmos_stage_remaining_estimate = 77
@@ -794,7 +968,7 @@
 		failure_message = "Dogmos retained failed stage state for another retry."
 	else if(SSair.dogmos_stage_remaining_estimate || SSair.dogmos_active_turf_stages_complete || SSair.dogmos_fdm_steps_completed)
 		failure_message = "Dogmos retained failed-cycle progress after the stage failure."
-	else if(SSair.can_fire || SSdogmos.service_ready)
+	else if(SSair.can_fire || SSdogmos.service_ready || !SSdogmos.service_failure_latched)
 		failure_message = "Dogmos did not fail closed after the stage failure."
 
 	SSair.dogmos_pending_stage = original_pending_stage
@@ -804,6 +978,7 @@
 	SSair.dogmos_fdm_steps_completed = original_fdm_steps_completed
 	SSair.can_fire = original_can_fire
 	SSdogmos.service_ready = original_service_ready
+	SSdogmos.service_failure_latched = original_failure_latched
 	if(failure_message)
 		return Fail(failure_message, __FILE__, __LINE__)
 
@@ -1253,5 +1428,6 @@
 #undef DOGMOS_PIPELINE_TEST_EPSILON
 #undef DOGMOS_TEST_IDLE_MC_SETTLE_TIME
 #undef DOGMOS_TEST_IDLE_MC_COST_LIMIT
+#undef DOGMOS_TEST_RESPONSE_APPLIED
 
 #endif
