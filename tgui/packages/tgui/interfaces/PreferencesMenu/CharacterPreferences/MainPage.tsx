@@ -651,7 +651,6 @@ export function MainPage(props: MainPageProps) {
 
             <Stack.Item grow>
               <CharacterPreview
-                decoration="standard"
                 height="100%"
                 id={data.character_preview_view}
               />

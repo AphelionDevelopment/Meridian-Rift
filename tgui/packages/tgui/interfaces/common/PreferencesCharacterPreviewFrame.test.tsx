@@ -4,17 +4,16 @@ import {
   isPreferencesCharacterPreviewDecorationMode,
   normalizePreferencesCharacterPreviewDecorationMode,
   PreferencesCharacterPreviewFrame,
-  resolvePreferencesCharacterPreviewDecoration,
   usePreferencesCharacterPreviewDecoration,
 } from './PreferencesCharacterPreviewFrame';
 
 afterEach(cleanup);
 
 describe('PreferencesCharacterPreviewFrame', () => {
-  it('renders pointer-transparent Standard exterior chrome without resizing its child contract', () => {
+  it('renders pointer-transparent Markings chrome without resizing its child contract', () => {
     const view = render(
       <PreferencesCharacterPreviewFrame
-        decoration="standard"
+        decoration="augmentation_markings"
         height="100%"
         width="272px"
       >
@@ -26,7 +25,7 @@ describe('PreferencesCharacterPreviewFrame', () => {
       '.PreferencesCharacterPreviewFrame__chrome',
     )!;
 
-    expect(frame.dataset.decorationMode).toBe('standard');
+    expect(frame.dataset.decorationMode).toBe('augmentation_markings');
     expect(frame.style.width).toBe('272px');
     expect(frame.style.height).toBe('100%');
     expect(chrome.getAttribute('aria-hidden')).toBe('true');
@@ -40,18 +39,16 @@ describe('PreferencesCharacterPreviewFrame', () => {
       chrome.querySelectorAll('.PreferencesCharacterPreviewFrame__leader'),
     ).toHaveLength(2);
     expect(
-      chrome.querySelectorAll(
-        '.PreferencesCharacterPreviewFrame__orientation',
-      ),
+      chrome.querySelectorAll('.PreferencesCharacterPreviewFrame__orientation'),
     ).toHaveLength(2);
-    expect(view.getByText('CHARACTER')).toBeDefined();
-    expect(view.getByText('LINK ACTIVE')).toBeDefined();
+    expect(view.getByText('MARKINGS')).toBeDefined();
+    expect(view.getByText('REGION MAP')).toBeDefined();
   });
 
   it('gives Augmentation its stronger identity and supports bounded label overrides', () => {
     const view = render(
       <PreferencesCharacterPreviewFrame
-        decoration="augmentation"
+        decoration="augmentation_implants"
         height="96px"
         status="CALIBRATED"
         title="MODULE MAP"
@@ -64,6 +61,9 @@ describe('PreferencesCharacterPreviewFrame', () => {
 
     expect(frame.classList).toContain(
       'PreferencesCharacterPreviewFrame--augmentation',
+    );
+    expect(frame.classList).toContain(
+      'PreferencesCharacterPreviewFrame--augmentation_implants',
     );
     expect(view.getByText('MODULE MAP')).toBeDefined();
     expect(view.getByText('CALIBRATED')).toBeDefined();
@@ -89,46 +89,24 @@ describe('PreferencesCharacterPreviewFrame', () => {
 
   it('validates the finite native action contract', () => {
     expect(isPreferencesCharacterPreviewDecorationMode('none')).toBe(true);
-    expect(isPreferencesCharacterPreviewDecorationMode('standard')).toBe(true);
+    expect(
+      isPreferencesCharacterPreviewDecorationMode('augmentation_markings'),
+    ).toBe(true);
+    expect(
+      isPreferencesCharacterPreviewDecorationMode('augmentation_body_parts'),
+    ).toBe(true);
+    expect(
+      isPreferencesCharacterPreviewDecorationMode('augmentation_implants'),
+    ).toBe(true);
+    expect(isPreferencesCharacterPreviewDecorationMode('standard')).toBe(false);
     expect(isPreferencesCharacterPreviewDecorationMode('augmentation')).toBe(
-      true,
+      false,
     );
     expect(isPreferencesCharacterPreviewDecorationMode('diagnostic')).toBe(
       false,
     );
-    expect(normalizePreferencesCharacterPreviewDecorationMode('diagnostic')).toBe(
-      'none',
-    );
-  });
-
-  it('resolves only visible Augments under the Augmentation debug skin', () => {
     expect(
-      resolvePreferencesCharacterPreviewDecoration({
-        hasVisiblePreview: true,
-        isAugmentsPage: true,
-        resolvedTheme: 'meridian_augmentation',
-      }),
-    ).toBe('augmentation');
-    expect(
-      resolvePreferencesCharacterPreviewDecoration({
-        hasVisiblePreview: true,
-        isAugmentsPage: false,
-        resolvedTheme: 'meridian_augmentation',
-      }),
-    ).toBe('standard');
-    expect(
-      resolvePreferencesCharacterPreviewDecoration({
-        hasVisiblePreview: true,
-        isAugmentsPage: true,
-        resolvedTheme: 'meridian_vector',
-      }),
-    ).toBe('standard');
-    expect(
-      resolvePreferencesCharacterPreviewDecoration({
-        hasVisiblePreview: false,
-        isAugmentsPage: false,
-        resolvedTheme: 'meridian',
-      }),
+      normalizePreferencesCharacterPreviewDecorationMode('diagnostic'),
     ).toBe('none');
   });
 
@@ -141,21 +119,34 @@ describe('PreferencesCharacterPreviewFrame', () => {
       calls.push({ action, payload });
     };
     const Harness = (props: {
-      mode: 'none' | 'standard' | 'augmentation';
+      mode:
+        | 'none'
+        | 'augmentation_markings'
+        | 'augmentation_body_parts'
+        | 'augmentation_implants';
     }) => {
       usePreferencesCharacterPreviewDecoration(act, props.mode);
       return null;
     };
-    const view = render(<Harness mode="standard" />);
+    const view = render(<Harness mode="augmentation_markings" />);
 
     expect(calls).toEqual([
-      { action: 'set_preview_decoration', payload: { mode: 'standard' } },
+      {
+        action: 'set_preview_decoration',
+        payload: { mode: 'augmentation_markings' },
+      },
     ]);
 
-    view.rerender(<Harness mode="augmentation" />);
+    view.rerender(<Harness mode="augmentation_body_parts" />);
     expect(calls).toEqual([
-      { action: 'set_preview_decoration', payload: { mode: 'standard' } },
-      { action: 'set_preview_decoration', payload: { mode: 'augmentation' } },
+      {
+        action: 'set_preview_decoration',
+        payload: { mode: 'augmentation_markings' },
+      },
+      {
+        action: 'set_preview_decoration',
+        payload: { mode: 'augmentation_body_parts' },
+      },
     ]);
 
     view.unmount();

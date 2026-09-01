@@ -359,7 +359,7 @@
   }
 }
 
-.theme-meridian_highline {
+.theme-console.theme-meridian_highline {
   .Window::before {
     inset: 2px;
     border: 2px solid var(--console-border-strong);
@@ -378,9 +378,12 @@
   }
 
   .Button--selected,
-  .Tab--selected {
+  .Button[aria-pressed='true'],
+  .Button[aria-checked='true'],
+  .Tab--selected,
+  .Tab[aria-selected='true'] {
     color: var(--console-surface-canvas);
-    background: var(--console-text-primary);
+    background-color: var(--console-text-primary);
   }
 }
 
@@ -442,7 +445,9 @@
   .Button:not(.PreferencesMenu__Jobs__departments__priority):not(
       .PreferencesMenu__SpeciesButton
     ) {
-    border: 2px solid transparent;
+    // Keep the shared 24px control box. The artwork may paint two pixels
+    // inward, but its physical border must match every other MeridianOS skin.
+    border: 1px solid transparent;
     border-image-source: url('tgui/styles/assets/meridian-cyberpunk-control-frame.svg');
     border-image-slice: 6;
     border-image-width: 2px;

@@ -23,6 +23,10 @@ import {
 import type { BooleanLike } from 'tgui-core/react';
 
 import { CharacterPreview } from '../../common/CharacterPreview';
+import {
+  type PreferencesCharacterPreviewDecorationMode,
+  usePreferencesCharacterPreviewDecoration,
+} from '../../common/PreferencesCharacterPreviewFrame';
 import type {
   AugmentItem,
   AugmentSlot,
@@ -740,7 +744,7 @@ const CenterColumnExtras = (props: {
 
 // The character preview section at the top of the center column
 const PreviewSection = (props: {
-  decoration: 'standard' | 'augmentation';
+  decoration: PreferencesCharacterPreviewDecorationMode;
   id: string;
 }) => (
   <Section fill title="Character Preview" align="center">
@@ -769,12 +773,19 @@ export enum AugmentsTab {
   InternalImplants = 2,
 }
 
+export const AUGMENTS_TAB_PREVIEW_DECORATION = {
+  [AugmentsTab.Markings]: 'augmentation_markings',
+  [AugmentsTab.BodyParts]: 'augmentation_body_parts',
+  [AugmentsTab.InternalImplants]: 'augmentation_implants',
+} as const satisfies Record<
+  AugmentsTab,
+  PreferencesCharacterPreviewDecorationMode
+>;
+
 export const LimbsPage = ({
-  previewDecoration = 'augmentation',
   onTabChange,
 }: {
   onTabChange?: (tab: AugmentsTab) => void;
-  previewDecoration?: 'standard' | 'augmentation';
 }) => {
   const { data, act } = useBackend<PreferencesMenuData>();
   const server_data = useServerPrefs()?.limbs_and_markings;
@@ -786,6 +797,9 @@ export const LimbsPage = ({
     setTab(next);
     onTabChange?.(next);
   };
+  const previewDecoration = AUGMENTS_TAB_PREVIEW_DECORATION[tab];
+
+  usePreferencesCharacterPreviewDecoration(act, previewDecoration);
 
   // Resets the preset warning when a marking is manually changed (e.g. not using the preset dropdown)
   const actAndResetPresetWarning = (

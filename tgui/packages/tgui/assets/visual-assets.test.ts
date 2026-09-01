@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { inflateSync } from 'node:zlib';
@@ -14,6 +15,11 @@ const loaderStylePath = resolve(
   import.meta.dir,
   '../styles/visual-system/_loader.scss',
 );
+const previewAssetSha256 = {
+  32: 'ee6917af0ff19439d49bc2b78ab6fd728b8afcd15fdbc1dc09ac6f7dda589509',
+  64: 'fcd6a76226b976d46db03384be494abab068c395e23b8aa31db0098da3757b17',
+  96: '055907767962dae5f31a7e156f947a640bbcacc153e012db359138ec5c745c0a',
+} as const;
 
 function pngChunks(png: Buffer) {
   const chunks: Array<{ data: Buffer; type: string }> = [];
@@ -147,7 +153,7 @@ describe('MeridianOS visual assets', () => {
   it('ships exact-size transparent preview DMI states with bounded weight', () => {
     let combinedBytes = 0;
 
-    for (const size of [32, 64, 96]) {
+    for (const size of [32, 64, 96] as const) {
       const dmi = readFileSync(
         resolve(previewAssetRoot, `preview_decoration_${size}x${size}.dmi`),
       );
@@ -157,28 +163,48 @@ describe('MeridianOS visual assets', () => {
         '89504e470d0a1a0a',
       );
       expect(dmi.readUInt32BE(16)).toBe(size * 2);
-      expect(dmi.readUInt32BE(20)).toBe(size);
+      expect(dmi.readUInt32BE(20)).toBe(size * 2);
       expect(dmi[24]).toBe(8);
       expect(dmi[25]).toBe(6);
       expect(dmi.byteLength).toBeLessThan(25 * 1024);
+      // Pixel labels have almost no room for error. Treat the visually reviewed
+      // atlases as goldens so a missing glyph or overlapping callout cannot
+      // silently pass the structural checks below.
+      expect(createHash('sha256').update(dmi).digest('hex')).toBe(
+        previewAssetSha256[size],
+      );
 
       const description = readDmiDescription(dmi);
       expect(description).toContain(`\twidth = ${size}`);
       expect(description).toContain(`\theight = ${size}`);
-      expect(description.match(/^state = /gm)).toHaveLength(2);
-      expect(description).toContain('state = "standard"');
-      expect(description).toContain('state = "augmentation"');
+      expect(description.match(/^state = /gm)).toHaveLength(3);
+      expect(description).toContain('state = "augmentation_markings"');
+      expect(description).toContain('state = "augmentation_body_parts"');
+      expect(description).toContain('state = "augmentation_implants"');
 
-      const alpha = decodeRgbaAlpha(dmi, size * 2, size);
-      for (let state = 0; state < 2; state++) {
+      const sheetWidth = size * 2;
+      const alpha = decodeRgbaAlpha(dmi, sheetWidth, size * 2);
+      const stateCells = [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+      ] as const;
+      for (const [cellX, cellY] of stateCells) {
         const stateAlpha: number[] = [];
         for (let y = 0; y < size; y++) {
-          const start = y * size * 2 + state * size;
+          const start = (cellY * size + y) * sheetWidth + cellX * size;
           stateAlpha.push(...alpha.subarray(start, start + size));
         }
         expect(stateAlpha.some((value) => value === 0)).toBe(true);
         expect(stateAlpha.some((value) => value > 0)).toBe(true);
       }
+
+      const unusedCellAlpha: number[] = [];
+      for (let y = size; y < size * 2; y++) {
+        const start = y * sheetWidth + size;
+        unusedCellAlpha.push(...alpha.subarray(start, start + size));
+      }
+      expect(unusedCellAlpha.every((value) => value === 0)).toBe(true);
     }
 
     expect(combinedBytes).toBeLessThan(5 * 1024);

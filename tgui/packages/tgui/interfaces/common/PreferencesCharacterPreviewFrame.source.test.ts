@@ -2,32 +2,40 @@ import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const read = (path: string) => readFileSync(resolve(import.meta.dir, path), 'utf8');
+const read = (path: string) =>
+  readFileSync(resolve(import.meta.dir, path), 'utf8');
 
 describe('Preferences character preview integration', () => {
-  it('decorates only the visible Preferences previews', () => {
-    const visiblePages = [
+  it('keeps non-Augments previews plain and scopes each native state to an Augments tab', () => {
+    const plainPages = [
       '../PreferencesMenu/CharacterPreferences/MainPage.tsx',
       '../PreferencesMenu/CharacterPreferences/SpeciesPage.tsx',
       '../PreferencesMenu/CharacterPreferences/loadout/index.tsx',
     ];
 
-    for (const page of visiblePages) {
-      expect(read(page)).toContain('decoration="standard"');
+    for (const page of plainPages) {
+      expect(read(page)).not.toContain('decoration=');
     }
 
-    const limbs = read(
-      '../PreferencesMenu/CharacterPreferences/LimbsPage.tsx',
-    );
+    const limbs = read('../PreferencesMenu/CharacterPreferences/LimbsPage.tsx');
     expect(limbs).toContain('decoration={props.decoration}');
-    expect(limbs).toContain("'standard' | 'augmentation'");
+    expect(limbs).toContain("[AugmentsTab.Markings]: 'augmentation_markings'");
+    expect(limbs).toContain(
+      "[AugmentsTab.BodyParts]: 'augmentation_body_parts'",
+    );
+    expect(limbs).toContain(
+      "[AugmentsTab.InternalImplants]: 'augmentation_implants'",
+    );
+    expect(limbs).toContain(
+      'usePreferencesCharacterPreviewDecoration(act, previewDecoration)',
+    );
 
     const coordinator = read(
       '../PreferencesMenu/CharacterPreferences/index.tsx',
     );
-    expect(coordinator).toContain('previewDecoration="augmentation"');
-    expect(coordinator).toContain(
-      'usePreferencesCharacterPreviewDecoration(act, nativePreviewDecoration)',
+    expect(coordinator).not.toContain('previewDecoration=');
+    expect(coordinator).not.toContain(
+      'resolvePreferencesCharacterPreviewDecoration',
     );
 
     const quirks = read(
@@ -54,5 +62,24 @@ describe('Preferences character preview integration', () => {
     expect(previewStyles).not.toMatch(/\banimation\s*:/);
     expect(previewStyles).not.toMatch(/\bfilter\s*:/);
     expect(previewStyles).not.toMatch(/overflow:\s*hidden/);
+  });
+
+  it('allows preview cleanup even while character creation is disabled', () => {
+    const preferencesDm = read(
+      '../../../../../code/modules/client/preferences.dm',
+    );
+    const uiAct = preferencesDm.indexOf('/datum/preferences/ui_act');
+    const decorationAction = preferencesDm.indexOf(
+      'if(action == "set_preview_decoration")',
+      uiAct,
+    );
+    const creatorGate = preferencesDm.indexOf(
+      'SSlag_switch.measures[DISABLE_CREATOR]',
+      uiAct,
+    );
+
+    expect(uiAct).toBeGreaterThan(-1);
+    expect(decorationAction).toBeGreaterThan(uiAct);
+    expect(decorationAction).toBeLessThan(creatorGate);
   });
 });

@@ -1,15 +1,8 @@
-import { useAtomValue } from 'jotai';
 import { useMemo, useState } from 'react'; // NOVA EDIT CHANGE - ORIGINAL: import { useState } from 'react';
 import { useBackend } from 'tgui/backend';
 import { Dropdown, Stack } from 'tgui-core/components'; // NOVA EDIT CHANGE - ORIGINAL: import { Button, Stack } from 'tgui-core/components';
 import { exhaustiveCheck } from 'tgui-core/exhaustive';
 
-import { resolveMeridianTheme } from '../../../constants/theme';
-import { debugThemeAtom } from '../../../events/store';
-import {
-  resolvePreferencesCharacterPreviewDecoration,
-  usePreferencesCharacterPreviewDecoration,
-} from '../../common/PreferencesCharacterPreviewFrame';
 import { PageButton } from '../components/PageButton';
 import type { PreferencesMenuData } from '../types';
 import { AntagsPage } from './AntagsPage';
@@ -123,8 +116,6 @@ export function CharacterPreferenceWindow(props: {
   onAugmentsTabChange?: (tab: import('./LimbsPage').AugmentsTab | null) => void;
 }) {
   const { act, data } = useBackend<PreferencesMenuData>();
-  const debugTheme = useAtomValue(debugThemeAtom);
-  const [augmentsTab, setAugmentsTab] = useState<AugmentsTab | null>(null);
   const [currentPage, setCurrentPageRaw] = useState(Page.Main);
   const setCurrentPage = (page: Page) => {
     if (page !== Page.Limbs) props.onAugmentsTabChange?.(null);
@@ -132,22 +123,6 @@ export function CharacterPreferenceWindow(props: {
     document.querySelector('[style*="overflow"]')?.scrollTo(0, 0);
     setCurrentPageRaw(page);
   };
-  const resolvedTheme = resolveMeridianTheme(
-    'meridian',
-    process.env.NODE_ENV !== 'production' ? debugTheme : null,
-  ).base;
-  const pageHasVisiblePreview =
-    currentPage === Page.Main ||
-    currentPage === Page.Species ||
-    currentPage === Page.Loadout ||
-    currentPage === Page.Limbs;
-  const nativePreviewDecoration = resolvePreferencesCharacterPreviewDecoration({
-    hasVisiblePreview: pageHasVisiblePreview,
-    isAugmentsPage: currentPage === Page.Limbs,
-    resolvedTheme,
-  });
-
-  usePreferencesCharacterPreviewDecoration(act, nativePreviewDecoration);
   // NOVA EDIT ADDITION END
 
   let pageContents;
@@ -182,10 +157,8 @@ export function CharacterPreferenceWindow(props: {
     case Page.Limbs:
       pageContents = (
         <LimbsPage
-          previewDecoration="augmentation"
           onTabChange={(tab) => {
             props.onAugmentsTabChange?.(tab);
-            setAugmentsTab(tab);
           }}
         />
       );

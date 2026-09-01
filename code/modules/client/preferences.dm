@@ -238,6 +238,11 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	if (.)
 		return
 
+	// Window-local presentation state must remain clearable even when character
+	// creation is disabled after the Preferences window has already opened.
+	if(action == "set_preview_decoration")
+		return character_preview_view?.set_meridian_decoration(params["mode"])
+
 	if(SSlag_switch.measures[DISABLE_CREATOR] && action != "change_slot")
 		to_chat(usr, "The creator has been disabled. Please do not ahelp.")
 		return
@@ -262,8 +267,6 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 			character_preview_view.setDir(turn(character_preview_view.dir, backwards ? 90 : -90))
 			// NOVA EDIT END
 			return TRUE
-		if ("set_preview_decoration")
-			return character_preview_view?.set_meridian_decoration(params["mode"])
 		if ("set_preference")
 			var/requested_preference_key = params["preference"]
 			var/value = params["value"]
@@ -511,7 +514,12 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 /// Applies a finite, window-local preview decoration mode.
 /atom/movable/screen/map_view/char_preview/proc/set_meridian_decoration(requested_mode)
 	switch(requested_mode)
-		if(MERIDIAN_PREVIEW_DECORATION_NONE, MERIDIAN_PREVIEW_DECORATION_STANDARD, MERIDIAN_PREVIEW_DECORATION_AUGMENTATION)
+		if(
+			MERIDIAN_PREVIEW_DECORATION_NONE,
+			MERIDIAN_PREVIEW_DECORATION_AUGMENTATION_MARKINGS,
+			MERIDIAN_PREVIEW_DECORATION_AUGMENTATION_BODY_PARTS,
+			MERIDIAN_PREVIEW_DECORATION_AUGMENTATION_IMPLANTS,
+		)
 			if(meridian_decoration_mode == requested_mode)
 				return TRUE
 			meridian_decoration_mode = requested_mode

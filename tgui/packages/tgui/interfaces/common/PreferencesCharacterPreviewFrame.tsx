@@ -4,8 +4,9 @@ import type { sendAct } from '../../events/act';
 
 export const PREFERENCES_CHARACTER_PREVIEW_DECORATION_MODES = [
   'none',
-  'standard',
-  'augmentation',
+  'augmentation_markings',
+  'augmentation_body_parts',
+  'augmentation_implants',
 ] as const;
 
 export type PreferencesCharacterPreviewDecorationMode =
@@ -25,26 +26,19 @@ export const normalizePreferencesCharacterPreviewDecorationMode = (
 ): PreferencesCharacterPreviewDecorationMode =>
   isPreferencesCharacterPreviewDecorationMode(value) ? value : 'none';
 
-export const resolvePreferencesCharacterPreviewDecoration = (options: {
-  hasVisiblePreview: boolean;
-  isAugmentsPage: boolean;
-  resolvedTheme: string;
-}): PreferencesCharacterPreviewDecorationMode => {
-  if (!options.hasVisiblePreview) {
-    return 'none';
-  }
-  if (
-    options.isAugmentsPage &&
-    options.resolvedTheme === 'meridian_augmentation'
-  ) {
-    return 'augmentation';
-  }
-  return 'standard';
+const augmentationFrameCopy: Record<
+  Exclude<PreferencesCharacterPreviewDecorationMode, 'none'>,
+  { status: string; title: string }
+> = {
+  augmentation_markings: { status: 'REGION MAP', title: 'MARKINGS' },
+  augmentation_body_parts: { status: 'LIMB MAP', title: 'BODY PARTS' },
+  augmentation_implants: { status: 'INTERNAL MAP', title: 'IMPLANTS' },
 };
 
 /**
- * Synchronizes the finite, non-persistent decoration mode with DM. Mode changes
- * do not run cleanup; only destroying the owning Preferences window sends none.
+ * Synchronizes the finite, non-persistent decoration mode with DM. Changing
+ * tabs replaces the current state; leaving Augments or closing Preferences
+ * unmounts the owner and clears it.
  */
 export function usePreferencesCharacterPreviewDecoration(
   act: typeof sendAct,
@@ -87,8 +81,12 @@ export function PreferencesCharacterPreviewFrame(
     className,
     decoration,
     height,
-    status = decoration === 'augmentation' ? 'AUG LINKED' : 'LINK ACTIVE',
-    title = decoration === 'augmentation' ? 'AUGMENTATION' : 'CHARACTER',
+    status = decoration === 'none'
+      ? undefined
+      : augmentationFrameCopy[decoration].status,
+    title = decoration === 'none'
+      ? undefined
+      : augmentationFrameCopy[decoration].title,
     width,
   } = props;
   const style = { height, width } satisfies CSSProperties;
@@ -97,6 +95,8 @@ export function PreferencesCharacterPreviewFrame(
     <div
       className={classes([
         'PreferencesCharacterPreviewFrame',
+        decoration !== 'none' &&
+          'PreferencesCharacterPreviewFrame--augmentation',
         `PreferencesCharacterPreviewFrame--${decoration}`,
         className,
       ])}
