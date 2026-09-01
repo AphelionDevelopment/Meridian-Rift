@@ -6,7 +6,18 @@ import { playCollapseSound, playExpandSound, playSelectSound } from './audio';
 
 */ // APHELION EDIT REMOVAL END
 // APHELION EDIT ADDITION START - LOBBY_MENU_REWORK
-import { useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
+import {
+  type MeridianBaseThemeId,
+  normalizeMeridianBaseTheme,
+  resolveMeridianTheme,
+} from 'tgui/constants/theme';
+import { useRootThemeClasses } from 'tgui/hooks/useRootThemeClasses';
+import type {
+  LobbyTitleArtVariant,
+  LobbyTitleTexture,
+  LobbyTitleTreatment,
+} from 'tgui/interfaces/common/TitleArtwork';
 import { AphelionLobbyMenu } from './AphelionLobbyMenu';
 import type { StartupMessage } from './components/BootTerminal';
 import type { StationTrait } from './components/StationTraitList';
@@ -23,6 +34,7 @@ type StationTrait = {
 
 export type ServerState = {
   titleImageUrl: string;
+  titleImageTreatment: LobbyTitleTreatment; // APHELION EDIT ADDITION
   gamePhase: 'startup' | 'pregame' | 'setting_up' | 'playing' | 'postgame';
   isReady: boolean;
   canReady: boolean;
@@ -52,6 +64,16 @@ export type ServerState = {
   startupMessages: StartupMessage[];
   progressCurrent: number;
   progressTotal: number;
+  meridianTheme: MeridianBaseThemeId;
+  /// Neutral wordmark asset, composited over a picture in overlay treatment.
+  titleMarkUrl: string;
+  titleVariant: LobbyTitleArtVariant;
+  titleBezel: boolean;
+  titleTexture: LobbyTitleTexture;
+  titleClassicAlt: boolean;
+  /// Whether this client holds the rank that owns the title screen. The server
+  /// re-checks on every message; this only decides whether the menu renders.
+  canSetTitleScreen: boolean;
   // APHELION EDIT ADDITION END
 };
 
@@ -716,6 +738,10 @@ export function LobbyMenu() {
 export function LobbyMenu() {
   const [state, dispatch] = useReducer(lobbyReducer, DEFAULT_STATE);
   const serverState = state.serverState;
+  const meridianTheme = normalizeMeridianBaseTheme(serverState?.meridianTheme);
+  const resolvedTheme = resolveMeridianTheme({ preferred: meridianTheme });
+
+  useRootThemeClasses(resolvedTheme.classes);
 
   useEffect(() => {
     Byond.subscribeTo('init', (payload: ServerState) => {
@@ -734,10 +760,21 @@ export function LobbyMenu() {
     );
   }, [serverState?.transparent]);
 
+  const setMeridianTheme = useCallback((theme: MeridianBaseThemeId) => {
+    dispatch({ type: 'serverUpdate', payload: { meridianTheme: theme } });
+    Byond.sendMessage('setMeridianTheme', { theme });
+  }, []);
+
   if (!serverState) {
     return null;
   }
 
-  return <AphelionLobbyMenu serverState={serverState} />;
+  return (
+    <AphelionLobbyMenu
+      meridianTheme={meridianTheme}
+      onMeridianThemeChange={setMeridianTheme}
+      serverState={serverState}
+    />
+  );
 }
 // APHELION EDIT ADDITION END

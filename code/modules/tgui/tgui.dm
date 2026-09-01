@@ -253,18 +253,24 @@
 		custom_data,
 		with_data = should_update_data))
 
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 /**
- * private
- *
- * Package the data to send to the UI, as JSON.
- *
- * return list
+ * Send only the shared TGUI configuration after a client-level setting changes.
  */
-/datum/tgui/proc/get_payload(custom_data, with_data, with_static_data)
-	var/list/json_data = list()
-	json_data["config"] = list(
+/datum/tgui/proc/send_config_update()
+	if(!user.client || closing || !window)
+		return FALSE
+	window.send_message("update", list("config" = get_config()))
+	return TRUE
+
+/**
+ * Build the configuration shared by full, partial, and config-only updates.
+ */
+/datum/tgui/proc/get_config()
+	return list(
 		"title" = title,
 		"status" = status,
+		"meridianTheme" = user.client.prefs.read_preference(/datum/preference/choiced/meridian_theme), // APHELION EDIT ADDITION
 		"interface" = list(
 			"name" = interface,
 			"layout" = user.client.prefs.read_preference(src_object.layout_prefs_used),
@@ -286,6 +292,18 @@
 			"observer" = isobserver(user),
 		),
 	)
+// APHELION EDIT ADDITION END
+
+/**
+ * private
+ *
+ * Package the data to send to the UI, as JSON.
+ *
+ * return list
+ */
+/datum/tgui/proc/get_payload(custom_data, with_data, with_static_data)
+	var/list/json_data = list()
+	json_data["config"] = get_config() // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: json_data["config"] = list( ... ) inline; the list moved into get_config()
 	var/data = custom_data || with_data && src_object.ui_data(user)
 	SEND_SIGNAL(src_object, COMSIG_UI_DATA, user, data)
 	if(data)
@@ -376,6 +394,12 @@
 			LAZYINITLIST(src_object.tgui_shared_states)
 			src_object.tgui_shared_states[href_list["key"]] = href_list["value"]
 			SStgui.update_uis(src_object)
+		// APHELION EDIT ADDITION START - MERIDIAN_UI
+		if("setMeridianTheme")
+			if(!user.client?.set_meridian_theme(payload?["theme"]))
+				send_config_update()
+			return TRUE
+		// APHELION EDIT ADDITION END
 		if(TGUI_MANAGED_BYONDUI_TYPE_RENDER)
 			var/byond_ui_id = payload[TGUI_MANAGED_BYONDUI_PAYLOAD_ID]
 			if(!byond_ui_id || LAZYLEN(open_byondui_elements) > TGUI_MANAGED_BYONDUI_LIMIT)

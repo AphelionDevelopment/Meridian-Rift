@@ -1,0 +1,36 @@
+// THIS IS AN APHELION UI FILE
+@use 'sass:map';
+@use 'sass:list';
+
+// Private palette primitives. Components never consume these values directly;
+// `_themes.scss` promotes them to runtime semantic tokens.
+$-palettes: (
+  meridian: (#080d10, #0d171d, #18303a, #091217, #4b6b78, #e6eef1, #9fb2bc, #58d1c9, #7ae2db, #ffd84d),
+  meridian_pipboy: (#000300, #041004, #0b260d, #000000, #3e8f43, #baffb5, #79cf78, #4de05a, #8dff73, #c9ff8f),
+  meridian_vector: (#070d16, #0b1626, #162d49, #08111d, #426b96, #e7f1ff, #9cb3cf, #54a9ff, #7fc0ff, #b8f5ff),
+  meridian_foundry: (#100c08, #1b140c, #342615, #110d08, #8a6930, #fff0d3, #c6ac80, #f2ad3d, #ffc86b, #ffd98a),
+  meridian_diagnostic: (#050d09, #091611, #123020, #06100b, #3f7354, #e2f4e8, #98baa3, #4ad879, #79e79a, #b1ffd8),
+  meridian_highline: (#000000, #0b0d0f, #22282d, #000000, #f5f7f8, #ffffff, #d1dae0, #ffd84d, #ffe77f, #ffd84d),
+  meridian_synapse: (#0c0710, #160d1a, #301a38, #100912, #885094, #f4eaf6, #c0a7c5, #c477e8, #38d6cf, #c9bcff),
+  meridian_cyberpunk: (#090304, #0f0505, #1a090c, #050203, #c0152a, #f7edf0, #c9a9b0, #ff5267, #00e5d4, #74fff5),
+  meridian_augmentation: (#070203, #0f0505, #19080b, #050102, #c0152a, #eaf7f6, #a9c7c4, #00e5d4, #f04459, #70fff5),
+  meridian_afterlight: (#07090c, #11161c, #1b232b, #040608, #64727c, #f4ebdd, #b5aa9a, #f0a35a, #73bfc0, #ffe0a6),
+  meridian_relay: (#101314, #1b2021, #293032, #080a0b, #747e7a, #f3eedc, #bcb7a8, #f4a62a, #6fc5d2, #fff2a3),
+  meridian_bastion: (#100d0a, #1a1712, #262117, #080705, #7c6e50, #f0e7ce, #bdb18f, #d5a84c, #8c9f86, #ffe6a3),
+);
+
+@mixin emit($id) {
+  $palette: map.get($-palettes, $id);
+
+  --console-surface-canvas: #{list.nth($palette, 1)};
+  --console-surface-base: #{list.nth($palette, 2)};
+  --console-surface-raised: #{list.nth($palette, 3)};
+  --console-surface-recessed: #{list.nth($palette, 4)};
+  --console-surface-overlay: #{list.nth($palette, 3)};
+  --console-border-control: #{list.nth($palette, 5)};
+  --console-text-primary: #{list.nth($palette, 6)};
+  --console-text-secondary: #{list.nth($palette, 7)};
+  --console-interaction-accent: #{list.nth($palette, 8)};
+  --console-interaction-selected: #{list.nth($palette, 9)};
+  --console-interaction-focus: #{list.nth($palette, 10)};
+}

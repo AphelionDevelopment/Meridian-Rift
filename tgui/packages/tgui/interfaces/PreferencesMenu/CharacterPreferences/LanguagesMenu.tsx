@@ -23,37 +23,43 @@ export function KnownLanguage(props: { language: Language }) {
         }
       >
         <BlockQuote>{props.language.description}</BlockQuote>
-        <Button
-          color="bad"
-          icon="brain"
-          tooltip="Forgetting how to understand the language will also prevent you from speaking it."
-          onClick={() =>
-            act('forget_understand_language', {
-              language_name: props.language.name,
-            })
-          }
-        >
-          Forget
-        </Button>
-        <Button
-          color={props.language.speaking ? 'good' : 'default'}
-          icon={props.language.speaking ? 'comment' : 'comment-slash'}
-          tooltip={
-            props.language.speaking
-              ? 'Forget how to speak the language, but you keep your understanding of it.'
-              : 'Learn to speak the language.'
-          }
-          onClick={() =>
-            act(
-              props.language.speaking
-                ? 'forget_speak_language'
-                : 'speak_language',
-              { language_name: props.language.name },
-            )
-          }
-        >
-          Can {props.language.speaking ? 'speak' : 'only understand'}
-        </Button>
+        <Stack className="LanguagesMenu__actions" wrap>
+          <Stack.Item>
+            <Button
+              color="bad"
+              icon="brain"
+              tooltip="Forgetting how to understand the language will also prevent you from speaking it."
+              onClick={() =>
+                act('forget_understand_language', {
+                  language_name: props.language.name,
+                })
+              }
+            >
+              Forget
+            </Button>
+          </Stack.Item>
+          <Stack.Item>
+            <Button
+              color={props.language.speaking ? 'good' : 'default'}
+              icon={props.language.speaking ? 'comment' : 'comment-slash'}
+              tooltip={
+                props.language.speaking
+                  ? 'Forget how to speak the language, but you keep your understanding of it.'
+                  : 'Learn to speak the language.'
+              }
+              onClick={() =>
+                act(
+                  props.language.speaking
+                    ? 'forget_speak_language'
+                    : 'speak_language',
+                  { language_name: props.language.name },
+                )
+              }
+            >
+              Can {props.language.speaking ? 'speak' : 'only understand'}
+            </Button>
+          </Stack.Item>
+        </Stack>
       </Section>
     </Stack.Item>
   );
@@ -80,26 +86,34 @@ export function UnknownLanguage(props: { language: Language }) {
         }
       >
         <BlockQuote>{props.language.description}</BlockQuote>
-        <Button
-          color={!noPoints ? 'good' : 'grey'}
-          icon="comment"
-          tooltip="Learn to speak and understand the language."
-          onClick={() =>
-            act('speak_language', { language_name: props.language.name })
-          }
-        >
-          Speak
-        </Button>
-        <Button
-          color={!!noPoints && 'grey'}
-          icon="brain"
-          tooltip="Learn to understand the language but not speak it."
-          onClick={() =>
-            act('understand_language', { language_name: props.language.name })
-          }
-        >
-          Understand
-        </Button>
+        <Stack className="LanguagesMenu__actions" wrap>
+          <Stack.Item>
+            <Button
+              color={!noPoints ? 'good' : 'grey'}
+              icon="comment"
+              tooltip="Learn to speak and understand the language."
+              onClick={() =>
+                act('speak_language', { language_name: props.language.name })
+              }
+            >
+              Speak
+            </Button>
+          </Stack.Item>
+          <Stack.Item>
+            <Button
+              color={!!noPoints && 'grey'}
+              icon="brain"
+              tooltip="Learn to understand the language but not speak it."
+              onClick={() =>
+                act('understand_language', {
+                  language_name: props.language.name,
+                })
+              }
+            >
+              Understand
+            </Button>
+          </Stack.Item>
+        </Stack>
       </Section>
     </Stack.Item>
   );

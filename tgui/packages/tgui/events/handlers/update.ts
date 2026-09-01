@@ -45,6 +45,12 @@ function resume(payload: UpdatePayload): void {
       return;
     }
 
+    /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+    Byond.winset(Byond.windowId, {
+      'is-visible': true,
+    });
+    */ // APHELION EDIT REMOVAL END
+
     perf.mark('resume/finish');
 
     if (process.env.NODE_ENV !== 'production') {

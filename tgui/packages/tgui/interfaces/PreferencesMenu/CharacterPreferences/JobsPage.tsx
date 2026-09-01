@@ -21,6 +21,7 @@ import { useServerPrefs } from '../useServerPrefs';
 import { JobTitle } from './JobsAltTitles'; // NOVA EDIT ADDITION
 
 const PRIORITY_BUTTON_SIZE = '18px';
+const PRIORITY_BUTTON_ROLE = { role: 'button' } as const; // APHELION EDIT ADDITION
 
 type PriorityButtonProps = {
   name: string;
@@ -30,24 +31,46 @@ type PriorityButtonProps = {
   onClick: () => void;
 };
 
-function PriorityButton(props: PriorityButtonProps) {
+export function PriorityButton(props: PriorityButtonProps) { // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: function PriorityButton(props: PriorityButtonProps) {
   const className = `PreferencesMenu__Jobs__departments__priority`;
 
   return (
     <Stack.Item height={PRIORITY_BUTTON_SIZE} width={PRIORITY_BUTTON_SIZE}>
       <Button
+        {...PRIORITY_BUTTON_ROLE} // APHELION EDIT ADDITION
         className={classes([
           className,
           props.modifier && `${className}--${props.modifier}`,
+          props.enabled && `${className}--enabled`, // APHELION EDIT ADDITION
         ])}
+        /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
         color={props.enabled ? props.color : 'white'}
         circular
+        */ // APHELION EDIT REMOVAL END
+        /* APHELION EDIT ADDITION START - MERIDIAN_UI */
+        aria-label={props.name}
+        aria-pressed={props.enabled}
+        color={props.enabled ? props.color : 'transparent'}
+        /* APHELION EDIT ADDITION END */
         onClick={props.onClick}
         tooltip={props.name}
         tooltipPosition="bottom"
         height="100%"
         width="100%"
-      />
+        /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+        />
+        */ // APHELION EDIT REMOVAL END
+      > {/* APHELION EDIT ADDITION START - MERIDIAN_UI */}
+        {props.enabled && (
+          <span
+            aria-hidden="true"
+            className="PreferencesMenu__Jobs__departments__priorityMark"
+          >
+            ✓
+          </span>
+        )}
+      </Button>
+      {/* APHELION EDIT ADDITION END */}
     </Stack.Item>
   );
 }

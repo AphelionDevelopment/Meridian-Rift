@@ -10,7 +10,7 @@ export function MenuButton({
   assetMap,
   children,
 }: {
-  onClick?: (event: MouseEvent) => void;
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
   /** Flashes the button and adds arrow glyphs either side, used for "new poll available". */
   newPoll?: boolean;
   /** Inert - no hover/click behavior. Used for the latejoin queue counter and asset-gated buttons. */
@@ -27,9 +27,14 @@ export function MenuButton({
   const iconUrl = iconState ? assetMap?.[`${iconState}.png`] : undefined;
 
   return (
-    <div className={classes.join(' ')} onClick={disabled ? undefined : onClick}>
+    <button
+      className={classes.join(' ')}
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
       {!!iconUrl && <img className="menu_button__icon" src={iconUrl} alt="" />}
       {children}
-    </div>
+    </button>
   );
 }

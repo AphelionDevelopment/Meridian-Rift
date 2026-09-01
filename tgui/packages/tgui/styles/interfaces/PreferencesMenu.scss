@@ -10,6 +10,15 @@
 }
 
 .PreferencesMenu {
+  // APHELION EDIT ADDITION START - MERIDIAN_UI
+  &__LoadoutCategoryTabs > .Tab {
+    // Horizontal Tabs reserve the selection indicator below their content.
+    // Match that reserve above this two-line icon/label strip so it stays
+    // optically centered in every theme.
+    padding-top: var(--tab-indicator-size);
+  }
+
+  // APHELION EDIT ADDITION END
   &__Antags {
     &__antagSelection {
       gap: var(--space-l);
@@ -170,8 +179,16 @@
       }
 
       &__priority {
+        // APHELION EDIT ADDITION START - MERIDIAN_UI
+        box-sizing: border-box;
+        min-height: 0;
+        padding: 0;
+        line-height: 16px;
+        // APHELION EDIT ADDITION END
         border: var(--border-thickness-tiny) solid hsla(0, 0%, 0%, 0.3);
+        border-radius: 0; // APHELION EDIT ADDITION
 
+        /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
         &--off::after {
           content: '';
 
@@ -184,7 +201,39 @@
           transform: translateX(-50%) translateY(-50%) rotate(40deg);
           width: 2px;
         }
+        */ // APHELION EDIT REMOVAL END
+        // APHELION EDIT ADDITION START - MERIDIAN_UI
+        .Button__content {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+        }
+
+        .Button--icon {
+          min-width: 0;
+          margin: 0;
+          line-height: 1;
+        }
+        // APHELION EDIT ADDITION END
+
+        // APHELION EDIT ADDITION START - MERIDIAN_UI
+        &--enabled {
+          border-color: hsla(0, 0%, 100%, 0.72);
+        }
+        // APHELION EDIT ADDITION END
       }
+
+      // APHELION EDIT ADDITION START - MERIDIAN_UI
+      &__priorityMark {
+        display: block;
+        font-family: var(--font-family);
+        font-size: 12px;
+        font-weight: 900;
+        line-height: 16px;
+        text-align: center;
+      }
+      // APHELION EDIT ADDITION END
     }
 
     &__PriorityHeader {
@@ -195,6 +244,51 @@
     }
   }
 
+  // APHELION EDIT ADDITION START - MERIDIAN_UI
+  &__SpeciesList {
+    overflow-x: hidden;
+  }
+
+  &__SpeciesButton {
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 0;
+
+    .Button__content {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    .species64x64 {
+      margin: 0;
+    }
+  }
+
+  &__SpeciesDiet,
+  &__SpeciesDietGroup {
+    min-width: 0;
+    margin: 0;
+  }
+
+  &__SpeciesDietGroup {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  &__SpeciesPerk {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+
+    .Icon {
+      line-height: 1;
+    }
+  }
+
+  // APHELION EDIT ADDITION END
   &__Quirks {
     &__QuirkList {
       scrollbar-color: var(--color-grey) transparent;

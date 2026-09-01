@@ -1,17 +1,25 @@
 @use 'sass:meta';
-@use 'aphelion'; // APHELION EDIT ADDITION - LOBBY_MENU_REWORK - Aphelion's plain-text nav/terminal/notice/trait styling
 
 @include meta.load-css('~tgui/styles/reset');
 @include meta.load-css('~tgui-core/styles/base.scss');
 @include meta.load-css('~tgui-core/styles/colors.scss');
 @include meta.load-css('~tgui-core/styles/vars-components.scss');
+@include meta.load-css('~tgui-core/styles/components/Floating.scss'); // APHELION EDIT ADDITION
 @include meta.load-css('~tgui-core/styles/components/Tooltip.scss');
+// APHELION EDIT ADDITION START - MERIDIAN_UI
+@include meta.load-css('~tgui/styles/visual-system/display-font.scss');
+@include meta.load-css('~tgui/styles/visual-system/tokens.scss');
+@include meta.load-css('~tgui/styles/visual-system/themes.scss');
+@include meta.load-css('~tgui/styles/visual-system/theme-picker.scss');
+@include meta.load-css('~tgui/styles/visual-system/loader.scss');
+@include meta.load-css('./aphelion.scss');
+@include meta.load-css('~tgui/styles/visual-system/title-art.scss');
+@include meta.load-css('./title-art.scss');
+// APHELION EDIT ADDITION END
 
 .Tooltip {
   //font-family: 'Pixellari', monospace; // APHELION EDIT REMOVAL
-  // APHELION EDIT ADDITION START - LOBBY_MENU_REWORK
-  font-family: 'Fixedsys', monospace;
-  // APHELION EDIT ADDITION END
+  font-family: 'Fixedsys', monospace; // APHELION EDIT ADDITION
 }
 
 .Floating {

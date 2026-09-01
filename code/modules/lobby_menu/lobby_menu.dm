@@ -229,8 +229,9 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 	var/mob/dead/new_player/player = client?.mob
 	var/game_phase = get_game_phase()
 
+	/* // APHELION EDIT REMOVAL START - LOBBY_MENU_REWORK - Publish title state atomically.
 	window.send_message("init", list(
-		"titleImageUrl" = SSassets.transport.get_asset_url(SStitle.current_title_asset_name), // APHELION EDIT CHANGE - LOBBY_MENU_REWORK - ORIGINAL: "titleImageUrl" = SSassets.transport.get_asset_url(LOBBY_TITLE_ASSET_NAME),
+		"titleImageUrl" = SSassets.transport.get_asset_url(LOBBY_TITLE_ASSET_NAME),
 		"gamePhase" = game_phase,
 		"isReady" = istype(player) && player.ready == PLAYER_READY_TO_PLAY,
 		"canReady" = game_phase == "pregame" || game_phase == "startup",
@@ -251,7 +252,37 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 		"canPoll" = !is_guest_key(client?.key) && SSdbcore.Connect(),
 		"overflowJob" = null,
 		"transparent" = GLOB.lobby_background_transparent,
-		// APHELION EDIT ADDITION START - LOBBY_MENU_REWORK - Aphelion's own lobby content
+	))
+	*/ // APHELION EDIT REMOVAL END
+
+	// APHELION EDIT ADDITION START - LOBBY_MENU_REWORK - Publish title state atomically.
+	// Title image and per-screen presentation must arrive in the same initial
+	// message. A follow-up state message can precede React's initialized state
+	// and be dropped, leaving a rotated title with fallback presentation.
+	var/list/init_payload = SStitle.get_published_title_payload()
+
+	init_payload += list(
+		"gamePhase" = game_phase,
+		"isReady" = istype(player) && player.ready == PLAYER_READY_TO_PLAY,
+		"canReady" = game_phase == "pregame" || game_phase == "startup",
+		"canJoin" = game_phase == "setting_up" || game_phase == "playing",
+		"canObserve" = SSticker.current_state > GAME_STATE_STARTUP,
+		"assetsReady" = (SSearly_assets.initialized == INITIALIZATION_INNEW_REGULAR) || (SSatoms.initialized == INITIALIZATION_INNEW_REGULAR),
+		"countdown" = get_countdown_text(),
+		"playerCount" = length(GLOB.clients),
+		"readyCount" = SSticker.totalPlayersReady,
+		"adminReadyCount" = SSticker.total_admins_ready,
+		"adminCount" = length(GLOB.admins),
+		"mapName" = SSmapping.current_map?.map_name || "Loading...",
+		"shiftTime" = (SSticker.round_start_time == 0) ? "Pre-Game" : round_timestamp(),
+		"isAdmin" = !isnull(client?.holder),
+		"canSetTitleScreen" = can_set_title_screen(),
+		"isLocalhost" = client?.is_localhost(),
+		"stationTraits" = get_station_traits(),
+		"hasNewPoll" = FALSE,
+		"canPoll" = !is_guest_key(client?.key) && SSdbcore.Connect(),
+		"overflowJob" = null,
+		"transparent" = GLOB.lobby_background_transparent,
 		"notice" = SStitle.current_notice,
 		"latejoinQueue" = SStitle.get_latejoin_queue_count(),
 		"characterName" = uppertext(client?.prefs?.read_preference(/datum/preference/name/real_name)),
@@ -259,8 +290,10 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 		"startupMessages" = GLOB.startup_messages,
 		"progressCurrent" = world.timeofday - SStitle.progress_reference_time,
 		"progressTotal" = SStitle.average_completion_time,
-		// APHELION EDIT ADDITION END
-	))
+		"meridianTheme" = client?.prefs?.read_preference(/datum/preference/choiced/meridian_theme) || "meridian",
+	)
+	window.send_message("init", init_payload)
+	// APHELION EDIT ADDITION END
 
 	check_new_polls()
 
@@ -322,6 +355,14 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 	if(type == "ready")
 		send_init()
 		return TRUE
+	// APHELION EDIT ADDITION START - MERIDIAN_UI
+	if(type == "setMeridianTheme")
+		if(!client?.set_meridian_theme(payload?["theme"]))
+			send_update(list(
+				"meridianTheme" = client?.prefs?.read_preference(/datum/preference/choiced/meridian_theme) || "meridian",
+			))
+		return TRUE
+	// APHELION EDIT ADDITION END
 
 	if(type != "action")
 		return FALSE

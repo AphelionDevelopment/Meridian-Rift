@@ -93,15 +93,25 @@
  * For these to work, the defines must be defined in tgui/styles/themes/[define].scss
  */
 
+/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
 ///Default NtOS PDA theme
 #define PDA_THEME_NTOS "ntos"
+*/ // APHELION EDIT REMOVAL END
+// APHELION EDIT ADDITION START - MERIDIAN_UI
+///Default MeridianOS PDA theme.
+#define PDA_THEME_MERIDIAN "meridian"
+///Deprecated source-level alias. New devices use the canonical MeridianOS ID.
+#define PDA_THEME_NTOS PDA_THEME_MERIDIAN
+///Legacy serialized theme ID, retained for compatibility with existing data.
+#define PDA_THEME_NTOS_LEGACY "ntos"
+// APHELION EDIT ADDITION END
 #define PDA_THEME_DARK_MODE "ntos_darkmode"
 #define PDA_THEME_RETRO "ntOS95"
 #define PDA_THEME_SYNTH "ntos_synth"
 #define PDA_THEME_TERMINAL "ntos_terminal"
 #define PDA_THEME_BIRD "neutral"
 
-///Emagged/Syndicate NtOS (SyndiOS) PDA theme
+///Emagged/Syndicate PDA theme // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: ///Emagged/Syndicate NtOS (SyndiOS) PDA theme
 #define PDA_THEME_SYNDICATE "syndicate"
 
 //Maintenance-loot themes: you only need to get them once for them to be available on future rounds
@@ -125,24 +135,40 @@
 #define PDA_THEME_ID_ABDUCTOR "abductor"
 
 //Defines for the names of all the themes
+/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
 #define PDA_THEME_NTOS_NAME "NtOS"
 #define PDA_THEME_DARK_MODE_NAME "NtOS Dark Mode"
+*/ // APHELION EDIT REMOVAL END
+// APHELION EDIT ADDITION START - MERIDIAN_UI
+#define PDA_THEME_MERIDIAN_NAME "MeridianOS"
+///Deprecated source-level alias for the canonical MeridianOS display name.
+#define PDA_THEME_NTOS_NAME PDA_THEME_MERIDIAN_NAME
+#define PDA_THEME_DARK_MODE_NAME "NTOS Dark mode"
+// APHELION EDIT ADDITION END
 #define PDA_THEME_RETRO_NAME "Retro"
 #define PDA_THEME_SYNTH_NAME "Synth"
 #define PDA_THEME_TERMINAL_NAME "Terminal"
 #define PDA_THEME_SYNDICATE_NAME "Syndicate"
 #define PDA_THEME_CAT_NAME "Cat"
-#define PDA_THEME_LIGHT_MODE_NAME "NtOS Light Mode"
+#define PDA_THEME_LIGHT_MODE_NAME "MeridianOS Light Mode" // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: "NtOS Light Mode"
 #define PDA_THEME_SPOOKY_NAME "Eldritch"
 #define PDA_THEME_HACKERMAN_NAME "Hackerman"
 #define PDA_THEME_ROULETTE_NAME "Roulette Table"
 #define PDA_THEME_ABDUCTOR_NAME "Alien"
 #define PDA_THEME_BIRD_NAME "Bird"
 
+// APHELION EDIT ADDITION START - MERIDIAN_UI
+// Legacy serialized display names. These remain lookup-only and must not be
+// added to default_pda_themes, where they would become player-facing choices.
+#define PDA_THEME_NTOS_LEGACY_NAME "NtOS"
+#define PDA_THEME_DARK_MODE_LEGACY_NAME "NtOS Dark Mode"
+#define PDA_THEME_LIGHT_MODE_LEGACY_NAME "NtOS Light Mode"
+
+// APHELION EDIT ADDITION END
 
 ///List of PDA themes that are accessible to everyone by default.
 GLOBAL_LIST_INIT(default_pda_themes, list(
-	PDA_THEME_NTOS_NAME = PDA_THEME_NTOS,
+	PDA_THEME_MERIDIAN_NAME = PDA_THEME_MERIDIAN, // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: PDA_THEME_NTOS_NAME = PDA_THEME_NTOS,
 	PDA_THEME_DARK_MODE_NAME = PDA_THEME_DARK_MODE,
 	PDA_THEME_RETRO_NAME = PDA_THEME_RETRO,
 	PDA_THEME_SYNTH_NAME = PDA_THEME_SYNTH,
@@ -157,7 +183,7 @@ GLOBAL_LIST_INIT(default_pda_themes, list(
 
 ///List of PDA themes that are accessible to everyone by default.
 GLOBAL_LIST_INIT(pda_name_to_theme, list(
-	PDA_THEME_NTOS_NAME = PDA_THEME_NTOS,
+	PDA_THEME_MERIDIAN_NAME = PDA_THEME_MERIDIAN, // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: PDA_THEME_NTOS_NAME = PDA_THEME_NTOS,
 	PDA_THEME_DARK_MODE_NAME = PDA_THEME_DARK_MODE,
 	PDA_THEME_RETRO_NAME = PDA_THEME_RETRO,
 	PDA_THEME_SYNTH_NAME = PDA_THEME_SYNTH,
@@ -170,6 +196,12 @@ GLOBAL_LIST_INIT(pda_name_to_theme, list(
 	PDA_THEME_ROULETTE_NAME = PDA_THEME_ROULETTE,
 	PDA_THEME_ABDUCTOR_NAME = PDA_THEME_ABDUCTOR,
 	PDA_THEME_BIRD_NAME = PDA_THEME_BIRD,
+	// APHELION EDIT ADDITION START - MERIDIAN_UI
+	// Invisible compatibility aliases for previously saved preference values.
+	PDA_THEME_NTOS_LEGACY_NAME = PDA_THEME_MERIDIAN,
+	PDA_THEME_DARK_MODE_LEGACY_NAME = PDA_THEME_DARK_MODE,
+	PDA_THEME_LIGHT_MODE_LEGACY_NAME = PDA_THEME_LIGHT_MODE,
+	// APHELION EDIT ADDITION END
 ))
 
 ///List of unlockable PDA themes, keyed by their database ID.

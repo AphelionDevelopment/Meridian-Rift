@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'; // NOVA EDIT CHANGE - ORIGINAL: import { useState } from 'react';
+import { useMemo, useState } from 'react'; // NOVA EDIT CHANGE - ORIGINAL: import { useState } from 'react';
 import { useBackend } from 'tgui/backend';
 import { Dropdown, Stack } from 'tgui-core/components'; // NOVA EDIT CHANGE - ORIGINAL: import { Button, Stack } from 'tgui-core/components';
 import { exhaustiveCheck } from 'tgui-core/exhaustive';
@@ -116,7 +116,6 @@ export function CharacterPreferenceWindow(props: {
   onAugmentsTabChange?: (tab: import('./LimbsPage').AugmentsTab | null) => void;
 }) {
   const { act, data } = useBackend<PreferencesMenuData>();
-  const [augmentsTab, setAugmentsTab] = useState<AugmentsTab | null>(null);
   const [currentPage, setCurrentPageRaw] = useState(Page.Main);
   const setCurrentPage = (page: Page) => {
     if (page !== Page.Limbs) props.onAugmentsTabChange?.(null);
@@ -160,7 +159,6 @@ export function CharacterPreferenceWindow(props: {
         <LimbsPage
           onTabChange={(tab) => {
             props.onAugmentsTabChange?.(tab);
-            setAugmentsTab(tab);
           }}
         />
       );
