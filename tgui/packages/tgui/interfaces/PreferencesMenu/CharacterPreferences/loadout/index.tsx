@@ -473,6 +473,7 @@ function LoadoutPreviewSection() {
       <Stack vertical fill>
         <Stack.Item grow align="center">
           <CharacterPreview
+            decoration="standard"
             height="100%"
             width="240px"
             id={data.character_preview_view}

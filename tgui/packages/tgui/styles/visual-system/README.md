@@ -56,6 +56,11 @@ at 48/64/96/144px, three scaling factors, determinate checkpoints, and a manual
 reduced-motion freeze. Candidate A remains visibly provenance-gated until an
 auditable #21604950 source archive is acquired; see `LOADER_STUDY.md`.
 
+The Preferences character preview uses a hybrid browser/native frame and the
+geometry-ready lifecycle in `PREVIEW_INTEGRATION.md`. That document records the
+tiny-first-open root cause, A-F investigation, finite DM contract, original DMI
+pipeline, and the BYOND 516 stress matrix still required on a runtime host.
+
 ## Research translation
 
 The primary visual references are the supplied cyberpunk/FUI links, the

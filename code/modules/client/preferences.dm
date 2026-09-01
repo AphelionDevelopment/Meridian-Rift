@@ -262,6 +262,8 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 			character_preview_view.setDir(turn(character_preview_view.dir, backwards ? 90 : -90))
 			// NOVA EDIT END
 			return TRUE
+		if ("set_preview_decoration")
+			return character_preview_view?.set_meridian_decoration(params["mode"])
 		if ("set_preference")
 			var/requested_preference_key = params["preference"]
 			var/value = params["value"]
@@ -450,6 +452,8 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	var/image/canvas
 	var/last_canvas_size
 	var/last_canvas_state
+	/// Window-local presentation state. It is never written to preferences.
+	var/meridian_decoration_mode = MERIDIAN_PREVIEW_DECORATION_NONE
 	// NOVA EDIT ADDITION END
 
 /atom/movable/screen/map_view/char_preview/Initialize(mapload, datum/hud/hud_owner, datum/preferences/preferences)
@@ -501,11 +505,46 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	last_canvas_size = canvas_size
 	last_canvas_state = canvas_state
 
+	rebuild_meridian_canvas_overlays()
+	// NOVA EDIT ADDITION END
+
+/// Applies a finite, window-local preview decoration mode.
+/atom/movable/screen/map_view/char_preview/proc/set_meridian_decoration(requested_mode)
+	switch(requested_mode)
+		if(MERIDIAN_PREVIEW_DECORATION_NONE, MERIDIAN_PREVIEW_DECORATION_STANDARD, MERIDIAN_PREVIEW_DECORATION_AUGMENTATION)
+			if(meridian_decoration_mode == requested_mode)
+				return TRUE
+			meridian_decoration_mode = requested_mode
+			rebuild_meridian_canvas_overlays()
+			return TRUE
+
+	return FALSE
+
+/// Rebuilds the equal-size canvas stack in body-then-decoration order.
+/atom/movable/screen/map_view/char_preview/proc/rebuild_meridian_canvas_overlays()
+	if(isnull(canvas))
+		return
+
 	canvas.cut_overlays()
-	canvas.add_overlay(body.appearance)
+	if(!isnull(body))
+		canvas.add_overlay(body.appearance)
+
+	if(meridian_decoration_mode != MERIDIAN_PREVIEW_DECORATION_NONE)
+		var/decoration_icon
+		switch(last_canvas_size)
+			if(0)
+				decoration_icon = 'modular_nova/modules/character_preview_background/icons/preview_decoration_32x32.dmi'
+			if(1)
+				decoration_icon = 'modular_nova/modules/character_preview_background/icons/preview_decoration_64x64.dmi'
+			if(2)
+				decoration_icon = 'modular_nova/modules/character_preview_background/icons/preview_decoration_96x96.dmi'
+
+		if(decoration_icon)
+			var/image/decoration = image(decoration_icon, icon_state = meridian_decoration_mode)
+			decoration.mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+			canvas.add_overlay(decoration)
 
 	appearance = canvas.appearance
-	// NOVA EDIT ADDITION END
 /atom/movable/screen/map_view/char_preview/proc/create_body()
 	QDEL_NULL(body)
 

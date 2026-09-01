@@ -739,11 +739,19 @@ const CenterColumnExtras = (props: {
 };
 
 // The character preview section at the top of the center column
-const PreviewSection = (props: { id: string }) => (
+const PreviewSection = (props: {
+  decoration: 'standard' | 'augmentation';
+  id: string;
+}) => (
   <Section fill title="Character Preview" align="center">
     <Stack vertical fill>
       <Stack.Item grow align="center">
-        <CharacterPreview id={props.id} height="100%" width="280px" />
+        <CharacterPreview
+          decoration={props.decoration}
+          id={props.id}
+          height="100%"
+          width="280px"
+        />
       </Stack.Item>
       <Stack.Divider />
       <Stack.Item align="center">
@@ -762,9 +770,11 @@ export enum AugmentsTab {
 }
 
 export const LimbsPage = ({
+  previewDecoration = 'augmentation',
   onTabChange,
 }: {
   onTabChange?: (tab: AugmentsTab) => void;
+  previewDecoration?: 'standard' | 'augmentation';
 }) => {
   const { data, act } = useBackend<PreferencesMenuData>();
   const server_data = useServerPrefs()?.limbs_and_markings;
@@ -991,9 +1001,12 @@ export const LimbsPage = ({
                 {/* Preview: takes 45% of the column height */}
                 <Stack.Item
                   height="45%"
-                  style={{ overflow: 'hidden', position: 'relative' }}
+                  style={{ position: 'relative' }}
                 >
-                  <PreviewSection id={data.character_preview_view} />
+                  <PreviewSection
+                    decoration={previewDecoration}
+                    id={data.character_preview_view}
+                  />
                 </Stack.Item>
 
                 {/* Extras: anything rendering below the preview, takes remaining space */}

@@ -367,6 +367,7 @@ function SpeciesPageInner(props: SpeciesPageInnerProps) {
 
                   <Stack.Item width="30%">
                     <CharacterPreview
+                      decoration="standard"
                       id={data.character_preview_view}
                       height="100%"
                     />

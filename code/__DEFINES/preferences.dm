@@ -126,6 +126,11 @@
 /// Open the keybindings window
 #define PREFERENCE_TAB_KEYBINDINGS 2
 
+/// Non-persistent decoration modes accepted by the Preferences preview.
+#define MERIDIAN_PREVIEW_DECORATION_NONE "none"
+#define MERIDIAN_PREVIEW_DECORATION_STANDARD "standard"
+#define MERIDIAN_PREVIEW_DECORATION_AUGMENTATION "augmentation"
+
 /// These will be shown in the character sidebar, but at the bottom.
 #define PREFERENCE_CATEGORY_FEATURES "features"
 
