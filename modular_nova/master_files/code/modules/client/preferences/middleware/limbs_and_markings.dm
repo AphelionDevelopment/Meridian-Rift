@@ -164,7 +164,8 @@
 		))
 
 	// Internal implant slots
-	for(var/slot, preview_region in internal_augments_categories)
+	for(var/slot in internal_augments_categories)
+		var/preview_region = internal_augments_categories[slot]
 		// Build the implant options for this internal implants slot
 		var/list/internal_implants = internal_implant_slots[slot]
 		var/list/options = list(list(
