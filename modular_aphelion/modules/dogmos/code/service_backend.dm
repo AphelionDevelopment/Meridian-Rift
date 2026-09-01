@@ -694,19 +694,26 @@
 		return null
 	return resolved
 
-/** Advances one scope-local callback sequence after rejecting duplicate, missing, or reordered events. */
-/datum/controller/subsystem/dogmos/proc/consume_callback_sequence(list/batch, offset, list/next_sequence)
+/** Returns a caller-legible diagnostic when a callback does not match the next expected sequence. */
+/datum/controller/subsystem/dogmos/proc/callback_sequence_error(list/batch, offset, list/next_sequence)
 	if(length(batch) < offset + DOGMOS_CALLBACK_EVENT_FIELDS - 1)
-		CRASH("dogmosd returned a truncated callback event.")
+		return "Dogmos callback sequence at offset [offset] is truncated."
 	for(var/word_index in 1 to 4)
 		if(batch[offset + word_index - 1] != next_sequence[word_index])
-			CRASH("Dogmos callback sequence was duplicated, missing, or reordered.")
+			return "Dogmos callback sequence mismatch at offset [offset]: expected [next_sequence[1] || 0]:[next_sequence[2] || 0]:[next_sequence[3] || 0]:[next_sequence[4] || 0], received [batch[offset] || 0]:[batch[offset + 1] || 0]:[batch[offset + 2] || 0]:[batch[offset + 3] || 0]."
+	return null
+
+/** Advances one scope-local callback sequence after validating the current event. */
+/datum/controller/subsystem/dogmos/proc/consume_callback_sequence(list/batch, offset, list/next_sequence)
+	var/sequence_error = callback_sequence_error(batch, offset, next_sequence)
+	if(sequence_error)
+		return sequence_error
 	for(var/word_index in 1 to 4)
 		next_sequence[word_index]++
 		if(next_sequence[word_index] <= DOGMOS_PROCESS_WORD_MAX)
-			return
+			return null
 		next_sequence[word_index] = 0
-	CRASH("Dogmos callback sequence exhausted.")
+	return "Dogmos callback sequence exhausted after [batch[offset]]:[batch[offset + 1]]:[batch[offset + 2]]:[batch[offset + 3]]."
 
 /** Validates the flattened callback batch and returns its event count. */
 /datum/controller/subsystem/dogmos/proc/validate_callback_batch(list/batch, scope, list/transaction_words)
@@ -732,7 +739,10 @@
 
 /** Dispatches one non-reaction callback after validating sequence and turf generations. */
 /datum/controller/subsystem/dogmos/proc/dispatch_general_callback(list/batch, offset)
-	consume_callback_sequence(batch, offset, dogmos_next_callback_sequence)
+	var/sequence_error = consume_callback_sequence(batch, offset, dogmos_next_callback_sequence)
+	if(sequence_error)
+		stack_trace(sequence_error)
+		return FALSE
 	var/kind = batch[offset + DOGMOS_CALLBACK_KIND_FIELD]
 
 	// Reactions evaluated during turf-stage FDM processing (not a synchronous mixture.react()
@@ -741,7 +751,7 @@
 	// before the turf-only kind gate below ever tries to resolve_turf() them.
 	if(kind == DOGMOS_CALLBACK_REACTION_FINISHED || kind == DOGMOS_CALLBACK_REACTION_PROFILED || kind == DOGMOS_CALLBACK_RUN_DM_REACTION)
 		dispatch_general_reaction_callback(batch, offset, kind)
-		return
+		return TRUE
 
 	if(kind < DOGMOS_CALLBACK_PRESSURE_DIFFERENCE || kind > DOGMOS_CALLBACK_TURF_DESTRUCTION_REQUEST)
 		CRASH("Unexpected Dogmos callback kind [kind] during general callback processing.")
@@ -751,7 +761,7 @@
 	var/turf/subject = resolve_turf(subject_slot, subject_generation)
 	if(!subject)
 		record_stale_callback()
-		return
+		return TRUE
 
 	var/turf/target
 	if(kind == DOGMOS_CALLBACK_PRESSURE_DIFFERENCE || kind == DOGMOS_CALLBACK_FIRELOCK_CONSIDERATION)
@@ -760,7 +770,7 @@
 		target = resolve_turf(target_slot, target_generation)
 		if(!target)
 			record_stale_callback()
-			return
+			return TRUE
 
 	switch(kind)
 		if(DOGMOS_CALLBACK_PRESSURE_DIFFERENCE)
@@ -777,6 +787,7 @@
 			if(reason != DOGMOS_TURF_DESTRUCTION_SUPERCONDUCTIVE_HEAT)
 				CRASH("Dogmos requested unknown turf destruction reason [reason].")
 			subject.to_be_destroyed = TRUE
+	return TRUE
 
 /** Decodes a general reaction callback's exact mixture identity for fail-closed validation. */
 /datum/controller/subsystem/dogmos/proc/decode_general_reaction_subject(list/batch, offset)
@@ -857,7 +868,12 @@
 	var/returned = validate_callback_batch(dogmos_pending_callback_batch, DOGMOS_CALLBACK_SCOPE_GENERAL, list(0, 0, 0, 0))
 	while(dogmos_pending_callback_index < returned)
 		var/offset = DOGMOS_CALLBACK_EVENT_START + dogmos_pending_callback_index * DOGMOS_CALLBACK_EVENT_FIELDS
-		dispatch_general_callback(dogmos_pending_callback_batch, offset)
+		if(!dispatch_general_callback(dogmos_pending_callback_batch, offset))
+			dogmos_pending_callback_batch = null
+			dogmos_pending_callback_index = 0
+			dogmos_pending_service_callbacks = 0
+			SSair.dogmos_fail_closed_stage("callback sequence")
+			return
 		dogmos_pending_callback_index++
 	dogmos_pending_callback_batch = null
 	dogmos_pending_callback_index = 0
@@ -902,7 +918,9 @@
 			var/kind = batch[offset + DOGMOS_CALLBACK_KIND_FIELD]
 			if(kind != DOGMOS_CALLBACK_REACTION_FINISHED && kind != DOGMOS_CALLBACK_RUN_DM_REACTION && kind != DOGMOS_CALLBACK_REACTION_PROFILED)
 				CRASH("Unexpected Dogmos callback kind [kind] during direct reaction processing.")
-			consume_callback_sequence(batch, offset, next_sequence)
+			var/sequence_error = consume_callback_sequence(batch, offset, next_sequence)
+			if(sequence_error)
+				CRASH(sequence_error)
 
 			var/subject_slot = join_u32_words(batch[offset + DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD], batch[offset + DOGMOS_CALLBACK_SUBJECT_SLOT_FIELD + 1])
 			var/subject_generation = join_u32_words(batch[offset + DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD], batch[offset + DOGMOS_CALLBACK_SUBJECT_GENERATION_FIELD + 1])
@@ -1895,7 +1913,11 @@
 		if(TICK_DELTA_TO_MS(TICK_USAGE - start_tick_usage) >= time_budget_ms)
 			return TRUE
 		var/offset = DOGMOS_CALLBACK_EVENT_START + SSdogmos.dogmos_pending_callback_index * DOGMOS_CALLBACK_EVENT_FIELDS
-		SSdogmos.dispatch_general_callback(SSdogmos.dogmos_pending_callback_batch, offset)
+		if(!SSdogmos.dispatch_general_callback(SSdogmos.dogmos_pending_callback_batch, offset))
+			SSdogmos.dogmos_pending_callback_batch = null
+			SSdogmos.dogmos_pending_callback_index = 0
+			SSdogmos.dogmos_pending_service_callbacks = 0
+			return SSair.dogmos_fail_closed_stage("callback sequence")
 		SSdogmos.dogmos_pending_callback_index++
 
 	var/service_callbacks_remain = SSdogmos.dogmos_pending_service_callbacks

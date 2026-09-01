@@ -487,6 +487,23 @@
 	SSdogmos.dogmos_next_callback_sequence = original_sequence
 	SSdogmos.dogmos_stale_callback_count = original_stale_callbacks
 
+/** Verifies callback sequence mismatches are diagnosed without advancing the expected sequence. */
+/datum/unit_test/dogmos_service_callback_sequence_mismatch
+
+/datum/unit_test/dogmos_service_callback_sequence_mismatch/Run()
+	if(!hascall(SSdogmos, "callback_sequence_error"))
+		return Fail("Dogmos has no non-mutating callback sequence validator.", __FILE__, __LINE__)
+
+	var/list/expected_sequence = list(1, 0, 0, 0)
+	var/list/callback_batch = new/list(48)
+	var/offset = 13
+	callback_batch[offset] = 2
+	var/error_message = call(SSdogmos, "callback_sequence_error")(callback_batch, offset, expected_sequence)
+	if(error_message != "Dogmos callback sequence mismatch at offset 13: expected 1:0:0:0, received 2:0:0:0.")
+		return Fail("Dogmos returned an incomplete callback sequence diagnostic: [error_message]", __FILE__, __LINE__)
+	if(expected_sequence[1] != 1 || expected_sequence[2] || expected_sequence[3] || expected_sequence[4])
+		return Fail("Dogmos mutated the expected sequence while diagnosing a mismatch.", __FILE__, __LINE__)
+
 #define DOGMOS_TEST_CALLBACK_HEADER_FIELDS 12
 #define DOGMOS_TEST_CALLBACK_EVENT_FIELDS 36
 #define DOGMOS_TEST_CALLBACK_EVENT_START 13
