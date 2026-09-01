@@ -1,4 +1,4 @@
-#define DOGMOS_REQUIRED_PROTOCOL_VERSION 10
+#define DOGMOS_REQUIRED_PROTOCOL_VERSION 12
 #define DOGMOS_MAX_EXACT_INTEGER 16777216
 #define DOGMOS_PROCESS_METRICS_WORDS 28
 #define DOGMOS_PROCESS_METRICS_LAYOUT_VERSION 1
@@ -53,7 +53,7 @@
 #define DOGMOS_MIXTURE_SNAPSHOT_HEAT_CAPACITY 9
 #define DOGMOS_MIXTURE_SNAPSHOT_IMMUTABLE 10
 #define DOGMOS_MIXTURE_SNAPSHOT_GASES_START 11
-#define DOGMOS_MIXTURE_STATE_HEADER_FIELDS 6
+#define DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS (2 + DOGMOS_MIXTURE_SNAPSHOT_FIELDS)
 // Mirrors Rust's MINIMUM_MOLES_DELTA_TO_MOVE (world.rs) exactly, as its own constant rather than
 // reusing DM's similarly-named MINIMUM_MOLES_DELTA_TO_MOVE (atmos_core.dm) - that one is a
 // derived, independently-tunable formula (MOLES_CELLSTANDARD * MINIMUM_AIR_RATIO_TO_MOVE) that
@@ -148,6 +148,8 @@
 	var/list/dogmos_mixture_generations = list()
 	/// Reusable mixture slots released by lifecycle unregister.
 	var/list/dogmos_free_mixture_slots = list()
+	/// Mixture unregister records deferred until the committed-frontier topology barrier.
+	var/list/dogmos_pending_mixture_unregistrations = list()
 	/// Dense numeric gas id keyed by DM gas path and native string id.
 	var/list/dogmos_gas_ids = list()
 	/// Gas paths indexed by numeric gas id plus one.
@@ -193,8 +195,7 @@
 	var/list/dogmos_pending_turf_heat_adjacency = list()
 	/// Reverse index: turf slot (string) -> set of dogmos_pending_turf_heat_adjacency keys touching it.
 	var/list/dogmos_pending_turf_heat_adjacency_index = list()
-	/// Turfs whose boot-time adjacency pass bailed on an unregistered self or neighbor, keyed by
-	/// turf ref - retried once by finish_turf_registration_batch() after every turf has registered.
+	/// Turfs whose adjacency pass must be retried after startup registration or a runtime stage barrier.
 	var/list/dogmos_pending_adjacency_retry = list()
 	/// Whether one runtime adjacency queue is coalescing repeated turf updates.
 	var/runtime_topology_batching = FALSE
@@ -237,6 +238,9 @@
 	if(SSair?.dogmos_pending_frontier_epoch)
 		dogmos_runtime_topology_deferrals++
 		return FALSE
+	flush_pending_mixture_unregistrations()
+	if(!turf_registration_batching)
+		retry_pending_turf_adjacencies()
 	while(length(dogmos_pending_turf_lifecycle))
 		var/list/lifecycle_batch = list()
 		var/list/lifecycle_keys = list()
@@ -299,6 +303,36 @@
 			dogmos_runtime_topology_records += heat_adjacency_count
 			dogmos_runtime_topology_calls++
 	return TRUE
+
+/** Retires deferred mixture identities before applying dependent turf topology mutations. */
+/datum/controller/subsystem/dogmos/proc/flush_pending_mixture_unregistrations()
+	while(length(dogmos_pending_mixture_unregistrations))
+		var/list/lifecycle_batch = list()
+		var/list/retired_slots = list()
+		for(var/slot_key in dogmos_pending_mixture_unregistrations)
+			lifecycle_batch += dogmos_pending_mixture_unregistrations[slot_key]
+			retired_slots += text2num(slot_key)
+			if(length(retired_slots) >= DOGMOS_TURF_BATCH_OPERATIONS)
+				break
+		if(dogmos_mixture_lifecycle_batch(lifecycle_batch) != length(retired_slots))
+			CRASH("dogmosd rejected a deferred mixture unregistration batch.")
+		for(var/retired_slot in retired_slots)
+			dogmos_pending_mixture_unregistrations.Remove("[retired_slot]")
+			dogmos_free_mixture_slots += retired_slot
+
+/** Rebuilds deferred turf adjacency records from current DM state without nested flushing. */
+/datum/controller/subsystem/dogmos/proc/retry_pending_turf_adjacencies()
+	if(!length(dogmos_pending_adjacency_retry))
+		return
+	var/list/retry_turfs = dogmos_pending_adjacency_retry.Copy()
+	dogmos_pending_adjacency_retry.Cut()
+	var/original_runtime_batching = runtime_topology_batching
+	runtime_topology_batching = TRUE
+	for(var/turf/retry_turf as anything in retry_turfs)
+		if(!retry_turf)
+			continue
+		retry_turf.__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
+	runtime_topology_batching = original_runtime_batching
 
 /** Flushes a full startup turf batch before any wire payload can exceed its bound. */
 /datum/controller/subsystem/dogmos/proc/flush_full_turf_registration_batch()
@@ -370,11 +404,7 @@
 	// Every turf has now had its Initalize_Atmos() pass, so retry any turf whose own adjacency
 	// pass bailed earlier on an unregistered self or neighbor - both sides should be registered
 	// by now, so this is the last chance to pick up edges the slot-ordered boot walk dropped.
-	if(length(dogmos_pending_adjacency_retry))
-		var/list/retry_turfs = dogmos_pending_adjacency_retry.Copy()
-		dogmos_pending_adjacency_retry.Cut()
-		for(var/turf/retry_turf as anything in retry_turfs)
-			retry_turf.__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
+	retry_pending_turf_adjacencies()
 	if(!flush_turf_registration_batch())
 		CRASH("Dogmos startup turf mutations were blocked by an unexpected pending stage.")
 	turf_registration_batching = FALSE
@@ -417,12 +447,16 @@
 	if(!slot || registered_mixture?.reference != REF(mixture) || dogmos_mixture_generations[slot] != generation)
 		CRASH("Attempted to unregister stale Dogmos mixture identity [slot]:[generation].")
 
-	if(service_ready && dogmos_mixture_lifecycle_batch(list(DOGMOS_LIFECYCLE_UNREGISTER, slot, generation)) != 1)
-		CRASH("dogmosd rejected mixture unregistration for [slot]:[generation].")
+	if(service_ready)
+		if(SSair?.dogmos_pending_frontier_epoch)
+			dogmos_pending_mixture_unregistrations["[slot]"] = list(DOGMOS_LIFECYCLE_UNREGISTER, slot, generation)
+		else
+			if(dogmos_mixture_lifecycle_batch(list(DOGMOS_LIFECYCLE_UNREGISTER, slot, generation)) != 1)
+				CRASH("dogmosd rejected mixture unregistration for [slot]:[generation].")
+			dogmos_free_mixture_slots += slot
 
 	evict_mixture_snapshot_cache(slot, generation)
 	dogmos_mixture_slots[slot] = null
-	dogmos_free_mixture_slots += slot
 	mixture.dogmos_slot = null
 	mixture.dogmos_generation = null
 	mixture._extools_pointer_gasmixture = null
@@ -1096,7 +1130,7 @@
 /datum/gas_mixture/proc/dogmos_snapshot()
 	return SSdogmos.mixture_snapshot(dogmos_slot, dogmos_generation)
 
-/** Reconciles a pipenet's mixtures through one revision-checked native state batch.
+/** Reconciles a pipenet's mixtures through one service-owned native transaction.
  *
  * Arguments:
  * * gas_mixture_list - Candidate mixtures gathered from the pipenet and custom reconcilers.
@@ -1104,56 +1138,32 @@
 /proc/dogmos_reconcile_pipeline_mixtures(list/datum/gas_mixture/gas_mixture_list)
 	var/static/process_id = 0
 	process_id = WRAP_UID(process_id + 1)
-	var/gas_slots = DOGMOS_MIXTURE_SNAPSHOT_FIELDS - DOGMOS_MIXTURE_SNAPSHOT_GASES_START + 1
-	var/list/total_gases = new/list(gas_slots)
-	for(var/gas_index in 1 to gas_slots)
-		total_gases[gas_index] = 0
-
 	var/list/datum/gas_mixture/unique_mixtures = list()
-	var/list/mixture_snapshots = list()
-	var/total_thermal_energy = 0
-	var/total_heat_capacity = 0
-	var/volume_sum = 0
+	var/list/request_fields = list()
 	for(var/datum/gas_mixture/gas_mixture as anything in gas_mixture_list)
 		if(gas_mixture.pipeline_cycle == process_id)
 			continue
 		gas_mixture.pipeline_cycle = process_id
-		var/list/snapshot = gas_mixture.dogmos_snapshot()
 		unique_mixtures += gas_mixture
-		mixture_snapshots += list(snapshot)
-		var/heat_capacity = snapshot[DOGMOS_MIXTURE_SNAPSHOT_HEAT_CAPACITY]
-		volume_sum += snapshot[DOGMOS_MIXTURE_SNAPSHOT_VOLUME]
-		total_heat_capacity += heat_capacity
-		total_thermal_energy += snapshot[DOGMOS_MIXTURE_SNAPSHOT_TEMPERATURE] * heat_capacity
-		for(var/gas_index in 1 to gas_slots)
-			total_gases[gas_index] += snapshot[DOGMOS_MIXTURE_SNAPSHOT_GASES_START + gas_index - 1]
+		request_fields += gas_mixture.dogmos_slot
+		request_fields += gas_mixture.dogmos_generation
 
-	if(!volume_sum)
+	if(!length(unique_mixtures))
 		return
+	var/list/response_fields = dogmos_pipenet_reconcile(request_fields)
+	var/expected_response_fields = length(unique_mixtures) * DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS
+	if(!islist(response_fields) || length(response_fields) != expected_response_fields)
+		CRASH("dogmosd returned a malformed pipenet reconciliation response: got [islist(response_fields) ? length(response_fields) : "not a list"] fields, expected [expected_response_fields].")
 
-	var/equalized_temperature = total_heat_capacity ? max(TCMB, total_thermal_energy / total_heat_capacity) : TCMB
-	var/list/state_batch = list()
 	for(var/mixture_index in 1 to length(unique_mixtures))
 		var/datum/gas_mixture/gas_mixture = unique_mixtures[mixture_index]
-		var/list/snapshot = mixture_snapshots[mixture_index]
-		var/volume = snapshot[DOGMOS_MIXTURE_SNAPSHOT_VOLUME]
-		var/volume_ratio = volume / volume_sum
-		state_batch += list(
-			gas_mixture.dogmos_slot,
-			gas_mixture.dogmos_generation,
-			snapshot[DOGMOS_MIXTURE_SNAPSHOT_REVISION_LOW],
-			snapshot[DOGMOS_MIXTURE_SNAPSHOT_REVISION_HIGH],
-			equalized_temperature,
-			volume,
-		)
-		for(var/gas_index in 1 to gas_slots)
-			state_batch += total_gases[gas_index] * volume_ratio
-
-	var/record_fields = DOGMOS_MIXTURE_STATE_HEADER_FIELDS + gas_slots
-	var/expected_count = length(state_batch) / record_fields
-	if(dogmos_mixture_state_batch(state_batch) != expected_count)
-		CRASH("dogmosd rejected an atomic pipenet mixture-state batch.")
-	SSdogmos.invalidate_mixture_snapshot_epoch()
+		var/record_start = (mixture_index - 1) * DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS + 1
+		var/slot = response_fields[record_start]
+		var/generation = response_fields[record_start + 1]
+		if(slot != gas_mixture.dogmos_slot || generation != gas_mixture.dogmos_generation)
+			CRASH("dogmosd returned pipenet mixture [slot]:[generation] at index [mixture_index], expected [gas_mixture.dogmos_slot]:[gas_mixture.dogmos_generation].")
+		var/list/snapshot = response_fields.Copy(record_start + 2, record_start + DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS)
+		SSdogmos.store_mixture_snapshot_cache(slot, generation, snapshot)
 
 /// Returns the numeric gas id installed for a native string id.
 /datum/gas_mixture/proc/dogmos_gas_id(gas_id)
@@ -1458,6 +1468,17 @@
 	for(var/turf/open/active_turf as anything in active_turfs)
 		dogmos_committed_frontier[active_turf] = list(active_turf.dogmos_service_slot(), active_turf.dogmos_service_generation())
 
+/** Returns whether a committed frontier pair matches the turf's current service identity.
+ *
+ * Arguments:
+ * * active_turf - Turf whose current slot and generation are authoritative.
+ * * committed_pair - Previously committed slot and generation.
+ */
+/datum/controller/subsystem/air/proc/dogmos_frontier_pair_is_current(turf/open/active_turf, list/committed_pair)
+	return islist(committed_pair) && length(committed_pair) == 2 \
+		&& committed_pair[1] == active_turf.dogmos_service_slot() \
+		&& committed_pair[2] == active_turf.dogmos_service_generation()
+
 /** Publishes the current active-turf set to dogmosd. The first call bootstraps the frontier via
  * the full begin/append/commit path above; every later call diffs active_turfs against
  * dogmos_committed_frontier (the last-known-committed snapshot) and sends only the delta via the
@@ -1476,17 +1497,21 @@
 		active_set[active_turf] = TRUE
 
 	var/list/added = list()
-	for(var/turf/open/active_turf as anything in active_set)
-		if(!dogmos_committed_frontier[active_turf])
-			added += active_turf
-
-	// Removals must use the exact (slot, generation) pair captured when the turf was added, not
-	// its current identity - a turf's Dogmos registration generation can change while it sits in
-	// the frontier (e.g. adjacency/heat re-registration), and dogmosd's committed set still has
-	// the OLD pair. Recomputing the turf's current generation here would silently fail to match
-	// anything, leaving a ghost entry in dogmosd's frontier forever.
 	var/list/removed_pairs = list()
 	var/list/removed_turfs = list()
+	for(var/turf/open/active_turf as anything in active_set)
+		var/list/committed_pair = dogmos_committed_frontier[active_turf]
+		if(dogmos_frontier_pair_is_current(active_turf, committed_pair))
+			continue
+		added += active_turf
+		if(committed_pair)
+			removed_pairs += list(committed_pair)
+			removed_turfs += active_turf
+
+	// Removals must use the exact (slot, generation) pair captured when the turf was added, not
+	// its current identity. This includes active turfs whose generation changed in place: remove
+	// the committed pair before adding the replacement or dogmosd keeps processing the retired
+	// handle while DM incorrectly treats the turf reference as unchanged.
 	for(var/turf/open/committed_turf as anything in dogmos_committed_frontier)
 		if(!active_set[committed_turf])
 			removed_pairs += list(dogmos_committed_frontier[committed_turf])
@@ -1503,8 +1528,20 @@
 
 	if(dogmos_pending_frontier_epoch)
 		CRASH("Attempted to mutate the Dogmos frontier while a simulation cycle is pending.")
+	if(length(added))
+		var/original_runtime_batching = SSdogmos.runtime_topology_batching
+		SSdogmos.runtime_topology_batching = TRUE
+		for(var/turf/open/added_turf as anything in added)
+			added_turf.__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
+		SSdogmos.runtime_topology_batching = original_runtime_batching
 	if(!SSdogmos.flush_turf_registration_batch())
 		CRASH("Dogmos topology remained blocked before incremental frontier sync.")
+
+	if(length(removed_pairs))
+		dogmos_frontier_send_chunks(/proc/dogmos_frontier_remove, removed_pairs, "remove")
+		for(var/turf/open/removed_turf as anything in removed_turfs)
+			dogmos_committed_frontier -= removed_turf
+		dogmos_pending_frontier_epoch = dogmos_frontier_epoch.Copy()
 
 	if(length(added))
 		var/list/added_pairs = list()
@@ -1513,12 +1550,6 @@
 		dogmos_frontier_send_chunks(/proc/dogmos_frontier_add, added_pairs, "add")
 		for(var/index in 1 to length(added))
 			dogmos_committed_frontier[added[index]] = added_pairs[index]
-		dogmos_pending_frontier_epoch = dogmos_frontier_epoch.Copy()
-
-	if(length(removed_pairs))
-		dogmos_frontier_send_chunks(/proc/dogmos_frontier_remove, removed_pairs, "remove")
-		for(var/turf/open/removed_turf as anything in removed_turfs)
-			dogmos_committed_frontier -= removed_turf
 		dogmos_pending_frontier_epoch = dogmos_frontier_epoch.Copy()
 
 /** Sends one incremental frontier mutation (add or remove) to dogmosd in bounded chunks. Each
@@ -1790,6 +1821,9 @@
 		if(SSdogmos.turf_registration_batching)
 			SSdogmos.dogmos_pending_adjacency_retry[src] = TRUE
 		return
+	if(SSair?.dogmos_pending_frontier_epoch && !SSdogmos.turf_registration_batching)
+		SSdogmos.dogmos_pending_adjacency_retry[src] = TRUE
+		return
 
 	var/slot = dogmos_service_slot()
 	var/generation = dogmos_service_generation()
@@ -1799,7 +1833,9 @@
 		if(!neighbor)
 			continue
 		var/neighbor_slot = neighbor.dogmos_service_slot()
-		if((neighbor.init_air || isspaceturf(neighbor)) && (!SSdogmos.turf_registration_batching || !neighbor.dogmos_air_registration_is_current(isspaceturf(neighbor))))
+		if((neighbor.init_air || isspaceturf(neighbor)) \
+			&& ((!SSdogmos.turf_registration_batching && !SSdogmos.runtime_topology_batching) \
+				|| !neighbor.dogmos_air_registration_is_current(isspaceturf(neighbor))))
 			neighbor.register_dogmos_air()
 		if(isnull(neighbor.dogmos_registration_generation))
 			// Same as above, but the neighbor is the one not yet registered - retry this turf's
@@ -1962,7 +1998,7 @@
 #undef DOGMOS_MIXTURE_SNAPSHOT_HEAT_CAPACITY
 #undef DOGMOS_MIXTURE_SNAPSHOT_IMMUTABLE
 #undef DOGMOS_MIXTURE_SNAPSHOT_GASES_START
-#undef DOGMOS_MIXTURE_STATE_HEADER_FIELDS
+#undef DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS
 #undef DOGMOS_LIFECYCLE_REGISTER
 #undef DOGMOS_LIFECYCLE_UNREGISTER
 #undef DOGMOS_RESPONSE_APPLIED

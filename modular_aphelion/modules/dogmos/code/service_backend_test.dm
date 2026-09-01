@@ -5,8 +5,13 @@
 #define DOGMOS_TEST_STAGE_EQUALIZE 2
 #define DOGMOS_TEST_STAGE_TURF_HEAT 3
 #define DOGMOS_TEST_STAGE_REACTIONS 5
+#define DOGMOS_TEST_STAGE_BOUNDARY_ATTEMPTS 100
 #define DOGMOS_TEST_STAGE_RESPONSE_FIELDS 13
+#define DOGMOS_TEST_STAGE_CHUNK_LIMIT 4096
 #define DOGMOS_PIPELINE_TEST_EPSILON 0.001
+#define DOGMOS_TEST_OVERSIZED_PIPELINE_MIXTURES 228
+#define DOGMOS_TEST_IDLE_MC_SETTLE_TIME 30 SECONDS
+#define DOGMOS_TEST_IDLE_MC_COST_LIMIT 2
 
 /** Verifies startup identity mismatches report exact expected and actual values. */
 /datum/unit_test/dogmos_service_contract_identity
@@ -76,6 +81,14 @@
 /datum/unit_test/dogmos_service_mixture_identity/Run()
 	if(!SSdogmos.service_ready)
 		return Fail("dogmosd did not pass startup identity and health checks.", __FILE__, __LINE__)
+	var/reached_stage_boundary = FALSE
+	for(var/attempt in 1 to DOGMOS_TEST_STAGE_BOUNDARY_ATTEMPTS)
+		if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
+			reached_stage_boundary = TRUE
+			break
+		sleep(SSair.wait)
+	if(!reached_stage_boundary)
+		return Fail("Dogmos did not reach a safe stage boundary before the mixture identity test.", __FILE__, __LINE__)
 	var/datum/gas_mixture/first = new(CELL_VOLUME)
 	var/first_slot = first.dogmos_slot
 	var/first_generation = first.dogmos_generation
@@ -181,7 +194,7 @@
 	SSdogmos.reset_mixture_snapshot_cache()
 	return ..()
 
-/** Verifies pipenet reconciliation uses one atomic state batch while conserving mixture state. */
+/** Verifies pipenet reconciliation caches one native response while conserving mixture state. */
 /datum/unit_test/dogmos_service_pipeline_batch_reconcile
 	/// Pipeline released during teardown.
 	var/datum/pipeline/test_pipeline
@@ -210,8 +223,10 @@
 	var/invalidations_before = SSdogmos.dogmos_mixture_cache_epoch_invalidations
 	test_pipeline.reconcile_air()
 
-	if(SSdogmos.dogmos_mixture_cache_epoch_invalidations != invalidations_before + 1)
-		return Fail("Pipenet reconciliation did not invalidate the mixture snapshot cache exactly once.", __FILE__, __LINE__)
+	if(SSdogmos.dogmos_mixture_cache_epoch_invalidations != invalidations_before)
+		return Fail("Pipenet reconciliation invalidated the entire mixture snapshot cache.", __FILE__, __LINE__)
+	if(!SSdogmos.lookup_mixture_snapshot_cache(first.dogmos_slot, first.dogmos_generation) || !SSdogmos.lookup_mixture_snapshot_cache(second.dogmos_slot, second.dogmos_generation))
+		return Fail("Pipenet reconciliation did not cache both returned service snapshots.", __FILE__, __LINE__)
 	var/first_oxygen = first.get_moles(/datum/gas/oxygen)
 	var/second_oxygen = second.get_moles(/datum/gas/oxygen)
 	if(abs(first_oxygen - 1) > DOGMOS_PIPELINE_TEST_EPSILON || abs(second_oxygen - 3) > DOGMOS_PIPELINE_TEST_EPSILON)
@@ -229,6 +244,40 @@
 	QDEL_NULL(second)
 	return ..()
 
+/** Verifies pipenet reconciliation remains atomic beyond one control-frame payload. */
+/datum/unit_test/dogmos_service_oversized_pipeline_batch_reconcile
+	/// Pipeline released during teardown.
+	var/datum/pipeline/test_pipeline
+	/// Service-backed mixtures released during teardown.
+	var/list/test_mixtures
+
+/datum/unit_test/dogmos_service_oversized_pipeline_batch_reconcile/Run()
+	if(!SSdogmos.service_ready)
+		return Fail("dogmosd did not pass startup identity and health checks.", __FILE__, __LINE__)
+
+	test_mixtures = list()
+	for(var/mixture_index in 1 to DOGMOS_TEST_OVERSIZED_PIPELINE_MIXTURES)
+		var/datum/gas_mixture/mixture = new(100)
+		mixture.set_temperature(300)
+		mixture.set_moles(/datum/gas/oxygen, 1)
+		test_mixtures += mixture
+
+	test_pipeline = new
+	test_pipeline.set_air(test_mixtures[1])
+	test_pipeline.other_airs = test_mixtures.Copy(2)
+	test_pipeline.reconcile_air()
+
+	if(!SSdogmos.service_ready || !dogmos_service_health())
+		return Fail("dogmosd became unavailable while reconciling an oversized pipeline batch.", __FILE__, __LINE__)
+	for(var/datum/gas_mixture/mixture as anything in test_mixtures)
+		if(abs(mixture.get_moles(/datum/gas/oxygen) - 1) > DOGMOS_PIPELINE_TEST_EPSILON || abs(mixture.return_temperature() - 300) > DOGMOS_PIPELINE_TEST_EPSILON)
+			return Fail("Oversized pipenet reconciliation changed an equivalent mixture's conserved state.", __FILE__, __LINE__)
+
+/datum/unit_test/dogmos_service_oversized_pipeline_batch_reconcile/Destroy()
+	QDEL_NULL(test_pipeline)
+	QDEL_LIST(test_mixtures)
+	return ..()
+
 /** Verifies non-conducting turfs remain absent from the service heat graph. */
 /datum/unit_test/dogmos_service_turf_heat_absence
 	/// Turf restored after the assertion run.
@@ -241,6 +290,14 @@
 /datum/unit_test/dogmos_service_turf_heat_absence/Run()
 	if(!SSdogmos.service_ready)
 		return Fail("dogmosd did not pass startup identity and health checks.", __FILE__, __LINE__)
+	var/reached_stage_boundary = FALSE
+	for(var/attempt in 1 to 20)
+		if(!SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
+			reached_stage_boundary = TRUE
+			break
+		sleep(SSair.wait)
+	if(!reached_stage_boundary)
+		return Fail("Dogmos did not reach a safe stage boundary before the turf heat absence test.", __FILE__, __LINE__)
 	target = run_loc_floor_bottom_left
 	original_thermal_conductivity = target.thermal_conductivity
 	original_heat_capacity = target.heat_capacity
@@ -278,6 +335,14 @@
 /datum/unit_test/dogmos_service_turf_batching/Run()
 	if(!SSdogmos.service_ready)
 		return Fail("dogmosd did not pass startup identity and health checks.", __FILE__, __LINE__)
+	var/reached_stage_boundary = FALSE
+	for(var/attempt in 1 to 20)
+		if(!SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
+			reached_stage_boundary = TRUE
+			break
+		sleep(SSair.wait)
+	if(!reached_stage_boundary)
+		return Fail("Dogmos did not reach a safe stage boundary before the turf batching test.", __FILE__, __LINE__)
 	target = run_loc_floor_bottom_left
 	original_thermal_conductivity = target.thermal_conductivity
 	original_heat_capacity = target.heat_capacity
@@ -553,6 +618,58 @@
 	if(deferrals_after != deferrals_before + 1)
 		return Fail("Dogmos did not count a committed-frontier topology deferral.", __FILE__, __LINE__)
 
+/** Verifies mixture slots remain retired until the committed-frontier topology barrier. */
+/datum/unit_test/dogmos_service_mixture_retirement_stage_barrier
+	/// Mixture retired while the committed frontier is pending.
+	var/datum/gas_mixture/retired_mixture
+	/// Mixture used to detect premature slot reuse.
+	var/datum/gas_mixture/replacement_mixture
+
+/datum/unit_test/dogmos_service_mixture_retirement_stage_barrier/Run()
+	var/reached_stage_boundary = FALSE
+	for(var/attempt in 1 to DOGMOS_TEST_STAGE_BOUNDARY_ATTEMPTS)
+		if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
+			reached_stage_boundary = TRUE
+			break
+		sleep(SSair.wait)
+	if(!reached_stage_boundary)
+		return Fail("Dogmos did not reach a safe stage boundary before the mixture retirement test.", __FILE__, __LINE__)
+
+	retired_mixture = new(CELL_VOLUME)
+	var/retired_slot = retired_mixture.dogmos_slot
+	SSair.dogmos_pending_frontier_epoch = list(1, 0, 0, 0)
+	retired_mixture.__gasmixture_unregister()
+	replacement_mixture = new(CELL_VOLUME)
+	var/reused_pending_slot = replacement_mixture.dogmos_slot == retired_slot
+	SSair.dogmos_pending_frontier_epoch = null
+	SSdogmos.flush_turf_registration_batch()
+	var/released_at_barrier = SSdogmos.dogmos_free_mixture_slots.Find(retired_slot)
+	if(reused_pending_slot)
+		return Fail("Dogmos reused a retired mixture slot while a committed frontier remained pending.", __FILE__, __LINE__)
+	if(!released_at_barrier)
+		return Fail("Dogmos did not release a retired mixture slot at the committed-frontier topology barrier.", __FILE__, __LINE__)
+
+/datum/unit_test/dogmos_service_mixture_retirement_stage_barrier/Destroy()
+	SSair.dogmos_pending_frontier_epoch = null
+	SSdogmos.flush_turf_registration_batch()
+	QDEL_NULL(retired_mixture)
+	QDEL_NULL(replacement_mixture)
+	return ..()
+
+/** Verifies frontier identity includes the turf generation, not only the DM turf reference. */
+/datum/unit_test/dogmos_service_frontier_generation_identity
+
+/datum/unit_test/dogmos_service_frontier_generation_identity/Run()
+	var/turf/open/target = run_loc_floor_bottom_left
+	if(!istype(target) || isnull(target.dogmos_registration_generation))
+		return Fail("The Dogmos frontier identity test requires a registered open turf.", __FILE__, __LINE__)
+	var/list/current_pair = list(target.dogmos_service_slot(), target.dogmos_service_generation())
+	if(!SSair.dogmos_frontier_pair_is_current(target, current_pair))
+		return Fail("Dogmos rejected the turf's current frontier identity.", __FILE__, __LINE__)
+	var/list/stale_pair = list(current_pair[1], current_pair[2] + 1)
+	if(SSair.dogmos_frontier_pair_is_current(target, stale_pair))
+		return Fail("Dogmos treated a mismatched turf generation as a current frontier identity.", __FILE__, __LINE__)
+
 /** Verifies an exhausted MC budget returns control without sleeping inside SSair. */
 /datum/unit_test/dogmos_service_stage_budget_progress
 
@@ -578,27 +695,35 @@
 /datum/unit_test/dogmos_service_fdm_multi_pass
 
 /datum/unit_test/dogmos_service_fdm_multi_pass/Run()
-	if(!isnull(SSair.dogmos_pending_stage))
-		return Fail("Dogmos began the FDM multi-pass test with a service stage already pending.", __FILE__, __LINE__)
+	var/reached_stage_boundary = FALSE
+	for(var/attempt in 1 to DOGMOS_TEST_STAGE_BOUNDARY_ATTEMPTS)
+		if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
+			reached_stage_boundary = TRUE
+			break
+		sleep(SSair.wait)
+	if(!reached_stage_boundary)
+		return Fail("Dogmos did not reach a safe stage boundary before the FDM multi-pass test.", __FILE__, __LINE__)
 	var/original_share_max_steps = SSair.share_max_steps
 	var/original_fdm_steps_completed = SSair.dogmos_fdm_steps_completed
 	SSair.share_max_steps = 4
 	SSair.dogmos_fdm_steps_completed = 0
 	var/pending = TRUE
 	var/chunks = 0
-	while(pending && chunks < 20)
+	while(pending && chunks < DOGMOS_TEST_STAGE_CHUNK_LIMIT)
 		pending = SSair.process_turfs_auxtools(100)
 		chunks++
 	var/completed_steps = SSair.dogmos_fdm_steps_completed
 
-	for(var/stage in list(DOGMOS_TEST_STAGE_REACTIONS, DOGMOS_TEST_STAGE_EXCITED_GROUPS, DOGMOS_TEST_STAGE_EQUALIZE, DOGMOS_TEST_STAGE_TURF_HEAT))
-		var/stage_pending = TRUE
-		var/stage_chunks = 0
-		while(stage_pending && stage_chunks < 20)
-			stage_pending = SSair.dogmos_run_stage(stage, 100)
-			stage_chunks++
-		if(stage_pending)
-			pending = TRUE
+	if(!pending)
+		for(var/stage in list(DOGMOS_TEST_STAGE_REACTIONS, DOGMOS_TEST_STAGE_EXCITED_GROUPS, DOGMOS_TEST_STAGE_EQUALIZE, DOGMOS_TEST_STAGE_TURF_HEAT))
+			var/stage_pending = TRUE
+			var/stage_chunks = 0
+			while(stage_pending && stage_chunks < DOGMOS_TEST_STAGE_CHUNK_LIMIT)
+				stage_pending = SSair.dogmos_run_stage(stage, 100)
+				stage_chunks++
+			if(stage_pending)
+				pending = TRUE
+				break
 	SSair.dogmos_pending_frontier_epoch = null
 
 	SSair.share_max_steps = original_share_max_steps
@@ -685,16 +810,298 @@
 	if(SSair.times_fired <= initial_fire_count)
 		return Fail("Dogmos did not allow SSair to complete an idle cycle within 30 seconds.", __FILE__, __LINE__)
 
+/** Verifies idle Atmospherics MC cost after the first 30 seconds of a shift. */
+/datum/unit_test/dogmos_service_idle_mc_budget
+
+/datum/unit_test/dogmos_service_idle_mc_budget/Run()
+	if(!SSticker.HasRoundStarted())
+		return Fail("The idle Atmospherics MC budget test requires a started shift.", __FILE__, __LINE__)
+	var/sample_time = SSticker.round_start_time + DOGMOS_TEST_IDLE_MC_SETTLE_TIME
+	if(world.time < sample_time)
+		sleep(sample_time - world.time)
+	var/initial_fire_count = SSair.times_fired
+	var/deadline = world.time + 10 SECONDS
+	while(SSair.times_fired <= initial_fire_count && world.time < deadline)
+		sleep(1 SECONDS)
+	if(SSair.times_fired <= initial_fire_count)
+		return Fail("Atmospherics did not complete a measurement cycle after the idle settle window.", __FILE__, __LINE__)
+
+	var/list/type_counts = list()
+	var/list/type_on_counts = list()
+	var/list/type_operational_counts = list()
+	var/list/type_costs = list()
+	for(var/datum/processing_entry as anything in SSair.atmos_machinery)
+		if(!ismachinery(processing_entry))
+			continue
+		var/obj/machinery/machine = processing_entry
+		var/type_key = "[machine.type]"
+		type_counts[type_key] = (type_counts[type_key] || 0) + 1
+		type_operational_counts[type_key] = (type_operational_counts[type_key] || 0) + machine.is_operational
+		type_costs[type_key] = (type_costs[type_key] || 0) + (SSair.kennel_machine_cost_ewma[REF(machine)] || 0)
+		if(istype(machine, /obj/machinery/atmospherics))
+			var/obj/machinery/atmospherics/atmos_machine = machine
+			type_on_counts[type_key] = (type_on_counts[type_key] || 0) + atmos_machine.on
+	var/profile_summary = ""
+	for(var/recorded_type in type_counts)
+		profile_summary += " [recorded_type]:count=[type_counts[recorded_type]],on=[type_on_counts[recorded_type] || 0],operational=[type_operational_counts[recorded_type] || 0],kennel_ms=[type_costs[recorded_type] || 0];"
+	var/dirty_networks = 0
+	var/dirty_network_mixtures = 0
+	var/largest_dirty_network = 0
+	for(var/datum/pipeline/network as anything in SSair.networks)
+		if(!network.update || network.building)
+			continue
+		dirty_networks++
+		var/network_mixtures = length(network.other_airs) + 1
+		dirty_network_mixtures += network_mixtures
+		largest_dirty_network = max(largest_dirty_network, network_mixtures)
+	if(SSair.cost > DOGMOS_TEST_IDLE_MC_COST_LIMIT)
+		return Fail("Idle Atmospherics MC cost [SSair.cost]ms exceeded [DOGMOS_TEST_IDLE_MC_COST_LIMIT]ms after 30 seconds into the shift. Pipenets: cost=[SSair.cost_pipenets]ms total=[length(SSair.networks)] dirty=[dirty_networks] dirty_mixtures=[dirty_network_mixtures] largest_dirty=[largest_dirty_network] reconciled=[SSair.dogmos_pipenets_reconciled] reconciled_mixtures=[SSair.dogmos_pipenet_mixtures_reconciled]. Breakdown:[profile_summary]", __FILE__, __LINE__)
+
+/** Verifies a dirty pipeline wakes an attached dormant atmosphere machine. */
+/datum/unit_test/dogmos_idle_machinery_pipeline_wake
+	/// Pipeline released during teardown.
+	var/datum/pipeline/test_pipeline
+	/// Pipeline-owned mixture released during teardown.
+	var/datum/gas_mixture/pipeline_air
+
+/datum/unit_test/dogmos_idle_machinery_pipeline_wake/Run()
+	var/obj/machinery/atmospherics/components/binary/pump/test_pump = allocate(/obj/machinery/atmospherics/components/binary/pump)
+	SSair.stop_processing_machine(test_pump)
+	test_pipeline = new
+	pipeline_air = new(200)
+	test_pipeline.set_air(pipeline_air)
+	test_pipeline.other_atmos_machines |= test_pump
+	test_pipeline.update = TRUE
+	test_pipeline.process()
+	if(!(test_pump in SSair.atmos_machinery))
+		return Fail("A dirty pipeline did not wake its attached dormant atmosphere machine.", __FILE__, __LINE__)
+
+/datum/unit_test/dogmos_idle_machinery_pipeline_wake/Destroy()
+	test_pipeline?.other_atmos_machines.Cut()
+	QDEL_NULL(test_pipeline)
+	QDEL_NULL(pipeline_air)
+	return ..()
+
+/** Verifies component gas is preserved when its node outlives its destroyed pipenet. */
+/datum/unit_test/dogmos_component_relocates_air_without_parent
+	/// Destination mixture released during teardown.
+	var/datum/gas_mixture/released_air
+
+/datum/unit_test/dogmos_component_relocates_air_without_parent/Run()
+	var/obj/machinery/atmospherics/components/unary/vent_pump/test_component = allocate(/obj/machinery/atmospherics/components/unary/vent_pump, run_loc_floor_bottom_left)
+	released_air = new(200)
+	test_component.nodes[1] = test_component
+	test_component.parents[1] = null
+	test_component.airs[1].set_moles(GAS_O2, 10)
+
+	test_component.relocate_airs(released_air)
+
+	if(released_air.get_moles(GAS_O2) != 10)
+		return Fail("Component gas was not relocated after its node outlived the parent pipenet.", __FILE__, __LINE__)
+
+/datum/unit_test/dogmos_component_relocates_air_without_parent/Destroy()
+	QDEL_NULL(released_air)
+	return ..()
+
+/** Verifies a pump sleeps when its current gas state cannot produce a transfer. */
+/datum/unit_test/dogmos_idle_machinery_pump_sleeps
+	/// Input pipeline released during teardown.
+	var/datum/pipeline/input_pipeline
+	/// Output pipeline released during teardown.
+	var/datum/pipeline/output_pipeline
+	/// Input pipeline mixture released during teardown.
+	var/datum/gas_mixture/input_pipeline_air
+	/// Output pipeline mixture released during teardown.
+	var/datum/gas_mixture/output_pipeline_air
+
+/datum/unit_test/dogmos_idle_machinery_pump_sleeps/Run()
+	var/obj/machinery/atmospherics/components/binary/pump/test_pump = allocate(/obj/machinery/atmospherics/components/binary/pump)
+	input_pipeline = new
+	output_pipeline = new
+	input_pipeline_air = new(200)
+	output_pipeline_air = new(200)
+	input_pipeline.set_air(input_pipeline_air)
+	output_pipeline.set_air(output_pipeline_air)
+	test_pump.parents[1] = input_pipeline
+	test_pump.parents[2] = output_pipeline
+	test_pump.on = TRUE
+	if(test_pump.process_atmos(SSair.wait * 0.1) != PROCESS_KILL)
+		return Fail("A gas pump with no transferable gas did not return PROCESS_KILL.", __FILE__, __LINE__)
+
+/datum/unit_test/dogmos_idle_machinery_pump_sleeps/Destroy()
+	QDEL_NULL(input_pipeline)
+	QDEL_NULL(output_pipeline)
+	QDEL_NULL(input_pipeline_air)
+	QDEL_NULL(output_pipeline_air)
+	return ..()
+
+/** Verifies turning on dormant atmosphere machinery wakes it immediately. */
+/datum/unit_test/dogmos_idle_machinery_control_wake
+
+/datum/unit_test/dogmos_idle_machinery_control_wake/Run()
+	var/obj/machinery/atmospherics/components/binary/pump/test_pump = allocate(/obj/machinery/atmospherics/components/binary/pump)
+	test_pump.set_on(FALSE)
+	SSair.stop_processing_machine(test_pump)
+	test_pump.set_on(TRUE)
+	if(!(test_pump in SSair.atmos_machinery))
+		return Fail("Turning on dormant atmosphere machinery did not wake it immediately.", __FILE__, __LINE__)
+
+/** Verifies dormant enabled atmosphere machinery wakes when it becomes operational. */
+/datum/unit_test/dogmos_idle_machinery_operational_wake
+
+/datum/unit_test/dogmos_idle_machinery_operational_wake/Run()
+	var/obj/machinery/atmospherics/components/binary/pump/test_pump = allocate(/obj/machinery/atmospherics/components/binary/pump)
+	test_pump.on = TRUE
+	SSair.stop_processing_machine(test_pump)
+	test_pump.on_set_is_operational(FALSE)
+	if(!(test_pump in SSair.atmos_machinery))
+		return Fail("Dormant enabled atmosphere machinery did not wake when it became operational.", __FILE__, __LINE__)
+
+/** Verifies turf atmosphere activity wakes a dormant vent on that turf. */
+/datum/unit_test/dogmos_idle_machinery_turf_wake
+
+/datum/unit_test/dogmos_idle_machinery_turf_wake/Run()
+	var/obj/machinery/atmospherics/components/unary/vent_pump/test_vent = allocate(/obj/machinery/atmospherics/components/unary/vent_pump)
+	SSair.stop_processing_machine(test_vent)
+	SSair.add_to_active(run_loc_floor_bottom_left)
+	if(!(test_vent in SSair.atmos_machinery))
+		return Fail("Turf atmosphere activity did not wake a dormant vent on that turf.", __FILE__, __LINE__)
+
+/** Verifies a stable pipe meter sleeps and wakes on its pipeline's next change. */
+/datum/unit_test/dogmos_idle_meter_scheduler
+	/// Pipeline released during teardown.
+	var/datum/pipeline/test_pipeline
+	/// Pipeline-owned mixture released during teardown.
+	var/datum/gas_mixture/pipeline_air
+	/// Pipe detached before pipeline teardown.
+	var/obj/machinery/atmospherics/pipe/test_pipe
+	/// Meter detached from the pipe before teardown.
+	var/obj/machinery/meter/test_meter
+
+/datum/unit_test/dogmos_idle_meter_scheduler/Run()
+	test_pipe = allocate(/obj/machinery/atmospherics/pipe/smart/simple)
+	test_meter = allocate(/obj/machinery/meter)
+	test_pipeline = new
+	pipeline_air = new(200)
+	test_pipeline.set_air(pipeline_air)
+	test_pipeline.members |= test_pipe
+	test_pipe.parent = test_pipeline
+	test_meter.target = test_pipe
+	test_pipe.dogmos_pipeline_meters |= test_meter
+	if(test_meter.process_atmos() != PROCESS_KILL)
+		return Fail("A stable pipe meter did not return PROCESS_KILL.", __FILE__, __LINE__)
+	SSair.stop_processing_machine(test_meter)
+	test_pipeline.update = TRUE
+	test_pipeline.process()
+	if(!(test_meter in SSair.atmos_machinery))
+		return Fail("A dirty pipeline did not wake its dormant pipe meter.", __FILE__, __LINE__)
+
+/datum/unit_test/dogmos_idle_meter_scheduler/Destroy()
+	if(test_meter && test_pipe)
+		test_pipe.dogmos_pipeline_meters -= test_meter
+		test_meter.target = null
+	if(test_pipe)
+		test_pipe.parent = null
+	test_pipeline?.members.Cut()
+	QDEL_NULL(test_pipeline)
+	QDEL_NULL(pipeline_air)
+	return ..()
+
+/** Verifies a vent sleeps after reaching its configured pressure bound. */
+/datum/unit_test/dogmos_idle_machinery_vent_sleeps
+
+/datum/unit_test/dogmos_idle_machinery_vent_sleeps/Run()
+	var/obj/machinery/atmospherics/components/unary/vent_pump/test_vent = allocate(/obj/machinery/atmospherics/components/unary/vent_pump)
+	test_vent.nodes[1] = test_vent
+	test_vent.on = TRUE
+	test_vent.external_pressure_bound = run_loc_floor_bottom_left.return_air().return_pressure()
+	if(test_vent.process_atmos(SSair.wait * 0.1) != PROCESS_KILL)
+		return Fail("A vent at its configured pressure bound did not return PROCESS_KILL.", __FILE__, __LINE__)
+
+/** Verifies a stable pressure tank sleeps until its pipeline changes. */
+/datum/unit_test/dogmos_idle_machinery_tank_sleeps
+
+/datum/unit_test/dogmos_idle_machinery_tank_sleeps/Run()
+	var/obj/machinery/atmospherics/components/tank/test_tank = allocate(/obj/machinery/atmospherics/components/tank)
+	if(test_tank.process_atmos(SSair.wait * 0.1) != PROCESS_KILL)
+		return Fail("A stable under-pressure tank did not return PROCESS_KILL.", __FILE__, __LINE__)
+
+/** Verifies an enabled filter sleeps when its input contains no transferable gas. */
+/datum/unit_test/dogmos_idle_machinery_filter_sleeps
+
+/datum/unit_test/dogmos_idle_machinery_filter_sleeps/Run()
+	var/obj/machinery/atmospherics/components/trinary/filter/test_filter = allocate(/obj/machinery/atmospherics/components/trinary/filter)
+	test_filter.nodes[1] = test_filter
+	test_filter.nodes[2] = test_filter
+	test_filter.nodes[3] = test_filter
+	test_filter.on = TRUE
+	if(test_filter.process_atmos(SSair.wait * 0.1) != PROCESS_KILL)
+		return Fail("An enabled filter with empty input did not return PROCESS_KILL.", __FILE__, __LINE__)
+
+/** Verifies a stable heat pipe wakes on pipeline changes and sleeps after convergence. */
+/datum/unit_test/dogmos_idle_heat_pipe_scheduler
+	/// Pipeline released during teardown.
+	var/datum/pipeline/test_pipeline
+	/// Pipeline-owned mixture released during teardown.
+	var/datum/gas_mixture/pipeline_air
+	/// Heat pipe detached before pipeline teardown.
+	var/obj/machinery/atmospherics/pipe/heat_exchanging/test_pipe
+
+/datum/unit_test/dogmos_idle_heat_pipe_scheduler/Run()
+	test_pipe = allocate(/obj/machinery/atmospherics/pipe/heat_exchanging/simple)
+	test_pipeline = new
+	pipeline_air = new(200)
+	pipeline_air.set_temperature(run_loc_floor_bottom_left.GetTemperature())
+	test_pipeline.set_air(pipeline_air)
+	test_pipeline.members |= test_pipe
+	test_pipe.parent = test_pipeline
+	SSair.stop_processing_machine(test_pipe)
+	test_pipeline.update = TRUE
+	test_pipeline.process()
+	if(!(test_pipe in SSair.atmos_machinery))
+		return Fail("A dirty pipeline did not wake its dormant heat-exchange pipe.", __FILE__, __LINE__)
+	pipeline_air.set_temperature(run_loc_floor_bottom_left.GetTemperature())
+	if(test_pipe.process_atmos(SSair.wait * 0.1) != PROCESS_KILL)
+		return Fail("A stable heat-exchange pipe did not return PROCESS_KILL.", __FILE__, __LINE__)
+	SSair.stop_processing_machine(test_pipe)
+	SSair.add_to_active(run_loc_floor_bottom_left)
+	if(!(test_pipe in SSair.atmos_machinery))
+		return Fail("Turf atmosphere activity did not wake its dormant heat-exchange pipe.", __FILE__, __LINE__)
+	SSair.stop_processing_machine(test_pipe)
+	var/mob/living/test_mob = allocate(/mob/living/carbon/human/consistent)
+	test_pipe.post_buckle_mob(test_mob)
+	if(!(test_pipe in SSair.atmos_machinery))
+		return Fail("Buckling a mob did not wake its dormant heat-exchange pipe.", __FILE__, __LINE__)
+
+/datum/unit_test/dogmos_idle_heat_pipe_scheduler/Destroy()
+	if(test_pipe)
+		test_pipe.parent = null
+	test_pipeline?.members.Cut()
+	QDEL_NULL(test_pipeline)
+	QDEL_NULL(pipeline_air)
+	return ..()
+
+
 /** Verifies repeated deferred adjacency updates coalesce and drain completely. */
 /datum/unit_test/dogmos_service_topology_pressure
 
 /datum/unit_test/dogmos_service_topology_pressure/Run()
+	var/reached_stage_boundary = FALSE
+	for(var/attempt in 1 to DOGMOS_TEST_STAGE_BOUNDARY_ATTEMPTS)
+		if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
+			reached_stage_boundary = TRUE
+			break
+		sleep(SSair.wait)
+	if(!reached_stage_boundary)
+		return Fail("Dogmos did not reach a safe stage boundary before the topology pressure test.", __FILE__, __LINE__)
+
 	var/list/original_pending_frontier = SSair.dogmos_pending_frontier_epoch
 	var/original_runtime_batching = SSdogmos.runtime_topology_batching
 	var/list/original_gas_edges = SSdogmos.dogmos_pending_turf_adjacency
 	var/list/original_gas_index = SSdogmos.dogmos_pending_turf_adjacency_index
 	var/list/original_heat_edges = SSdogmos.dogmos_pending_turf_heat_adjacency
 	var/list/original_heat_index = SSdogmos.dogmos_pending_turf_heat_adjacency_index
+	var/list/original_adjacency_retry = SSdogmos.dogmos_pending_adjacency_retry
 	var/original_max_queued = SSdogmos.dogmos_runtime_topology_max_queued
 	var/turf/target = run_loc_floor_bottom_left
 
@@ -703,6 +1110,7 @@
 	SSdogmos.dogmos_pending_turf_adjacency_index = list()
 	SSdogmos.dogmos_pending_turf_heat_adjacency = list()
 	SSdogmos.dogmos_pending_turf_heat_adjacency_index = list()
+	SSdogmos.dogmos_pending_adjacency_retry = list()
 	SSdogmos.dogmos_runtime_topology_max_queued = 0
 	SSair.dogmos_pending_frontier_epoch = list(1, 0, 0, 0)
 	target.__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
@@ -716,6 +1124,8 @@
 		failure_message = "Deferred gas adjacency work grew with repeated updates instead of coalescing."
 	else if(length(SSdogmos.dogmos_pending_turf_heat_adjacency) != first_heat_count)
 		failure_message = "Deferred heat adjacency work grew with repeated updates instead of coalescing."
+	else if(length(SSdogmos.dogmos_pending_adjacency_retry) != 1)
+		failure_message = "Deferred adjacency work did not coalesce to one unique turf retry."
 	else if(SSdogmos.dogmos_runtime_topology_max_queued != first_gas_count + first_heat_count)
 		failure_message = "Dogmos topology pressure telemetry did not retain the unique queued edge count."
 
@@ -732,9 +1142,48 @@
 	SSdogmos.dogmos_pending_turf_adjacency_index = original_gas_index
 	SSdogmos.dogmos_pending_turf_heat_adjacency = original_heat_edges
 	SSdogmos.dogmos_pending_turf_heat_adjacency_index = original_heat_index
+	SSdogmos.dogmos_pending_adjacency_retry = original_adjacency_retry
 	SSdogmos.dogmos_runtime_topology_max_queued = original_max_queued
 	if(failure_message)
 		return Fail(failure_message, __FILE__, __LINE__)
+
+/** Verifies runtime topology coalescing does not re-register current neighbor state. */
+/datum/unit_test/dogmos_service_runtime_topology_batch_preserves_neighbor_state
+
+/datum/unit_test/dogmos_service_runtime_topology_batch_preserves_neighbor_state/Run()
+	var/list/original_pending_frontier = SSair.dogmos_pending_frontier_epoch
+	var/original_runtime_batching = SSdogmos.runtime_topology_batching
+	var/list/original_lifecycle = SSdogmos.dogmos_pending_turf_lifecycle
+	var/list/original_heat = SSdogmos.dogmos_pending_turf_heat
+	var/list/original_gas_edges = SSdogmos.dogmos_pending_turf_adjacency
+	var/list/original_gas_index = SSdogmos.dogmos_pending_turf_adjacency_index
+	var/list/original_heat_edges = SSdogmos.dogmos_pending_turf_heat_adjacency
+	var/list/original_heat_index = SSdogmos.dogmos_pending_turf_heat_adjacency_index
+	var/list/original_adjacency_retry = SSdogmos.dogmos_pending_adjacency_retry
+
+	SSair.dogmos_pending_frontier_epoch = null
+	SSdogmos.runtime_topology_batching = TRUE
+	SSdogmos.dogmos_pending_turf_lifecycle = list()
+	SSdogmos.dogmos_pending_turf_heat = list()
+	SSdogmos.dogmos_pending_turf_adjacency = list()
+	SSdogmos.dogmos_pending_turf_adjacency_index = list()
+	SSdogmos.dogmos_pending_turf_heat_adjacency = list()
+	SSdogmos.dogmos_pending_turf_heat_adjacency_index = list()
+	SSdogmos.dogmos_pending_adjacency_retry = list()
+	run_loc_floor_bottom_left.__update_auxtools_turf_adjacency_info(world.maxx, world.maxy)
+	var/requeued_neighbor_state = length(SSdogmos.dogmos_pending_turf_lifecycle) || length(SSdogmos.dogmos_pending_turf_heat)
+
+	SSair.dogmos_pending_frontier_epoch = original_pending_frontier
+	SSdogmos.runtime_topology_batching = original_runtime_batching
+	SSdogmos.dogmos_pending_turf_lifecycle = original_lifecycle
+	SSdogmos.dogmos_pending_turf_heat = original_heat
+	SSdogmos.dogmos_pending_turf_adjacency = original_gas_edges
+	SSdogmos.dogmos_pending_turf_adjacency_index = original_gas_index
+	SSdogmos.dogmos_pending_turf_heat_adjacency = original_heat_edges
+	SSdogmos.dogmos_pending_turf_heat_adjacency_index = original_heat_index
+	SSdogmos.dogmos_pending_adjacency_retry = original_adjacency_retry
+	if(requeued_neighbor_state)
+		return Fail("Runtime topology batching re-registered current neighbor lifecycle or heat state.", __FILE__, __LINE__)
 
 /** Verifies turf replacement discards queued topology from an older generation. */
 /datum/unit_test/dogmos_service_stale_topology_discard
@@ -780,7 +1229,12 @@
 #undef DOGMOS_TEST_STAGE_EQUALIZE
 #undef DOGMOS_TEST_STAGE_TURF_HEAT
 #undef DOGMOS_TEST_STAGE_REACTIONS
+#undef DOGMOS_TEST_OVERSIZED_PIPELINE_MIXTURES
+#undef DOGMOS_TEST_STAGE_BOUNDARY_ATTEMPTS
 #undef DOGMOS_TEST_STAGE_RESPONSE_FIELDS
+#undef DOGMOS_TEST_STAGE_CHUNK_LIMIT
 #undef DOGMOS_PIPELINE_TEST_EPSILON
+#undef DOGMOS_TEST_IDLE_MC_SETTLE_TIME
+#undef DOGMOS_TEST_IDLE_MC_COST_LIMIT
 
 #endif
