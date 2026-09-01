@@ -211,22 +211,26 @@ const PresetConfirmPopup = (props: {
 export const RotateCharacterButtons = () => {
   const { act } = useBackend<PreferencesMenuData>();
   return (
-    <Box mt={1}>
-      <Button
-        onClick={() => act('rotate', { backwards: false })}
-        fontSize="22px"
-        icon="redo"
-        tooltip="Rotate Clockwise"
-        tooltipPosition="bottom"
-      />
-      <Button
-        onClick={() => act('rotate', { backwards: true })}
-        fontSize="22px"
-        icon="undo"
-        tooltip="Rotate Counter-Clockwise"
-        tooltipPosition="bottom"
-      />
-    </Box>
+    <Stack className="LimbsPage__rotationControls">
+      <Stack.Item>
+        <Button
+          onClick={() => act('rotate', { backwards: false })}
+          fontSize="22px"
+          icon="redo"
+          tooltip="Rotate Clockwise"
+          tooltipPosition="bottom"
+        />
+      </Stack.Item>
+      <Stack.Item>
+        <Button
+          onClick={() => act('rotate', { backwards: true })}
+          fontSize="22px"
+          icon="undo"
+          tooltip="Rotate Counter-Clockwise"
+          tooltipPosition="bottom"
+        />
+      </Stack.Item>
+    </Stack>
   );
 };
 

@@ -14,6 +14,10 @@ const workbenchSource = readFileSync(
   resolve(import.meta.dir, 'AugmentsWorkbench.tsx'),
   'utf8',
 );
+const limbsPageSource = readFileSync(
+  resolve(import.meta.dir, 'LimbsPage.tsx'),
+  'utf8',
+);
 const workbenchStyles = readFileSync(
   resolve(import.meta.dir, '../../../styles/interfaces/LimbsPage.scss'),
   'utf8',
@@ -77,5 +81,19 @@ describe('Augments anatomical workbench', () => {
     expect(workbenchStyles).toContain('border-image: none;');
     expect(workbenchStyles).not.toContain('forced-color-adjust: none;');
     expect(workbenchSource).not.toMatch(/ResizeObserver|requestAnimationFrame/);
+  });
+
+  it('keeps both preview rotation buttons in the same zero-margin stack row', () => {
+    const rotationControls = limbsPageSource.match(
+      /<Stack className="LimbsPage__rotationControls">([\s\S]*?)<\/Stack>/,
+    );
+
+    expect(rotationControls).not.toBeNull();
+    expect(rotationControls?.[1].match(/<Stack\.Item>/g)).toHaveLength(2);
+    expect(rotationControls?.[1].match(/<Button/g)).toHaveLength(2);
+    expect(workbenchStyles).toMatch(
+      /&__rotationControls\s*\{[\s\S]*?flex:\s*0\s+0\s+auto;/,
+    );
+    expect(workbenchStyles).not.toMatch(/>\s*\.Box\s*\{/);
   });
 });

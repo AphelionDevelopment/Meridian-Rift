@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import type { CSSProperties } from 'react';
 import { cleanup, render } from '@testing-library/react';
 import { compileAsync } from 'sass-embedded';
-import { Button, Icon, Tabs } from 'tgui-core/components';
+import { Button, Icon, Stack, Tabs } from 'tgui-core/components';
 
 import {
   MERIDIAN_THEME_IDS,
@@ -110,6 +110,17 @@ describe('MeridianOS shared control geometry', () => {
               </div>
             </div>
           </div>
+          <Stack className="LimbsPage__rotationControls">
+            <Stack.Item>
+              <Button aria-label="Rotate preview clockwise" icon="redo" />
+            </Stack.Item>
+            <Stack.Item>
+              <Button
+                aria-label="Rotate preview counter-clockwise"
+                icon="undo"
+              />
+            </Stack.Item>
+          </Stack>
           <Button aria-label="Short inline height" height="20px">
             Short
           </Button>
@@ -156,6 +167,10 @@ describe('MeridianOS shared control geometry', () => {
       const ungroupedButton = view.getByLabelText('Ungrouped legacy button');
       const switcherInherit = view.getByLabelText('Switcher inherit');
       const iconOnly = view.getByLabelText('Icon only');
+      const rotateClockwise = view.getByLabelText('Rotate preview clockwise');
+      const rotateCounterClockwise = view.getByLabelText(
+        'Rotate preview counter-clockwise',
+      );
       const compact = view.getByLabelText('Compact icon');
       const denseJobPriority = view.getByLabelText('Dense job priority');
       const shortInlineHeight = view.getByLabelText('Short inline height');
@@ -224,12 +239,30 @@ describe('MeridianOS shared control geometry', () => {
       for (const groupedControl of [
         switcherInherit,
         iconOnly,
+        rotateClockwise,
+        rotateCounterClockwise,
         switcherDropdown,
         sectionDropdown,
         sectionAction,
       ]) {
         expect(getComputedStyle(groupedControl).marginRight).toBe('0px');
         expect(getComputedStyle(groupedControl).marginBottom).toBe('0px');
+      }
+      expect(rotateClockwise.parentElement?.classList).toContain(
+        'Stack__item',
+      );
+      expect(rotateCounterClockwise.parentElement?.classList).toContain(
+        'Stack__item',
+      );
+      expect(getComputedStyle(rotateClockwise).minHeight).toBe(
+        getComputedStyle(rotateCounterClockwise).minHeight,
+      );
+      for (const rotateControl of [
+        rotateClockwise,
+        rotateCounterClockwise,
+      ]) {
+        expect(getComputedStyle(rotateControl).marginTop).toBe('0px');
+        expect(getComputedStyle(rotateControl).marginLeft).toBe('0px');
       }
 
       expect(getComputedStyle(loadoutCategoryTab).paddingTop).toBe('3px');
