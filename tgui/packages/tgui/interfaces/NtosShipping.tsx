@@ -2,7 +2,7 @@ import { Box, Button, LabeledList, Section } from 'tgui-core/components';
 import type { BooleanLike } from 'tgui-core/react';
 
 import { useBackend } from '../backend';
-import { NtosWindow } from '../layouts';
+import { MeridianWindow } from '../layouts';
 
 type Data = {
   current_user: string;
@@ -14,12 +14,12 @@ type Data = {
 
 export const NtosShipping = (props) => {
   return (
-    <NtosWindow width={450} height={350}>
-      <NtosWindow.Content scrollable>
+    <MeridianWindow width={450} height={350}>
+      <MeridianWindow.Content scrollable>
         <ShippingHub />
         <ShippingOptions />
-      </NtosWindow.Content>
-    </NtosWindow>
+      </MeridianWindow.Content>
+    </MeridianWindow>
   );
 };
 
@@ -30,7 +30,7 @@ const ShippingHub = (props) => {
 
   return (
     <Section
-      title="NTOS Shipping Hub."
+      title="MeridianOS Shipping Hub."
       buttons={
         <Button
           icon="eject"

@@ -80,6 +80,12 @@ export default defineConfig({
           filename: '[name][ext]',
         },
       },
+      {
+        // MeridianOS display font is small enough to inline. This keeps font
+        // loading self-contained in BYOND's asset-cached stylesheet.
+        test: /\.woff2$/,
+        type: 'asset/inline',
+      },
 
       {
         test: /\.svg$/,

@@ -4,6 +4,7 @@
  * @license MIT
  */
 
+import type { ComponentProps } from 'react';
 import { Box, Button } from 'tgui-core/components';
 import type { BooleanLike } from 'tgui-core/react';
 
@@ -11,7 +12,7 @@ import { resolveAsset } from '../assets';
 import { useBackend } from '../backend';
 import { Window } from './Window';
 
-export type NTOSData = {
+export type MeridianOSData = {
   comp_light_color: string;
   has_light: BooleanLike;
   id_name: string;
@@ -36,6 +37,9 @@ export type NTOSData = {
   show_imprint: BooleanLike;
 };
 
+/** @deprecated Use `MeridianOSData`. */
+export type NTOSData = MeridianOSData;
+
 type Program = {
   alert: BooleanLike;
   desc: string;
@@ -51,9 +55,9 @@ type Login = {
   IDName: string | null;
 };
 
-export const NtosWindow = (props) => {
+export const MeridianWindow = (props: ComponentProps<typeof Window>) => {
   const { title, width = 575, height = 700, children } = props;
-  const { act, data } = useBackend<NTOSData>();
+  const { act, data } = useBackend<MeridianOSData>();
   const {
     PC_device_theme,
     PC_batteryicon,
@@ -68,9 +72,9 @@ export const NtosWindow = (props) => {
 
   return (
     <Window title={title} width={width} height={height} theme={PC_device_theme}>
-      <div className="NtosWindow">
-        <div className="NtosWindow__header NtosHeader">
-          <div className="NtosHeader__left">
+      <div className="MeridianWindow NtosWindow">
+        <div className="MeridianWindow__header NtosWindow__header MeridianHeader NtosHeader">
+          <div className="MeridianHeader__left NtosHeader__left">
             <Box inline bold mr={2}>
               <Button
                 width="26px"
@@ -84,15 +88,15 @@ export const NtosWindow = (props) => {
               {PC_stationtime}
             </Box>
             <Box inline italic mr={2} opacity={0.33}>
-              {(PC_device_theme === 'syndicate' && 'Syndix') || 'NtOS'}
+              {(PC_device_theme === 'syndicate' && 'Syndix') || 'MeridianOS'}
               {!!PC_lowpower_mode && ' - RUNNING ON LOW POWER MODE'}
             </Box>
           </div>
-          <div className="NtosHeader__right">
+          <div className="MeridianHeader__right NtosHeader__right">
             {PC_programheaders.map((header) => (
               <Box key={header.icon} inline mr={1}>
                 <img
-                  className="NtosHeader__icon"
+                  className="MeridianHeader__icon NtosHeader__icon"
                   src={resolveAsset(header.icon)}
                 />
               </Box>
@@ -100,7 +104,7 @@ export const NtosWindow = (props) => {
             <Box inline>
               {PC_ntneticon && (
                 <img
-                  className="NtosHeader__icon"
+                  className="MeridianHeader__icon NtosHeader__icon"
                   src={resolveAsset(PC_ntneticon)}
                 />
               )}
@@ -108,7 +112,7 @@ export const NtosWindow = (props) => {
             {!!PC_batteryicon && (
               <Box inline mr={1}>
                 <img
-                  className="NtosHeader__icon"
+                  className="MeridianHeader__icon NtosHeader__icon"
                   src={resolveAsset(PC_batteryicon)}
                 />
                 {PC_batterypercent}
@@ -150,12 +154,17 @@ export const NtosWindow = (props) => {
   );
 };
 
-const NtosWindowContent = (props) => {
+const MeridianWindowContent = (
+  props: ComponentProps<typeof Window.Content>,
+) => {
   return (
-    <div className="NtosWindow__content">
+    <div className="MeridianWindow__content NtosWindow__content">
       <Window.Content {...props} />
     </div>
   );
 };
 
-NtosWindow.Content = NtosWindowContent;
+MeridianWindow.Content = MeridianWindowContent;
+
+/** @deprecated Use `MeridianWindow`. */
+export const NtosWindow = MeridianWindow;

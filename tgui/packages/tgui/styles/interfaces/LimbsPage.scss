@@ -48,9 +48,17 @@
 }
 
 .LimbsPage {
+  height: 100%;
+  min-height: 0;
+
   &__hover-text {
     position: relative;
     display: block;
+
+    &:focus-within {
+      outline: 1px solid var(--augmentation-focus);
+      outline-offset: 2px;
+    }
   }
 
   &__hover-text--tooltip-wrapper {
@@ -61,12 +69,13 @@
     max-width: 250px;
     z-index: 100;
     pointer-events: none;
-    background: #c0152a;
+    background: var(--augmentation-frame);
     clip-path: polygon(0% 0%, calc(100% - 12px) 0%, 100% 100%, 12px 100%);
     padding: 1px;
     visibility: hidden;
     opacity: 0;
-    filter: drop-shadow(0 0 6px #c0152a) drop-shadow(0 0 12px #c0152a66);
+    filter: drop-shadow(0 0 6px var(--augmentation-frame))
+      drop-shadow(0 0 12px var(--augmentation-glow));
 
     &.visible {
       visibility: visible;
@@ -79,11 +88,46 @@
   }
 
   &__hover-text--tooltip {
-    background: #0f0505;
-    color: #00e5d4;
+    background: var(--augmentation-surface);
+    color: var(--augmentation-readout);
     padding: 4px 12px;
     font-size: 11px;
     white-space: normal;
     word-break: break-word;
+  }
+
+  &__quirk-balance {
+    border: 1px solid var(--augmentation-frame);
+    background: var(--augmentation-surface);
+    box-shadow: inset 0 0 0 1px var(--augmentation-glow);
+    color: var(--augmentation-text);
+  }
+}
+
+.theme-meridian_highline .LimbsPage {
+  &__hover-text--tooltip-wrapper {
+    filter: none;
+  }
+
+  &__hover-text--tooltip-wrapper.visible {
+    opacity: 1;
+    animation: none;
+  }
+
+  &__quirk-balance {
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .LimbsPage__hover-text--tooltip-wrapper.visible {
+    opacity: 1;
+    animation: none;
+
+    .LimbsPage__hover-text--tooltip {
+      clip-path: none;
+      transform: none;
+      animation: none;
+    }
   }
 }

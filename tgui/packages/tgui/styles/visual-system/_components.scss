@@ -1,0 +1,431 @@
+.theme-console {
+  color: var(--console-text-primary);
+  background: var(--console-surface-canvas);
+
+  .Window {
+    background-color: var(--console-surface-canvas);
+    background-image: linear-gradient(
+      180deg,
+      var(--console-surface-base),
+      var(--console-surface-canvas)
+    );
+    box-shadow:
+      inset 0 0 0 var(--console-frame-layer) var(--console-border-strong),
+      inset 0 0 0 calc(var(--console-frame-layer) + 3px)
+        var(--console-border-subtle);
+  }
+
+  .TitleBar {
+    color: var(--console-text-primary);
+    background: var(--console-surface-raised);
+    border-top: var(--console-frame-top-weight) solid
+      var(--console-border-strong);
+    border-bottom: 1px solid var(--console-border-strong);
+    box-shadow: none;
+  }
+
+  .TitleBar__statusIcon {
+    color: var(--console-interaction-accent);
+  }
+
+  .TitleBar__title,
+  .Section__titleText {
+    text-transform: var(--console-heading-case);
+    letter-spacing: var(--console-heading-tracking);
+  }
+
+  .Layout__content {
+    background-color: transparent;
+    background-image: none;
+  }
+
+  .MeridianWindow__header,
+  .NtosWindow__header {
+    color: var(--console-text-secondary);
+    background: var(--console-surface-recessed);
+    border-bottom: 1px solid var(--console-border-separator);
+  }
+
+  .Section {
+    border: 1px solid var(--console-border-subtle);
+    background-color: var(--console-surface-base);
+    box-shadow: inset 0 1px 0 color-mix(
+      in srgb,
+      var(--console-border-control) 24%,
+      transparent
+    );
+  }
+
+  .Section__title {
+    min-height: 2.25em;
+    border-bottom: 1px solid var(--console-border-separator);
+    background: color-mix(
+      in srgb,
+      var(--console-surface-raised) 66%,
+      var(--console-surface-base)
+    );
+  }
+
+  .Section__titleText {
+    color: var(--console-text-primary);
+  }
+
+  .Section .Section {
+    border-width: 1px 0 0;
+    border-color: var(--console-border-separator);
+    background: var(--console-surface-recessed);
+    box-shadow: none;
+  }
+
+  .Section .Section > .Section__title {
+    background: transparent;
+  }
+
+  :is(.Button, .Tab, .Dropdown__control, .Dropdown__input) {
+    min-height: 24px;
+    border: 1px solid var(--console-border-strong);
+    border-radius: 0;
+    box-shadow: var(--console-control-depth);
+  }
+
+  .Button {
+    background-color: var(--console-control-face);
+    color: var(--console-text-primary);
+  }
+
+  .Button:hover {
+    background-color: var(--console-interaction-hover);
+    color: var(--console-text-primary);
+    border-color: var(--console-border-strong);
+  }
+
+  .Button:active {
+    background-color: var(--console-interaction-pressed);
+  }
+
+  :is(.Button--selected, .Tab--selected) {
+    color: var(--console-text-primary);
+    background-color: var(--console-interaction-pressed);
+    border-color: var(--console-interaction-selected);
+    box-shadow:
+      inset 0 calc(-1 * var(--console-selected-rail)) 0
+        var(--console-interaction-selected),
+      var(--console-control-depth);
+  }
+
+  .Button--disabled,
+  .Input--disabled,
+  :disabled {
+    color: var(--console-text-disabled) !important;
+    border-color: var(--console-border-subtle) !important;
+    background-color: var(--console-surface-recessed) !important;
+    background-image: linear-gradient(
+      135deg,
+      transparent 46%,
+      var(--console-border-subtle) 47% 53%,
+      transparent 54%
+    );
+    box-shadow: none;
+  }
+
+  :is(.Button--color--danger, .Button--color--bad) {
+    border-left: var(--console-selected-rail) solid
+      var(--console-status-danger);
+  }
+
+  .Tabs {
+    border-bottom: 1px solid var(--console-border-separator);
+    background: var(--console-surface-recessed);
+  }
+
+  .Tab {
+    color: var(--console-text-secondary);
+  }
+
+  .Input,
+  .TextArea,
+  .NumberInput {
+    min-height: 24px;
+    color: var(--console-text-primary);
+    background: var(--console-surface-recessed);
+    border-color: var(--console-border-strong);
+    border-radius: 0;
+  }
+
+  .TextArea {
+    border: 1px solid var(--console-border-control);
+    padding: var(--console-space-2);
+  }
+
+  .Dropdown__menu--wrapper,
+  .Modal,
+  .Dialog__content,
+  .Tooltip {
+    color: var(--console-text-primary);
+    background: var(--console-surface-overlay);
+    border: 1px solid var(--console-border-strong);
+    border-radius: 0;
+    box-shadow: var(--console-overlay-shadow);
+  }
+
+  .Dropdown__menu--entry.selected {
+    color: var(--console-text-on-accent);
+    border-left: var(--console-selected-rail) solid
+      var(--console-interaction-focus);
+  }
+
+  .ProgressBar {
+    min-height: 24px;
+    color: var(--console-text-primary);
+    background: var(--console-surface-recessed);
+    border-color: var(--console-border-control);
+    box-shadow: inset 0 0 0 1px var(--console-surface-canvas);
+  }
+
+  .ProgressBar__content {
+    color: var(--console-text-primary);
+    font-variant-numeric: tabular-nums;
+    text-shadow:
+      0 1px 1px var(--console-surface-canvas),
+      0 0 3px var(--console-surface-canvas);
+  }
+
+  .ProgressBar--segmented .ProgressBar__fill {
+    background-image: repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(var(--console-segment-pattern) - 1px),
+      var(--console-surface-recessed)
+        calc(var(--console-segment-pattern) - 1px)
+        var(--console-segment-pattern)
+    );
+  }
+
+  .NoticeBox {
+    position: relative;
+    min-height: 32px;
+    padding-left: 2.5em;
+    color: var(--console-status-warning);
+    background: var(--console-surface-raised);
+    border: 1px solid currentColor;
+    border-left-width: 4px;
+    font-style: normal;
+  }
+
+  .NoticeBox::before {
+    position: absolute;
+    left: 0.75em;
+    top: 50%;
+    width: 1em;
+    content: '!';
+    transform: translateY(-50%);
+    font-family: var(--font-family-mono);
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .NoticeBox--type--info {
+    color: var(--console-status-information);
+  }
+
+  .NoticeBox--type--info::before {
+    content: 'i';
+  }
+
+  .NoticeBox--type--success {
+    color: var(--console-status-success);
+  }
+
+  .NoticeBox--type--success::before {
+    content: '+';
+  }
+
+  .NoticeBox--type--warning {
+    color: var(--console-status-warning);
+  }
+
+  .NoticeBox--type--danger {
+    color: var(--console-status-danger);
+  }
+
+  .NoticeBox--type--danger::before {
+    content: 'x';
+  }
+
+  .NoticeBox > * {
+    color: inherit;
+  }
+
+  .Table__cell,
+  .LabeledList__cell {
+    padding-top: var(--console-space-1);
+    padding-bottom: var(--console-space-1);
+    border-bottom: 1px solid var(--console-border-separator);
+  }
+
+  .Table__row--header .Table__cell,
+  .Table__cell--header,
+  .LabeledList__label {
+    color: var(--console-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .Table__row:has(.Button, [role='button']) .Table__cell:first-child {
+    border-left: 2px solid var(--console-interaction-accent);
+    padding-left: var(--console-space-1);
+  }
+
+  :is(.Input, .TextArea, .NumberInput, .Dropdown):focus-within,
+  :is(.Button, .Tab, .TitleBar__close, a):focus-visible {
+    outline: 2px solid var(--console-interaction-focus);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 1px var(--console-interaction-focus-contrast);
+  }
+
+  :is(.Input, .TextArea, .NumberInput, .Dropdown):focus-within {
+    border-color: var(--console-interaction-focus);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--console-text-primary);
+    text-transform: var(--console-heading-case);
+    letter-spacing: var(--console-heading-tracking);
+  }
+
+  :is(.ConsoleReading, time, output, data) {
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  scrollbar-color: var(--console-border-control)
+    var(--console-surface-recessed);
+  scrollbar-width: thin;
+}
+
+.theme-meridian_highline {
+  .Layout__content {
+    background-color: var(--console-surface-canvas);
+  }
+
+  .Section,
+  .Dropdown__menu--wrapper,
+  .Modal,
+  .Dialog__content,
+  .Tooltip {
+    box-shadow: none;
+  }
+}
+
+.MeridianShowcase {
+  &__switcher {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--console-space-3);
+    min-height: 48px;
+    padding: var(--console-space-2) var(--console-space-3);
+    color: var(--console-text-primary);
+    background: var(--console-surface-recessed);
+    border: 1px solid var(--console-border-strong);
+  }
+
+  &__themeDetail {
+    display: block;
+    margin-top: 2px;
+    color: var(--console-text-secondary);
+    font-size: 11px;
+  }
+
+  &__switcherControls,
+  &__controlRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--console-space-1);
+  }
+
+  &__board {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: var(--console-space-2);
+  }
+
+  &__board > .Section {
+    margin: 0;
+  }
+
+  &__scrollSection {
+    height: 132px;
+  }
+
+  &__radio {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--console-space-1);
+    min-height: 24px;
+    padding: 0 var(--console-space-1);
+    color: var(--console-text-primary);
+    border: 1px solid var(--console-border-strong);
+    cursor: pointer;
+  }
+
+  &__radio input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--console-interaction-accent);
+  }
+
+  &__radio:focus-within {
+    outline: 2px solid var(--console-interaction-focus);
+    outline-offset: 2px;
+  }
+
+  &__forceHover {
+    background-color: var(--console-interaction-hover) !important;
+    border-color: var(--console-border-strong) !important;
+  }
+
+  &__forcePressed {
+    background-color: var(--console-interaction-pressed) !important;
+    transform: translateY(1px);
+  }
+
+  &__forceFocus {
+    outline: 2px solid var(--console-interaction-focus) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 1px var(--console-interaction-focus-contrast) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .MeridianShowcase {
+    &__switcher {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    &__switcherControls {
+      display: grid;
+      grid-template-columns: auto auto auto minmax(0, 1fr);
+    }
+
+    &__board {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
+
+:is(
+  .theme-meridian_vector,
+  .theme-meridian_cyberpunk,
+  .theme-meridian_augmentation
+) :is(.ConsoleDisplay, .TitleBar__title, .Section__titleText) {
+  font-family: var(--console-font-display);
+  font-size: max(13px, 1em);
+  font-weight: 400;
+}

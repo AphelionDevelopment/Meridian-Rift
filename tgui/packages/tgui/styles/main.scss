@@ -15,6 +15,13 @@
 @include meta.load-css('~tgui-core/styles/all-atomic.scss');
 @include meta.load-css('~tgui-core/styles/all-themes.scss');
 
+// MeridianOS visual system: primitives -> runtime tokens -> shared treatment.
+@include meta.load-css('./visual-system/tokens.scss');
+@include meta.load-css('./visual-system/themes.scss');
+@include meta.load-css('./visual-system/components.scss');
+@include meta.load-css('./visual-system/decoration.scss');
+@include meta.load-css('./visual-system/motion.scss');
+
 // Interfaces
 @include meta.load-css('./interfaces/Accounting.scss');
 @include meta.load-css('./interfaces/AlertModal.scss');
@@ -69,8 +76,9 @@
 
 @include meta.load-css('~highlight.js/scss/a11y-dark.scss');
 
-// NT Theme
-.Layout__content {
+// Keep the legacy watermark on specialty themes only. MeridianOS owns its data
+// plane and intentionally avoids a full-content texture.
+:root:not(.theme-console) .Layout__content {
   background-image: url('tgui-core/assets/bg-nanotrasen.svg');
   background-size: 70% 70%;
   background-position: center;

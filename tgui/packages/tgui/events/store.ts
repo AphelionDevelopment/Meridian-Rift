@@ -1,9 +1,11 @@
 import { atom, createStore } from 'jotai';
+import type { MeridianThemeId } from '../constants/theme';
 import type { Config } from './types';
 
 export const chunkingAtom = atom<Record<string, any>>({});
 export const configAtom = atom<Config>({} as Config);
 export const debugLayoutAtom = atom(false);
+export const debugThemeAtom = atom<MeridianThemeId | null>(null);
 export const gameDataAtom = atom<Record<string, any>>({});
 export const gameStaticDataAtom = atom<Record<string, any>>({});
 export const kitchenSinkAtom = atom(false);
@@ -19,6 +21,7 @@ export const backendStateAtom = atom((get) => ({
   },
   debug: {
     debugLayout: get(debugLayoutAtom),
+    debugTheme: get(debugThemeAtom),
     kitchenSink: get(kitchenSinkAtom),
   },
   outgoingPayloadQueues: get(chunkingAtom),
@@ -31,6 +34,8 @@ export const backendStateAtom = atom((get) => ({
 export const store = createStore();
 
 export function resetStore() {
+  store.set(debugThemeAtom, null);
+  store.set(kitchenSinkAtom, false);
   store.set(gameDataAtom, {});
   store.set(gameStaticDataAtom, {});
   store.set(sharedAtom, {});

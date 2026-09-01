@@ -19,8 +19,7 @@ import {
 } from 'tgui-core/components';
 
 import { useBackend } from '../backend';
-import { NtosWindow } from '../layouts';
-import type { NTOSData } from '../layouts/NtosWindow';
+import { type MeridianOSData, MeridianWindow } from '../layouts';
 import { createLogger } from '../logging';
 
 const logger = createLogger('NtosNotepad');
@@ -243,7 +242,7 @@ const StatusBar = (props: StatusBarProps) => {
         100%
       </Box>
       <Box className="NtosNotepad__StatusBar__entry" minWidth="12rem">
-        NtOS (LF)
+        MeridianOS (LF)
       </Box>
       <Box className="NtosNotepad__StatusBar__entry" minWidth="12rem">
         UTF-8
@@ -320,17 +319,17 @@ type AboutDialogProps = {
 
 const AboutDialog = (props: AboutDialogProps) => {
   const { close } = props;
-  const { data } = useBackend<NTOSData>();
+  const { data } = useBackend<MeridianOSData>();
   const { show_imprint, login } = data;
   const paragraphStyle = { padding: '.5rem 1rem 0 2rem' };
 
   return (
     <Dialog title="About Notepad" onClose={close} width={'500px'}>
       <div className="Dialog__body">
-        <span className="NtosNotepad__AboutDialog__logo">NtOS</span>
+        <span className="NtosNotepad__AboutDialog__logo">MeridianOS</span>
         <Divider />
         <Box className="NtosNotepad__AboutDialog__text">
-          <span style={paragraphStyle}>Nanotrasen NtOS</span>
+          <span style={paragraphStyle}>MeridianOS</span>
           <span style={paragraphStyle}>
             Version 7815696ecbf1c96e6894b779456d330e
           </span>
@@ -338,9 +337,9 @@ const AboutDialog = (props: AboutDialogProps) => {
             &copy; NT Corporation. All rights reserved.
           </span>
           <span style={{ padding: '3rem 1rem 3rem 2rem' }}>
-            The NtOS operating system and its user interface are protected by
-            trademark and other pending or existing intellectual property rights
-            in the Sol system and other regions.
+            The MeridianOS operating system and its user interface are protected
+            by trademark and other pending or existing intellectual property
+            rights in the Sol system and other regions.
           </span>
           <span
             style={{
@@ -451,12 +450,12 @@ export const NtosNotepad = (props) => {
   // MS Notepad displays an asterisk when there's unsaved changes
   const unsavedAsterisk = text !== originalText ? '*' : '';
   return (
-    <NtosWindow
+    <MeridianWindow
       title={`${unsavedAsterisk}${documentName} - Notepad`}
       width={840}
       height={900}
     >
-      <NtosWindow.Content>
+      <MeridianWindow.Content>
         <Box className="NtosNotepad__layout">
           <NtosNotepadMenuBar
             onSave={handleSave}
@@ -484,7 +483,7 @@ export const NtosNotepad = (props) => {
           </Section>
           {showStatusBar && <StatusBar statuses={statuses} />}
         </Box>
-      </NtosWindow.Content>
+      </MeridianWindow.Content>
       {activeDialog === Dialogs.SELECT_FILE && (
         <Dialog title="Open File" onClose={handleCloseDialog} width="520px">
           <div className="Dialog__body">
@@ -597,6 +596,6 @@ export const NtosNotepad = (props) => {
       {activeDialog === Dialogs.ABOUT && (
         <AboutDialog close={handleCloseDialog} />
       )}
-    </NtosWindow>
+    </MeridianWindow>
   );
 };

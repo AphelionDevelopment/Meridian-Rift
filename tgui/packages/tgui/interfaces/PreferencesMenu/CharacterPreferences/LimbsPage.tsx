@@ -1,5 +1,13 @@
 // THIS IS A NOVA SECTOR UI FILE
-import { type ComponentProps, useMemo, useRef, useState } from 'react';
+import {
+  type ComponentProps,
+  type ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useBackend } from 'tgui/backend';
 import {
   Box,
@@ -51,20 +59,75 @@ type ColumnData = {
 // On hover, used to display extra_info tooltips.
 // Uses visibility/opacity toggle instead of conditional rendering to avoid
 // DOM node insertion/removal
-const HoverText = (props: { text: string; children: any }) => {
-  const [visible, setVisible] = useState(false);
+export const HoverText = (props: { text: string; children: ReactNode }) => {
+  const tooltipId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const visible = Boolean(props.text) && !dismissed && (hovered || focused);
+
+  useEffect(() => {
+    const control = rootRef.current?.querySelector<HTMLElement>(
+      'input, button, [role="button"], [tabindex]:not([tabindex="-1"])',
+    );
+    if (!control) return;
+
+    const previousDescription = control.getAttribute('aria-describedby');
+    const descriptions = new Set(
+      previousDescription?.split(/\s+/).filter(Boolean) ?? [],
+    );
+    descriptions.add(tooltipId);
+    control.setAttribute('aria-describedby', [...descriptions].join(' '));
+
+    return () => {
+      if (previousDescription) {
+        control.setAttribute('aria-describedby', previousDescription);
+      } else {
+        control.removeAttribute('aria-describedby');
+      }
+    };
+  }, [tooltipId]);
+
   return (
     <div
       className="LimbsPage__hover-text"
-      onMouseEnter={() => setVisible(true)}
-      onMouseLeave={() => setVisible(false)}
-      onMouseDown={() => setVisible(false)}
+      role="group"
+      ref={rootRef}
+      onMouseEnter={() => {
+        setHovered(true);
+        setDismissed(false);
+      }}
+      onMouseLeave={() => {
+        setHovered(false);
+        if (!focused) setDismissed(false);
+      }}
+      onFocusCapture={() => {
+        setFocused(true);
+        if (!hovered) setDismissed(false);
+      }}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setFocused(false);
+          if (!hovered) setDismissed(false);
+        }
+      }}
+      onMouseDown={() => setDismissed(true)}
+      onKeyDownCapture={(event) => {
+        if (event.key === 'Escape') setDismissed(true);
+      }}
     >
       {props.children}
       <div
-        className={`LimbsPage__hover-text--tooltip-wrapper${visible && props.text ? ' visible' : ''}`}
+        className={`LimbsPage__hover-text--tooltip-wrapper${visible ? ' visible' : ''}`}
       >
-        <div className="LimbsPage__hover-text--tooltip">{props.text}</div>
+        <div
+          className="LimbsPage__hover-text--tooltip"
+          id={tooltipId}
+          role="tooltip"
+        >
+          {props.text}
+        </div>
       </div>
     </div>
   );
@@ -615,9 +678,8 @@ const QuirkBalance = (props: { style?: Record<string, unknown> }) => {
     <Section align="center" title="Quirk Points Balance" style={props.style}>
       <Stack justify="center">
         <Box
-          backgroundColor="#eee"
           bold
-          color="black"
+          className="LimbsPage__quirk-balance"
           fontSize="1.2em"
           py={0.5}
           style={{ width: '20%', alignItems: 'center' }}
@@ -861,7 +923,7 @@ export const LimbsPage = ({
   };
 
   return (
-    <>
+    <div className="LimbsPage">
       {pendingPreset && (
         <div style={pendingPresetStyle}>
           <PresetConfirmPopup
@@ -982,6 +1044,6 @@ export const LimbsPage = ({
           </Stack>
         </Stack.Item>
       </Stack>
-    </>
+    </div>
   );
 };

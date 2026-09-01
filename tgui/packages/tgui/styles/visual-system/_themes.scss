@@ -1,0 +1,134 @@
+@use 'palette';
+
+@mixin theme($id) {
+  .theme-#{$id}:root,
+  .theme-#{$id} {
+    @include palette.emit($id);
+  }
+}
+
+@include theme(meridian);
+@include theme(meridian_vector);
+@include theme(meridian_foundry);
+@include theme(meridian_diagnostic);
+@include theme(meridian_highline);
+@include theme(meridian_synapse);
+@include theme(meridian_cyberpunk);
+@include theme(meridian_augmentation);
+@include theme(meridian_afterlight);
+@include theme(meridian_relay);
+@include theme(meridian_bastion);
+
+.theme-meridian_vector {
+  --console-corner-cut: 6px;
+  --console-corner-layer: 24px;
+  --console-title-rail: 116px;
+  --console-loader-ticks: 24;
+  --console-heading-tracking: 0.12em;
+}
+
+.theme-meridian_foundry {
+  --console-corner-cut: 8px;
+  --console-frame-layer: 2px;
+  --console-corner-layer: 12px;
+  --console-title-rail: 72px;
+  --console-segment-pattern: 12px;
+  --console-loader-ticks: 12;
+  --console-control-depth: inset 2px 2px 0 var(--console-surface-recessed), inset -1px -1px 0 var(--console-border-control);
+}
+
+.theme-meridian_diagnostic {
+  --console-corner-cut: 0;
+  --console-corner-layer: 20px;
+  --console-title-rail: 104px;
+  --console-loader-ticks: 8;
+  --console-loader-nodes: 8;
+  --console-heading-case: none;
+}
+
+.theme-meridian_highline {
+  --console-border-subtle: var(--console-border-control);
+  --console-border-separator: var(--console-border-control);
+  --console-text-disabled: var(--console-text-secondary);
+  --console-corner-cut: 0;
+  --console-frame-layer: 2px;
+  --console-corner-layer: 0px;
+  --console-title-rail: 100%;
+  --console-motif-opacity: 0;
+  --console-selected-rail: 4px;
+  --console-loader-ticks: 4;
+  --console-control-depth: none;
+  --console-overlay-shadow: none;
+  --augmentation-glow: var(--augmentation-frame);
+  --tab-background: var(--console-surface-recessed);
+}
+
+.theme-meridian_synapse {
+  --console-corner-cut: 7px;
+  --console-corner-layer: 16px;
+  --console-title-rail: 84px;
+  --console-loader-ticks: 3;
+  --console-loader-nodes: 3;
+  --console-loader-arc-span: 218deg;
+}
+
+.theme-meridian_cyberpunk {
+  --console-corner-cut: 10px;
+  --console-frame-layer: 2px;
+  --console-corner-layer: 30px;
+  --console-title-rail: 128px;
+  --console-loader-ticks: 10;
+  --console-heading-tracking: 0.14em;
+  --augmentation-frame: #c0152a;
+  --augmentation-surface: #0f0505;
+  --augmentation-readout: #00e5d4;
+  --augmentation-text: #eaf7f6;
+  --augmentation-focus: #70fff5;
+  --augmentation-glow: rgb(192 21 42 / 30%);
+}
+
+.theme-meridian_augmentation {
+  --console-corner-cut: 12px;
+  --console-frame-layer: 2px;
+  --console-corner-layer: 28px;
+  --console-title-rail: 132px;
+  --console-loader-ticks: 3;
+  --console-loader-nodes: 3;
+  --console-heading-tracking: 0.16em;
+  --augmentation-frame: #c0152a;
+  --augmentation-surface: #0f0505;
+  --augmentation-readout: #00e5d4;
+  --augmentation-text: #eaf7f6;
+  --augmentation-focus: #70fff5;
+  --augmentation-glow: rgb(192 21 42 / 34%);
+}
+
+.theme-meridian_afterlight {
+  --console-corner-cut: 2px;
+  --console-frame-layer: 2px;
+  --console-corner-layer: 10px;
+  --console-title-rail: 64px;
+  --console-frame-top-weight: 5px;
+  --console-frame-left-weight: 4px;
+  --console-loader-ticks: 8;
+  --console-control-depth: inset 2px 2px 0 var(--console-surface-recessed), inset -2px -2px 0 var(--console-border-control);
+}
+
+.theme-meridian_relay {
+  --console-corner-cut: 1px;
+  --console-frame-layer: 2px;
+  --console-corner-layer: 8px;
+  --console-title-rail: 76px;
+  --console-loader-ticks: 12;
+  --console-control-depth: inset 0 -3px 0 var(--console-surface-recessed), inset 0 0 0 1px var(--console-border-control);
+}
+
+.theme-meridian_bastion {
+  --console-corner-cut: 3px;
+  --console-frame-layer: 3px;
+  --console-corner-layer: 34px;
+  --console-title-rail: 144px;
+  --console-selected-rail: 5px;
+  --console-loader-ticks: 4;
+  --console-control-depth: inset 0 3px 0 var(--console-surface-recessed);
+}
