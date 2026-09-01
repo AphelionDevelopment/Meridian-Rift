@@ -9,6 +9,7 @@ normal browser layout outside the map.
 """
 
 import json
+from math import floor
 from pathlib import Path
 import sys
 
@@ -28,6 +29,7 @@ CALLOUT_SCHEMA_PATH = (
     / "augmentation-preview-callouts.json"
 )
 SIZES = (32, 64, 96)
+CANONICAL_BODY_SIZE = 32
 STATES = (
     "augmentation_markings",
     "augmentation_body_parts",
@@ -99,15 +101,22 @@ def _load_callout_schema():
     return modes, profiles
 
 
+def _round_half_up(value: float) -> int:
+    return floor(value + 0.5)
+
+
 def _pixel(size: int, percentage: float) -> int:
-    return max(0, min(size - 1, round((size - 1) * percentage / 100)))
+    return max(
+        0,
+        min(size - 1, _round_half_up((size - 1) * percentage / 100)),
+    )
 
 
 def _draw_corner_brackets(draw, size: int, state: str) -> None:
     inset = 1
     low = inset
     high = size - inset - 1
-    arm = max(2, round(size * 0.08))
+    arm = max(2, _round_half_up(size * 0.08))
     color = (
         AUGMENTATION_READOUT
         if state == "augmentation_implants"
@@ -143,11 +152,17 @@ def _callout_points(size: int, callout, direction: int):
     side = callout["side"]
     edge = _pixel(size, callout["edge"])
     target_x, target_y = _directional_target(callout["target"], direction)
+    # Anatomical targets live in the canonical 32px character sprite, not in
+    # the surrounding preview canvas. Preview bodies are centered on X and
+    # south-aligned, so larger canvases add side and top breathing room.
     target = (
-        _pixel(size, target_x),
-        _pixel(size, target_y),
+        (size - CANONICAL_BODY_SIZE) // 2
+        + _pixel(CANONICAL_BODY_SIZE, target_x),
+        size
+        - CANONICAL_BODY_SIZE
+        + _pixel(CANONICAL_BODY_SIZE, target_y),
     )
-    inset = max(3, round(size * 0.12))
+    inset = max(3, _round_half_up(size * 0.12))
     high = size - 1
 
     if side == "top":

@@ -35,6 +35,13 @@ const generatorSource = readFileSync(
   ),
   'utf8',
 );
+const runtimeSource = readFileSync(
+  resolve(
+    repositoryRoot,
+    'modular_nova/modules/character_preview_background/code/character_preview_background.dm',
+  ),
+  'utf8',
+);
 
 const expectedProfiles = {
   body: {
@@ -132,6 +139,10 @@ describe('augmentation preview callout schema', () => {
   it('keeps native artwork schema-driven and free of embedded text', () => {
     expect(generatorSource).toContain('augmentation-preview-callouts.json');
     expect(generatorSource).toContain('profiles[modes[mode]]');
+    expect(generatorSource).toContain('CANONICAL_BODY_SIZE = 32');
+    expect(generatorSource).toContain('return floor(value + 0.5)');
+    expect(generatorSource).toContain('_pixel(CANONICAL_BODY_SIZE, target_x)');
+    expect(generatorSource).toContain('_pixel(CANONICAL_BODY_SIZE, target_y)');
     expect(generatorSource).toContain(
       'BYOND_CARDINAL_DIRECTIONS = (SOUTH, NORTH, EAST, WEST)',
     );
@@ -143,5 +154,44 @@ describe('augmentation preview callout schema', () => {
       'draw.line((*edge, *elbow), fill=AUGMENTATION_READOUT, width=1)',
     );
     expect(generatorSource).not.toMatch(/PIXEL_FONT|ImageFont|draw\.text/);
+  });
+
+  it('keeps the body-aware DM rasterizer synchronized with the schema', () => {
+    const dmRegionNames: Record<string, string> = {
+      BODY_ZONE_CHEST: 'chest',
+      BODY_ZONE_HEAD: 'head',
+      BODY_ZONE_L_ARM: 'l_arm',
+      BODY_ZONE_L_LEG: 'l_leg',
+      BODY_ZONE_PRECISE_L_HAND: 'l_hand',
+      BODY_ZONE_PRECISE_R_HAND: 'r_hand',
+      BODY_ZONE_R_ARM: 'r_arm',
+      BODY_ZONE_R_LEG: 'r_leg',
+    };
+    const runtimeEntries = [
+      ...runtimeSource.matchAll(
+        /^\s*(BODY_ZONE_[A-Z_]+|"[a-z_]+")\s*=\s*list\("side"\s*=\s*"([a-z]+)",\s*"edge"\s*=\s*(\d+),\s*"target_x"\s*=\s*(\d+),\s*"target_y"\s*=\s*(\d+)\),$/gm,
+      ),
+    ];
+    const runtimeByRegion = Object.fromEntries(
+      runtimeEntries.map(([, rawRegion, side, edge, targetX, targetY]) => {
+        const region = rawRegion.startsWith('"')
+          ? rawRegion.slice(1, -1)
+          : dmRegionNames[rawRegion];
+        return [
+          region,
+          [side, Number(edge), Number(targetX), Number(targetY)],
+        ];
+      }),
+    );
+    const expectedByRegion = Object.fromEntries(
+      Object.values(expectedProfiles).flatMap((profile) =>
+        Object.entries(profile),
+      ),
+    );
+
+    expect(runtimeByRegion).toEqual(expectedByRegion);
+    expect(runtimeSource).toContain('body.transform');
+    expect(runtimeSource).toContain('leader_icon.DrawBox(null');
+    expect(runtimeSource).toContain('draw_meridian_decoration_line');
   });
 });

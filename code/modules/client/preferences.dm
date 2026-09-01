@@ -461,6 +461,8 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	var/meridian_decoration_region
 	/// Current overlay image, retained for direction synchronization and cleanup.
 	var/image/meridian_decoration_overlay
+	/// Runtime-rastered leader, kept separate from the fixed equal-size frame.
+	var/image/meridian_decoration_leader_overlay
 	// NOVA EDIT ADDITION END
 
 /atom/movable/screen/map_view/char_preview/Initialize(mapload, datum/hud/hud_owner, datum/preferences/preferences)
@@ -477,6 +479,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	// NOVA EDIT ADDITION START: Better character preview
 	canvas?.cut_overlays()
 	meridian_decoration_overlay = null
+	meridian_decoration_leader_overlay = null
 	canvas = null
 	// NOVA EDIT ADDITION END
 	QDEL_NULL(body)
@@ -609,6 +612,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	canvas.dir = preview_direction
 	canvas.cut_overlays()
 	meridian_decoration_overlay = null
+	meridian_decoration_leader_overlay = null
 	if(!isnull(body))
 		canvas.add_overlay(body.appearance)
 
@@ -623,11 +627,20 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 				decoration_icon = 'modular_nova/modules/character_preview_background/icons/preview_decoration_96x96.dmi'
 
 		if(decoration_icon)
-			var/decoration_state = get_meridian_decoration_state()
-			meridian_decoration_overlay = image(decoration_icon, icon_state = decoration_state)
+			meridian_decoration_overlay = image(decoration_icon, icon_state = meridian_decoration_mode, layer = FLY_LAYER)
 			meridian_decoration_overlay.dir = preview_direction
+			meridian_decoration_overlay.plane = HIGH_GAME_PLANE
 			meridian_decoration_overlay.mouse_opacity = MOUSE_OPACITY_TRANSPARENT
 			canvas.add_overlay(meridian_decoration_overlay)
+
+			var/canvas_dimension = (last_canvas_size + 1) * 32
+			var/icon/leader_icon = build_meridian_decoration_leader(decoration_icon, canvas_dimension, preview_direction)
+			if(!isnull(leader_icon))
+				meridian_decoration_leader_overlay = image(leader_icon, layer = FLY_LAYER)
+				meridian_decoration_leader_overlay.dir = SOUTH
+				meridian_decoration_leader_overlay.plane = HIGH_GAME_PLANE
+				meridian_decoration_leader_overlay.mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+				canvas.add_overlay(meridian_decoration_leader_overlay)
 
 	appearance = canvas.appearance
 /atom/movable/screen/map_view/char_preview/proc/create_body()

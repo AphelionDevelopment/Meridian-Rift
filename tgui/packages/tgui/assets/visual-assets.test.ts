@@ -41,8 +41,8 @@ const loaderStylePath = resolve(
 );
 const previewAssetSha256 = {
   32: '26c5afda2fd80bc215fa8c6ec0a5a47cdc41542dd44d184905b14cb209d2d2ea',
-  64: '7acc8a3696e05c9576f34caca464090433c2cdc9b638b9e244fa92dd8056fc89',
-  96: '81299f6eae11c5428f25a72808a3fe4be51b8eb49f7917f511ad200261d20e1a',
+  64: 'f50f76ef095a1159a97bf907b36f1592b62863c576e2db8470b4ebf017eb73b1',
+  96: 'ae4232eb396aab3717f0e92de867b45508dce42fb59d3c910036d03d569bce80',
 } as const;
 
 function pngChunks(png: Buffer) {
