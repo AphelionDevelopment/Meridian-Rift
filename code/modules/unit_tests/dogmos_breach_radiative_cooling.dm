@@ -25,6 +25,14 @@
 	// synchronously.
 	var/list/conversion = convert_neighbor_to_space(interior)
 	original_neighbor_type = conversion[2]
+	var/reached_stage_boundary = FALSE
+	for(var/attempt in 1 to 100)
+		if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
+			reached_stage_boundary = TRUE
+			break
+		sleep(SSair.wait)
+	TEST_ASSERT(reached_stage_boundary, \
+		"Dogmos did not reach a safe stage boundary to publish the breach's queued heat state.")
 
 	// process_turf_heat() is fire-and-forget (bounded(1) channel to a persistent worker, silently
 	// dropped if busy) and the live SSair is also calling it every ~0.5s throughout the suite - same

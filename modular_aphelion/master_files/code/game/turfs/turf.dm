@@ -69,6 +69,11 @@
 /turf/proc/dogmos_heat_temperature()
 	return __dogmos_heat_temperature()
 
+/** Returns this turf's service-owned heat temperature. */
+/turf/return_temperature()
+	var/dogmos_temperature = dogmos_heat_temperature()
+	return isnull(dogmos_temperature) ? temperature : dogmos_temperature
+
 /** Returns the configured temperature authority for blocked turfs. */
 /turf/proc/get_dogmos_blocked_temperature()
 	if(DOGMOS && SSair.dogmos_blocked_turf_temperature_authority == DOGMOS_TEMPERATURE_AUTHORITY_RUST)

@@ -21,11 +21,11 @@
       "format": "elf",
       "platform": "linux",
       "role": "shim",
-      "sha256": "0ab2832122b11200b12117120fc249d6201bd8ec0f47e6cc3f544d2d9cfb1bab",
+      "sha256": "62a7913e5ed42e0077594f0eb199621435a658b22df877c3ec209927f50aa0b4",
       "size": 1139812,
       "symbols": {
         "file": "linux/libdogmos.so.debug",
-        "sha256": "38383e5f20d7d7fe87d8422ce6078f31c1e393f25bc4f46fd767a19b44442773",
+        "sha256": "085b20397f882e49af80c245d9130ffb346633c6a61b7ded36dcd46b7bc4b017",
         "size": 9767132
       },
       "target": "i686-unknown-linux-gnu"
@@ -36,11 +36,11 @@
       "format": "pe",
       "platform": "windows",
       "role": "service",
-      "sha256": "1702b576256dfcee991a97f7d0f7b95ea7ee59d46c0fe2955a8220e89e3936fd",
+      "sha256": "e86d05606a6c6a49725ae41718987be219e864b8b8e3e483424bb2b8d409f268",
       "size": 873984,
       "symbols": {
         "file": "windows/dogmosd.pdb",
-        "sha256": "4aa37136659234c85d4b5a962bc05aa4157a54a4973c2b3da1fde1f295277a7c",
+        "sha256": "efad627913d88ab24c7436923b2032f05901fadead6f0662cf062de94147bb86",
         "size": 14471168
       },
       "target": "x86_64-pc-windows-msvc"
@@ -51,11 +51,11 @@
       "format": "pe",
       "platform": "windows",
       "role": "shim",
-      "sha256": "132dc7a8840bc4a0fb0390c46a875f772086fd758e6640f9aba137f3c9eea48e",
+      "sha256": "85a7deec2477a66536a82c671e1f94ca9601b958f6df2ae6be8ab7a1a0b3df0d",
       "size": 652800,
       "symbols": {
         "file": "windows/dogmos.pdb",
-        "sha256": "bc63b684fdfa6a1ff125537950d8553269e1d22cd1651a43cc507083d27fbd93",
+        "sha256": "ec477f86e499ba62bf2150669ab61d64f79432e1fa180e4c58d9f201cf15e377",
         "size": 9506816
       },
       "target": "i686-pc-windows-msvc"
@@ -78,7 +78,7 @@
     ]
   },
   "schema_version": 1,
-  "source_revision": "713840d74ec61c19acd29dc5b5ae804790c57593",
+  "source_revision": "7f5177fc3726a5c445491259d04a75a94a872006",
   "toolchain": {
     "byond": "516.1687",
     "byondapi_revision": "721dd4690b60954687e41d8691d0040f398d91a6",

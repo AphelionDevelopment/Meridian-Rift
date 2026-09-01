@@ -752,6 +752,55 @@
 	if(epoch_changed || frontier_changed || pending_changed)
 		return Fail("Dogmos published or changed frontier state while an older stage was pending.", __FILE__, __LINE__)
 
+/** Verifies a queued turf heat write is readable before its deferred service flush. */
+/datum/unit_test/dogmos_service_pending_turf_heat_read_after_write
+
+/datum/unit_test/dogmos_service_pending_turf_heat_read_after_write/Run()
+	var/turf/open/target = run_loc_floor_bottom_left
+	var/slot = target.dogmos_service_slot()
+	var/generation = target.dogmos_service_generation()
+	var/slot_key = "[slot]"
+	var/list/original_pending_heat = SSdogmos.dogmos_pending_turf_heat[slot_key]
+	SSdogmos.dogmos_pending_turf_heat[slot_key] = list(slot, generation, TRUE, 777, target.thermal_conductivity, target.heat_capacity, FALSE)
+	var/observed_temperature = target.return_temperature()
+	if(original_pending_heat)
+		SSdogmos.dogmos_pending_turf_heat[slot_key] = original_pending_heat
+	else
+		SSdogmos.dogmos_pending_turf_heat.Remove(slot_key)
+	if(observed_temperature != 777)
+		return Fail("Dogmos returned [observed_temperature]K instead of the queued 777K turf heat write.", __FILE__, __LINE__)
+
+/** Verifies an explicit breath-sized removal preserves the requested amount. */
+/datum/unit_test/dogmos_service_breath_sized_removal
+
+/datum/unit_test/dogmos_service_breath_sized_removal/Run()
+	var/obj/item/tank/internals/emergency_oxygen/tank = allocate(/obj/item/tank/internals/emergency_oxygen)
+	var/source_moles = tank.air_contents.total_moles()
+	var/source_pressure = tank.air_contents.return_pressure()
+	var/source_temperature = tank.air_contents.return_temperature()
+	var/requested_moles = tank.distribute_pressure * BREATH_VOLUME / (R_IDEAL_GAS_EQUATION * tank.air_contents.return_temperature())
+	var/datum/gas_mixture/removed = tank.remove_air_volume(BREATH_VOLUME)
+	var/observed_moles = removed?.get_moles(/datum/gas/oxygen)
+	if(abs(observed_moles - QUANTIZE(requested_moles)) > MOLAR_ACCURACY)
+		return Fail("Dogmos removed [observed_moles] mol instead of the requested [requested_moles] mol breath from [source_moles] mol at [source_pressure] kPa and [source_temperature]K.", __FILE__, __LINE__)
+
+/** Verifies a stage request defers while another service stage remains pending. */
+/datum/unit_test/dogmos_service_foreign_pending_stage_defers
+
+/datum/unit_test/dogmos_service_foreign_pending_stage_defers/Run()
+	var/original_pending_stage = SSair.dogmos_pending_stage
+	var/list/original_pending_frontier = SSair.dogmos_pending_frontier_epoch
+	var/list/sentinel_frontier = list(41, 0, 0, 0)
+	SSair.dogmos_pending_stage = DOGMOS_TEST_STAGE_EXCITED_GROUPS
+	SSair.dogmos_pending_frontier_epoch = sentinel_frontier.Copy()
+	var/deferred = SSair.dogmos_run_stage(DOGMOS_TEST_STAGE_TURF_HEAT, 1)
+	var/stage_changed = SSair.dogmos_pending_stage != DOGMOS_TEST_STAGE_EXCITED_GROUPS
+	var/frontier_changed = !SSdogmos.equal_u64_words(SSair.dogmos_pending_frontier_epoch, sentinel_frontier)
+	SSair.dogmos_pending_stage = original_pending_stage
+	SSair.dogmos_pending_frontier_epoch = original_pending_frontier
+	if(!deferred || stage_changed || frontier_changed)
+		return Fail("Dogmos did not defer a foreign stage without changing the active stage identity.", __FILE__, __LINE__)
+
 /** Verifies frontier preparation repairs an active turf whose normal registration was missed. */
 /datum/unit_test/dogmos_service_frontier_registration_catchup
 

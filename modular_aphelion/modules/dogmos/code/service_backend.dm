@@ -453,7 +453,9 @@
 		CRASH("Dogmos mixture generation exhausted for slot [slot].")
 
 	var/response = dogmos_mixture_lifecycle_batch(list(DOGMOS_LIFECYCLE_REGISTER, slot, generation))
-	finalize_mixture_registration(mixture, slot, generation, response)
+	if(!finalize_mixture_registration(mixture, slot, generation, response))
+		return
+	mixture.set_volume(mixture.initial_volume)
 
 /** Unregisters one gas mixture and makes its slot eligible for generational reuse. */
 /datum/controller/subsystem/dogmos/proc/unregister_mixture(datum/gas_mixture/mixture)
@@ -1752,11 +1754,11 @@
 		if(!SSdogmos.service_failure_latched)
 			CRASH("dogmosd became unavailable during SSair processing.")
 		return TRUE
+	if(!isnull(dogmos_pending_stage) && dogmos_pending_stage != stage)
+		return TRUE
 	if(!dogmos_pending_frontier_epoch)
 		if(!sync_dogmos_frontier())
 			return dogmos_fail_closed_stage(stage)
-	if(!isnull(dogmos_pending_stage) && dogmos_pending_stage != stage)
-		CRASH("Attempted to start Dogmos stage [stage] while stage [dogmos_pending_stage] remains pending.")
 	var/work_limit = dogmos_work_limit_for_budget(remaining_ms)
 	if(!work_limit)
 		dogmos_defer_stage_for_budget()
@@ -1859,6 +1861,9 @@
 
 	var/slot = dogmos_service_slot()
 	var/generation = dogmos_service_generation()
+	var/registered_heat_temperature
+	if(!isnull(dogmos_registered_mixture_slot))
+		registered_heat_temperature = __dogmos_heat_temperature()
 	if(flag == DOGMOS_SIMULATION_REMOVE)
 		var/list/removal = list(
 			DOGMOS_LIFECYCLE_REGISTER, slot, generation, FALSE, 0, 0,
@@ -1898,7 +1903,7 @@
 		slot,
 		generation,
 		heat_present,
-		heat_present ? initial_temperature : 0,
+		heat_present ? (isnull(registered_heat_temperature) ? initial_temperature : registered_heat_temperature) : 0,
 		heat_present ? thermal_conductivity : 0,
 		heat_present ? heat_capacity : 0,
 		heat_present && should_conduct_to_space(),
@@ -1933,7 +1938,12 @@
 /turf/proc/__dogmos_heat_temperature()
 	if(!init_air || thermal_conductivity <= 0 || heat_capacity <= 0 || isnull(dogmos_registration_generation))
 		return null
-	var/list/snapshot = dogmos_turf_heat_snapshot(list(dogmos_service_slot(), dogmos_service_generation()))
+	var/slot = dogmos_service_slot()
+	var/generation = dogmos_service_generation()
+	var/list/pending_heat = SSdogmos.dogmos_pending_turf_heat["[slot]"]
+	if(islist(pending_heat) && length(pending_heat) == 7 && pending_heat[2] == generation)
+		return pending_heat[3] ? pending_heat[4] : null
+	var/list/snapshot = dogmos_turf_heat_snapshot(list(slot, generation))
 	if(length(snapshot) != 5)
 		CRASH("dogmosd returned a malformed turf heat snapshot.")
 	if(!snapshot[1])
