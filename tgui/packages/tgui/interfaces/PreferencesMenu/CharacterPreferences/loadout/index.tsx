@@ -28,6 +28,9 @@ import type {
 import { ItemIcon, LoadoutTabDisplay, SearchDisplay } from './ItemDisplay';
 import { LoadoutModifyDimmer } from './ModifyPanel';
 
+export const LOADOUT_CATEGORY_TABS_CLASS =
+  'PreferencesMenu__LoadoutCategoryTabs';
+
 export function LoadoutPage(props) {
   const serverData = useServerPrefs();
   const loadout_tabs = serverData?.loadout.loadout_tabs || [];
@@ -155,7 +158,7 @@ export function LoadoutPage(props) {
             />
           }
         >
-          <Tabs fluid align="center">
+          <Tabs className={LOADOUT_CATEGORY_TABS_CLASS} fluid align="center">
             {loadout_tabs // NOVA EDIT CHANGE - Adds filter before map()
               // NOVA EDIT ADDITION START - Prefslocked tabs
               .filter(

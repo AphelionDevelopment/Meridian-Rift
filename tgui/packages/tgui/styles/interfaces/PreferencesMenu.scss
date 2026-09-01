@@ -10,6 +10,13 @@
 }
 
 .PreferencesMenu {
+  &__LoadoutCategoryTabs > .Tab {
+    // Horizontal Tabs reserve the selection indicator below their content.
+    // Match that reserve above this two-line icon/label strip so it stays
+    // optically centered in every theme.
+    padding-top: var(--tab-indicator-size);
+  }
+
   &__Antags {
     &__antagSelection {
       gap: var(--space-l);

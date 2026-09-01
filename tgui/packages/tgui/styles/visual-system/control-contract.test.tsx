@@ -1,14 +1,16 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { CSSProperties } from 'react';
 import { cleanup, render } from '@testing-library/react';
 import { compileAsync } from 'sass-embedded';
-import { Button } from 'tgui-core/components';
+import { Button, Icon, Tabs } from 'tgui-core/components';
 
 import {
   MERIDIAN_THEME_IDS,
   resolveMeridianTheme,
 } from '../../constants/theme';
+import { LOADOUT_CATEGORY_TABS_CLASS } from '../../interfaces/PreferencesMenu/CharacterPreferences/loadout';
 
 const COMPONENT_SOURCE = readFileSync(
   join(import.meta.dir, '_components.scss'),
@@ -34,16 +36,29 @@ const UNCHECKED_ARIA = {
 let productionStyle: HTMLStyleElement;
 
 beforeAll(async () => {
-  const [themeCss, componentCss, decorationCss] = await Promise.all(
-    ['_themes.scss', '_components.scss', '_decoration.scss'].map(
-      async (file) => (await compileAsync(join(import.meta.dir, file))).css,
-    ),
-  );
+  const [themeCss, componentCss, decorationCss, tabsCss, preferencesCss] =
+    await Promise.all(
+      [
+        '_themes.scss',
+        '_components.scss',
+        '_decoration.scss',
+        '../../../../node_modules/tgui-core/styles/components/Tabs.scss',
+        '../interfaces/PreferencesMenu.scss',
+      ].map(
+        async (file) => (await compileAsync(join(import.meta.dir, file))).css,
+      ),
+    );
   productionStyle = document.createElement('style');
   // happy-dom does not resolve custom properties in background shorthands.
   // Substitute two sentinel colors so the real compiled selectors and import
   // order can still prove that Highline's inverse state wins the cascade.
-  productionStyle.textContent = (themeCss + componentCss + decorationCss)
+  productionStyle.textContent = (
+    tabsCss +
+    themeCss +
+    componentCss +
+    decorationCss +
+    preferencesCss
+  )
     .replaceAll('var(--console-interaction-pressed)', 'rgb(1, 2, 3)')
     .replaceAll('var(--console-text-primary)', 'rgb(255, 255, 255)');
   document.head.appendChild(productionStyle);
@@ -63,7 +78,10 @@ describe('MeridianOS shared control geometry', () => {
       expect(resolveMeridianTheme(theme).classes).toContain('theme-console');
 
       const view = render(
-        <div className={`theme-console theme-${theme}`}>
+        <div
+          className={`theme-console theme-${theme}`}
+          style={{ '--tab-indicator-size': '3px' } as CSSProperties}
+        >
           <Button aria-label="Icon only" icon="rotate" />
           <Button aria-label="Short inline height" height="20px">
             Short
@@ -92,6 +110,15 @@ describe('MeridianOS shared control geometry', () => {
               <span className="Dropdown__icon">V</span>
             </div>
           </div>
+          <Tabs className={LOADOUT_CATEGORY_TABS_CLASS} fluid>
+            <Tabs.Tab selected>
+              <span>
+                <Icon name="hat-cowboy" />
+                <br />
+                Head
+              </span>
+            </Tabs.Tab>
+          </Tabs>
         </div>,
       );
 
@@ -104,10 +131,13 @@ describe('MeridianOS shared control geometry', () => {
       const unchecked = view.getByRole('checkbox', { name: 'Unchecked' });
       const selectedRadio = view.getByLabelText('Selected radio');
       const disabledCheckbox = view.getByLabelText('Disabled checkbox');
-      const selectedTab = view.getByText('Selected tab').closest(
-        '.Tab',
-      ) as HTMLElement;
+      const selectedTab = view
+        .getByText('Selected tab')
+        .closest('.Tab') as HTMLElement;
       const dropdownControl = view.getByText('Aligned option').parentElement!;
+      const loadoutCategoryTab = view
+        .getByText('Head')
+        .closest('.Tab') as HTMLElement;
       const iconContent = iconOnly.querySelector(
         '.Button__content',
       ) as HTMLElement;
@@ -143,8 +173,11 @@ describe('MeridianOS shared control geometry', () => {
         theme === 'meridian_highline' ? '1' : '0.58',
       );
       expect(getComputedStyle(dropdownControl).height).toBe('24px');
-      expect(getComputedStyle(selectedTab.querySelector('.Tab__left')!).display)
-        .toBe('inline-flex');
+      expect(getComputedStyle(loadoutCategoryTab).paddingTop).toBe('3px');
+      expect(getComputedStyle(loadoutCategoryTab).paddingBottom).toBe('3px');
+      expect(
+        getComputedStyle(selectedTab.querySelector('.Tab__left')!).display,
+      ).toBe('inline-flex');
 
       if (theme === 'meridian_highline') {
         expect(getComputedStyle(selectedTab).backgroundColor).toBe(
