@@ -12,7 +12,7 @@ import type { BooleanLike } from 'tgui-core/react';
 import { useBackend } from '../backend';
 import { Window } from '../layouts';
 import { InputButtons } from './common/InputButtons';
-import { Loader } from './common/Loader';
+import { TimeoutBar } from './common/TimeoutBar';
 
 type Data = {
   init_value: number;
@@ -58,7 +58,7 @@ export function NumberInputModal(props) {
 
   return (
     <Window title={title} width={270} height={windowHeight}>
-      {timeout && <Loader value={timeout} />}
+      {!!timeout && <TimeoutBar value={timeout} />}
       <Window.Content onKeyDown={handleKeyDown}>
         <Section fill>
           <Stack fill vertical>

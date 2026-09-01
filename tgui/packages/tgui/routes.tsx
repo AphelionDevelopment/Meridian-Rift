@@ -7,7 +7,7 @@
 import { useAtomValue } from 'jotai';
 import { KitchenSink } from './debug/KitchenSink';
 import { backendStateAtom } from './events/store';
-import { LoadingScreen } from './interfaces/common/LoadingScreen';
+import { DiagnosticLoader } from './interfaces/common/DiagnosticLoader';
 import { Window } from './layouts';
 
 const requireInterface = require.context(
@@ -57,7 +57,7 @@ function RefreshingWindow() {
   return (
     <Window title="Loading">
       <Window.Content>
-        <LoadingScreen />
+        <DiagnosticLoader />
       </Window.Content>
     </Window>
   );

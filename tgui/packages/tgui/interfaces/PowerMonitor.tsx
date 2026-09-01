@@ -17,7 +17,7 @@ import { toFixed } from 'tgui-core/math';
 
 import { useBackend } from '../backend';
 import { Window } from '../layouts';
-import { LoadingScreen } from './common/LoadingScreen';
+import { DiagnosticLoader } from './common/DiagnosticLoader';
 
 type Data = {
   areas: Area[];
@@ -94,7 +94,7 @@ export function PowerMonitorContent(props) {
   const maxValue = Math.max(PEAK_DRAW, ...history.supply, ...history.demand);
 
   if (supplyData.length === 0 || demandData.length === 0) {
-    return <LoadingScreen />;
+    return <DiagnosticLoader />;
   }
 
   return (

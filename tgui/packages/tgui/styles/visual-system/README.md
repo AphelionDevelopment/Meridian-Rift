@@ -7,15 +7,19 @@ hackerman, retro-95, or other specialty themes.
 ## Architecture
 
 1. `_palette.scss` contains private color primitives.
-2. `_tokens.scss` defines runtime semantic variables and maps them to the
+2. `_display-font.scss` exposes the licensed display face to both TGUI bundles.
+3. `_tokens.scss` defines runtime semantic variables and maps them to the
    public tgui-core component variables.
-3. `_themes.scss` supplies palette and construction profiles for Standard and
+4. `_themes.scss` supplies palette and construction profiles for Standard and
    ten development skins.
-4. `_components.scss` applies shared component states using semantic variables
+5. `_components.scss` applies shared component states using semantic variables
    only.
-5. `_decoration.scss` owns pointer-transparent shell, title-rail, and corner
+6. `_loader.scss` provides the fixed diagnostic-instrument layer set shared by
+   the ordinary TGUI and lobby bundles. Theme variables reshape it without
+   cloning component markup.
+7. `_decoration.scss` owns pointer-transparent shell, title-rail, and corner
    motifs.
-6. `_motion.scss` owns the small interaction transitions, reduced-motion
+8. `_motion.scss` owns the small interaction transitions, reduced-motion
    behavior, and forced-colors fallback.
 
 `Layout` resolves the window-local development override first, then the
@@ -46,6 +50,11 @@ In a development build, open the Kitchen Sink with the title-bar bug button or
 F11. Use **Inherit**, previous, next, or the skin dropdown. The selection applies
 to the current window immediately, remains active after leaving the Kitchen
 Sink, and is discarded when that TGUI window closes.
+
+The **Loader study** page compares the production Meridian-authored instrument
+at 48/64/96/144px, three scaling factors, determinate checkpoints, and a manual
+reduced-motion freeze. Candidate A remains visibly provenance-gated until an
+auditable #21604950 source archive is acquired; see `LOADER_STUDY.md`.
 
 ## Research translation
 

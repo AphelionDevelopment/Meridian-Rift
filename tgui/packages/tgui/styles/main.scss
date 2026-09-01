@@ -16,9 +16,11 @@
 @include meta.load-css('~tgui-core/styles/all-themes.scss');
 
 // MeridianOS visual system: primitives -> runtime tokens -> shared treatment.
+@include meta.load-css('./visual-system/display-font.scss');
 @include meta.load-css('./visual-system/tokens.scss');
 @include meta.load-css('./visual-system/themes.scss');
 @include meta.load-css('./visual-system/components.scss');
+@include meta.load-css('./visual-system/loader.scss');
 @include meta.load-css('./visual-system/decoration.scss');
 @include meta.load-css('./visual-system/motion.scss');
 

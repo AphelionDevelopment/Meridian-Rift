@@ -5,7 +5,7 @@ import { Box, Button, Section, Stack } from 'tgui-core/components';
 import { isEscape, KEY } from 'tgui-core/keys';
 import type { BooleanLike } from 'tgui-core/react';
 import { InputButtons } from './common/InputButtons';
-import { Loader } from './common/Loader';
+import { TimeoutBar } from './common/TimeoutBar';
 
 type KeyInputData = {
   init_value: string;
@@ -123,7 +123,7 @@ export function KeyComboModal(props) {
 
   return (
     <Window title={title} width={240} height={windowHeight}>
-      {timeout && <Loader value={timeout} />}
+      {!!timeout && <TimeoutBar value={timeout} />}
       <Window.Content onKeyDown={handleKeyDown}>
         <Section fill>
           <div ref={focusRef} tabIndex={-1} />

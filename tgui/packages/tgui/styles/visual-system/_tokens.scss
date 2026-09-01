@@ -1,11 +1,3 @@
-@font-face {
-  font-family: 'VCR OSD Mono';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('./assets/VCR_OSD_Mono.woff2') format('woff2');
-}
-
 .theme-console {
   --console-border-subtle: color-mix(in srgb, var(--console-border-control) 50%, transparent);
   --console-border-strong: color-mix(in srgb, var(--console-border-control) 72%, var(--console-text-primary));
@@ -35,12 +27,38 @@
   --console-heading-tracking: 0.08em;
   --console-loader-stroke: 2px;
   --console-loader-stroke-secondary: 1px;
+  // Profile metadata stays readable for inspection; explicit angular steps
+  // below drive gradients without relying on newer CSS division syntax.
   --console-loader-ticks: 4;
   --console-loader-nodes: 0;
   --console-loader-arc-start: 12deg;
   --console-loader-arc-span: 264deg;
   --console-loader-progress-track: var(--console-surface-recessed);
   --console-loader-progress-core: var(--console-interaction-accent);
+  --console-loader-tick-step: 90deg;
+  --console-loader-tick-width: 3deg;
+  --console-loader-tick-depth: 6%;
+  --console-loader-crown-color: var(--console-border-control);
+  --console-loader-crown-gap: transparent;
+  --console-loader-fill-gap: transparent;
+  --console-loader-cage-pattern: conic-gradient(
+    from -78deg,
+    var(--console-interaction-accent) 0deg 92deg,
+    transparent 92deg 142deg,
+    var(--console-interaction-selected) 142deg 224deg,
+    transparent 224deg 360deg
+  );
+  --console-loader-cage-width: 3px;
+  --console-loader-track-width: 3px;
+  --console-loader-node-step: 90deg;
+  --console-loader-node-width: 5deg;
+  --console-loader-node-size: 4px;
+  --console-loader-node-opacity: 0;
+  --console-loader-core-size: 24%;
+  --console-loader-core-shape: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  --console-loader-origin-width: 2px;
+  --console-loader-origin-height: 8px;
+  --console-loader-turn-duration: 5.6s;
   --console-space-1: 4px;
   --console-space-2: 8px;
   --console-space-3: 12px;

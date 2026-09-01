@@ -6,6 +6,8 @@
 @include meta.load-css('~tgui-core/styles/colors.scss');
 @include meta.load-css('~tgui-core/styles/vars-components.scss');
 @include meta.load-css('~tgui-core/styles/components/Tooltip.scss');
+@include meta.load-css('~tgui/styles/visual-system/display-font.scss');
+@include meta.load-css('~tgui/styles/visual-system/loader.scss');
 
 .Tooltip {
   //font-family: 'Pixellari', monospace; // APHELION EDIT REMOVAL

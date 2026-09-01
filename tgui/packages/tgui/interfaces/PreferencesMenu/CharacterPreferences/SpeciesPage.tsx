@@ -12,7 +12,7 @@ import {
 import { classes } from 'tgui-core/react';
 
 import { CharacterPreview } from '../../common/CharacterPreview';
-import { LoadingScreen } from '../../common/LoadingScreen';
+import { DiagnosticLoader } from '../../common/DiagnosticLoader';
 import {
   createSetPreference,
   Food,
@@ -410,7 +410,7 @@ type SpeciesPageProps = {
 export function SpeciesPage(props: SpeciesPageProps) {
   const serverData = useServerPrefs();
   if (!serverData) {
-    return <LoadingScreen />;
+    return <DiagnosticLoader />;
   }
 
   return (

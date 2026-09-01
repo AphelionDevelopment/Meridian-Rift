@@ -6,7 +6,7 @@ import { resolveAsset } from '../../assets';
 import { useBackend } from '../../backend';
 import { Window } from '../../layouts';
 import { logger } from '../../logging';
-import { LoadingScreen } from '../common/LoadingScreen';
+import { DiagnosticLoader } from '../common/DiagnosticLoader';
 import { CharacterPreferenceWindow } from './CharacterPreferences';
 import { GamePreferenceWindow } from './GamePreferences';
 import {
@@ -37,7 +37,7 @@ export function PreferencesMenu(props) {
   return (
     <Window width={WINDOW_WIDTH} height={height} /* NOVA EDIT CHANGE - ORIGINAL: <Window width={920} height={770}> */>
       <Window.Content>
-        <Suspense fallback={<LoadingScreen />}>
+        <Suspense fallback={<DiagnosticLoader />}>
           <PrefsWindowInner onAugmentsTabChange={setAugmentsTab} /* NOVA EDIT CHANGE - ORIGINAL: <PrefsWindowInner /> *//>
         </Suspense>
       </Window.Content>

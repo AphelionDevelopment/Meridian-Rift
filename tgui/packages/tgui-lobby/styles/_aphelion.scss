@@ -13,76 +13,191 @@
   z-index: 0;
 }
 
+.boot_terminal {
+  --boot-accent: #58d1c9;
+  --boot-accent-secondary: #7ae2db;
+  --boot-boundary: #4b6b78;
+  --boot-surface: #0d171d;
+  --boot-surface-recessed: #091217;
+  --boot-text: #e6eef1;
+  --boot-text-secondary: #9fb2bc;
+  --boot-warning: #f2bd52;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: var(--boot-text);
+  isolation: isolate;
+  z-index: 1;
+}
+
+.boot_terminal::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: '';
+  pointer-events: none;
+  background-color: rgba(2, 6, 8, 0.82);
+  background-image: radial-gradient(
+    circle at 50% 44%,
+    rgba(88, 209, 201, 0.055),
+    rgba(88, 209, 201, 0) 42%
+  );
+}
+
+.boot_terminal__instrument {
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+}
+
+.boot_terminal .DiagnosticLoader {
+  --console-text-primary: var(--boot-text);
+  --console-text-secondary: var(--boot-text-secondary);
+  --console-border-control: var(--boot-boundary);
+  --console-interaction-accent: var(--boot-accent);
+  --console-interaction-selected: var(--boot-accent-secondary);
+  --console-loader-crown-color: var(--boot-boundary);
+  --console-loader-progress-track: var(--boot-surface-recessed);
+  --console-loader-progress-core: var(--boot-accent);
+  --console-loader-cage-pattern: conic-gradient(
+    from -78deg,
+    var(--boot-accent) 0deg 92deg,
+    transparent 92deg 142deg,
+    var(--boot-accent-secondary) 142deg 224deg,
+    transparent 224deg
+  );
+  width: min(90vw, 36rem);
+  height: auto;
+  color: var(--boot-text);
+  font-family: 'Fixedsys', monospace;
+}
+
+.boot_terminal .DiagnosticLoader__label {
+  min-width: 18em;
+  padding: 4px 12px 3px;
+  color: var(--boot-text);
+  border-top: 1px solid var(--boot-boundary);
+  border-bottom: 1px solid var(--boot-boundary);
+  font-family: var(--console-font-display, 'VCR OSD Mono', monospace);
+  font-size: clamp(14px, 2vmin, 18px);
+  letter-spacing: 0.16em;
+}
+
+.boot_terminal .DiagnosticLoader__detail {
+  max-width: min(72vw, 52rem);
+  color: var(--boot-text-secondary);
+  font-size: clamp(11px, 1.45vmin, 14px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.boot_terminal__status {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .container_terminal {
   position: absolute;
-  width: 100%;
-  height: calc(100% - 7vmin);
+  top: clamp(12px, 2vmin, 24px);
+  right: clamp(12px, 2vmin, 24px);
+  width: min(42vw, 520px);
+  height: min(30vh, 260px);
   overflow: clip;
   box-sizing: border-box;
-  padding: 3vmin 2vmin;
-  top: 0;
-  left: 0;
-  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 24px 12px 8px;
+  border-top: 1px solid var(--boot-boundary);
+  border-right: 1px solid var(--boot-boundary);
+  z-index: 2;
+}
+
+.container_terminal::before {
+  position: absolute;
+  top: 5px;
+  right: 9px;
+  content: 'MeridianOS / BOOT LOG';
+  color: var(--boot-accent);
+  font-family: 'Fixedsys', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
 }
 
 .terminal_text {
   display: block;
   font-family: 'Fixedsys', monospace;
-  font-weight: lighter;
+  font-weight: 400;
   text-decoration: none;
   width: 100%;
   text-align: right;
-  color: green;
-  text-shadow: 1px 1px black;
+  color: var(--boot-text-secondary);
   margin: 0;
-  font-size: 2vmin;
-  line-height: 2.2vmin;
-  letter-spacing: 1px;
+  font-size: clamp(10px, 1.3vmin, 13px);
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+}
+
+.terminal_text--warning {
+  color: var(--boot-warning);
 }
 
 .container_progress {
   position: absolute;
   box-sizing: border-box;
-  bottom: 3vmin;
-  left: 2vmin;
-  height: 4vmin;
-  width: calc(100% - 4vmin);
-  border-left: 2px solid green;
-  border-right: 2px solid green;
-  padding: 4px;
-  background-color: black;
-  z-index: 1;
+  right: clamp(16px, 3vmin, 40px);
+  bottom: clamp(16px, 3vmin, 40px);
+  left: clamp(16px, 3vmin, 40px);
+  height: 10px;
+  padding: 2px;
+  background: var(--boot-surface-recessed);
+  border: 1px solid var(--boot-boundary);
+  z-index: 2;
 }
 
 .progress_bar {
-  width: 0%;
+  width: 100%;
   height: 100%;
-  background-color: green;
+  background: var(--boot-accent);
+  transform: scaleX(var(--boot-progress, 0));
+  transform-origin: left center;
 }
 
-@keyframes looping_sub_pattern {
-  from {
-    background-position: 0 0;
+@media (max-width: 600px), (max-height: 520px) {
+  .boot_terminal__instrument {
+    top: 48%;
   }
-  to {
-    background-position: 11.3137px 0;
+
+  .container_terminal {
+    right: 10px;
+    width: calc(100% - 20px);
+    height: 21vh;
+  }
+
+  .boot_terminal .DiagnosticLoader__detail {
+    max-width: 88vw;
   }
 }
 
-.sub_progress_bar {
-  width: 0%;
-  height: 100%;
-  float: right;
-  background-color: lime;
-  background-image: repeating-linear-gradient(
-    -45deg,
-    green,
-    green 7px,
-    black 7px,
-    black 8px
-  );
-  background-attachment: fixed;
-  animation: looping_sub_pattern 1s linear infinite;
+@media (forced-colors: active) {
+  .boot_terminal {
+    --boot-accent: Highlight;
+    --boot-accent-secondary: Highlight;
+    --boot-boundary: CanvasText;
+    --boot-surface: Canvas;
+    --boot-surface-recessed: Canvas;
+    --boot-text: CanvasText;
+    --boot-text-secondary: CanvasText;
+    --boot-warning: Mark;
+  }
+
+  .boot_terminal::before {
+    background: Canvas;
+  }
 }
 
 .container_nav {

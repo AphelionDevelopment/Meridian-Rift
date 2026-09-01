@@ -15,7 +15,7 @@ import { fetchRetry } from 'tgui-core/http';
 import { isEscape, KEY } from 'tgui-core/keys';
 import type { BooleanLike } from 'tgui-core/react';
 
-import { LoadingScreen } from '../../common/LoadingScreen';
+import { DiagnosticLoader } from '../../common/DiagnosticLoader';
 import type { PreferencesMenuData } from '../types';
 import { TabbedMenu } from './TabbedMenu';
 
@@ -467,7 +467,7 @@ export class KeybindingsPage extends Component<any, KeybindingsPageState> {
     const keybindings = this.state.keybindings;
 
     if (!keybindings) {
-      return <LoadingScreen />;
+      return <DiagnosticLoader />;
     }
 
     const keybindingEntries = sortKeybindingsByCategory(

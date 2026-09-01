@@ -33,6 +33,7 @@ import {
 } from '../constants/theme';
 import { debugThemeAtom } from '../events/store';
 import { Pane, Window } from '../layouts';
+import { DiagnosticLoaderComparison } from './DiagnosticLoaderComparison';
 
 type Props = {
   panel?: boolean;
@@ -44,6 +45,7 @@ enum Tab {
   Shared = 'shared',
   Chunks = 'outgoingPayloadQueues',
   Components = 'components',
+  LoaderStudy = 'loader-study',
 }
 
 const tabs = [
@@ -151,11 +153,19 @@ export function KitchenSink(props: Props) {
                   >
                     Components
                   </Tabs.Tab>
+                  <Tabs.Tab
+                    selected={activeTab === Tab.LoaderStudy}
+                    onClick={() => setActiveTab(Tab.LoaderStudy)}
+                  >
+                    Loader study
+                  </Tabs.Tab>
                 </Tabs>
               </Stack.Item>
               <Stack.Item grow={4}>
                 {activeTab === Tab.Components ? (
                   <ComponentsPage onShowModal={() => setShowModal(true)} />
+                ) : activeTab === Tab.LoaderStudy ? (
+                  <DiagnosticLoaderComparison />
                 ) : (
                   <TreePage tab={activeTab} />
                 )}

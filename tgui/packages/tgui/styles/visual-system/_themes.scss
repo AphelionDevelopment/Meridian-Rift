@@ -24,6 +24,20 @@
   --console-corner-layer: 24px;
   --console-title-rail: 116px;
   --console-loader-ticks: 24;
+  --console-loader-tick-step: 15deg;
+  --console-loader-tick-width: 1deg;
+  --console-loader-tick-depth: 4%;
+  --console-loader-cage-width: 2px;
+  --console-loader-cage-pattern: conic-gradient(
+    from -90deg,
+    var(--console-interaction-accent) 0deg 118deg,
+    transparent 118deg 128deg,
+    var(--console-border-control) 128deg 260deg,
+    transparent 260deg 274deg,
+    var(--console-interaction-selected) 274deg 344deg,
+    transparent 344deg
+  );
+  --console-loader-turn-duration: 7.2s;
   --console-heading-tracking: 0.12em;
 }
 
@@ -34,6 +48,19 @@
   --console-title-rail: 72px;
   --console-segment-pattern: 12px;
   --console-loader-ticks: 12;
+  --console-loader-tick-step: 30deg;
+  --console-loader-tick-width: 10deg;
+  --console-loader-tick-depth: 9%;
+  --console-loader-cage-width: 5px;
+  --console-loader-core-size: 28%;
+  --console-loader-core-shape: polygon(
+    12% 0,
+    100% 0,
+    100% 88%,
+    88% 100%,
+    0 100%,
+    0 12%
+  );
   --console-control-depth: inset 2px 2px 0 var(--console-surface-recessed), inset -1px -1px 0 var(--console-border-control);
 }
 
@@ -43,6 +70,12 @@
   --console-title-rail: 104px;
   --console-loader-ticks: 8;
   --console-loader-nodes: 8;
+  --console-loader-tick-step: 45deg;
+  --console-loader-tick-width: 2deg;
+  --console-loader-node-step: 45deg;
+  --console-loader-node-width: 5deg;
+  --console-loader-node-opacity: 1;
+  --console-loader-core-shape: inset(8%);
   --console-heading-case: none;
 }
 
@@ -57,6 +90,25 @@
   --console-motif-opacity: 0;
   --console-selected-rail: 4px;
   --console-loader-ticks: 4;
+  --console-loader-tick-step: 90deg;
+  --console-loader-tick-width: 36deg;
+  --console-loader-tick-depth: 12%;
+  --console-loader-crown-gap: var(--console-surface-canvas);
+  --console-loader-fill-gap: var(--console-surface-canvas);
+  --console-loader-cage-width: 5px;
+  --console-loader-track-width: 5px;
+  --console-loader-cage-pattern: conic-gradient(
+    from -68deg,
+    var(--console-text-primary) 0deg 66deg,
+    var(--console-surface-canvas) 66deg 112deg,
+    var(--console-text-primary) 112deg 178deg,
+    var(--console-surface-canvas) 178deg 224deg,
+    var(--console-text-primary) 224deg 290deg,
+    var(--console-surface-canvas) 290deg 336deg,
+    var(--console-text-primary) 336deg
+  );
+  --console-loader-core-size: 30%;
+  --console-loader-core-shape: inset(0);
   --console-control-depth: none;
   --console-overlay-shadow: none;
   --augmentation-glow: var(--augmentation-frame);
@@ -69,6 +121,25 @@
   --console-title-rail: 84px;
   --console-loader-ticks: 3;
   --console-loader-nodes: 3;
+  --console-loader-tick-step: 120deg;
+  --console-loader-tick-width: 7deg;
+  --console-loader-node-step: 120deg;
+  --console-loader-node-width: 9deg;
+  --console-loader-node-opacity: 1;
+  --console-loader-cage-pattern: conic-gradient(
+    from -54deg,
+    var(--console-interaction-accent) 0deg 164deg,
+    transparent 164deg 224deg,
+    var(--console-interaction-selected) 224deg 318deg,
+    transparent 318deg
+  );
+  --console-loader-core-shape: polygon(
+    50% 0,
+    92% 26%,
+    80% 82%,
+    22% 100%,
+    0 44%
+  );
   --console-loader-arc-span: 218deg;
 }
 
@@ -78,6 +149,20 @@
   --console-corner-layer: 30px;
   --console-title-rail: 128px;
   --console-loader-ticks: 10;
+  --console-loader-tick-step: 36deg;
+  --console-loader-tick-width: 4deg;
+  --console-loader-cage-pattern: conic-gradient(
+    from -74deg,
+    var(--augmentation-frame) 0deg 72deg,
+    transparent 72deg 86deg,
+    var(--augmentation-frame) 86deg 178deg,
+    transparent 178deg 214deg,
+    var(--augmentation-readout) 214deg 292deg,
+    transparent 292deg
+  );
+  --console-loader-progress-core: var(--augmentation-readout);
+  --console-loader-origin-width: 8px;
+  --console-loader-origin-height: 2px;
   --console-heading-tracking: 0.14em;
   --augmentation-frame: #c0152a;
   --augmentation-surface: #0f0505;
@@ -94,6 +179,30 @@
   --console-title-rail: 132px;
   --console-loader-ticks: 3;
   --console-loader-nodes: 3;
+  --console-loader-tick-step: 120deg;
+  --console-loader-tick-width: 26deg;
+  --console-loader-tick-depth: 8%;
+  --console-loader-node-step: 120deg;
+  --console-loader-node-width: 8deg;
+  --console-loader-node-opacity: 1;
+  --console-loader-cage-pattern: conic-gradient(
+    from -90deg,
+    var(--augmentation-frame) 0deg 98deg,
+    transparent 98deg 120deg,
+    var(--augmentation-frame) 120deg 218deg,
+    transparent 218deg 240deg,
+    var(--augmentation-readout) 240deg 338deg,
+    transparent 338deg
+  );
+  --console-loader-progress-core: var(--augmentation-readout);
+  --console-loader-core-shape: polygon(
+    12% 0,
+    88% 0,
+    100% 50%,
+    88% 100%,
+    12% 100%,
+    0 50%
+  );
   --console-heading-tracking: 0.16em;
   --augmentation-frame: #c0152a;
   --augmentation-surface: #0f0505;
@@ -111,6 +220,12 @@
   --console-frame-top-weight: 5px;
   --console-frame-left-weight: 4px;
   --console-loader-ticks: 8;
+  --console-loader-tick-step: 45deg;
+  --console-loader-tick-width: 18deg;
+  --console-loader-tick-depth: 11%;
+  --console-loader-cage-width: 6px;
+  --console-loader-core-size: 32%;
+  --console-loader-core-shape: inset(0);
   --console-control-depth: inset 2px 2px 0 var(--console-surface-recessed), inset -2px -2px 0 var(--console-border-control);
 }
 
@@ -120,6 +235,14 @@
   --console-corner-layer: 8px;
   --console-title-rail: 76px;
   --console-loader-ticks: 12;
+  --console-loader-tick-step: 30deg;
+  --console-loader-tick-width: 12deg;
+  --console-loader-tick-depth: 10%;
+  --console-loader-node-step: 30deg;
+  --console-loader-node-width: 8deg;
+  --console-loader-node-opacity: 0.72;
+  --console-loader-core-size: 28%;
+  --console-loader-core-shape: inset(0);
   --console-control-depth: inset 0 -3px 0 var(--console-surface-recessed), inset 0 0 0 1px var(--console-border-control);
 }
 
@@ -130,5 +253,21 @@
   --console-title-rail: 144px;
   --console-selected-rail: 5px;
   --console-loader-ticks: 4;
+  --console-loader-tick-step: 90deg;
+  --console-loader-tick-width: 54deg;
+  --console-loader-tick-depth: 15%;
+  --console-loader-cage-width: 7px;
+  --console-loader-track-width: 5px;
+  --console-loader-core-size: 34%;
+  --console-loader-core-shape: polygon(
+    18% 0,
+    82% 0,
+    100% 18%,
+    100% 82%,
+    82% 100%,
+    18% 100%,
+    0 82%,
+    0 18%
+  );
   --console-control-depth: inset 0 3px 0 var(--console-surface-recessed);
 }

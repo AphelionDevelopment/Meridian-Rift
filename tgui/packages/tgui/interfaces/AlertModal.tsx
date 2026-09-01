@@ -5,7 +5,7 @@ import type { BooleanLike } from 'tgui-core/react';
 
 import { useBackend } from '../backend';
 import { Window } from '../layouts';
-import { Loader } from './common/Loader';
+import { TimeoutBar } from './common/TimeoutBar';
 
 type Data = {
   autofocus: BooleanLike;
@@ -98,7 +98,7 @@ export function AlertModal(props) {
 
   return (
     <Window height={windowHeight} title={title} width={windowWidth}>
-      {!!timeout && <Loader value={timeout} />}
+      {!!timeout && <TimeoutBar value={timeout} />}
       <Window.Content onKeyDown={keyDownHandler}>
         <Section fill>
           <Stack fill vertical>

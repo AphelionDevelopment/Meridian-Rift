@@ -9,7 +9,7 @@ import { type HsvaColor, hexToHsva } from 'tgui-core/color';
 import { Autofocus, Box, Section, Stack } from 'tgui-core/components';
 import { useBackend } from '../../backend';
 import { Window } from '../../layouts';
-import { Loader } from '../common/Loader';
+import { TimeoutBar } from '../common/TimeoutBar';
 import { ColorSelector } from './ColorSetter';
 
 interface ColorPickerData {
@@ -49,7 +49,7 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = () => {
       width={700}
       theme="generic"
     >
-      {!!timeout && <Loader value={timeout} />}
+      {!!timeout && <TimeoutBar value={timeout} />}
       <Window.Content>
         <Stack fill vertical>
           {!!autofocus && <Autofocus />}
