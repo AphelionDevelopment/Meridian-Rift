@@ -46,8 +46,14 @@ preference, PDA, Themeify, and persistence lists:
 - Relay — manufactured-spacecraft equipment bays, labels, and lamp blocks.
 - Bastion — monumental slab rails, portal corners, and large negative fields.
 
+Cyberpunk uses original, two-color nine-slice SVG chassis artwork for its outer
+window and first-level panels. Its previous fixed-percentage title dashes are
+removed: every remaining seam terminates into a corner, title plate, panel edge,
+or status socket. The Vecteezy packs remain composition references because
+their ordinary license does not grant AGPL-compatible source redistribution.
+
 In a development build, open the Kitchen Sink with the title-bar bug button or
-F11. Use **Inherit**, previous, next, or the skin dropdown. The selection applies
+F12. Use **Inherit**, previous, next, or the skin dropdown. The selection applies
 to the current window immediately, remains active after leaving the Kitchen
 Sink, and is discarded when that TGUI window closes.
 

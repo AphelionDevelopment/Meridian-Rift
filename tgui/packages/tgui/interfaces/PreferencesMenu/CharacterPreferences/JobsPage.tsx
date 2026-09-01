@@ -21,6 +21,7 @@ import { useServerPrefs } from '../useServerPrefs';
 import { JobTitle } from './JobsAltTitles'; // NOVA EDIT ADDITION
 
 const PRIORITY_BUTTON_SIZE = '18px';
+const PRIORITY_BUTTON_ROLE = { role: 'button' } as const;
 
 type PriorityButtonProps = {
   name: string;
@@ -30,24 +31,36 @@ type PriorityButtonProps = {
   onClick: () => void;
 };
 
-function PriorityButton(props: PriorityButtonProps) {
+export function PriorityButton(props: PriorityButtonProps) {
   const className = `PreferencesMenu__Jobs__departments__priority`;
 
   return (
     <Stack.Item height={PRIORITY_BUTTON_SIZE} width={PRIORITY_BUTTON_SIZE}>
       <Button
+        {...PRIORITY_BUTTON_ROLE}
         className={classes([
           className,
           props.modifier && `${className}--${props.modifier}`,
+          props.enabled && `${className}--enabled`,
         ])}
-        color={props.enabled ? props.color : 'white'}
-        circular
+        aria-label={props.name}
+        aria-pressed={props.enabled}
+        color={props.enabled ? props.color : 'transparent'}
         onClick={props.onClick}
         tooltip={props.name}
         tooltipPosition="bottom"
         height="100%"
         width="100%"
-      />
+      >
+        {props.enabled && (
+          <span
+            aria-hidden="true"
+            className="PreferencesMenu__Jobs__departments__priorityMark"
+          >
+            ✓
+          </span>
+        )}
+      </Button>
     </Stack.Item>
   );
 }

@@ -81,7 +81,7 @@
     background: transparent;
   }
 
-  :is(.Button, .Tab, .Dropdown__control, .Dropdown__input) {
+  :is(.Tab, .Dropdown__control, .Dropdown__input) {
     min-height: 24px;
     border: 1px solid var(--console-border-strong);
     border-radius: 0;
@@ -89,21 +89,27 @@
   }
 
   .Button {
-    background-color: var(--console-control-face);
-    color: var(--console-text-primary);
+    border: 1px solid var(--console-border-strong);
+    box-shadow: var(--console-control-depth);
   }
 
   .Button:hover {
-    background-color: var(--console-interaction-hover);
-    color: var(--console-text-primary);
     border-color: var(--console-border-strong);
   }
 
   .Button:active {
-    background-color: var(--console-interaction-pressed);
+    border-color: var(--console-interaction-selected);
   }
 
-  :is(.Button--selected, .Tab--selected) {
+  .Button--selected {
+    border-color: var(--console-interaction-selected);
+    box-shadow:
+      inset 0 calc(-1 * var(--console-selected-rail)) 0
+        var(--console-interaction-selected),
+      var(--console-control-depth);
+  }
+
+  .Tab--selected {
     color: var(--console-text-primary);
     background-color: var(--console-interaction-pressed);
     border-color: var(--console-interaction-selected);
@@ -111,6 +117,18 @@
       inset 0 calc(-1 * var(--console-selected-rail)) 0
         var(--console-interaction-selected),
       var(--console-control-depth);
+  }
+
+  .Button--empty.Button--hasIcon .Button__content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+
+  .Button--empty.Button--hasIcon .Button--icon {
+    margin: 0;
+    line-height: 1;
   }
 
   .Button--disabled,
@@ -140,6 +158,34 @@
 
   .Tab {
     color: var(--console-text-secondary);
+  }
+
+  .Section__title {
+    display: flex;
+    align-items: center;
+    gap: var(--console-space-2);
+  }
+
+  .Section__titleText {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .Section__buttons {
+    position: static;
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    max-width: 70%;
+    min-width: 0;
+    margin: 0 0 0 auto;
+    line-height: normal;
+  }
+
+  .Section__buttons > * {
+    min-width: 0;
   }
 
   .Input,

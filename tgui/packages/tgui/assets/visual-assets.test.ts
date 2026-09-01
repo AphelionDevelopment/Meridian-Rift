@@ -110,6 +110,24 @@ describe('MeridianOS visual assets', () => {
     );
   });
 
+  it('ships sanitized, bounded first-party Cyberpunk chassis artwork', () => {
+    for (const filename of [
+      'meridian-cyberpunk-window-frame.svg',
+      'meridian-cyberpunk-panel-frame.svg',
+      'meridian-cyberpunk-control-frame.svg',
+    ]) {
+      const artwork = readFileSync(resolve(assetRoot, filename), 'utf8');
+
+      expect(Buffer.byteLength(artwork)).toBeLessThanOrEqual(25 * 1024);
+      expect(artwork).toContain('<svg');
+      expect(artwork).toContain('viewBox=');
+      expect(artwork).not.toMatch(
+        /<(?:script|filter|image|foreignObject|font)\b/i,
+      );
+      expect(artwork).not.toMatch(/(?:href|src)\s*=\s*["'](?:https?:|data:)/i);
+    }
+  });
+
   it('keeps loader motion localized, bounded, and source independent', () => {
     const loaderStyles = readFileSync(loaderStylePath, 'utf8');
 

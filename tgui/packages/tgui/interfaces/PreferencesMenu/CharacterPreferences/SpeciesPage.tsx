@@ -108,15 +108,18 @@ function FoodList(props: FoodListProps) {
         </Box>
       }
     >
-      <Stack ml={2}>
+      <Stack
+        className="PreferencesMenu__SpeciesDietGroup"
+        align="center"
+        g={0.5}
+      >
         {food.map((food) => {
           return (
             FOOD_ICONS[food] && (
-              <Stack.Item>
+              <Stack.Item key={food}>
                 <Icon
                   className={className}
                   size={1.4}
-                  key={food}
                   name={FOOD_ICONS[food]}
                 />
               </Stack.Item>
@@ -141,7 +144,7 @@ function Diet(props: DietProps) {
   const { liked_food, disliked_food, toxic_food } = diet;
 
   return (
-    <Stack>
+    <Stack className="PreferencesMenu__SpeciesDiet" align="center" g={0.5}>
       <Stack.Item>
         <FoodList
           food={liked_food}
@@ -177,7 +180,7 @@ type SpeciesPerkProps = {
   perk: Perk;
 };
 
-function SpeciesPerk(props: SpeciesPerkProps) {
+export function SpeciesPerk(props: SpeciesPerkProps) {
   const { className, perk } = props;
 
   return (
@@ -191,18 +194,12 @@ function SpeciesPerk(props: SpeciesPerkProps) {
         </Box>
       }
     >
-      <Box className={className} width="32px" height="32px">
-        <Icon
-          name={perk.ui_icon}
-          size={1.5}
-          ml={0}
-          mt={1}
-          style={{
-            textAlign: 'center',
-            height: '100%',
-            width: '100%',
-          }}
-        />
+      <Box
+        className={classes(['PreferencesMenu__SpeciesPerk', className])}
+        width="32px"
+        height="32px"
+      >
+        <Icon name={perk.ui_icon} size={1.5} />
       </Box>
     </Tooltip>
   );
@@ -288,11 +285,17 @@ function SpeciesPageInner(props: SpeciesPageInnerProps) {
       <Stack.Item grow>
         <Stack fill>
           <Stack.Item>
-            <Box height="calc(100vh - 170px)" overflowY="auto" pr={3}>
+            <Box
+              className="PreferencesMenu__SpeciesList"
+              height="calc(100vh - 170px)"
+              overflowY="auto"
+              pr={3}
+            >
               {species.map(([speciesKey, species]) => {
                 // NOVA EDIT START - Nova star-only species
                 let speciesPage = (
                   <Button
+                    className="PreferencesMenu__SpeciesButton"
                     key={speciesKey}
                     onClick={() => {
                       if (
@@ -310,14 +313,11 @@ function SpeciesPageInner(props: SpeciesPageInnerProps) {
                     tooltip={species.name}
                     style={{
                       display: 'block',
-                      height: '64px',
-                      width: '64px',
+                      height: '66px',
+                      width: '66px',
                     }}
                   >
-                    <Box
-                      className={classes(['species64x64', species.icon])}
-                      ml={-1}
-                    />
+                    <Box className={classes(['species64x64', species.icon])} />
                   </Button>
                 );
                 if (
