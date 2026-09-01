@@ -1,0 +1,90 @@
+// THIS IS AN APHELION UI FILE
+@use 'sass:meta';
+
+@include meta.load-css('../interfaces/PreferencesMenu.scss');
+
+.PreferencesMenu {
+  &__LoadoutCategoryTabs > .Tab {
+    // Balance the selection indicator below the two-line icon/label strip.
+    padding-top: var(--tab-indicator-size);
+  }
+
+  &__Jobs__departments {
+    &__priority {
+      box-sizing: border-box;
+      min-height: 0;
+      padding: 0;
+      line-height: 16px;
+      border-radius: 0;
+
+      .Button__content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+      }
+
+      .Button--icon {
+        min-width: 0;
+        margin: 0;
+        line-height: 1;
+      }
+
+      &--enabled {
+        border-color: hsla(0, 0%, 100%, 0.72);
+      }
+    }
+
+    &__priorityMark {
+      display: block;
+      font-family: var(--font-family);
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 16px;
+      text-align: center;
+    }
+  }
+
+  &__SpeciesList {
+    overflow-x: hidden;
+  }
+
+  &__SpeciesButton {
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 0;
+
+    .Button__content {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    .species64x64 {
+      margin: 0;
+    }
+  }
+
+  &__SpeciesDiet,
+  &__SpeciesDietGroup {
+    min-width: 0;
+    margin: 0;
+  }
+
+  &__SpeciesDietGroup {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  &__SpeciesPerk {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+
+    .Icon {
+      line-height: 1;
+    }
+  }
+}

@@ -1,0 +1,17 @@
+// THIS IS AN APHELION UI FILE
+@use 'sass:meta';
+
+@include meta.load-css('~tgui/styles/visual-system/shared.scss');
+@include meta.load-css('~tgui/styles/visual-system/theme-picker.scss');
+@include meta.load-css('~tgui/styles/visual-system/loader.scss');
+@include meta.load-css('./aphelion.scss');
+@include meta.load-css('~tgui/styles/visual-system/title-art.scss');
+@include meta.load-css('./title-art.scss');
+@include meta.load-css('./menu-scanlines.scss');
+@include meta.load-css('./menu-common.scss');
+@include meta.load-css('./wastelander.scss');
+@include meta.load-css('./highline.scss');
+@include meta.load-css('./aphelion-theme.scss');
+@include meta.load-css('./themed-menus.scss');
+@include meta.load-css('./instrument-menus.scss');
+@include meta.load-css('./signal-menus.scss');

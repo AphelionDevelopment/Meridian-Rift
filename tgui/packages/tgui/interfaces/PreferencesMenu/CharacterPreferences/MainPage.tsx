@@ -265,6 +265,7 @@ function GenderButton(props: GenderButtonProps) {
         <Button
           fontSize="22px"
           icon={GENDERS[props.gender].icon}
+          my={0} // APHELION EDIT ADDITION - MERIDIAN_UI - Match the toolbar's Stack spacing.
           tooltip="Gender"
           tooltipPosition="top"
         />

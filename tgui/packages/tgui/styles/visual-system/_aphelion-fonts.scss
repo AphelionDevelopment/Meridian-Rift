@@ -1,0 +1,41 @@
+// THIS IS AN APHELION UI FILE
+// Exact self-hosted website faces. WOFF2 assets are inlined by Rspack.
+// Copyright and license notices are in styles/assets/aphelion/.
+@font-face {
+  font-family: 'Aphelion Public Sans';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('tgui/styles/assets/aphelion/public-sans-latin-variable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Aphelion IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('tgui/styles/assets/aphelion/ibm-plex-mono-latin-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Aphelion IBM Plex Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('tgui/styles/assets/aphelion/ibm-plex-mono-latin-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Aphelion Space Grotesk';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('tgui/styles/assets/aphelion/space-grotesk-latin-variable.woff2') format('woff2');
+}
+
+.theme-meridian_aphelion {
+  --aphelion-font-sans: 'Aphelion Public Sans', Arial, sans-serif;
+  --aphelion-font-mono: 'Aphelion IBM Plex Mono', Consolas, monospace;
+  --aphelion-font-display: 'Aphelion Space Grotesk', Arial, sans-serif;
+  --aphelion-grain: url('tgui/styles/assets/aphelion/aphelion-grain-blue-noise-512.png');
+}

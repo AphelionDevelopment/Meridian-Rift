@@ -6,7 +6,11 @@ import { playCollapseSound, playExpandSound, playSelectSound } from './audio';
 
 */ // APHELION EDIT REMOVAL END
 // APHELION EDIT ADDITION START - LOBBY_MENU_REWORK
-import { useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useReducer } from 'react'; // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: import { useEffect, useReducer } from 'react';
+// APHELION EDIT ADDITION START - MERIDIAN_UI
+import type { MeridianBaseThemeId } from 'tgui/constants/theme';
+import type { MeridianLobbyState } from './AphelionLobbyMenu';
+// APHELION EDIT ADDITION END
 import { AphelionLobbyMenu } from './AphelionLobbyMenu';
 import type { StartupMessage } from './components/BootTerminal';
 import type { StationTrait } from './components/StationTraitList';
@@ -21,7 +25,7 @@ type StationTrait = {
 };
 */ // APHELION EDIT REMOVAL END
 
-export type ServerState = {
+export type ServerState = MeridianLobbyState & { // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: export type ServerState = {
   titleImageUrl: string;
   gamePhase: 'startup' | 'pregame' | 'setting_up' | 'playing' | 'postgame';
   isReady: boolean;
@@ -734,10 +738,22 @@ export function LobbyMenu() {
     );
   }, [serverState?.transparent]);
 
+  // APHELION EDIT ADDITION START - MERIDIAN_UI
+  const setMeridianTheme = useCallback((theme: MeridianBaseThemeId) => {
+    dispatch({ type: 'serverUpdate', payload: { meridianTheme: theme } });
+    Byond.sendMessage('setMeridianTheme', { theme });
+  }, []);
+
+  // APHELION EDIT ADDITION END
   if (!serverState) {
     return null;
   }
 
-  return <AphelionLobbyMenu serverState={serverState} />;
+  return (
+    <AphelionLobbyMenu
+      onMeridianThemeChange={setMeridianTheme} // APHELION EDIT ADDITION - MERIDIAN_UI
+      serverState={serverState}
+    />
+  );
 }
 // APHELION EDIT ADDITION END

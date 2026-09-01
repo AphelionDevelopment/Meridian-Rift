@@ -28,6 +28,11 @@ import type {
 import { ItemIcon, LoadoutTabDisplay, SearchDisplay } from './ItemDisplay';
 import { LoadoutModifyDimmer } from './ModifyPanel';
 
+// APHELION EDIT ADDITION START - MERIDIAN_UI
+export const LOADOUT_CATEGORY_TABS_CLASS =
+  'PreferencesMenu__LoadoutCategoryTabs';
+// APHELION EDIT ADDITION END
+
 export function LoadoutPage(props) {
   const serverData = useServerPrefs();
   const loadout_tabs = serverData?.loadout.loadout_tabs || [];
@@ -155,7 +160,7 @@ export function LoadoutPage(props) {
             />
           }
         >
-          <Tabs fluid align="center">
+          <Tabs className={LOADOUT_CATEGORY_TABS_CLASS} /* APHELION EDIT ADDITION */ fluid align="center">
             {loadout_tabs // NOVA EDIT CHANGE - Adds filter before map()
               // NOVA EDIT ADDITION START - Prefslocked tabs
               .filter(
@@ -365,6 +370,36 @@ type LoadoutSelectedItemProps = {
   setModifyItemDimmer: (dimmer: LoadoutItem | null) => void;
 };
 
+type LoadoutActionButtonProps = {
+  icon: string;
+  iconColor: string;
+  iconSize: number;
+  label: string;
+  onClick: () => void;
+};
+
+const LOADOUT_ACTION_BUTTON_ROLE = { role: 'button' } as const;
+
+export function LoadoutActionButton(props: LoadoutActionButtonProps) {
+  return (
+    <Button
+      {...LOADOUT_ACTION_BUTTON_ROLE}
+      aria-label={props.label}
+      align="center"
+      color="none"
+      icon={props.icon}
+      iconColor={props.iconColor}
+      iconSize={props.iconSize}
+      height="32px"
+      onClick={props.onClick}
+      tooltip={props.label}
+      tooltipPosition="bottom"
+      verticalAlignContent="middle"
+      width="32px"
+    />
+  );
+}
+
 function LoadoutSelectedItem(props: LoadoutSelectedItemProps) {
   const { all_tabs, path, modifyItemDimmer, setModifyItemDimmer } = props;
   const { act } = useBackend();
@@ -382,27 +417,27 @@ function LoadoutSelectedItem(props: LoadoutSelectedItemProps) {
       <Stack.Item width="55%">{item.name}</Stack.Item>
       {item.buttons.length ? (
         <Stack.Item>
-          <Button
-            color="none"
-            width="32px"
+          <LoadoutActionButton
+            icon="cogs"
+            iconColor="grey"
+            iconSize={1.8}
+            label={`Configure ${item.name}`}
             onClick={() => {
               setModifyItemDimmer(item);
             }}
-          >
-            <Icon size={1.8} name="cogs" color="grey" />
-          </Button>
+          />
         </Stack.Item>
       ) : (
         <Stack.Item width="32px" /> // empty space
       )}
       <Stack.Item>
-        <Button
-          color="none"
-          width="32px"
+        <LoadoutActionButton
+          icon="times"
+          iconColor="red"
+          iconSize={2}
+          label={`Remove ${item.name}`}
           onClick={() => act('select_item', { path: path, deselect: true })}
-        >
-          <Icon size={2.4} name="times" color="red" />
-        </Button>
+        />
       </Stack.Item>
     </Stack>
   );
