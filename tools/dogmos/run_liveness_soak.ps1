@@ -41,7 +41,10 @@ try {
 	Copy-Item -LiteralPath (Join-Path $gameRepository $mapSelector) -Destination $nextMapPath -Force
 
 	Write-Host "Compiling $Map for the Dogmos liveness soak."
-	$compile = Invoke-DogmosProcess -Executable $DmPath -Arguments @('tgstation.dme') `
+	# -DCBT as the supported build and test_compile_check.ps1 both do. Without it MAP_SWITCH()
+	# takes its map-editor branch and WHEN_COMPILE() blocks vanish from the .dmb, producing a
+	# game that boots but whose clients cannot load assets.
+	$compile = Invoke-DogmosProcess -Executable $DmPath -Arguments @('-DCBT', 'tgstation.dme') `
 		-WorkingDirectory $gameRepository -TimeoutSeconds 300
 	$compile.Output -split "`r?`n" | Where-Object { $_ } | Select-Object -Last 12 | ForEach-Object { Write-Host $_ }
 	if ($compile.TimedOut -or $compile.ExitCode -ne 0 -or $compile.Output -notmatch 'tgstation\.dmb - 0 errors') {

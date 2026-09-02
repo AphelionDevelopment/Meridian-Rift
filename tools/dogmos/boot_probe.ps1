@@ -23,11 +23,19 @@ try {
 		throw 'Dogmos contract verification failed.'
 	}
 	if (-not $SkipCompile) {
-		$compile = Invoke-DogmosProcess -Executable $DmPath -Arguments @('tgstation.dme') `
+		# CBT must be defined, as the supported build (BUILD.cmd) does. Without it MAP_SWITCH()
+		# selects its map-editor branch and every WHEN_COMPILE() block is dropped from the .dmb,
+		# which still compiles cleanly and still boots - but leaves a game whose clients cannot
+		# load assets. A probe that builds without it validates something the server never runs,
+		# and leaves that broken .dmb on disk for the next launch to pick up.
+		$compile = Invoke-DogmosProcess -Executable $DmPath -Arguments @('-DCBT', 'tgstation.dme') `
 			-WorkingDirectory $gameRepository -TimeoutSeconds $TimeoutSeconds
 		$compile.Output -split "`r?`n" | Where-Object { $_ } | ForEach-Object { Write-Host $_ }
 		if ($compile.TimedOut -or $compile.ExitCode -ne 0 -or $compile.Output -notmatch 'tgstation\.dmb - 0 errors') {
 			throw 'Dream Maker compile failed before the boot probe.'
+		}
+		if ($compile.Output -match 'Building with Dream Maker is no longer supported') {
+			throw 'Compile did not define CBT; the resulting .dmb would omit WHEN_COMPILE blocks.'
 		}
 	}
 
