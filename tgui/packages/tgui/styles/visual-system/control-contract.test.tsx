@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import type { CSSProperties } from 'react';
 import { cleanup, render } from '@testing-library/react';
 import { compileAsync } from 'sass-embedded';
-import { Button, Icon, Stack, Tabs } from 'tgui-core/components';
+import { Button, Icon, NoticeBox, Stack, Tabs } from 'tgui-core/components';
 
 import {
   MERIDIAN_THEME_IDS,
@@ -25,6 +25,10 @@ const THEME_SOURCE = readFileSync(
   join(import.meta.dir, '_themes.scss'),
   'utf8',
 );
+const TOKEN_SOURCE = readFileSync(
+  join(import.meta.dir, '_tokens.scss'),
+  'utf8',
+);
 const CHECKED_ARIA = {
   'aria-checked': true,
   role: 'checkbox',
@@ -39,7 +43,9 @@ let productionStyle: HTMLStyleElement;
 beforeAll(async () => {
   const [
     controlsCss,
+    noticeBoxCss,
     tabsCss,
+    tokenCss,
     themeCss,
     componentCss,
     decorationCss,
@@ -49,7 +55,9 @@ beforeAll(async () => {
       // Dropdown @uses Button, so this entry includes both legacy margin
       // contracts in the same order as production core styles.
       '../../../../node_modules/tgui-core/styles/components/Dropdown.scss',
+      '../../../../node_modules/tgui-core/styles/components/NoticeBox.scss',
       '../../../../node_modules/tgui-core/styles/components/Tabs.scss',
+      '_tokens.scss',
       '_themes.scss',
       '_components.scss',
       '_decoration.scss',
@@ -64,7 +72,9 @@ beforeAll(async () => {
   // order can still prove that Highline's inverse state wins the cascade.
   productionStyle.textContent = (
     controlsCss +
+    noticeBoxCss +
     tabsCss +
+    tokenCss +
     themeCss +
     componentCss +
     decorationCss +
@@ -81,8 +91,8 @@ afterAll(() => productionStyle.remove());
 
 describe('MeridianOS shared control geometry', () => {
   it('uses one theme-console contract for every MeridianOS skin', () => {
-    expect(COMPONENT_SOURCE.trimStart().startsWith('.theme-console {')).toBe(
-      true,
+    expect(COMPONENT_SOURCE).toMatch(
+      /^(?:\/\/[^\n]*\n)*\.theme-console \{/,
     );
 
     for (const theme of MERIDIAN_THEME_IDS) {
@@ -326,5 +336,62 @@ describe('MeridianOS shared control geometry', () => {
     }
 
     expect(offenders).toEqual([]);
+  });
+
+  it('preserves caller-selected NoticeBox banners and semantic anchors', () => {
+    const view = render(
+      <div className="theme-console theme-meridian">
+        <NoticeBox aria-label="Caller-colored notice" color="blue">
+          Blue alert
+        </NoticeBox>
+        <NoticeBox aria-label="Information notice" info>
+          Information
+        </NoticeBox>
+        <NoticeBox aria-label="Success notice" success>
+          Success
+        </NoticeBox>
+        <NoticeBox aria-label="Warning notice">Warning</NoticeBox>
+        <NoticeBox aria-label="Danger notice" danger>
+          Danger
+        </NoticeBox>
+      </div>,
+    );
+
+    const callerColored = view.getByLabelText('Caller-colored notice');
+    expect(callerColored.classList).toContain('NoticeBox--color--blue');
+    expect(
+      getComputedStyle(callerColored)
+        .getPropertyValue('--noticebox-background')
+        .trim(),
+    ).toBe('hsl(210, 65%, 47.5%)');
+    expect(getComputedStyle(callerColored).backgroundImage).toContain(
+      'repeating-linear-gradient',
+    );
+
+    const noticeRule = COMPONENT_SOURCE.match(/\.NoticeBox \{([^}]*)\}/)?.[1];
+    expect(noticeRule).toBeDefined();
+    expect(noticeRule).not.toMatch(/(^|\s)background(?:-color|-image)?\s*:/);
+    expect(noticeRule).not.toContain('--noticebox-background:');
+    expect(noticeRule).toContain(
+      'border: 1px solid var(--noticebox-background)',
+    );
+    expect(TOKEN_SOURCE).toContain(
+      '--notice-box-background: var(--console-status-warning)',
+    );
+
+    for (const [type, anchor] of [
+      ['info', 'information'],
+      ['success', 'success'],
+      ['warning', 'warning'],
+      ['danger', 'danger'],
+    ] as const) {
+      expect(COMPONENT_SOURCE).toMatch(
+        new RegExp(
+          `\\.NoticeBox--type--${type} \\{[^}]*` +
+            `--noticebox-background: var\\(--console-status-${anchor}\\)`,
+          's',
+        ),
+      );
+    }
   });
 });

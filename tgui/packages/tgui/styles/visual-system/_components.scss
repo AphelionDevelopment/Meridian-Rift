@@ -375,9 +375,7 @@
     position: relative;
     min-height: 32px;
     padding-left: 2.5em;
-    color: var(--console-status-warning);
-    background: var(--console-surface-raised);
-    border: 1px solid currentColor;
+    border: 1px solid var(--noticebox-background);
     border-left-width: 4px;
     font-style: normal;
   }
@@ -389,13 +387,14 @@
     width: 1em;
     content: '!';
     transform: translateY(-50%);
+    color: var(--noticebox-background);
     font-family: var(--font-family-mono);
     font-weight: 700;
     text-align: center;
   }
 
   .NoticeBox--type--info {
-    color: var(--console-status-information);
+    --noticebox-background: var(--console-status-information);
   }
 
   .NoticeBox--type--info::before {
@@ -403,7 +402,7 @@
   }
 
   .NoticeBox--type--success {
-    color: var(--console-status-success);
+    --noticebox-background: var(--console-status-success);
   }
 
   .NoticeBox--type--success::before {
@@ -411,19 +410,15 @@
   }
 
   .NoticeBox--type--warning {
-    color: var(--console-status-warning);
+    --noticebox-background: var(--console-status-warning);
   }
 
   .NoticeBox--type--danger {
-    color: var(--console-status-danger);
+    --noticebox-background: var(--console-status-danger);
   }
 
   .NoticeBox--type--danger::before {
     content: 'x';
-  }
-
-  .NoticeBox > * {
-    color: inherit;
   }
 
   .Table__cell,

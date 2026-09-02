@@ -55,6 +55,7 @@ function JobEntry(props: JobEntryProps) {
 
   return (
     <Button
+      className="JobSelection__job"
       fluid
       style={{
         // Try not to think too hard about this one.
@@ -118,27 +119,14 @@ function DepartmentEntry(props: DepartmentEntryProps) {
   const { act } = useBackend<Data>();
 
   return (
-    <Box minWidth="30%">
+    <Box className="JobSelection__department" minWidth="30%">
       <StyleableSection
-        title={
-          <>
-            {name}
-            <span
-              style={{
-                fontSize: '1rem',
-                whiteSpace: 'nowrap',
-                position: 'absolute',
-                right: '1em',
-                color: Color.fromHex(department.color).darken(60).toString(),
-              }}
-            >
-              {department.open_slots +
-                (department.open_slots === 1 ? ' slot' : ' slots') +
-                ' available'}
-            </span>
-          </>
-        }
+        title={name}
+        titleSubtext={`${department.open_slots} ${
+          department.open_slots === 1 ? 'slot' : 'slots'
+        } available`}
         style={{
+          color: Color.fromHex(department.color).darken(60).toString(),
           backgroundColor: department.color,
           marginBottom: '1em',
           breakInside: 'avoid-column',
@@ -189,39 +177,65 @@ export function JobSelection(props) {
     <Window width={1012} height={shuttle_status ? 916 : 900 /* Hahahahahaha */}>
       {/* NOVA EDIT CHANGE above - Expand UI for available jobs - ORIGINAL: height={shuttle_status ? 690 : 666 */}
       <Window.Content>
-        <Section
-          buttons={
-            <Button
-              onClick={() => act('select_job', { job: 'Random' })}
-              tooltip="Roll target random job. You can re-roll or cancel your random job if you don't like it."
-            >
-              Random Job!
-            </Button>
-          }
-          fill
-          scrollable
-          title={
-            <>
-              {shuttle_status && <NoticeBox info>{shuttle_status}</NoticeBox>}
-              {
-                /* NOVA EDIT ADDITION START - Alert level on jobs menu */
-                <NoticeBox color={data.alert_level.color}>
-                  The current alert level is: {data.alert_level.name}
-                </NoticeBox>
-                /* NOVA EDIT ADDITION END */
-              }
-              <Box as="span" color="label">
-                It is currently {round_duration} into the shift.
+        <Stack className="JobSelection" fill vertical>
+          <Stack.Item shrink={0}>
+            <Box as="header" className="JobSelection__status">
+              <Stack vertical>
+                {shuttle_status && (
+                  <Stack.Item>
+                    <NoticeBox className="JobSelection__shuttle" info>
+                      {shuttle_status}
+                    </NoticeBox>
+                  </Stack.Item>
+                )}
+                {/* NOVA EDIT ADDITION START - Alert level on jobs menu */}
+                <Stack.Item>
+                  <NoticeBox
+                    className="JobSelection__alert"
+                    color={data.alert_level.color}
+                  >
+                    The current alert level is: {data.alert_level.name}
+                  </NoticeBox>
+                </Stack.Item>
+                {/* NOVA EDIT ADDITION END */}
+                <Stack.Item>
+                  <Stack
+                    className="JobSelection__statusActions"
+                    align="center"
+                    wrap
+                  >
+                    <Stack.Item basis="20em" grow>
+                      <Box color="label">
+                        It is currently {round_duration} into the shift.
+                      </Box>
+                    </Stack.Item>
+                    <Stack.Item className="JobSelection__randomAction">
+                      <Button
+                        onClick={() => act('select_job', { job: 'Random' })}
+                        tooltip="Roll target random job. You can re-roll or cancel your random job if you don't like it."
+                      >
+                        Random Job!
+                      </Button>
+                    </Stack.Item>
+                  </Stack>
+                </Stack.Item>
+              </Stack>
+            </Box>
+          </Stack.Item>
+          <Stack.Item grow minHeight={0}>
+            <Section className="JobSelection__departments" fill scrollable>
+              <Box style={{ columns: '20em' }}>
+                {Object.entries(departments).map(([name, department]) => (
+                  <DepartmentEntry
+                    key={name}
+                    name={name}
+                    department={department}
+                  />
+                ))}
               </Box>
-            </>
-          }
-        >
-          <Box style={{ columns: '20em' }}>
-            {Object.entries(departments).map(([name, department]) => (
-              <DepartmentEntry key={name} name={name} department={department} />
-            ))}
-          </Box>
-        </Section>
+            </Section>
+          </Stack.Item>
+        </Stack>
       </Window.Content>
     </Window>
   );

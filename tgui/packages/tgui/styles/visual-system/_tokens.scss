@@ -19,6 +19,11 @@
   --section-background: var(--console-surface-base);
   --section-title-color: var(--console-text-primary);
   --section-separator-color: var(--console-border-separator);
+  // NoticeBox turns this default into its private --noticebox-background
+  // token. Explicit `color` classes replace that private token themselves,
+  // so caller-selected banners keep their authored color.
+  --notice-box-background: var(--console-status-warning);
+  --notice-box-color: var(--console-text-primary);
   --console-corner-cut: 4px;
   --console-frame-layer: 1px;
   --console-corner-layer: 18px;
