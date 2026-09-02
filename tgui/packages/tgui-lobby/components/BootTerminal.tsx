@@ -169,7 +169,7 @@ export function BootTerminal({
     };
   }, []);
 
-  // Keep the restrained log scrolled to the newest startup line.
+  // Keep the transcript scrolled to the newest startup line.
   useEffect(() => {
     if (terminalRef.current) {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
@@ -177,6 +177,10 @@ export function BootTerminal({
   }, [messages]);
 
   const latestMessage = messages.at(-1)?.text || 'Awaiting startup telemetry';
+  const terminalMessages = messages.length
+    ? messages
+    : [{ text: latestMessage, warning: false }];
+  const recordCount = String(messages.length).padStart(2, '0');
   const displayPercent = Math.floor(visualPercent);
   const progressRailStyle: ProgressRailStyle = {
     '--boot-progress': visualPercent / 100,
@@ -184,12 +188,60 @@ export function BootTerminal({
 
   return (
     <div className="boot_terminal" ref={rootRef}>
+      <div className="container_terminal">
+        <div aria-hidden="true" className="container_terminal__header">
+          <span>MeridianOS // BOOT TRANSCRIPT</span>
+          <span className="container_terminal__channel">
+            <span className="container_terminal__lamp" />
+            {recordCount} REC / LIVE
+          </span>
+        </div>
+
+        <div
+          aria-label="System startup log"
+          aria-live="polite"
+          aria-relevant="additions"
+          className="container_terminal__log"
+          ref={terminalRef}
+          role="log"
+        >
+          {terminalMessages.map((message, index) => (
+            <p
+              key={`${index}-${message.text}`}
+              className={`terminal_text ${
+                message.warning ? 'terminal_text--warning' : ''
+              }`}
+            >
+              <span aria-hidden="true" className="terminal_text__channel">
+                {message.warning ? 'WRN!' : 'SYS>'}
+              </span>
+              <span className="terminal_text__message">
+                {message.warning ? 'CAUTION / ' : ''}
+                {message.text}
+              </span>
+            </p>
+          ))}
+        </div>
+
+        <div aria-hidden="true" className="terminal_prompt">
+          <span className="terminal_prompt__label">
+            MeridianOS/BOOT:STREAM&gt;
+          </span>
+          <span className="boot_terminal__cursor" />
+        </div>
+      </div>
+
       <div className="boot_terminal__instrument">
         <DiagnosticLoader
           ariaLabel="System startup progress"
           detail={
             <span className="boot_terminal__status">
-              {displayPercent}% <span aria-hidden>·</span> {latestMessage}
+              <span aria-hidden="true" className="boot_terminal__statusChannel">
+                PROC/BOOT
+              </span>
+              <span className="boot_terminal__statusValue">
+                {displayPercent}% <span aria-hidden>·</span> {latestMessage}
+              </span>
             </span>
           }
           label="SYSTEM STARTUP"
@@ -198,27 +250,6 @@ export function BootTerminal({
           size="large"
           value={visualPercent}
         />
-      </div>
-
-      <div
-        aria-label="System startup log"
-        aria-live="polite"
-        aria-relevant="additions"
-        className="container_terminal"
-        ref={terminalRef}
-        role="log"
-      >
-        {messages.map((message, index) => (
-          <p
-            key={`${index}-${message.text}`}
-            className={`terminal_text ${
-              message.warning ? 'terminal_text--warning' : ''
-            }`}
-          >
-            {message.warning ? 'CAUTION / ' : ''}
-            {message.text}
-          </p>
-        ))}
       </div>
 
       <div aria-hidden className="container_progress">

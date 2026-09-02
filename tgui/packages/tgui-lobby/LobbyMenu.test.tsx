@@ -114,6 +114,8 @@ describe('LobbyMenu MeridianOS integration', () => {
     const loader = screen.getByRole('progressbar', {
       name: 'System startup progress',
     });
+    const cursor = document.querySelector('.boot_terminal__cursor');
+    expect(cursor).toBeTruthy();
     const initialRafCount = rafCount;
 
     emit('state', { meridianTheme: 'meridian_vector' });
@@ -121,6 +123,7 @@ describe('LobbyMenu MeridianOS integration', () => {
     expect(
       screen.getByRole('progressbar', { name: 'System startup progress' }),
     ).toBe(loader);
+    expect(document.querySelector('.boot_terminal__cursor')).toBe(cursor);
     expect(rafCount).toBe(initialRafCount);
     expect(
       document.documentElement.classList.contains('theme-meridian_vector'),

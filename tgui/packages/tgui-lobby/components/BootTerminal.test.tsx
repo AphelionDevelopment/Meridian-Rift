@@ -55,15 +55,38 @@ describe('BootTerminal progress', () => {
     expect(instrument.getAttribute('aria-valuenow')).toBe('25');
     expect(view.getByText('SYSTEM STARTUP')).toBeDefined();
     expect(
-      view.container.querySelector('.boot_terminal__status')?.textContent,
+      view.container.querySelector('.boot_terminal__statusValue')?.textContent,
     ).toBe('25% · Delayed map subsystem');
 
     const log = view.getByRole('log', { name: 'System startup log' });
     expect(log.textContent).toContain('Loading core systems');
     expect(log.textContent).toContain('CAUTION / Delayed map subsystem');
 
+    const prompt = view.container.querySelector('.terminal_prompt');
+    const cursor = view.container.querySelector('.boot_terminal__cursor');
+    expect(prompt?.getAttribute('aria-hidden')).toBe('true');
+    expect(prompt?.textContent).toContain('MeridianOS/BOOT:STREAM>');
+    expect(cursor).toBeTruthy();
+    expect(view.container.querySelectorAll('.boot_terminal__cursor')).toHaveLength(
+      1,
+    );
+
     const rail = view.container.querySelector<HTMLElement>('.progress_bar');
     expect(rail?.style.getPropertyValue('--boot-progress')).toBe('0.25');
     expect(view.container.querySelector('.sub_progress_bar')).toBeNull();
+  });
+
+  it('keeps an active transcript and cursor while awaiting the first message', () => {
+    const view = render(
+      <BootTerminal messages={[]} progressCurrent={0} progressTotal={100} />,
+    );
+
+    expect(view.getByRole('log').textContent).toContain(
+      'Awaiting startup telemetry',
+    );
+    expect(view.container.querySelector('.boot_terminal__cursor')).toBeTruthy();
+    expect(
+      view.container.querySelector('.container_terminal__channel')?.textContent,
+    ).toContain('00 REC / LIVE');
   });
 });
