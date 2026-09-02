@@ -1,19 +1,21 @@
 import { ByondUi } from 'tgui-core/components';
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 import {
   PreferencesCharacterPreviewFrame,
   type PreferencesCharacterPreviewDecorationMode,
 } from './PreferencesCharacterPreviewFrame';
+// APHELION EDIT ADDITION END
 
 export const CharacterPreview = (props: {
-  decoration?: PreferencesCharacterPreviewDecorationMode;
+  decoration?: PreferencesCharacterPreviewDecorationMode; // APHELION EDIT ADDITION
   width?: string; // NOVA EDIT
   height: string;
   id: string;
 }) => {
   // NOVA EDIT
-  const { decoration = 'none', width = '272px' } = props;
+  const { decoration = 'none', width = '272px' } = props; // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: const { width = '272px' } = props;
   // NOVA EDIT END
-  const preview = (
+  const preview = ( // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: return (
     <ByondUi
       width={width} // NOVA EDIT
       height={props.height}
@@ -23,6 +25,7 @@ export const CharacterPreview = (props: {
       }}
     />
   );
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 
   if (decoration === 'none') {
     return preview;
@@ -37,4 +40,5 @@ export const CharacterPreview = (props: {
       {preview}
     </PreferencesCharacterPreviewFrame>
   );
+// APHELION EDIT ADDITION END
 };

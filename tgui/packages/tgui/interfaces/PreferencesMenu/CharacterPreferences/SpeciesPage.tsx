@@ -12,7 +12,7 @@ import {
 import { classes } from 'tgui-core/react';
 
 import { CharacterPreview } from '../../common/CharacterPreview';
-import { DiagnosticLoader } from '../../common/DiagnosticLoader';
+import { LoadingScreen } from '../../common/LoadingScreen';
 import {
   createSetPreference,
   Food,
@@ -295,7 +295,7 @@ function SpeciesPageInner(props: SpeciesPageInnerProps) {
                 // NOVA EDIT START - Nova star-only species
                 let speciesPage = (
                   <Button
-                    className="PreferencesMenu__SpeciesButton"
+                    className="PreferencesMenu__SpeciesButton" // APHELION EDIT ADDITION
                     key={speciesKey}
                     onClick={() => {
                       if (
@@ -410,7 +410,7 @@ type SpeciesPageProps = {
 export function SpeciesPage(props: SpeciesPageProps) {
   const serverData = useServerPrefs();
   if (!serverData) {
-    return <DiagnosticLoader />;
+    return <LoadingScreen />;
   }
 
   return (

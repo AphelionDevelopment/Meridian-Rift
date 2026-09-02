@@ -29,7 +29,7 @@ type StationTrait = {
 
 export type ServerState = {
   titleImageUrl: string;
-  titleImageTreatment: 'meridian' | null;
+  titleImageTreatment: 'meridian' | null; // APHELION EDIT ADDITION
   gamePhase: 'startup' | 'pregame' | 'setting_up' | 'playing' | 'postgame';
   isReady: boolean;
   canReady: boolean;

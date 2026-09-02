@@ -28,8 +28,10 @@ import type {
 import { ItemIcon, LoadoutTabDisplay, SearchDisplay } from './ItemDisplay';
 import { LoadoutModifyDimmer } from './ModifyPanel';
 
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 export const LOADOUT_CATEGORY_TABS_CLASS =
   'PreferencesMenu__LoadoutCategoryTabs';
+// APHELION EDIT ADDITION END
 
 export function LoadoutPage(props) {
   const serverData = useServerPrefs();
@@ -158,7 +160,7 @@ export function LoadoutPage(props) {
             />
           }
         >
-          <Tabs className={LOADOUT_CATEGORY_TABS_CLASS} fluid align="center">
+          <Tabs className={LOADOUT_CATEGORY_TABS_CLASS} /* APHELION EDIT ADDITION */ fluid align="center">
             {loadout_tabs // NOVA EDIT CHANGE - Adds filter before map()
               // NOVA EDIT ADDITION START - Prefslocked tabs
               .filter(

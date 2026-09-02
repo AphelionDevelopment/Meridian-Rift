@@ -35,7 +35,7 @@
     pointer-events: none;
     display: inline-block;
     flex: 1;
-    min-width: 0;
+    min-width: 0; // APHELION EDIT ADDITION
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -45,15 +45,18 @@
 
   &__buttons {
     pointer-events: all;
+    // APHELION EDIT ADDITION START - MERIDIAN_UI
     display: flex;
     flex: 0 1 auto;
     align-items: center;
+    // APHELION EDIT ADDITION END
     overflow: hidden;
     white-space: nowrap;
     margin: 0 base.rem(9px);
     z-index: 102;
   }
 
+  // APHELION EDIT ADDITION START - MERIDIAN_UI
   &__utilities {
     pointer-events: all;
     position: relative;
@@ -83,6 +86,7 @@
     font: inherit;
   }
 
+  // APHELION EDIT ADDITION END
   &__KitchenSink {
     background-color: hsl(
       from var(--color-green) h s calc(l - var(--adjust-hover))
@@ -97,7 +101,7 @@
   }
 
   &__close {
-    appearance: none;
+    appearance: none; // APHELION EDIT ADDITION
     cursor: var(--cursor-pointer);
     opacity: 0.5;
     pointer-events: all;
@@ -105,11 +109,13 @@
     text-align: center;
     font-size: base.rem(16px);
     height: 100%;
-    padding: 0;
+    padding: 0; // APHELION EDIT ADDITION
     color: var(--color-text);
+    // APHELION EDIT ADDITION START - MERIDIAN_UI
     background: transparent;
     border: 0;
     font: inherit;
+    // APHELION EDIT ADDITION END
     transition-property: background-color, opacity;
     transition-duration: var(--transition-time-medium);
     z-index: 102;

@@ -21,7 +21,7 @@ import { useServerPrefs } from '../useServerPrefs';
 import { JobTitle } from './JobsAltTitles'; // NOVA EDIT ADDITION
 
 const PRIORITY_BUTTON_SIZE = '18px';
-const PRIORITY_BUTTON_ROLE = { role: 'button' } as const;
+const PRIORITY_BUTTON_ROLE = { role: 'button' } as const; // APHELION EDIT ADDITION
 
 type PriorityButtonProps = {
   name: string;
@@ -37,11 +37,11 @@ export function PriorityButton(props: PriorityButtonProps) {
   return (
     <Stack.Item height={PRIORITY_BUTTON_SIZE} width={PRIORITY_BUTTON_SIZE}>
       <Button
-        {...PRIORITY_BUTTON_ROLE}
+        {...PRIORITY_BUTTON_ROLE} // APHELION EDIT ADDITION
         className={classes([
           className,
           props.modifier && `${className}--${props.modifier}`,
-          props.enabled && `${className}--enabled`,
+          props.enabled && `${className}--enabled`, // APHELION EDIT ADDITION
         ])}
         aria-label={props.name}
         aria-pressed={props.enabled}

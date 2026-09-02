@@ -4,7 +4,7 @@
  * @license MIT
  */
 
-import type { ComponentProps } from 'react';
+import type { ComponentProps } from 'react'; // APHELION EDIT ADDITION
 import { Box, Button } from 'tgui-core/components';
 import type { BooleanLike } from 'tgui-core/react';
 
@@ -37,9 +37,11 @@ export type MeridianOSData = {
   show_imprint: BooleanLike;
 };
 
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 /** @deprecated Use `MeridianOSData`. */
 export type NTOSData = MeridianOSData;
 
+// APHELION EDIT ADDITION END
 type Program = {
   alert: BooleanLike;
   desc: string;

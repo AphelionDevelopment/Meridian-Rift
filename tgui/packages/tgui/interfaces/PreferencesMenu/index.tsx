@@ -6,7 +6,7 @@ import { resolveAsset } from '../../assets';
 import { useBackend } from '../../backend';
 import { Window } from '../../layouts';
 import { logger } from '../../logging';
-import { DiagnosticLoader } from '../common/DiagnosticLoader';
+import { LoadingScreen } from '../common/LoadingScreen';
 import { CharacterPreferenceWindow } from './CharacterPreferences';
 import { GamePreferenceWindow } from './GamePreferences';
 import {
@@ -37,7 +37,7 @@ export function PreferencesMenu(props) {
   return (
     <Window width={WINDOW_WIDTH} height={height} /* NOVA EDIT CHANGE - ORIGINAL: <Window width={920} height={770}> */>
       <Window.Content>
-        <Suspense fallback={<DiagnosticLoader />}>
+        <Suspense fallback={<LoadingScreen />}>
           <PrefsWindowInner onAugmentsTabChange={setAugmentsTab} /* NOVA EDIT CHANGE - ORIGINAL: <PrefsWindowInner /> *//>
         </Suspense>
       </Window.Content>
@@ -49,7 +49,7 @@ export function PreferencesMenu(props) {
 //function PrefsWindowInner(props) { // NOVA EDIT REMOVAL
 // NOVA EDIT ADDITION START
 function PrefsWindowInner(props: {
-  onAugmentsTabChange: (tab: AugmentsTab | null) => void;
+  onAugmentsTabChange: (tab: AugmentsTab | null) => void; // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: onAugmentsTabChange: (tab: AugmentsTab) => void;
 }) {
 // NOVA EDIT ADDITION END
   const { data } = useBackend<PreferencesMenuData>();

@@ -10,6 +10,7 @@
 }
 
 .PreferencesMenu {
+  // APHELION EDIT ADDITION START - MERIDIAN_UI
   &__LoadoutCategoryTabs > .Tab {
     // Horizontal Tabs reserve the selection indicator below their content.
     // Match that reserve above this two-line icon/label strip so it stays
@@ -17,6 +18,7 @@
     padding-top: var(--tab-indicator-size);
   }
 
+  // APHELION EDIT ADDITION END
   &__Antags {
     &__antagSelection {
       gap: var(--space-l);
@@ -177,13 +179,30 @@
       }
 
       &__priority {
+        // APHELION EDIT ADDITION START - MERIDIAN_UI
         box-sizing: border-box;
         min-height: 0;
         padding: 0;
         line-height: 16px;
+        // APHELION EDIT ADDITION END
         border: var(--border-thickness-tiny) solid hsla(0, 0%, 0%, 0.3);
-        border-radius: 0;
+        border-radius: 0; // APHELION EDIT ADDITION
 
+        /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+        &--off::after {
+          content: '';
+
+          background: hsla(0, 0%, 0%, 0.2);
+          display: block;
+          height: 80%;
+          left: 50%;
+          position: relative;
+          top: 50%;
+          transform: translateX(-50%) translateY(-50%) rotate(40deg);
+          width: 2px;
+        }
+        */ // APHELION EDIT REMOVAL END
+        // APHELION EDIT ADDITION START - MERIDIAN_UI
         .Button__content {
           display: flex;
           align-items: center;
@@ -196,12 +215,16 @@
           margin: 0;
           line-height: 1;
         }
+        // APHELION EDIT ADDITION END
 
+        // APHELION EDIT ADDITION START - MERIDIAN_UI
         &--enabled {
           border-color: hsla(0, 0%, 100%, 0.72);
         }
+        // APHELION EDIT ADDITION END
       }
 
+      // APHELION EDIT ADDITION START - MERIDIAN_UI
       &__priorityMark {
         display: block;
         font-family: var(--font-family);
@@ -210,6 +233,7 @@
         line-height: 16px;
         text-align: center;
       }
+      // APHELION EDIT ADDITION END
     }
 
     &__PriorityHeader {
@@ -220,6 +244,7 @@
     }
   }
 
+  // APHELION EDIT ADDITION START - MERIDIAN_UI
   &__SpeciesList {
     overflow-x: hidden;
   }
@@ -263,6 +288,7 @@
     }
   }
 
+  // APHELION EDIT ADDITION END
   &__Quirks {
     &__QuirkList {
       scrollbar-color: var(--color-grey) transparent;
