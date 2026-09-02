@@ -103,6 +103,7 @@
 	return list(
 		"meridian",
 		"meridian_classic",
+		"meridian_pipboy",
 		"meridian_vector",
 		"meridian_foundry",
 		"meridian_diagnostic",

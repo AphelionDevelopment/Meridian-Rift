@@ -11,7 +11,7 @@ hackerman, retro-95, or other specialty themes.
 3. `_tokens.scss` defines runtime semantic variables and maps them to the
    public tgui-core component variables.
 4. `_themes.scss` supplies palette and construction profiles for Standard and
-   ten additional MeridianOS skins.
+   eleven additional MeridianOS skins.
 5. `_components.scss` applies shared component states using semantic variables
    only.
 6. `_loader.scss` provides the fixed diagnostic-instrument layer set shared by
@@ -32,14 +32,17 @@ request `meridian`.
 ## Skin catalog
 
 The title-bar gear exposes one account-wide base-theme preference in this
-order: **Standard**, **Classic NT**, Vector, Foundry, Diagnostic, Highline,
-Synapse, Cyberpunk, Augmentation, Afterlight, Relay, and Bastion. Standard is
-the default. Classic selects the original `theme-nanotrasen` component styling
-without the MeridianOS console layer. Authored specialty interfaces remain
-specialized while their gear still updates the saved base theme used elsewhere.
+order: **Standard**, **Classic NT**, **Pip-Boy**, Vector, Foundry, Diagnostic,
+Highline, Synapse, Cyberpunk, Augmentation, Afterlight, Relay, and Bastion.
+Standard is the default. Classic selects the original `theme-nanotrasen`
+component styling without the MeridianOS console layer. Authored specialty
+interfaces remain specialized while their gear still updates the saved base
+theme used elsewhere.
 
-The eleven palette-bearing MeridianOS skins are:
+The twelve palette-bearing MeridianOS skins are:
 
+- Pip-Boy — monochrome phosphor hardware, keyed title blocks, and CRT
+  calibration rails.
 - Vector — paired notches, calibration ticks, and measurement rails.
 - Foundry — recessed machinery, fasteners, and warning-only hatching.
 - Diagnostic — square brackets, alignment ticks, and acquisition nodes.

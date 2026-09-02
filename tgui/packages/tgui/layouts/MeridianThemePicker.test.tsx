@@ -28,8 +28,10 @@ describe('MeridianThemePicker', () => {
     expect(options).toHaveLength(MERIDIAN_BASE_THEME_OPTIONS.length);
     expect(options[0].textContent).toContain('Standard');
     expect(options[1].textContent).toContain('Classic NT');
+    expect(options[2].textContent).toContain('Pip-Boy');
     expect(options[0].getAttribute('aria-checked')).toBe('true');
     expect(options[1].getAttribute('aria-checked')).toBe('false');
+    expect(options[2].getAttribute('aria-checked')).toBe('false');
   });
 
   it('supports complete menu navigation, selection, and focus return', async () => {
@@ -55,7 +57,7 @@ describe('MeridianThemePicker', () => {
     fireEvent.keyDown(menu, { key: 'c' });
     expect(document.activeElement).toBe(options[1]);
     fireEvent.keyDown(menu, { key: 'y' });
-    expect(document.activeElement).toBe(options[7]);
+    expect(document.activeElement).toBe(options[8]);
 
     fireEvent.keyDown(menu, { key: 'Escape' });
     await Promise.resolve();

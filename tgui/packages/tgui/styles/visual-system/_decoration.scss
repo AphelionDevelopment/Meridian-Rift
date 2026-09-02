@@ -195,6 +195,62 @@
   }
 }
 
+.theme-meridian_pipboy {
+  .Window::before {
+    inset: 4px;
+    border-width: 3px 2px 2px 3px;
+    border-color: var(--console-border-strong);
+    box-shadow:
+      inset 0 0 0 2px var(--console-surface-canvas),
+      inset 0 0 0 3px var(--console-border-control);
+  }
+
+  .Window::after {
+    width: 12px;
+    height: 4px;
+    background: var(--console-interaction-selected);
+    box-shadow: -18px 0 0 -1px var(--console-border-control);
+  }
+
+  .TitleBar {
+    background-image: repeating-linear-gradient(
+      90deg,
+      transparent 0 7px,
+      var(--console-border-subtle) 7px 8px
+    );
+    background-size: 112px 3px;
+    background-repeat: no-repeat;
+    background-position: right 48px bottom 4px;
+  }
+
+  .Section::before {
+    inset: 4px;
+    background:
+      linear-gradient(var(--console-interaction-accent) 0 0) top left / 26px 2px
+        no-repeat,
+      linear-gradient(var(--console-interaction-accent) 0 0) top left / 2px 14px
+        no-repeat,
+      repeating-linear-gradient(
+          90deg,
+          var(--console-border-control) 0 3px,
+          transparent 3px 7px
+        )
+        top right / 45px 1px no-repeat,
+      linear-gradient(var(--console-interaction-selected) 0 0) bottom right /
+        26px 2px no-repeat,
+      linear-gradient(var(--console-interaction-selected) 0 0) bottom right / 2px
+        14px no-repeat;
+  }
+
+  .Section__titleText {
+    display: inline-block;
+    padding: 1px 7px;
+    color: var(--console-text-on-accent);
+    background: var(--console-interaction-selected);
+    letter-spacing: 0.1em;
+  }
+}
+
 .theme-meridian_vector {
   .Window::before {
     border-style: double;

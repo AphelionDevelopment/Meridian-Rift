@@ -8,6 +8,7 @@
 }
 
 @include theme(meridian);
+@include theme(meridian_pipboy);
 @include theme(meridian_vector);
 @include theme(meridian_foundry);
 @include theme(meridian_diagnostic);
@@ -18,6 +19,35 @@
 @include theme(meridian_afterlight);
 @include theme(meridian_relay);
 @include theme(meridian_bastion);
+
+.theme-meridian_pipboy {
+  --console-corner-cut: 0;
+  --console-frame-layer: 3px;
+  --console-corner-layer: 24px;
+  --console-title-rail: 78px;
+  --console-segment-pattern: 6px;
+  --console-loader-ticks: 16;
+  --console-loader-nodes: 4;
+  --console-loader-tick-step: 22.5deg;
+  --console-loader-tick-width: 9deg;
+  --console-loader-tick-depth: 10%;
+  --console-loader-node-step: 90deg;
+  --console-loader-node-width: 7deg;
+  --console-loader-node-opacity: 0.86;
+  --console-loader-cage-width: 4px;
+  --console-loader-track-width: 3px;
+  --console-loader-core-size: 28%;
+  --console-loader-core-shape: inset(0);
+  --console-heading-tracking: 0.12em;
+  --console-control-depth: inset 0 -3px 0 var(--console-surface-recessed), inset 0 0 0 1px var(--console-border-control);
+  --console-overlay-shadow: 0 0 18px color-mix(in srgb, var(--console-interaction-accent) 18%, transparent);
+  --augmentation-frame: var(--console-border-control);
+  --augmentation-surface: var(--console-surface-base);
+  --augmentation-readout: var(--console-interaction-accent);
+  --augmentation-text: var(--console-text-primary);
+  --augmentation-focus: var(--console-interaction-focus);
+  --augmentation-glow: color-mix(in srgb, var(--console-interaction-accent) 24%, transparent);
+}
 
 .theme-meridian_vector {
   --console-corner-cut: 6px;

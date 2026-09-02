@@ -39,6 +39,25 @@ export const MERIDIAN_THEMES = [
     },
   },
   {
+    id: 'meridian_pipboy',
+    name: 'Pip-Boy',
+    construction:
+      'Phosphor bezel, keyed title blocks, and CRT calibration rails',
+    production: true,
+    palette: {
+      canvas: '#000300',
+      panel: '#041004',
+      raised: '#0B260D',
+      recessed: '#000000',
+      boundary: '#3E8F43',
+      text: '#BAFFB5',
+      mutedText: '#79CF78',
+      accent: '#4DE05A',
+      secondaryAccent: '#8DFF73',
+      focus: '#C9FF8F',
+    },
+  },
+  {
     id: 'meridian_vector',
     name: 'Vector',
     construction: 'Paired notches, calibration ticks, and measurement rails',

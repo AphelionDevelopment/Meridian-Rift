@@ -133,6 +133,25 @@ describe('Layout theme class management', () => {
     );
   });
 
+  it('applies Pip-Boy through the Meridian console layer', () => {
+    store.set(meridianThemeAtom, 'meridian_pipboy');
+    render(
+      <Provider store={store}>
+        <Layout>Pip-Boy</Layout>
+      </Provider>,
+    );
+
+    expect(
+      document.documentElement.classList.contains('theme-meridian_pipboy'),
+    ).toBe(true);
+    expect(document.documentElement.classList.contains('theme-console')).toBe(
+      true,
+    );
+    expect(
+      document.documentElement.classList.contains('theme-nanotrasen'),
+    ).toBe(false);
+  });
+
   it('reconciles rapid base changes while specialty themes stay authoritative', () => {
     document.documentElement.classList.add('unrelated-runtime-class');
     const view = render(

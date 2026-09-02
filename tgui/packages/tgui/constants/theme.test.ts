@@ -34,13 +34,13 @@ function contrast(first: string, second: string): number {
 }
 
 describe('MeridianOS theme catalog', () => {
-  it('contains eleven palette skins and twelve ordered player themes', () => {
-    expect(new Set(MERIDIAN_THEME_IDS).size).toBe(11);
-    expect(new Set(MERIDIAN_BASE_THEME_IDS).size).toBe(12);
+  it('contains twelve palette skins and thirteen ordered player themes', () => {
+    expect(new Set(MERIDIAN_THEME_IDS).size).toBe(12);
+    expect(new Set(MERIDIAN_BASE_THEME_IDS).size).toBe(13);
     expect(DEFAULT_MERIDIAN_BASE_THEME).toBe('meridian');
-    expect(MERIDIAN_BASE_THEME_IDS).toEqual([
+    expect(MERIDIAN_THEME_IDS).toEqual([
       'meridian',
-      'meridian_classic',
+      'meridian_pipboy',
       'meridian_vector',
       'meridian_foundry',
       'meridian_diagnostic',
@@ -52,9 +52,25 @@ describe('MeridianOS theme catalog', () => {
       'meridian_relay',
       'meridian_bastion',
     ]);
-    expect(MERIDIAN_BASE_THEME_OPTIONS.slice(0, 2)).toEqual([
+    expect(MERIDIAN_BASE_THEME_IDS).toEqual([
+      'meridian',
+      'meridian_classic',
+      'meridian_pipboy',
+      'meridian_vector',
+      'meridian_foundry',
+      'meridian_diagnostic',
+      'meridian_highline',
+      'meridian_synapse',
+      'meridian_cyberpunk',
+      'meridian_augmentation',
+      'meridian_afterlight',
+      'meridian_relay',
+      'meridian_bastion',
+    ]);
+    expect(MERIDIAN_BASE_THEME_OPTIONS.slice(0, 3)).toEqual([
       expect.objectContaining({ id: 'meridian', name: 'Standard' }),
       expect.objectContaining({ id: 'meridian_classic', name: 'Classic NT' }),
+      expect.objectContaining({ id: 'meridian_pipboy', name: 'Pip-Boy' }),
     ]);
     expect(MERIDIAN_THEMES.every(({ production }) => production)).toBe(true);
   });
@@ -115,6 +131,10 @@ describe('MeridianOS theme resolution', () => {
     expect(normalizeMeridianBaseTheme('meridian_classic')).toBe(
       'meridian_classic',
     );
+    expect(normalizeMeridianBaseTheme('meridian_pipboy')).toBe(
+      'meridian_pipboy',
+    );
+    expect(normalizeMeridianTheme('meridian_pipboy')).toBe('meridian_pipboy');
     expect(normalizeMeridianBaseTheme('unregistered-theme')).toBe('meridian');
   });
 
@@ -158,6 +178,16 @@ describe('MeridianOS theme resolution', () => {
   });
 
   it('applies the player preference without replacing specialty themes', () => {
+    expect(
+      resolveMeridianTheme({
+        requested: 'meridian',
+        preferred: 'meridian_pipboy',
+      }),
+    ).toEqual({
+      base: 'meridian_pipboy',
+      classes: ['theme-meridian_pipboy', 'theme-console'],
+      isConsole: true,
+    });
     expect(
       resolveMeridianTheme({
         requested: 'meridian_vector',

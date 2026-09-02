@@ -83,6 +83,7 @@
 	var/list/expected_ids = list(
 		"meridian",
 		"meridian_classic",
+		"meridian_pipboy",
 		"meridian_vector",
 		"meridian_foundry",
 		"meridian_diagnostic",
@@ -137,15 +138,15 @@
 	TEST_ASSERT_EQUAL(first_ui.config_update_count, 0, "Rejected input broadcast a config update.")
 	TEST_ASSERT_EQUAL(test_lobby.update_count, 0, "Rejected input broadcast a lobby update.")
 
-	TEST_ASSERT(test_client.set_meridian_theme("meridian_vector"), "A valid theme selection was rejected.")
-	TEST_ASSERT_EQUAL(test_preferences.read_preference(preference.type), "meridian_vector", "A valid theme selection was not applied.")
+	TEST_ASSERT(test_client.set_meridian_theme("meridian_pipboy"), "A valid theme selection was rejected.")
+	TEST_ASSERT_EQUAL(test_preferences.read_preference(preference.type), "meridian_pipboy", "A valid theme selection was not applied.")
 	TEST_ASSERT_EQUAL(test_preferences.save_call_count, 1, "A valid selection was not persisted immediately and exactly once.")
 	TEST_ASSERT_EQUAL(first_ui.config_update_count, 1, "The first open TGUI did not receive the preference update.")
 	TEST_ASSERT_EQUAL(second_ui.config_update_count, 1, "The second open TGUI did not receive the preference update.")
 	TEST_ASSERT_EQUAL(test_lobby.update_count, 1, "The open lobby did not receive the preference update.")
-	TEST_ASSERT_EQUAL(test_lobby.captured_theme, "meridian_vector", "The lobby received a non-canonical preference value.")
+	TEST_ASSERT_EQUAL(test_lobby.captured_theme, "meridian_pipboy", "The lobby received a non-canonical preference value.")
 
-	TEST_ASSERT(test_client.set_meridian_theme("meridian_vector"), "Reselecting the canonical value should be a successful no-op.")
+	TEST_ASSERT(test_client.set_meridian_theme("meridian_pipboy"), "Reselecting the canonical value should be a successful no-op.")
 	TEST_ASSERT_EQUAL(test_preferences.save_call_count, 1, "Reselecting the canonical value persisted redundantly.")
 	TEST_ASSERT_EQUAL(first_ui.config_update_count, 1, "Reselecting the canonical value broadcast redundantly.")
 	TEST_ASSERT_EQUAL(test_lobby.update_count, 1, "Reselecting the canonical value broadcast to the lobby redundantly.")

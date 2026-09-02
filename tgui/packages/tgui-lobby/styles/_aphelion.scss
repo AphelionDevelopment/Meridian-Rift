@@ -84,8 +84,9 @@
   --boot-warning: var(--console-status-warning);
 }
 
-// Classic NT intentionally reproduces the pre-theme HTML menu and green boot
-// terminal. Regular TGUI resolves this preference to base `theme-nanotrasen`.
+// Classic NT intentionally reproduces the pre-theme HTML menu and carries its
+// purple-to-blue gradient into startup. Regular TGUI resolves this preference
+// to base `theme-nanotrasen`.
 .theme-nanotrasen {
   --lobby-canvas: #000;
   --lobby-panel: #000066;
@@ -117,14 +118,14 @@
     rgb(0 0 102 / 60%)
   );
   --lobby-text-shadow: 2px 2px #000;
-  --boot-accent: green;
-  --boot-accent-secondary: lime;
-  --boot-boundary: green;
-  --boot-surface: #000;
-  --boot-surface-recessed: #000;
-  --boot-text: green;
-  --boot-text-secondary: green;
-  --boot-warning: #f44;
+  --boot-accent: #8e7dff;
+  --boot-accent-secondary: #8fb7ff;
+  --boot-boundary: #cde;
+  --boot-surface: #000066;
+  --boot-surface-recessed: #000033;
+  --boot-text: #fff;
+  --boot-text-secondary: #cde;
+  --boot-warning: #f80;
 }
 
 .theme-meridian_highline {
@@ -135,6 +136,7 @@
 }
 
 :is(
+  .theme-meridian_pipboy,
   .theme-meridian_vector,
   .theme-meridian_cyberpunk,
   .theme-meridian_augmentation
@@ -184,9 +186,21 @@
   );
 }
 
-:is(.theme-nanotrasen, .theme-meridian_highline) .boot_terminal::before {
+.theme-meridian_highline .boot_terminal::before {
   background-color: var(--boot-surface);
   background-image: none;
+}
+
+.theme-nanotrasen .boot_terminal::before {
+  background-color: #000;
+  background-image: linear-gradient(
+    to bottom,
+    rgb(110 45 136 / 60%),
+    rgb(120 68 204 / 60%),
+    rgb(68 68 204 / 60%),
+    rgb(68 68 204 / 60%),
+    rgb(0 0 102 / 60%)
+  );
 }
 
 .lobby--transparent .boot_terminal::before {
