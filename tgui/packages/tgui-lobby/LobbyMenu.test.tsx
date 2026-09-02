@@ -24,7 +24,18 @@ let sendMessage: ReturnType<typeof mock>;
 function makeServerState(overrides: Partial<ServerState> = {}): ServerState {
   return {
     titleImageUrl: 'asset://title.png',
-    titleImageTreatment: 'meridian',
+    titleImageTreatment: 'mask',
+    titleMarkUrl: 'asset://meridian-rift-mark.png',
+    titleScreens: [
+      { name: 'station_alpha.png', overlay: false },
+      { name: 'nebula_dawn.png', overlay: true },
+    ],
+    titleSelected: null,
+    titleRotate: true,
+    titleVariant: 'convex',
+    titleTexture: 'original',
+    titleClassicAlt: false,
+    canSetTitleScreen: true,
     gamePhase: 'startup',
     isReady: false,
     canReady: true,
@@ -173,7 +184,7 @@ describe('LobbyMenu MeridianOS integration', () => {
     );
   });
 
-  it('keeps artwork comparisons window-local across state and phase updates', async () => {
+  it('sends presentation changes to the server rather than applying them locally', async () => {
     render(<LobbyMenu />);
     emit('init', makeServerState());
 
@@ -188,109 +199,93 @@ describe('LobbyMenu MeridianOS integration', () => {
     );
     await act(async () => Promise.resolve());
 
+    // The presentation is server-wide, so the click only sends the intent.
+    expect(sendMessage).toHaveBeenCalledWith('setTitlePresentation', {
+      classicAlt: false,
+      texture: 'navarobl',
+      variant: 'convex-bezel',
+    });
     let artwork = document.querySelector('.lobby-title-art');
+    expect(artwork?.getAttribute('data-texture')).toBe('original');
+
+    // ... and the render follows only once the broadcast comes back, which is
+    // what keeps every open lobby in step rather than just this one.
+    emit('state', { titleTexture: 'navarobl', titleVariant: 'convex-bezel' });
+    artwork = document.querySelector('.lobby-title-art');
     expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
     expect(artwork?.getAttribute('data-variant')).toBe('convex-bezel');
-
-    fireEvent.click(trigger);
-    fireEvent.click(
-      screen.getByRole('menuitemcheckbox', { name: /classic alt/i }),
-    );
-    await act(async () => Promise.resolve());
-    artwork = document.querySelector('.lobby-title-art');
-    expect(artwork?.getAttribute('data-presentation')).toBe('classic-alt');
 
     emit('state', { gamePhase: 'pregame', playerCount: 9 });
     artwork = document.querySelector('.lobby-title-art');
     expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
-    expect(artwork?.getAttribute('data-variant')).toBe('convex-bezel');
-    expect(artwork?.getAttribute('data-presentation')).toBe('classic-alt');
-    expect(sendMessage).not.toHaveBeenCalled();
 
     emit('state', { transparent: true });
     expect(
       screen.queryByRole('button', { name: /change lobby artwork/i }),
     ).toBeNull();
     expect(document.querySelector('.lobby-title-art')).toBeNull();
-
-    emit('state', { transparent: false });
-    expect(
-      screen.getByRole('button', { name: /change lobby artwork/i }),
-    ).toBeTruthy();
-    artwork = document.querySelector('.lobby-title-art');
-    expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
-    expect(artwork?.getAttribute('data-variant')).toBe('convex-bezel');
-    expect(artwork?.getAttribute('data-presentation')).toBe('classic-alt');
   });
 
-  it('hides comparison controls for operator-provided artwork', () => {
+  it('shows the title screen controls only to an admin who may set them', () => {
     render(<LobbyMenu />);
-    emit(
-      'init',
-      makeServerState({
-        titleImageTreatment: null,
-      }),
-    );
+    emit('init', makeServerState({ canSetTitleScreen: false }));
 
     expect(
       screen.queryByRole('button', { name: /change lobby artwork/i }),
     ).toBeNull();
+    // The base theme picker is everyone's, and stays.
+    expect(
+      screen.getByRole('button', { name: /change base interface theme/i }),
+    ).toBeTruthy();
+
+    emit('state', { canSetTitleScreen: true });
+    expect(
+      screen.getByRole('button', { name: /change lobby artwork/i }),
+    ).toBeTruthy();
+  });
+
+  it('renders an untreated screen as a plain backdrop', () => {
+    render(<LobbyMenu />);
+    emit('init', makeServerState({ titleImageTreatment: 'none' }));
+
     expect(document.querySelector('.lobby-title-art')).toBeNull();
     expect(document.querySelector('.bg')?.getAttribute('src')).toBe(
       'asset://title.png',
     );
-    expect(
-      screen.getByRole('button', { name: /change base interface theme/i }),
-    ).toBeTruthy();
   });
 
-  it('uses Pip-Boy scanlines automatically but honors an explicit Original choice', async () => {
+  it('composites the wordmark over a screen in the overlay treatment', () => {
     render(<LobbyMenu />);
-    emit(
-      'init',
-      makeServerState({
-        meridianTheme: 'meridian_pipboy',
-      }),
-    );
+    emit('init', makeServerState({ titleImageTreatment: 'overlay' }));
+
+    const artwork = document.querySelector('.lobby-title-art');
+    expect(artwork?.getAttribute('data-treatment')).toBe('overlay');
+    expect(artwork?.className).toContain('lobby-title-art--overlay');
+  });
+
+  it('renders the texture the server chose', () => {
+    render(<LobbyMenu />);
+    emit('init', makeServerState({ titleTexture: 'navarobl' }));
 
     expect(
       document.querySelector('.lobby-title-art')?.getAttribute('data-texture'),
     ).toBe('navarobl');
-
-    fireEvent.click(
-      screen.getByRole('button', { name: /change lobby artwork/i }),
-    );
-    fireEvent.click(
-      screen.getByRole('menuitemradio', { name: /original - c convex/i }),
-    );
-    await act(async () => Promise.resolve());
-
-    expect(
-      document.querySelector('.lobby-title-art')?.getAttribute('data-texture'),
-    ).toBe('original');
-    expect(sendMessage).not.toHaveBeenCalled();
   });
 
-  it('resets the temporary comparison only when the lobby remounts', async () => {
+  it('restores the server presentation after a remount', () => {
     const view = render(<LobbyMenu />);
-    emit('init', makeServerState());
-    fireEvent.click(
-      screen.getByRole('button', { name: /change lobby artwork/i }),
-    );
-    fireEvent.click(
-      screen.getByRole('menuitemradio', { name: /navarobl - a flat/i }),
-    );
-    await act(async () => Promise.resolve());
+    emit('init', makeServerState({ titleVariant: 'flat' }));
     expect(
       document.querySelector('.lobby-title-art')?.getAttribute('data-variant'),
     ).toBe('flat');
 
     view.unmount();
     render(<LobbyMenu />);
-    emit('init', makeServerState());
+    emit('init', makeServerState({ titleVariant: 'flat' }));
 
+    // Nothing is client-local any more, so the choice survives the remount.
     const artwork = document.querySelector('.lobby-title-art');
-    expect(artwork?.getAttribute('data-variant')).toBe('convex');
+    expect(artwork?.getAttribute('data-variant')).toBe('flat');
     expect(artwork?.getAttribute('data-texture')).toBe('original');
     expect(artwork?.getAttribute('data-presentation')).toBe('classic');
   });

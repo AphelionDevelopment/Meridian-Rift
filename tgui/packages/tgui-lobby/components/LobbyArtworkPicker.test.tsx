@@ -27,7 +27,7 @@ const DEFAULT_VALUE: LobbyArtworkPickerValue = {
 };
 
 describe('LobbyArtworkPicker', () => {
-  it('renders eight radio presets and an orthogonal Classic Alt checkbox', () => {
+  it('renders the title screen list, its overlay toggles, and the presets', () => {
     render(<LobbyArtworkPicker onAction={() => {}} value={DEFAULT_VALUE} />);
     const trigger = screen.getByRole('button', {
       name: /change lobby artwork/i,
@@ -37,16 +37,36 @@ describe('LobbyArtworkPicker', () => {
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(trigger);
 
-    const presets = screen.getAllByRole('menuitemradio');
-    expect(presets).toHaveLength(8);
+    // The default master, one radio per configured screen, then the presets.
+    const radios = screen.getAllByRole('menuitemradio');
+    expect(radios).toHaveLength(DEFAULT_VALUE.screens.length + 1 + 8);
+    expect(radios[0].textContent).toContain('Meridian Rift (default)');
+    expect(radios[0].getAttribute('aria-checked')).toBe('true');
+    expect(radios[1].textContent).toContain('station_alpha.png');
+
+    const presets = radios.slice(DEFAULT_VALUE.screens.length + 1);
     expect(presets[0].textContent).toContain('Original - A Flat');
     expect(presets[2].getAttribute('aria-checked')).toBe('true');
     expect(presets[6].textContent).toContain('NavaroBL - C Convex');
 
-    const classicAlt = screen.getByRole('menuitemcheckbox', {
-      name: /classic alt/i,
-    });
-    expect(classicAlt.getAttribute('aria-checked')).toBe('false');
+    // Each screen carries its own overlay opt-in, reflecting the server value.
+    for (const shot of DEFAULT_VALUE.screens) {
+      const overlay = screen.getByRole('menuitemcheckbox', {
+        name: new RegExp(`overlay .*${shot.name}`, 'i'),
+      });
+      expect(overlay.getAttribute('aria-checked')).toBe(String(shot.overlay));
+    }
+
+    expect(
+      screen
+        .getByRole('menuitemcheckbox', { name: /rotate title screens/i })
+        .getAttribute('aria-checked'),
+    ).toBe('true');
+    expect(
+      screen
+        .getByRole('menuitemcheckbox', { name: /classic alt/i })
+        .getAttribute('aria-checked'),
+    ).toBe('false');
   });
 
   it('supports complete menu navigation, typeahead, Escape, and focus return', async () => {
@@ -57,20 +77,22 @@ describe('LobbyArtworkPicker', () => {
 
     fireEvent.click(trigger);
     const menu = screen.getByRole('menu');
-    const presets = screen.getAllByRole('menuitemradio');
-    const classicAlt = screen.getByRole('menuitemcheckbox');
+    // Queried by role and name rather than by index, so adding a section to the
+    // menu does not silently rewrite what this test is asserting.
+    const firstItem = screen.getAllByRole('menuitemradio')[0];
+    const classicAlt = screen.getByRole('menuitemcheckbox', {
+      name: /classic alt/i,
+    });
+    const rotate = screen.getByRole('menuitemcheckbox', {
+      name: /rotate title screens/i,
+    });
 
-    expect(document.activeElement).toBe(presets[2]);
-    fireEvent.keyDown(menu, { key: 'ArrowDown' });
-    expect(document.activeElement).toBe(presets[3]);
-    fireEvent.keyDown(menu, { key: 'ArrowUp' });
-    expect(document.activeElement).toBe(presets[2]);
     fireEvent.keyDown(menu, { key: 'End' });
     expect(document.activeElement).toBe(classicAlt);
     fireEvent.keyDown(menu, { key: 'Home' });
-    expect(document.activeElement).toBe(presets[0]);
-    fireEvent.keyDown(menu, { key: 'n' });
-    expect(document.activeElement).toBe(presets[4]);
+    expect(document.activeElement).toBe(firstItem);
+    fireEvent.keyDown(menu, { key: 'r' });
+    expect(document.activeElement).toBe(rotate);
     fireEvent.keyDown(menu, { key: 'c' });
     expect(document.activeElement).toBe(classicAlt);
 
@@ -89,7 +111,9 @@ describe('LobbyArtworkPicker', () => {
     });
 
     fireEvent.keyDown(trigger, { key: 'ArrowUp' });
-    expect(document.activeElement).toBe(screen.getByRole('menuitemcheckbox'));
+    expect(document.activeElement).toBe(
+      screen.getByRole('menuitemcheckbox', { name: /classic alt/i }),
+    );
 
     view.unmount();
     render(<LobbyArtworkPicker onAction={() => {}} value={DEFAULT_VALUE} />);
