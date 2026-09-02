@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { cleanup, render } from '@testing-library/react';
+import { act, cleanup, render } from '@testing-library/react';
 import { Provider } from 'jotai';
 import {
+  configAtom,
   debugThemeAtom,
   kitchenSinkAtom,
+  meridianThemeAtom,
   resetStore,
   store,
 } from '../events/store';
@@ -11,6 +13,10 @@ import { Layout } from './Layout';
 
 beforeEach(() => {
   document.documentElement.className = '';
+  store.set(configAtom, (previous) => ({
+    ...previous,
+    meridianTheme: 'meridian',
+  }));
   store.set(debugThemeAtom, null);
 });
 
@@ -109,5 +115,62 @@ describe('Layout theme class management', () => {
 
     expect(store.get(debugThemeAtom)).toBeNull();
     expect(store.get(kitchenSinkAtom)).toBe(false);
+  });
+
+  it('restores base TGUI classes for Classic NT', () => {
+    store.set(meridianThemeAtom, 'meridian_classic');
+    render(
+      <Provider store={store}>
+        <Layout>Classic</Layout>
+      </Provider>,
+    );
+
+    expect(
+      document.documentElement.classList.contains('theme-nanotrasen'),
+    ).toBe(true);
+    expect(document.documentElement.classList.contains('theme-console')).toBe(
+      false,
+    );
+  });
+
+  it('reconciles rapid base changes while specialty themes stay authoritative', () => {
+    document.documentElement.classList.add('unrelated-runtime-class');
+    const view = render(
+      <Provider store={store}>
+        <Layout theme="meridian_vector">Base</Layout>
+      </Provider>,
+    );
+
+    act(() => store.set(meridianThemeAtom, 'meridian_classic'));
+    expect(
+      document.documentElement.classList.contains('theme-nanotrasen'),
+    ).toBe(true);
+    expect(document.documentElement.classList.contains('theme-console')).toBe(
+      false,
+    );
+
+    act(() => store.set(meridianThemeAtom, 'meridian_cyberpunk'));
+    expect(
+      document.documentElement.classList.contains('theme-meridian_cyberpunk'),
+    ).toBe(true);
+    expect(
+      document.documentElement.classList.contains('theme-nanotrasen'),
+    ).toBe(false);
+
+    view.rerender(
+      <Provider store={store}>
+        <Layout theme="paper">Specialty</Layout>
+      </Provider>,
+    );
+    act(() => store.set(meridianThemeAtom, 'meridian_foundry'));
+    expect(document.documentElement.classList.contains('theme-paper')).toBe(
+      true,
+    );
+    expect(document.documentElement.classList.contains('theme-console')).toBe(
+      false,
+    );
+    expect(
+      document.documentElement.classList.contains('unrelated-runtime-class'),
+    ).toBe(true);
   });
 });

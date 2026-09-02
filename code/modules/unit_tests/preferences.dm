@@ -75,3 +75,91 @@
 				errored = TRUE
 
 			TEST_ASSERT(errored, "[preference_type] implemented icon_for, but does not have should_generate_icons = TRUE")
+
+/datum/unit_test/preferences_meridian_theme
+
+/datum/unit_test/preferences_meridian_theme/Run()
+	var/datum/preference/choiced/meridian_theme/preference = GLOB.preference_entries[/datum/preference/choiced/meridian_theme]
+	var/list/expected_ids = list(
+		"meridian",
+		"meridian_classic",
+		"meridian_vector",
+		"meridian_foundry",
+		"meridian_diagnostic",
+		"meridian_highline",
+		"meridian_synapse",
+		"meridian_cyberpunk",
+		"meridian_augmentation",
+		"meridian_afterlight",
+		"meridian_relay",
+		"meridian_bastion",
+	)
+	var/list/actual_ids = preference.get_choices()
+
+	TEST_ASSERT_EQUAL(preference.savefile_key, "meridian_theme", "MeridianOS theme changed its persistent save key.")
+	TEST_ASSERT_EQUAL(preference.savefile_identifier, PREFERENCE_PLAYER, "MeridianOS theme must remain account-wide.")
+	TEST_ASSERT_EQUAL(preference.create_default_value(), "meridian", "MeridianOS Standard must remain the default.")
+	TEST_ASSERT_EQUAL(length(actual_ids), length(expected_ids), "MeridianOS theme choices changed size.")
+	for(var/index in 1 to length(expected_ids))
+		TEST_ASSERT_EQUAL(actual_ids[index], expected_ids[index], "MeridianOS theme choice [index] changed order or ID.")
+
+	TEST_ASSERT_EQUAL(preference.category, PREFERENCE_CATEGORY_MANUALLY_RENDERED, "MeridianOS theme must remain exclusive to the gear menu.")
+	TEST_ASSERT(!preference.is_valid("meridian_unknown", null), "MeridianOS theme accepted an unknown raw ID.")
+	TEST_ASSERT(!preference.is_valid(list("meridian"), null), "MeridianOS theme accepted a non-text raw value.")
+
+	var/datum/client_interface/test_client = new
+	var/datum/preferences/meridian_theme_unit_test/test_preferences = new(test_client)
+	test_client.prefs = test_preferences
+	test_preferences.value_cache[preference.type] = "meridian"
+	test_preferences.recently_updated_keys = list()
+	test_preferences.save_call_count = 0
+
+	var/mob/test_mob = allocate(/mob)
+	test_client.mob = test_mob
+	var/datum/tgui/meridian_theme_unit_test/first_ui = allocate(/datum/tgui/meridian_theme_unit_test)
+	var/datum/tgui/meridian_theme_unit_test/second_ui = allocate(/datum/tgui/meridian_theme_unit_test)
+	test_mob.tgui_open_uis = list(first_ui, second_ui)
+	var/datum/client_interface/other_client = new
+	var/datum/preferences/meridian_theme_unit_test/other_preferences = new(other_client)
+	other_client.prefs = other_preferences
+	other_preferences.value_cache[preference.type] = "meridian"
+	other_preferences.recently_updated_keys = list()
+	other_preferences.save_call_count = 0
+
+	TEST_ASSERT(!test_client.set_meridian_theme("meridian_unknown"), "Unknown wire IDs must be rejected before preference deserialization.")
+	TEST_ASSERT(!test_client.set_meridian_theme(list("meridian_vector")), "Non-text wire values must be rejected.")
+	TEST_ASSERT_EQUAL(test_preferences.read_preference(preference.type), "meridian", "Rejected input changed the saved theme.")
+	TEST_ASSERT_EQUAL(test_preferences.save_call_count, 0, "Rejected input attempted to persist preferences.")
+	TEST_ASSERT_EQUAL(first_ui.config_update_count, 0, "Rejected input broadcast a config update.")
+
+	TEST_ASSERT(test_client.set_meridian_theme("meridian_vector"), "A valid theme selection was rejected.")
+	TEST_ASSERT_EQUAL(test_preferences.read_preference(preference.type), "meridian_vector", "A valid theme selection was not applied.")
+	TEST_ASSERT_EQUAL(test_preferences.save_call_count, 1, "A valid selection was not persisted immediately and exactly once.")
+	TEST_ASSERT_EQUAL(first_ui.config_update_count, 1, "The first open TGUI did not receive the preference update.")
+	TEST_ASSERT_EQUAL(second_ui.config_update_count, 1, "The second open TGUI did not receive the preference update.")
+
+	TEST_ASSERT(test_client.set_meridian_theme("meridian_vector"), "Reselecting the canonical value should be a successful no-op.")
+	TEST_ASSERT_EQUAL(test_preferences.save_call_count, 1, "Reselecting the canonical value persisted redundantly.")
+	TEST_ASSERT_EQUAL(first_ui.config_update_count, 1, "Reselecting the canonical value broadcast redundantly.")
+
+	TEST_ASSERT_EQUAL(other_preferences.read_preference(preference.type), "meridian", "One client's selection mutated another preference owner.")
+	TEST_ASSERT_EQUAL(other_preferences.save_call_count, 0, "One client's selection persisted another preference owner.")
+
+	qdel(test_preferences)
+	qdel(other_preferences)
+	qdel(test_client)
+	qdel(other_client)
+
+/datum/preferences/meridian_theme_unit_test
+	var/save_call_count = 0
+
+/datum/preferences/meridian_theme_unit_test/save_preferences()
+	save_call_count++
+	return TRUE
+
+/datum/tgui/meridian_theme_unit_test
+	var/config_update_count = 0
+
+/datum/tgui/meridian_theme_unit_test/send_config_update()
+	config_update_count++
+	return TRUE

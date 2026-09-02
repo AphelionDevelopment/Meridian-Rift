@@ -1,11 +1,23 @@
 import { atom, createStore } from 'jotai';
-import type { MeridianThemeId } from '../constants/theme';
+import {
+  normalizeMeridianBaseTheme,
+  type MeridianBaseThemeId,
+} from '../constants/theme';
 import type { Config } from './types';
 
 export const chunkingAtom = atom<Record<string, any>>({});
 export const configAtom = atom<Config>({} as Config);
 export const debugLayoutAtom = atom(false);
-export const debugThemeAtom = atom<MeridianThemeId | null>(null);
+export const debugThemeAtom = atom<MeridianBaseThemeId | null>(null);
+export const meridianThemeAtom = atom(
+  (get) => normalizeMeridianBaseTheme(get(configAtom).meridianTheme),
+  (_get, set, nextTheme: MeridianBaseThemeId) => {
+    set(configAtom, (previous) => ({
+      ...previous,
+      meridianTheme: normalizeMeridianBaseTheme(nextTheme),
+    }));
+  },
+);
 export const gameDataAtom = atom<Record<string, any>>({});
 export const gameStaticDataAtom = atom<Record<string, any>>({});
 export const kitchenSinkAtom = atom(false);

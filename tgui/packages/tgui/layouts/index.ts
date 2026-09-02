@@ -6,6 +6,10 @@
 
 export { Layout } from './Layout';
 export {
+  MeridianThemePicker,
+  type MeridianThemePickerProps,
+} from './MeridianThemePicker';
+export {
   type MeridianOSData,
   MeridianWindow,
   type NTOSData,

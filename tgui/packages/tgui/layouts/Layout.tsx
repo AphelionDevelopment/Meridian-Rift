@@ -11,7 +11,8 @@ import { addScrollableNode, removeScrollableNode } from 'tgui-core/events';
 import { classes } from 'tgui-core/react';
 import { computeBoxClassName, computeBoxProps } from 'tgui-core/ui';
 import { resolveMeridianTheme } from '../constants/theme';
-import { debugThemeAtom } from '../events/store';
+import { debugThemeAtom, meridianThemeAtom } from '../events/store';
+import { useRootThemeClasses } from '../hooks/useRootThemeClasses';
 
 type BoxProps = React.ComponentProps<typeof Box>;
 
@@ -23,26 +24,15 @@ type Props = Partial<{
 export function Layout(props: Props) {
   const { className, theme = 'nanotrasen', children, ...rest } = props;
   const debugTheme = useAtomValue(debugThemeAtom);
-  const resolvedTheme = resolveMeridianTheme(
-    theme,
-    process.env.NODE_ENV !== 'production' ? debugTheme : null,
-  );
+  const preferredTheme = useAtomValue(meridianThemeAtom);
+  const resolvedTheme = resolveMeridianTheme({
+    requested: theme,
+    preferred: preferredTheme,
+    debugOverride: process.env.NODE_ENV !== 'production' ? debugTheme : null,
+  });
   const managedClasses = resolvedTheme.classes;
   const managedClassKey = managedClasses.join(' ');
-  const previousManagedClasses = useRef<string[]>([]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const nextManagedClasses = managedClassKey.split(' ');
-    root.classList.remove(...previousManagedClasses.current);
-    root.classList.add(...nextManagedClasses);
-    previousManagedClasses.current = nextManagedClasses;
-
-    return () => {
-      root.classList.remove(...nextManagedClasses);
-      previousManagedClasses.current = [];
-    };
-  }, [managedClassKey]);
+  useRootThemeClasses(managedClasses);
 
   return (
     <div className={managedClassKey} data-theme={resolvedTheme.base}>

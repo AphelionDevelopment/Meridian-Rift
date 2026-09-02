@@ -35,6 +35,7 @@ const testConfig = {
     layout: 'default',
     name: 'PreferencesMenu',
   },
+  meridianTheme: 'meridian' as const,
   refreshing: 0 as const,
   status: UI_INTERACTIVE,
   title: 'Preferences',

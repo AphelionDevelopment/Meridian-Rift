@@ -85,7 +85,9 @@ describe('MeridianOS shared control geometry', () => {
     );
 
     for (const theme of MERIDIAN_THEME_IDS) {
-      expect(resolveMeridianTheme(theme).classes).toContain('theme-console');
+      expect(resolveMeridianTheme({ requested: theme }).classes).toContain(
+        'theme-console',
+      );
 
       const view = render(
         <div
@@ -248,19 +250,14 @@ describe('MeridianOS shared control geometry', () => {
         expect(getComputedStyle(groupedControl).marginRight).toBe('0px');
         expect(getComputedStyle(groupedControl).marginBottom).toBe('0px');
       }
-      expect(rotateClockwise.parentElement?.classList).toContain(
-        'Stack__item',
-      );
+      expect(rotateClockwise.parentElement?.classList).toContain('Stack__item');
       expect(rotateCounterClockwise.parentElement?.classList).toContain(
         'Stack__item',
       );
       expect(getComputedStyle(rotateClockwise).minHeight).toBe(
         getComputedStyle(rotateCounterClockwise).minHeight,
       );
-      for (const rotateControl of [
-        rotateClockwise,
-        rotateCounterClockwise,
-      ]) {
+      for (const rotateControl of [rotateClockwise, rotateCounterClockwise]) {
         expect(getComputedStyle(rotateControl).marginTop).toBe('0px');
         expect(getComputedStyle(rotateControl).marginLeft).toBe('0px');
       }

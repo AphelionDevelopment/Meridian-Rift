@@ -26,9 +26,9 @@ import {
 } from 'tgui-core/components';
 import { useBackend } from '../backend';
 import {
-  MERIDIAN_THEMES,
-  MERIDIAN_THEME_IDS,
-  type MeridianThemeId,
+  MERIDIAN_BASE_THEME_IDS,
+  MERIDIAN_BASE_THEME_OPTIONS,
+  type MeridianBaseThemeId,
   tgui16,
 } from '../constants/theme';
 import { debugThemeAtom } from '../events/store';
@@ -66,14 +66,14 @@ export function KitchenSink(props: Props) {
 
   const changeTheme = (direction: -1 | 1) => {
     const currentIndex = debugTheme
-      ? MERIDIAN_THEME_IDS.indexOf(debugTheme)
+      ? MERIDIAN_BASE_THEME_IDS.indexOf(debugTheme)
       : direction > 0
         ? -1
         : 0;
     const nextIndex =
-      (currentIndex + direction + MERIDIAN_THEME_IDS.length) %
-      MERIDIAN_THEME_IDS.length;
-    setDebugTheme(MERIDIAN_THEME_IDS[nextIndex]);
+      (currentIndex + direction + MERIDIAN_BASE_THEME_IDS.length) %
+      MERIDIAN_BASE_THEME_IDS.length;
+    setDebugTheme(MERIDIAN_BASE_THEME_IDS[nextIndex]);
   };
 
   return (
@@ -89,8 +89,9 @@ export function KitchenSink(props: Props) {
                 <strong>Development skin</strong>
                 <span className="MeridianShowcase__themeDetail">
                   {debugTheme
-                    ? MERIDIAN_THEMES.find(({ id }) => id === debugTheme)
-                        ?.construction
+                    ? MERIDIAN_BASE_THEME_OPTIONS.find(
+                        ({ id }) => id === debugTheme,
+                      )?.construction
                     : 'Inherit the interface or device theme'}
                 </span>
               </div>
@@ -114,19 +115,20 @@ export function KitchenSink(props: Props) {
                 />
                 <Dropdown
                   width="180px"
-                  options={MERIDIAN_THEMES.map(({ id, name }) => ({
+                  options={MERIDIAN_BASE_THEME_OPTIONS.map(({ id, name }) => ({
                     displayText: name,
                     value: id,
                   }))}
                   selected={debugTheme}
                   displayText={
                     debugTheme
-                      ? MERIDIAN_THEMES.find(({ id }) => id === debugTheme)
-                          ?.name
+                      ? MERIDIAN_BASE_THEME_OPTIONS.find(
+                          ({ id }) => id === debugTheme,
+                        )?.name
                       : 'Inherited'
                   }
                   onSelected={(value) =>
-                    setDebugTheme(value as MeridianThemeId)
+                    setDebugTheme(value as MeridianBaseThemeId)
                   }
                 />
               </div>

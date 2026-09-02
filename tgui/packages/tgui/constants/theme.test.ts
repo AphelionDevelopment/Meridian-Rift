@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  DEFAULT_MERIDIAN_BASE_THEME,
+  MERIDIAN_BASE_THEME_IDS,
+  MERIDIAN_BASE_THEME_OPTIONS,
   MERIDIAN_THEMES,
   MERIDIAN_THEME_IDS,
+  normalizeMeridianBaseTheme,
   normalizeMeridianTheme,
   resolveMeridianTheme,
 } from './theme';
@@ -30,11 +34,29 @@ function contrast(first: string, second: string): number {
 }
 
 describe('MeridianOS theme catalog', () => {
-  it('contains eleven unique skins and only Standard is production-facing', () => {
+  it('contains eleven palette skins and twelve ordered player themes', () => {
     expect(new Set(MERIDIAN_THEME_IDS).size).toBe(11);
-    expect(MERIDIAN_THEMES.filter(({ production }) => production)).toEqual([
-      expect.objectContaining({ id: 'meridian', name: 'Standard' }),
+    expect(new Set(MERIDIAN_BASE_THEME_IDS).size).toBe(12);
+    expect(DEFAULT_MERIDIAN_BASE_THEME).toBe('meridian');
+    expect(MERIDIAN_BASE_THEME_IDS).toEqual([
+      'meridian',
+      'meridian_classic',
+      'meridian_vector',
+      'meridian_foundry',
+      'meridian_diagnostic',
+      'meridian_highline',
+      'meridian_synapse',
+      'meridian_cyberpunk',
+      'meridian_augmentation',
+      'meridian_afterlight',
+      'meridian_relay',
+      'meridian_bastion',
     ]);
+    expect(MERIDIAN_BASE_THEME_OPTIONS.slice(0, 2)).toEqual([
+      expect.objectContaining({ id: 'meridian', name: 'Standard' }),
+      expect.objectContaining({ id: 'meridian_classic', name: 'Classic NT' }),
+    ]);
+    expect(MERIDIAN_THEMES.every(({ production }) => production)).toBe(true);
   });
 
   it('meets text, status-boundary, selection, and focus contrast contracts', () => {
@@ -90,11 +112,15 @@ describe('MeridianOS theme resolution', () => {
     expect(normalizeMeridianTheme('ntos')).toBe('meridian');
     expect(normalizeMeridianTheme('ntos_terminal')).toBe('ntos_terminal');
     expect(normalizeMeridianTheme('paper')).toBe('paper');
+    expect(normalizeMeridianBaseTheme('meridian_classic')).toBe(
+      'meridian_classic',
+    );
+    expect(normalizeMeridianBaseTheme('unregistered-theme')).toBe('meridian');
   });
 
   it('falls unknown requested themes back to Standard', () => {
     expect(normalizeMeridianTheme('unregistered-theme')).toBe('meridian');
-    expect(resolveMeridianTheme('unregistered-theme')).toEqual({
+    expect(resolveMeridianTheme({ requested: 'unregistered-theme' })).toEqual({
       base: 'meridian',
       classes: ['theme-meridian', 'theme-console'],
       isConsole: true,
@@ -102,12 +128,16 @@ describe('MeridianOS theme resolution', () => {
   });
 
   it('preserves modifier classes and marks only the Meridian family as console', () => {
-    expect(resolveMeridianTheme('heretic heretic-theme-ascended')).toEqual({
+    expect(
+      resolveMeridianTheme({
+        requested: 'heretic heretic-theme-ascended',
+      }),
+    ).toEqual({
       base: 'heretic',
       classes: ['theme-heretic', 'heretic-theme-ascended'],
       isConsole: false,
     });
-    expect(resolveMeridianTheme('ntos')).toEqual({
+    expect(resolveMeridianTheme({ requested: 'ntos' })).toEqual({
       base: 'meridian',
       classes: ['theme-meridian', 'theme-console'],
       isConsole: true,
@@ -115,10 +145,38 @@ describe('MeridianOS theme resolution', () => {
   });
 
   it('gives the development override precedence over the requested theme', () => {
-    expect(resolveMeridianTheme('paper', 'meridian_vector')).toEqual({
+    expect(
+      resolveMeridianTheme({
+        requested: 'paper',
+        debugOverride: 'meridian_vector',
+      }),
+    ).toEqual({
       base: 'meridian_vector',
       classes: ['theme-meridian_vector', 'theme-console'],
       isConsole: true,
+    });
+  });
+
+  it('applies the player preference without replacing specialty themes', () => {
+    expect(
+      resolveMeridianTheme({
+        requested: 'meridian_vector',
+        preferred: 'meridian_classic',
+      }),
+    ).toEqual({
+      base: 'nanotrasen',
+      classes: ['theme-nanotrasen'],
+      isConsole: false,
+    });
+    expect(
+      resolveMeridianTheme({
+        requested: 'paper',
+        preferred: 'meridian_cyberpunk',
+      }),
+    ).toEqual({
+      base: 'paper',
+      classes: ['theme-paper'],
+      isConsole: false,
     });
   });
 });

@@ -11,7 +11,7 @@ hackerman, retro-95, or other specialty themes.
 3. `_tokens.scss` defines runtime semantic variables and maps them to the
    public tgui-core component variables.
 4. `_themes.scss` supplies palette and construction profiles for Standard and
-   ten development skins.
+   ten additional MeridianOS skins.
 5. `_components.scss` applies shared component states using semantic variables
    only.
 6. `_loader.scss` provides the fixed diagnostic-instrument layer set shared by
@@ -22,17 +22,23 @@ hackerman, retro-95, or other specialty themes.
 8. `_motion.scss` owns the small interaction transitions, reduced-motion
    behavior, and forced-colors fallback.
 
-`Layout` resolves the window-local development override first, then the
-requested/device theme, then Standard. It reconciles only the classes it owns,
-so unrelated root modifiers and multi-class specialty themes survive updates.
-The old base ID is accepted as an invisible compatibility alias; new devices
+`Layout` resolves the window-local development override first, then an authored
+specialty theme, the saved player base theme, an ordinary requested/device
+theme, and finally Standard. It reconciles only the classes it owns, so
+unrelated root modifiers and multi-class specialty themes survive updates. The
+old base IDs are accepted as invisible compatibility aliases; new devices
 request `meridian`.
 
 ## Skin catalog
 
-Only **Standard** (`meridian`) is production-facing. These variants are
-available from the development Kitchen Sink and are deliberately absent from
-preference, PDA, Themeify, and persistence lists:
+The title-bar gear exposes one account-wide base-theme preference in this
+order: **Standard**, **Classic NT**, Vector, Foundry, Diagnostic, Highline,
+Synapse, Cyberpunk, Augmentation, Afterlight, Relay, and Bastion. Standard is
+the default. Classic selects the original `theme-nanotrasen` component styling
+without the MeridianOS console layer. Authored specialty interfaces remain
+specialized while their gear still updates the saved base theme used elsewhere.
+
+The eleven palette-bearing MeridianOS skins are:
 
 - Vector — paired notches, calibration ticks, and measurement rails.
 - Foundry — recessed machinery, fasteners, and warning-only hatching.

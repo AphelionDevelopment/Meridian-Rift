@@ -20,6 +20,7 @@
 @include meta.load-css('./visual-system/tokens.scss');
 @include meta.load-css('./visual-system/themes.scss');
 @include meta.load-css('./visual-system/components.scss');
+@include meta.load-css('./visual-system/theme-picker.scss');
 @include meta.load-css('./visual-system/loader.scss');
 @include meta.load-css('./visual-system/decoration.scss');
 @include meta.load-css('./visual-system/motion.scss');

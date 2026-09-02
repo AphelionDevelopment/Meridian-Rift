@@ -1,10 +1,15 @@
-import { useSetAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import type { PropsWithChildren } from 'react';
-import { Button, Icon } from 'tgui-core/components';
+import { Icon } from 'tgui-core/components';
 import { UI_DISABLED, UI_INTERACTIVE, UI_UPDATE } from 'tgui-core/constants';
 import { type BooleanLike, classes } from 'tgui-core/react';
 import { toTitleCase } from 'tgui-core/string';
-import { kitchenSinkAtom } from '../events/store';
+import {
+  debugThemeAtom,
+  kitchenSinkAtom,
+  meridianThemeAtom,
+} from '../events/store';
+import { MeridianThemePicker } from './MeridianThemePicker';
 
 type TitleBarProps = Partial<{
   className: string;
@@ -31,7 +36,9 @@ export function TitleBar(props: TitleBarProps) {
   const { className, title, status, canClose, onDragStart, onClose, children } =
     props;
 
-  const setKitchenSink = useSetAtom(kitchenSinkAtom);
+  const [kitchenSink, setKitchenSink] = useAtom(kitchenSinkAtom);
+  const setDebugTheme = useSetAtom(debugThemeAtom);
+  const [meridianTheme, setMeridianTheme] = useAtom(meridianThemeAtom);
 
   const finalTitle =
     (typeof title === 'string' &&
@@ -56,17 +63,41 @@ export function TitleBar(props: TitleBarProps) {
       )}
       <div className="TitleBar__title">{finalTitle}</div>
       {!!children && <div className="TitleBar__buttons">{children}</div>}
-      {process.env.NODE_ENV !== 'production' && (
-        <Button
-          className="TitleBar__buttons TitleBar__KitchenSink"
-          icon="bug"
-          onClick={() => setKitchenSink((prev) => !prev)}
+      <div className="TitleBar__utilities">
+        <MeridianThemePicker
+          className="TitleBar__themePicker"
+          onChange={(theme) => {
+            setDebugTheme(null);
+            setMeridianTheme(theme);
+            Byond.sendMessage('setMeridianTheme', { theme });
+          }}
+          value={meridianTheme}
         />
-      )}
+        {process.env.NODE_ENV !== 'production' && (
+          <button
+            aria-label="Toggle development showcase"
+            aria-pressed={kitchenSink}
+            className="TitleBar__utilityButton TitleBar__KitchenSink"
+            onClick={() => setKitchenSink((prev) => !prev)}
+            type="button"
+          >
+            <Icon aria-hidden="true" name="bug" />
+          </button>
+        )}
+      </div>
       {!!canClose && (
-        <div className="TitleBar__close" onClick={onClose}>
-          <Icon className="TitleBar__close--icon" name="times" />
-        </div>
+        <button
+          aria-label="Close window"
+          className="TitleBar__close"
+          onClick={onClose}
+          type="button"
+        >
+          <Icon
+            aria-hidden="true"
+            className="TitleBar__close--icon"
+            name="times"
+          />
+        </button>
       )}
     </div>
   );

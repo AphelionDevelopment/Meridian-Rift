@@ -42,7 +42,7 @@ export const MERIDIAN_THEMES = [
     id: 'meridian_vector',
     name: 'Vector',
     construction: 'Paired notches, calibration ticks, and measurement rails',
-    production: false,
+    production: true,
     palette: {
       canvas: '#070D16',
       panel: '#0B1626',
@@ -60,7 +60,7 @@ export const MERIDIAN_THEMES = [
     id: 'meridian_foundry',
     name: 'Foundry',
     construction: 'Structural edges, recessed controls, and fastener marks',
-    production: false,
+    production: true,
     palette: {
       canvas: '#100C08',
       panel: '#1B140C',
@@ -78,7 +78,7 @@ export const MERIDIAN_THEMES = [
     id: 'meridian_diagnostic',
     name: 'Diagnostic',
     construction: 'Square brackets, alignment ticks, and acquisition nodes',
-    production: false,
+    production: true,
     palette: {
       canvas: '#050D09',
       panel: '#091611',
@@ -96,7 +96,7 @@ export const MERIDIAN_THEMES = [
     id: 'meridian_highline',
     name: 'Highline',
     construction: 'Square two-pixel boundaries and inverse selections',
-    production: false,
+    production: true,
     palette: {
       canvas: '#000000',
       panel: '#0B0D0F',
@@ -114,7 +114,7 @@ export const MERIDIAN_THEMES = [
     id: 'meridian_synapse',
     name: 'Synapse',
     construction: 'Asymmetric cuts, violet edges, and teal status pins',
-    production: false,
+    production: true,
     palette: {
       canvas: '#0C0710',
       panel: '#160D1A',
@@ -132,7 +132,7 @@ export const MERIDIAN_THEMES = [
     id: 'meridian_cyberpunk',
     name: 'Cyberpunk',
     construction: 'Broken red rails, opposing cuts, and cyan inner pins',
-    production: false,
+    production: true,
     palette: {
       canvas: '#090304',
       panel: '#0F0505',
@@ -150,7 +150,7 @@ export const MERIDIAN_THEMES = [
     id: 'meridian_augmentation',
     name: 'Augmentation',
     construction: 'Clinical trapezoids, module sockets, and a symmetric axis',
-    production: false,
+    production: true,
     palette: {
       canvas: '#070203',
       panel: '#0F0505',
@@ -169,7 +169,7 @@ export const MERIDIAN_THEMES = [
     name: 'Afterlight',
     construction:
       'Retro-noir bezel slabs, service plates, and substantial keys',
-    production: false,
+    production: true,
     palette: {
       canvas: '#07090C',
       panel: '#11161C',
@@ -187,7 +187,7 @@ export const MERIDIAN_THEMES = [
     id: 'meridian_relay',
     name: 'Relay',
     construction: 'Unequal equipment bays, label plates, and relay lamps',
-    production: false,
+    production: true,
     palette: {
       canvas: '#101314',
       panel: '#1B2021',
@@ -205,7 +205,7 @@ export const MERIDIAN_THEMES = [
     id: 'meridian_bastion',
     name: 'Bastion',
     construction: 'Monumental slab rails, portal corners, and deep recesses',
-    production: false,
+    production: true,
     palette: {
       canvas: '#100D0A',
       panel: '#1A1712',
@@ -233,6 +233,34 @@ export const MERIDIAN_THEME_IDS = MERIDIAN_THEMES.map(
   ({ id }) => id,
 ) as MeridianThemeId[];
 
+export const MERIDIAN_CLASSIC_THEME_ID = 'meridian_classic' as const;
+
+const MERIDIAN_CLASSIC_THEME = {
+  id: MERIDIAN_CLASSIC_THEME_ID,
+  name: 'Classic NT',
+  construction: 'Original TGUI component styling and NT watermark',
+  production: true,
+} as const;
+
+/**
+ * User-facing theme order. Classic deliberately sits after Standard while the
+ * palette-bearing MeridianOS themes retain their established order.
+ */
+export const MERIDIAN_BASE_THEME_OPTIONS = [
+  MERIDIAN_THEMES[0],
+  MERIDIAN_CLASSIC_THEME,
+  ...MERIDIAN_THEMES.slice(1),
+] as const;
+
+export type MeridianBaseThemeId =
+  (typeof MERIDIAN_BASE_THEME_OPTIONS)[number]['id'];
+
+export const MERIDIAN_BASE_THEME_IDS = MERIDIAN_BASE_THEME_OPTIONS.map(
+  ({ id }) => id,
+) as MeridianBaseThemeId[];
+
+export const DEFAULT_MERIDIAN_BASE_THEME: MeridianBaseThemeId = 'meridian';
+
 export const MERIDIAN_STATUS_COLORS = {
   information: '#63B4FF',
   success: '#54D98C',
@@ -241,6 +269,7 @@ export const MERIDIAN_STATUS_COLORS = {
 } as const;
 
 const MERIDIAN_THEME_ID_SET = new Set<string>(MERIDIAN_THEME_IDS);
+const MERIDIAN_BASE_THEME_ID_SET = new Set<string>(MERIDIAN_BASE_THEME_IDS);
 
 // Themes with deliberately separate visual languages. Unknown runtime values
 // are not allowed to create an unstyled `theme-*` class; they fall back to
@@ -274,7 +303,7 @@ const SPECIALTY_THEME_ID_SET = new Set([
   'wizard',
 ]);
 
-const LEGACY_THEME_ALIASES: Readonly<Record<string, MeridianThemeId>> = {
+const LEGACY_THEME_ALIASES: Readonly<Record<string, MeridianBaseThemeId>> = {
   nanotrasen: 'meridian',
   ntos: 'meridian',
   meridian_standard: 'meridian',
@@ -284,15 +313,31 @@ export function isMeridianTheme(theme: string): theme is MeridianThemeId {
   return MERIDIAN_THEME_ID_SET.has(theme);
 }
 
+export function isMeridianBaseTheme(
+  theme: string,
+): theme is MeridianBaseThemeId {
+  return MERIDIAN_BASE_THEME_ID_SET.has(theme);
+}
+
+/** Normalize untrusted player-preference values to a selectable theme ID. */
+export function normalizeMeridianBaseTheme(
+  requested?: string | null,
+): MeridianBaseThemeId {
+  const aliased = requested
+    ? (LEGACY_THEME_ALIASES[requested] ?? requested)
+    : '';
+  return isMeridianBaseTheme(aliased) ? aliased : DEFAULT_MERIDIAN_BASE_THEME;
+}
+
 /** Normalize the base token while retaining specialty modifier classes. */
 export function normalizeMeridianTheme(requested?: string): string {
   const tokens = requested?.trim().split(/\s+/).filter(Boolean) ?? [];
-  const base = tokens.shift() || 'meridian';
+  const base = tokens.shift() || DEFAULT_MERIDIAN_BASE_THEME;
   const aliasedBase = LEGACY_THEME_ALIASES[base] ?? base;
   const normalizedBase =
-    isMeridianTheme(aliasedBase) || SPECIALTY_THEME_ID_SET.has(aliasedBase)
+    isMeridianBaseTheme(aliasedBase) || SPECIALTY_THEME_ID_SET.has(aliasedBase)
       ? aliasedBase
-      : 'meridian';
+      : DEFAULT_MERIDIAN_BASE_THEME;
   return [normalizedBase, ...tokens].join(' ');
 }
 
@@ -302,13 +347,32 @@ export type ResolvedTheme = {
   isConsole: boolean;
 };
 
-/** Resolution precedence: development override, requested theme, Standard. */
+/**
+ * Resolution precedence: development override, specialty device theme,
+ * player preference, requested theme, Standard.
+ */
+export type ResolveMeridianThemeOptions = {
+  requested?: string;
+  preferred?: MeridianBaseThemeId | null;
+  debugOverride?: MeridianBaseThemeId | null;
+};
+
 export function resolveMeridianTheme(
-  requested?: string,
-  debugOverride?: MeridianThemeId | null,
+  options: ResolveMeridianThemeOptions = {},
 ): ResolvedTheme {
-  const normalized = normalizeMeridianTheme(debugOverride || requested);
-  const [base, ...modifiers] = normalized.split(/\s+/);
+  const { requested, preferred, debugOverride } = options;
+  const normalizedRequested = normalizeMeridianTheme(requested);
+  const [requestedBase, ...requestedModifiers] =
+    normalizedRequested.split(/\s+/);
+  const requestedIsSpecialty = SPECIALTY_THEME_ID_SET.has(requestedBase);
+  const selectedTheme = debugOverride
+    ? normalizeMeridianBaseTheme(debugOverride)
+    : requestedIsSpecialty
+      ? requestedBase
+      : normalizeMeridianBaseTheme(preferred || requestedBase);
+  const base =
+    selectedTheme === MERIDIAN_CLASSIC_THEME_ID ? 'nanotrasen' : selectedTheme;
+  const modifiers = debugOverride ? [] : requestedModifiers;
   const isConsole = isMeridianTheme(base);
   return {
     base,
