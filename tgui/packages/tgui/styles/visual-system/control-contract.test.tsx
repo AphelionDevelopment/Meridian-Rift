@@ -298,4 +298,32 @@ describe('MeridianOS shared control geometry', () => {
       ".Tab:where(.Tab--selected, [aria-selected='true'])",
     );
   });
+
+  it('keeps skin paint off caller-styled section headers', () => {
+    // tgui-core deliberately gives .Section__title no background, which is
+    // what lets a caller colour a whole section and have the header inherit
+    // it. StyleableSection reuses these class names under a caller-styled
+    // root that carries no `.Section` class, so an unscoped paint rule here
+    // covers the caller's colour while the caller's own text colour survives
+    // -- that is how JobSelection's department headers went dark-on-dark.
+    // Skin paint therefore has to be scoped to a real Section.
+    const headerRule =
+      /([^\n{}]*\.Section__title(?:Text)?\b[^\n{}]*?)\{([^{}]*)\}/g;
+    const paints = /(^|[\s;])(background|color)[-a-z]*\s*:/;
+    const offenders: string[] = [];
+
+    for (const [label, source] of [
+      ['_components.scss', COMPONENT_SOURCE],
+      ['_decoration.scss', DECORATION_SOURCE],
+    ] as const) {
+      for (const [, selector, body] of source.matchAll(headerRule)) {
+        if (!paints.test(body) || selector.includes('.Section >')) {
+          continue;
+        }
+        offenders.push(`${label}: ${selector.trim()}`);
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
 });

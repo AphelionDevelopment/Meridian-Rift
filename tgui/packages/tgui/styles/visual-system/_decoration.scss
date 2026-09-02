@@ -107,7 +107,7 @@
         var(--console-corner-layer) no-repeat;
   }
 
-  .Section__title::after {
+  .Section > .Section__title::after {
     position: absolute;
     left: var(--console-space-3);
     bottom: -1px;
@@ -271,7 +271,7 @@
         14px no-repeat;
   }
 
-  .Section__titleText {
+  .Section > .Section__title > .Section__titleText {
     display: inline-block;
     padding: 1px 7px;
     color: var(--console-text-on-accent);
@@ -344,7 +344,7 @@
     display: none;
   }
 
-  .Section__title::after {
+  .Section > .Section__title::after {
     left: 0;
     width: 100%;
     background: var(--console-border-strong);
@@ -454,7 +454,7 @@
     z-index: 1;
   }
 
-  .Section__titleText {
+  .Section > .Section__title > .Section__titleText {
     display: inline-flex;
     align-items: center;
     min-height: 18px;
@@ -492,7 +492,7 @@
 }
 
 .theme-meridian_relay {
-  .Section__titleText {
+  .Section > .Section__title > .Section__titleText {
     display: inline-block;
     padding: 1px 6px;
     color: var(--console-surface-canvas);

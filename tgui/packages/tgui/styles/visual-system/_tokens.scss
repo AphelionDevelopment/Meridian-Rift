@@ -11,6 +11,13 @@
   --console-status-success: #54d98c;
   --console-status-warning: #f2bd52;
   --console-status-danger: #ff6b6b;
+  // Map tgui-core's own component tokens instead of re-declaring the
+  // properties they feed. Upstream exposes these precisely so a skin can
+  // recolour a component without overpainting callers that style one
+  // themselves; see the `.Section > .Section__title` note in _components.scss.
+  --section-background: var(--console-surface-base);
+  --section-title-color: var(--console-text-primary);
+  --section-separator-color: var(--console-border-separator);
   --console-corner-cut: 4px;
   --console-frame-layer: 1px;
   --console-corner-layer: 18px;

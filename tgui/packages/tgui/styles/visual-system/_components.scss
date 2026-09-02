@@ -50,9 +50,10 @@
     border-bottom: 1px solid var(--console-border-separator);
   }
 
+  // Surface and title colours come from the --section-* tokens in
+  // _tokens.scss, so only the structural chrome is declared here.
   .Section {
     border: 1px solid var(--console-border-subtle);
-    background-color: var(--console-surface-base);
     box-shadow: inset 0 1px 0 color-mix(
       in srgb,
       var(--console-border-control) 24%,
@@ -60,18 +61,24 @@
     );
   }
 
-  .Section__title {
+  // Deliberately scoped to `.Section >`. tgui-core gives .Section__title no
+  // background of its own, which is what lets a caller colour a whole section
+  // and have the header inherit it. StyleableSection reuses these class names
+  // under a caller-styled root that carries no `.Section` class, so an
+  // unscoped background here silently paints over that colour while the
+  // caller's own title text colour survives -- dark text on dark chrome.
+  // `--section-title-background` remains as an explicit opt-out.
+  .Section > .Section__title {
     min-height: 2.25em;
     border-bottom: 1px solid var(--console-border-separator);
-    background: color-mix(
-      in srgb,
-      var(--console-surface-raised) 66%,
-      var(--console-surface-base)
+    background: var(
+      --section-title-background,
+      color-mix(
+        in srgb,
+        var(--console-surface-raised) 66%,
+        var(--console-surface-base)
+      )
     );
-  }
-
-  .Section__titleText {
-    color: var(--console-text-primary);
   }
 
   .Section .Section {
