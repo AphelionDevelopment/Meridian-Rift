@@ -190,7 +190,7 @@ export function BootTerminal({
     <div className="boot_terminal" ref={rootRef}>
       <div className="container_terminal">
         <div aria-hidden="true" className="container_terminal__header">
-          <span>MeridianOS // BOOT TRANSCRIPT</span>
+          <span>{'MeridianOS // BOOT TRANSCRIPT'}</span>
           <span className="container_terminal__channel">
             <span className="container_terminal__lamp" />
             {recordCount} REC / LIVE
@@ -204,6 +204,7 @@ export function BootTerminal({
           className="container_terminal__log"
           ref={terminalRef}
           role="log"
+          tabIndex={0}
         >
           {terminalMessages.map((message, index) => (
             <p

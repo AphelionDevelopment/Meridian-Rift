@@ -196,8 +196,8 @@
 
 .boot_terminal__instrument {
   position: absolute;
-  top: 46%;
-  left: 72%;
+  top: 50%;
+  left: 50%;
   z-index: 2;
   width: min(42vw, 36rem);
   transform: translate(-50%, -50%);
@@ -262,6 +262,7 @@
 }
 
 .boot_terminal .DiagnosticLoader__detail {
+  width: min(100%, 52rem);
   max-width: min(72vw, 52rem);
   color: var(--boot-text-secondary);
   font-size: clamp(11px, 1.45vmin, 14px);
@@ -271,12 +272,15 @@
 
 .boot_terminal__status {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: center;
   gap: 0.7em;
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
+  width: 100%;
+  max-width: 100%;
+  line-height: 1.3;
+  white-space: normal;
 }
 
 .boot_terminal__statusChannel {
@@ -287,9 +291,10 @@
 }
 
 .boot_terminal__statusValue {
+  flex: 1 1 12em;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .container_terminal {
@@ -297,7 +302,7 @@
   top: clamp(48px, 7vmin, 72px);
   left: clamp(16px, 3vmin, 40px);
   width: min(48vw, 720px);
-  height: min(44vh, 384px);
+  height: min(27vh, 240px);
   overflow: hidden;
   box-sizing: border-box;
   display: grid;
@@ -371,6 +376,11 @@
   scrollbar-width: thin;
 }
 
+.container_terminal__log:focus-visible {
+  outline: 2px solid var(--lobby-focus);
+  outline-offset: -3px;
+}
+
 .terminal_text {
   display: grid;
   grid-template-columns: 3.5em minmax(0, 1fr);
@@ -402,7 +412,7 @@
 .terminal_text__message {
   min-width: 0;
   overflow-wrap: anywhere;
-  white-space: normal;
+  white-space: pre-wrap;
   word-break: break-word;
 }
 
@@ -442,7 +452,13 @@
   margin-left: 0.42em;
   background: var(--boot-accent);
   border: 1px solid var(--boot-surface-recessed);
-  animation: boot-terminal-cursor-blink 1.08s steps(1, end) infinite;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .boot_terminal__cursor {
+    animation: boot-terminal-cursor-blink 1.08s steps(1, end) infinite;
+  }
 }
 
 @keyframes boot-terminal-cursor-blink {
@@ -482,7 +498,7 @@
   transform-origin: left center;
 }
 
-@media (max-width: 1100px), (max-height: 620px) {
+@media (max-width: 1100px), (max-height: 720px) {
   .boot_terminal__instrument {
     top: 58%;
     left: 50%;
@@ -494,7 +510,7 @@
     right: 10px;
     left: 10px;
     width: auto;
-    height: min(28vh, 200px);
+    height: clamp(132px, 28vh, 200px);
   }
 
   .boot_terminal .DiagnosticLoader__detail {
@@ -513,7 +529,7 @@
   }
 
   .container_terminal {
-    height: min(24vh, 120px);
+    height: clamp(96px, 24vh, 120px);
   }
 
   .container_terminal__header {
@@ -542,13 +558,6 @@
 
   .boot_terminal__status {
     padding-inline: 8px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .boot_terminal__cursor {
-    visibility: visible;
-    animation: none;
   }
 }
 

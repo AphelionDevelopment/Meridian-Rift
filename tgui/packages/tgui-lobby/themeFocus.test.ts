@@ -32,5 +32,9 @@ describe('lobby theme-picker focus integration', () => {
 
     navButton.disabled = true;
     expect(isLobbyKeyboardInteractionTarget(label)).toBe(false);
+
+    const scrollRegion = document.createElement('div');
+    scrollRegion.tabIndex = 0;
+    expect(isLobbyKeyboardInteractionTarget(scrollRegion)).toBe(true);
   });
 });

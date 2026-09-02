@@ -59,6 +59,7 @@ describe('BootTerminal progress', () => {
     ).toBe('25% · Delayed map subsystem');
 
     const log = view.getByRole('log', { name: 'System startup log' });
+    expect(log.tabIndex).toBe(0);
     expect(log.textContent).toContain('Loading core systems');
     expect(log.textContent).toContain('CAUTION / Delayed map subsystem');
 

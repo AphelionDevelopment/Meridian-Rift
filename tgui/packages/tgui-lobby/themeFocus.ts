@@ -7,6 +7,7 @@ const KEYBOARD_INTERACTIVE_SELECTOR = [
   'select:not(:disabled)',
   'textarea:not(:disabled)',
   '[contenteditable="true"]',
+  '[tabindex]:not([tabindex="-1"])',
   '[role="button"]',
   '[role="menuitemradio"]',
 ].join(', ');
