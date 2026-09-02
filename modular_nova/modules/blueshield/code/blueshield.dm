@@ -64,7 +64,7 @@
 
 	head = /obj/item/clothing/head/beret/blueshield
 	box = /obj/item/storage/box/survival/security
-	belt = /obj/item/modular_computer/pda/blueshield
+	belt = /obj/item/modular_computer/pda/crew/blueshield
 	l_pocket = /obj/item/sensor_device/blueshield
 
 	id_trim = /datum/id_trim/job/blueshield
@@ -75,10 +75,12 @@
 	head = /obj/item/clothing/head/helmet/space/plasmaman/blueshield
 	uniform = /obj/item/clothing/under/plasmaman/blueshield
 
-/obj/item/modular_computer/pda/blueshield
+/obj/item/modular_computer/pda/crew/blueshield
 	name = "blueshield's PDA"
+	icon_state = "/obj/item/modular_computer/pda/crew/blueshield"
 	inserted_item = /obj/item/pen/fountain
 	greyscale_colors = "#2B356D#1E1E1E"
+	painting_region = REGION_COMMAND
 	starting_programs = list(
 		/datum/computer_file/program/records/security,
 		/datum/computer_file/program/robocontrol,

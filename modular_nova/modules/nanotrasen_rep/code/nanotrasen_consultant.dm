@@ -46,7 +46,7 @@
 	name = "Astraeus Federation Consultant"
 	jobtype = /datum/job/nanotrasen_consultant
 
-	belt = /obj/item/modular_computer/pda/nanotrasen_consultant
+	belt = /obj/item/modular_computer/pda/crew/nanotrasen_consultant
 	glasses = /obj/item/clothing/glasses/sunglasses
 	ears = /obj/item/radio/headset/heads/nanotrasen_consultant
 	gloves = /obj/item/clothing/gloves/combat/naval/nanotrasen_consultant/black
@@ -111,15 +111,17 @@
 	gloves = /obj/item/clothing/gloves/captain //Too iconic to be replaced with a plasma version
 	head = /obj/item/clothing/head/helmet/space/plasmaman/centcom_official
 
-/obj/item/modular_computer/pda/nanotrasen_consultant
+/obj/item/modular_computer/pda/crew/nanotrasen_consultant
 	name = "Astraeus Federation Consultant's PDA"
+	icon_state = "/obj/item/modular_computer/pda/crew/nanotrasen_consultant"
 	inserted_disk = /obj/item/disk/computer/command/captain
 	inserted_item = /obj/item/pen/fountain/green
 	/// Fax type to connect their PDA to (for use with fax notification app)
 	var/fax_type = /obj/machinery/fax/heads/nanotrasen_consultant
 	greyscale_colors = "#017941#0060b8"
+	painting_region = REGION_COMMAND
 
-/obj/item/modular_computer/pda/nanotrasen_consultant/Initialize(mapload)
+/obj/item/modular_computer/pda/crew/nanotrasen_consultant/Initialize(mapload)
 	. = ..()
 	var/datum/computer_file/program/faxbond/fax_app = new
 	store_file(fax_app)
