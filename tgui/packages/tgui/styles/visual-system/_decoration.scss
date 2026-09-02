@@ -11,15 +11,16 @@
 
   .Window::before {
     position: fixed;
-    inset: 3px;
+    inset: var(--console-frame-gap-top) var(--console-frame-gap-right)
+      var(--console-frame-gap-bottom) var(--console-frame-gap-left);
     z-index: 200;
     content: '';
-    border-top: var(--console-frame-top-weight) solid
-      var(--console-border-strong);
-    border-left: var(--console-frame-left-weight) solid
-      var(--console-border-strong);
-    border-right: 1px solid var(--console-border-subtle);
-    border-bottom: 1px solid var(--console-border-subtle);
+    border-style: solid;
+    border-width: var(--console-frame-top-weight)
+      var(--console-frame-right-weight) var(--console-frame-bottom-weight)
+      var(--console-frame-left-weight);
+    border-color: var(--console-border-strong) var(--console-border-subtle)
+      var(--console-border-subtle) var(--console-border-strong);
     clip-path: polygon(
       var(--console-corner-cut) 0,
       100% 0,
@@ -32,8 +33,15 @@
 
   .Window::after {
     position: fixed;
-    top: 6px;
-    right: 48px;
+    // Sit just inboard of the close button, which is itself held off the
+    // frame by --console-chrome-safe-right. `--console-window-pin-reach` is
+    // how far a skin's box-shadow dash extends past the pin's own right edge;
+    // without it those skins paint their dash onto the close button.
+    --console-window-pin-reach: 0px;
+    top: calc(var(--console-chrome-safe-top) + 2px);
+    right: calc(
+      var(--console-chrome-safe-right) + 48px + var(--console-window-pin-reach)
+    );
     z-index: 201;
     width: 6px;
     height: 6px;
@@ -42,9 +50,21 @@
     border: 1px solid var(--console-surface-canvas);
   }
 
+  // The frame paints above the title bar (z 200 vs 101), so anything the bar
+  // lays out under that band gets a rule drawn straight through it. Reserve
+  // the band as padding: the bar keeps its full-bleed background and its 32px
+  // height, but no control is placed inside the frame any more.
+  .TitleBar {
+    padding-block-start: var(--console-chrome-safe-top);
+    padding-inline: var(--console-chrome-safe-left)
+      var(--console-chrome-safe-right);
+  }
+
   .TitleBar::after {
     position: absolute;
-    left: 45px;
+    // Absolute children resolve against the padding box, which padding does
+    // not move, so the rail restates the inset to stay under the title.
+    left: calc(var(--console-chrome-safe-left) + 45px);
     bottom: -1px;
     width: var(--console-title-rail);
     height: 2px;
@@ -56,6 +76,17 @@
       var(--console-border-control) 68% 84%,
       transparent 84% 89%,
       var(--console-border-control) 89%
+    );
+  }
+
+  // Only skins whose frame is thicker than the stock 0.5rem gutter move; the
+  // max() leaves every thin-framed skin byte-identical.
+  .Window__contentPadding {
+    margin-inline: max(0.5rem, var(--console-chrome-safe-left))
+      max(0.5rem, var(--console-chrome-safe-right));
+    margin-bottom: max(0.5rem, var(--console-chrome-safe-bottom));
+    height: calc(
+      100% - 0.5rem - max(0.5rem, var(--console-chrome-safe-bottom))
     );
   }
 
@@ -197,8 +228,6 @@
 
 .theme-meridian_pipboy {
   .Window::before {
-    inset: 4px;
-    border-width: 3px 2px 2px 3px;
     border-color: var(--console-border-strong);
     box-shadow:
       inset 0 0 0 2px var(--console-surface-canvas),
@@ -254,7 +283,6 @@
 .theme-meridian_vector {
   .Window::before {
     border-style: double;
-    border-width: 3px;
   }
 
   .TitleBar {
@@ -298,6 +326,7 @@
   }
 
   .Window::after {
+    --console-window-pin-reach: 8px;
     border-radius: 50%;
     box-shadow:
       -10px 0 0 -2px var(--console-interaction-selected),
@@ -307,8 +336,7 @@
 
 .theme-console.theme-meridian_highline {
   .Window::before {
-    inset: 2px;
-    border: 2px solid var(--console-border-strong);
+    border-color: var(--console-border-strong);
   }
 
   .Window::after,
@@ -316,10 +344,17 @@
     display: none;
   }
 
-  .TitleBar::after,
   .Section__title::after {
     left: 0;
     width: 100%;
+    background: var(--console-border-strong);
+  }
+
+  .TitleBar::after {
+    left: var(--console-chrome-safe-left);
+    width: calc(
+      100% - var(--console-chrome-safe-left) - var(--console-chrome-safe-right)
+    );
     background: var(--console-border-strong);
   }
 
@@ -354,6 +389,7 @@
   }
 
   .Window::after {
+    --console-window-pin-reach: 13px;
     width: 11px;
     height: 3px;
     background: var(--console-interaction-selected);
@@ -367,9 +403,8 @@
   }
 
   .Window::before {
-    inset: 2px;
     box-sizing: border-box;
-    border: 8px solid transparent;
+    border-color: transparent;
     border-image-source: url('tgui/styles/assets/meridian-cyberpunk-window-frame.svg');
     border-image-slice: 16;
     border-image-width: 8px;
@@ -452,9 +487,6 @@
 }
 
 .theme-meridian_afterlight .Window::before {
-  inset: 3px 5px 5px 3px;
-  border-top-width: 5px;
-  border-left-width: 4px;
   border-right-color: var(--console-surface-recessed);
   border-bottom-color: var(--console-surface-recessed);
 }
@@ -476,11 +508,6 @@
 }
 
 .theme-meridian_bastion {
-  .Window::before {
-    inset: 4px;
-    border-width: 5px 2px 3px 5px;
-  }
-
   .Section {
     border-width: 2px 5px 3px 2px;
   }

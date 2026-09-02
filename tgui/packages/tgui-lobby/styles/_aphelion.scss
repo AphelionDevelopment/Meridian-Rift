@@ -164,6 +164,13 @@
 }
 
 .boot_terminal {
+  // One anchor drives both the startup glyph and its backlight. They used to
+  // carry separate hardcoded offsets, so any change to the viewport or to the
+  // wrapped status line slid the glyph out from under its own glow.
+  --boot-instrument-anchor: 46%;
+  --boot-loader-size: clamp(120px, 18vmin, 160px);
+  --boot-glow-extent: 42%;
+
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -180,9 +187,9 @@
   pointer-events: none;
   background-color: color-mix(in srgb, var(--boot-surface) 88%, transparent);
   background-image: radial-gradient(
-    circle at 50% 44%,
+    circle at 50% var(--boot-instrument-anchor),
     color-mix(in srgb, var(--boot-accent) 6%, transparent),
-    transparent 42%
+    transparent var(--boot-glow-extent)
   );
 }
 
@@ -210,11 +217,14 @@
 
 .boot_terminal__instrument {
   position: absolute;
-  top: 50%;
+  top: var(--boot-instrument-anchor);
   left: 50%;
   z-index: 2;
   width: min(42vw, 36rem);
-  transform: translate(-50%, -50%);
+  // Pin the glyph's own centre rather than the centre of the whole stack. The
+  // label and status line beneath it change height whenever a boot message
+  // rewraps, and centring the box let that reflow drag the glyph off-anchor.
+  transform: translate(-50%, calc(var(--boot-loader-size) / -2));
 }
 
 .boot_terminal .DiagnosticLoader {
@@ -229,8 +239,16 @@
   --console-loader-progress-core: var(--boot-accent);
   width: 100%;
   height: auto;
+  // The shared `--large` min-height would centre slack space above the glyph
+  // and reintroduce the drift the anchor above removes.
+  min-height: 0;
   color: var(--boot-text);
   font-family: 'Fixedsys', monospace;
+}
+
+// Keep the glyph's rendered size and the anchor maths reading the same token.
+.boot_terminal .DiagnosticLoader--large {
+  --diagnostic-loader-size: var(--boot-loader-size);
 }
 
 .theme-nanotrasen .boot_terminal .DiagnosticLoader {
@@ -513,8 +531,11 @@
 }
 
 @media (max-width: 1100px), (max-height: 720px) {
+  .boot_terminal {
+    --boot-instrument-anchor: 58%;
+  }
+
   .boot_terminal__instrument {
-    top: 58%;
     left: 50%;
     width: min(calc(100% - 20px), 36rem);
   }
@@ -538,8 +559,8 @@
 }
 
 @media (max-height: 520px) {
-  .boot_terminal__instrument {
-    top: 60%;
+  .boot_terminal {
+    --boot-instrument-anchor: 60%;
   }
 
   .container_terminal {

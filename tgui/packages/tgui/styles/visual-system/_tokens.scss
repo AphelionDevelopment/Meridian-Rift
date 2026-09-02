@@ -19,8 +19,33 @@
   --console-selected-rail: 3px;
   --console-segment-pattern: 8px;
   --console-motif-opacity: 0.62;
+  // Window frame geometry. `.Window::before` is the only thing that draws the
+  // frame, and it reads these exclusively, so a skin restates geometry here
+  // rather than re-hardcoding `inset` and `border-width` next to the artwork.
+  --console-frame-gap: 3px;
+  --console-frame-gap-top: var(--console-frame-gap);
+  --console-frame-gap-right: var(--console-frame-gap);
+  --console-frame-gap-bottom: var(--console-frame-gap);
+  --console-frame-gap-left: var(--console-frame-gap);
   --console-frame-top-weight: 1px;
   --console-frame-left-weight: 1px;
+  --console-frame-right-weight: 1px;
+  --console-frame-bottom-weight: 1px;
+  // Derived: the band each edge reserves for its frame. Chrome and content
+  // keep clear of these so a frame rule never crosses a control. Treat them as
+  // read-only -- override the gap and weight tokens above instead.
+  --console-chrome-safe-top: calc(
+    var(--console-frame-gap-top) + var(--console-frame-top-weight)
+  );
+  --console-chrome-safe-right: calc(
+    var(--console-frame-gap-right) + var(--console-frame-right-weight)
+  );
+  --console-chrome-safe-bottom: calc(
+    var(--console-frame-gap-bottom) + var(--console-frame-bottom-weight)
+  );
+  --console-chrome-safe-left: calc(
+    var(--console-frame-gap-left) + var(--console-frame-left-weight)
+  );
   --console-control-depth: inset 0 0 0 1px var(--console-border-subtle);
   --console-overlay-shadow: 0 4px 12px rgb(0 0 0 / 46%);
   --console-heading-case: uppercase;

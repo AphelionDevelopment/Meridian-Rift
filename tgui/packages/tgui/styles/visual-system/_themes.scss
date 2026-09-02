@@ -21,6 +21,11 @@
 @include theme(meridian_bastion);
 
 .theme-meridian_pipboy {
+  --console-frame-gap: 4px;
+  --console-frame-top-weight: 3px;
+  --console-frame-left-weight: 3px;
+  --console-frame-right-weight: 2px;
+  --console-frame-bottom-weight: 2px;
   --console-corner-cut: 0;
   --console-frame-layer: 3px;
   --console-corner-layer: 24px;
@@ -50,6 +55,10 @@
 }
 
 .theme-meridian_vector {
+  --console-frame-top-weight: 3px;
+  --console-frame-left-weight: 3px;
+  --console-frame-right-weight: 3px;
+  --console-frame-bottom-weight: 3px;
   --console-corner-cut: 6px;
   --console-corner-layer: 24px;
   --console-title-rail: 116px;
@@ -110,6 +119,11 @@
 }
 
 .theme-meridian_highline {
+  --console-frame-gap: 2px;
+  --console-frame-top-weight: 2px;
+  --console-frame-left-weight: 2px;
+  --console-frame-right-weight: 2px;
+  --console-frame-bottom-weight: 2px;
   --console-border-subtle: var(--console-border-control);
   --console-border-separator: var(--console-border-control);
   --console-text-disabled: var(--console-text-secondary);
@@ -174,6 +188,11 @@
 }
 
 .theme-meridian_cyberpunk {
+  --console-frame-gap: 2px;
+  --console-frame-top-weight: 8px;
+  --console-frame-left-weight: 8px;
+  --console-frame-right-weight: 8px;
+  --console-frame-bottom-weight: 8px;
   --console-corner-cut: 10px;
   --console-frame-layer: 2px;
   --console-corner-layer: 30px;
@@ -247,6 +266,8 @@
   --console-frame-layer: 2px;
   --console-corner-layer: 10px;
   --console-title-rail: 64px;
+  --console-frame-gap-right: 5px;
+  --console-frame-gap-bottom: 5px;
   --console-frame-top-weight: 5px;
   --console-frame-left-weight: 4px;
   --console-loader-ticks: 8;
@@ -277,6 +298,11 @@
 }
 
 .theme-meridian_bastion {
+  --console-frame-gap: 4px;
+  --console-frame-top-weight: 5px;
+  --console-frame-left-weight: 5px;
+  --console-frame-right-weight: 2px;
+  --console-frame-bottom-weight: 3px;
   --console-corner-cut: 3px;
   --console-frame-layer: 3px;
   --console-corner-layer: 34px;
