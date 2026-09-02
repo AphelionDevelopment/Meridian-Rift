@@ -84,12 +84,15 @@
 
 @include meta.load-css('~highlight.js/scss/a11y-dark.scss');
 
-// APHELION EDIT CHANGE START - MERIDIAN_UI - ORIGINAL: // NT Theme
-// .Layout__content {
+/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+// NT Theme
+.Layout__content {
+*/ // APHELION EDIT REMOVAL END
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 // Keep the legacy watermark on specialty themes only. MeridianOS owns its data
 // plane and intentionally avoids a full-content texture.
 :root:not(.theme-console) .Layout__content {
-  // APHELION EDIT CHANGE END
+// APHELION EDIT ADDITION END
   background-image: url('tgui-core/assets/bg-nanotrasen.svg');
   background-size: 70% 70%;
   background-position: center;

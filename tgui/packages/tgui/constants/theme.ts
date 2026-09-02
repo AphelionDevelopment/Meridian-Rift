@@ -10,31 +10,33 @@
 export * from './meridian-theme';
 // APHELION EDIT ADDITION END
 
-// APHELION EDIT CHANGE START - MERIDIAN_UI - ORIGINAL:
-// export const tgui16 = {
-//   scheme: 'ntos16',
-//   author: 'Aleksej Komarov et al., (https://github.com/tgstation)',
-//   // Backgrounds / UI surfaces
-//   base00: '#1A1A1A',
-//   base01: '#313234',
-//   base02: '#3a3a36',
-//   base03: '#6b6b5b',
-//
-//   // Foreground / text
-//   base04: '#a59f85',
-//   base05: '#f8f8f2', // default text (near white)
-//   base06: '#f5f4f1',
-//   base07: '#f9f8f5',
-//
-//   // Accent colors
-//   base08: '#f92672',
-//   base09: '#fd971f',
-//   base0A: '#f4bf75',
-//   base0B: '#5BA626', // --color-good
-//   base0C: '#a1efe4',
-//   base0D: '#47739E', // blue primary
-//   base0E: '#ae81ff',
-//   base0F: '#cc6633',
-// } as const;
+/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+export const tgui16 = {
+  scheme: 'ntos16',
+  author: 'Aleksej Komarov et al., (https://github.com/tgstation)',
+  // Backgrounds / UI surfaces
+  base00: '#1A1A1A',
+  base01: '#313234',
+  base02: '#3a3a36',
+  base03: '#6b6b5b',
+
+  // Foreground / text
+  base04: '#a59f85',
+  base05: '#f8f8f2', // default text (near white)
+  base06: '#f5f4f1',
+  base07: '#f9f8f5',
+
+  // Accent colors
+  base08: '#f92672',
+  base09: '#fd971f',
+  base0A: '#f4bf75',
+  base0B: '#5BA626', // --color-good
+  base0C: '#a1efe4',
+  base0D: '#47739E', // blue primary
+  base0E: '#ae81ff',
+  base0F: '#cc6633',
+} as const;
+*/ // APHELION EDIT REMOVAL END
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 export { MERIDIAN_BASE16 as tgui16 } from './meridian-theme';
-// APHELION EDIT CHANGE END
+// APHELION EDIT ADDITION END
