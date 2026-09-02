@@ -1,6 +1,6 @@
 /datum/computer_file/program/maintenance/cool_sword
 	filename = "cool_sword"
-	filedesc = "MeridianOS Cursor Replacer"
+	filedesc = "MeridianOS Cursor Replacer" // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: filedesc = "NtOS Cursor Replacer"
 	power_cell_use = 0
 	downloader_category = PROGRAM_CATEGORY_DEVICE
 	extended_desc = "This program allows you to customize your computer's mouse cursor, \

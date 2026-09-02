@@ -72,10 +72,12 @@ export function Window(props: Props) {
   const { scale } = config?.window || false;
 
   useEffect(() => {
+    // APHELION EDIT ADDITION START - MERIDIAN_UI
     let cancelled = false;
 
+    // APHELION EDIT ADDITION END
     if (!suspended && isReadyToRender) {
-      const updateGeometry = async () => {
+      const updateGeometry = async () => { // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: const updateGeometry = () => {
         const options = {
           ...config.window,
           size: DEFAULT_SIZE,
@@ -87,10 +89,15 @@ export function Window(props: Props) {
         if (config.window?.key) {
           setWindowKey(config.window.key);
         }
+        /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+        recallWindowGeometry(options);
+        */ // APHELION EDIT REMOVAL END
+        // APHELION EDIT ADDITION START - MERIDIAN_UI
         await recallWindowGeometry(options);
         if (cancelled) {
           return;
         }
+        // APHELION EDIT ADDITION END
         Byond.winset(Byond.windowId, {
           'is-visible': true,
         });
@@ -107,10 +114,10 @@ export function Window(props: Props) {
       updateGeometry();
     }
     return () => {
-      cancelled = true;
+      cancelled = true; // APHELION EDIT ADDITION - MERIDIAN_UI
       logger.log('unmounting');
     };
-  }, [isReadyToRender, suspended, width, height, scale]);
+  }, [isReadyToRender, suspended, width, height, scale]); // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: }, [isReadyToRender, width, height, scale]);
 
   // Determine when to show dimmer
   const showDimmer =

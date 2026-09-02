@@ -19,7 +19,8 @@ import {
 } from 'tgui-core/components';
 
 import { useBackend } from '../backend';
-import { type MeridianOSData, MeridianWindow } from '../layouts';
+import { NtosWindow } from '../layouts';
+import type { NTOSData } from '../layouts/NtosWindow';
 import { createLogger } from '../logging';
 
 const logger = createLogger('NtosNotepad');
@@ -242,7 +243,7 @@ const StatusBar = (props: StatusBarProps) => {
         100%
       </Box>
       <Box className="NtosNotepad__StatusBar__entry" minWidth="12rem">
-        MeridianOS (LF)
+        MeridianOS (LF) {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: NtOS (LF) */}
       </Box>
       <Box className="NtosNotepad__StatusBar__entry" minWidth="12rem">
         UTF-8
@@ -319,17 +320,17 @@ type AboutDialogProps = {
 
 const AboutDialog = (props: AboutDialogProps) => {
   const { close } = props;
-  const { data } = useBackend<MeridianOSData>();
+  const { data } = useBackend<NTOSData>();
   const { show_imprint, login } = data;
   const paragraphStyle = { padding: '.5rem 1rem 0 2rem' };
 
   return (
     <Dialog title="About Notepad" onClose={close} width={'500px'}>
       <div className="Dialog__body">
-        <span className="NtosNotepad__AboutDialog__logo">MeridianOS</span>
+        <span className="NtosNotepad__AboutDialog__logo">MeridianOS</span> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: >NtOS< */}
         <Divider />
         <Box className="NtosNotepad__AboutDialog__text">
-          <span style={paragraphStyle}>MeridianOS</span>
+          <span style={paragraphStyle}>MeridianOS</span> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: Nanotrasen NtOS */}
           <span style={paragraphStyle}>
             Version 7815696ecbf1c96e6894b779456d330e
           </span>
@@ -337,9 +338,16 @@ const AboutDialog = (props: AboutDialogProps) => {
             &copy; NT Corporation. All rights reserved.
           </span>
           <span style={{ padding: '3rem 1rem 3rem 2rem' }}>
+            {/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+            The NtOS operating system and its user interface are protected by
+            trademark and other pending or existing intellectual property rights
+            in the Sol system and other regions.
+            // APHELION EDIT REMOVAL END */}
+            {/* APHELION EDIT ADDITION START - MERIDIAN_UI */}
             The MeridianOS operating system and its user interface are protected
             by trademark and other pending or existing intellectual property
             rights in the Sol system and other regions.
+            {/* APHELION EDIT ADDITION END */}
           </span>
           <span
             style={{
@@ -450,12 +458,12 @@ export const NtosNotepad = (props) => {
   // MS Notepad displays an asterisk when there's unsaved changes
   const unsavedAsterisk = text !== originalText ? '*' : '';
   return (
-    <MeridianWindow
+    <NtosWindow
       title={`${unsavedAsterisk}${documentName} - Notepad`}
       width={840}
       height={900}
     >
-      <MeridianWindow.Content>
+      <NtosWindow.Content>
         <Box className="NtosNotepad__layout">
           <NtosNotepadMenuBar
             onSave={handleSave}
@@ -483,7 +491,7 @@ export const NtosNotepad = (props) => {
           </Section>
           {showStatusBar && <StatusBar statuses={statuses} />}
         </Box>
-      </MeridianWindow.Content>
+      </NtosWindow.Content>
       {activeDialog === Dialogs.SELECT_FILE && (
         <Dialog title="Open File" onClose={handleCloseDialog} width="520px">
           <div className="Dialog__body">
@@ -596,6 +604,6 @@ export const NtosNotepad = (props) => {
       {activeDialog === Dialogs.ABOUT && (
         <AboutDialog close={handleCloseDialog} />
       )}
-    </MeridianWindow>
+    </NtosWindow>
   );
 };

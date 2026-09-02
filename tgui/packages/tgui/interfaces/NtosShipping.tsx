@@ -2,7 +2,7 @@ import { Box, Button, LabeledList, Section } from 'tgui-core/components';
 import type { BooleanLike } from 'tgui-core/react';
 
 import { useBackend } from '../backend';
-import { MeridianWindow } from '../layouts';
+import { NtosWindow } from '../layouts';
 
 type Data = {
   current_user: string;
@@ -14,12 +14,12 @@ type Data = {
 
 export const NtosShipping = (props) => {
   return (
-    <MeridianWindow width={450} height={350}>
-      <MeridianWindow.Content scrollable>
+    <NtosWindow width={450} height={350}>
+      <NtosWindow.Content scrollable>
         <ShippingHub />
         <ShippingOptions />
-      </MeridianWindow.Content>
-    </MeridianWindow>
+      </NtosWindow.Content>
+    </NtosWindow>
   );
 };
 
@@ -30,7 +30,7 @@ const ShippingHub = (props) => {
 
   return (
     <Section
-      title="MeridianOS Shipping Hub."
+      title="MeridianOS Shipping Hub." // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: title="NTOS Shipping Hub."
       buttons={
         <Button
           icon="eject"

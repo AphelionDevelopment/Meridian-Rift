@@ -1,7 +1,8 @@
 import { Button, ColorBox, Section, Stack, Table } from 'tgui-core/components';
 
 import { useBackend } from '../backend';
-import { type MeridianOSData, MeridianWindow } from '../layouts';
+import { NtosWindow } from '../layouts';
+import type { NTOSData } from '../layouts/NtosWindow';
 
 export enum alert_relevancies {
   ALERT_RELEVANCY_SAFE,
@@ -10,7 +11,7 @@ export enum alert_relevancies {
 }
 
 export const NtosMain = (props) => {
-  const { act, data } = useBackend<MeridianOSData>();
+  const { act, data } = useBackend<NTOSData>();
   const {
     alert_style,
     alert_color,
@@ -31,15 +32,18 @@ export const NtosMain = (props) => {
   );
 
   return (
-    <MeridianWindow
+    <NtosWindow
       title={
         (PC_device_theme === 'syndicate' && 'Syndix Main Menu') ||
-        'MeridianOS Main Menu'
+        'MeridianOS Main Menu' // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: 'NtOS Main Menu'
       }
       width={400}
       height={500}
+      /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+      z
+      */ // APHELION EDIT REMOVAL END
     >
-      <MeridianWindow.Content scrollable>
+      <NtosWindow.Content scrollable>
         {Boolean(
           removable_media.length ||
             programs.some((program) => program.header_program),
@@ -191,13 +195,13 @@ export const NtosMain = (props) => {
           </Section>
         )}
         <ProgramsTable />
-      </MeridianWindow.Content>
-    </MeridianWindow>
+      </NtosWindow.Content>
+    </NtosWindow>
   );
 };
 
 const ProgramsTable = (props) => {
-  const { act, data } = useBackend<MeridianOSData>();
+  const { act, data } = useBackend<NTOSData>();
   const { programs = [] } = data;
   // add the program filename to this list to have it excluded from the main menu program list table
   const filtered_programs = programs.filter(

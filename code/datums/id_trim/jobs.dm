@@ -1404,7 +1404,7 @@
 	sechud_icon_state = SECHUD_HUMAN_AI
 	minimal_access = list(
 		ACCESS_ROBOTICS, // to access robotic controls
-		ACCESS_NETWORK, // to access MeridianOS
+		ACCESS_NETWORK, // to access MeridianOS // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: 		ACCESS_NETWORK, //to access NTOS
 		ACCESS_KEYCARD_AUTH, //to access holopads
 		ACCESS_MINISAT,
 		ACCESS_AI_UPLOAD,

@@ -80,12 +80,14 @@ export default defineConfig({
           filename: '[name][ext]',
         },
       },
+      // APHELION EDIT ADDITION START - MERIDIAN_UI
       {
         // MeridianOS display font is small enough to inline. This keeps font
         // loading self-contained in BYOND's asset-cached stylesheet.
         test: /\.woff2$/,
         type: 'asset/inline',
       },
+      // APHELION EDIT ADDITION END
 
       {
         test: /\.svg$/,
