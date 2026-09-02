@@ -259,6 +259,7 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 		"startupMessages" = GLOB.startup_messages,
 		"progressCurrent" = world.timeofday - SStitle.progress_reference_time,
 		"progressTotal" = SStitle.average_completion_time,
+		"meridianTheme" = client?.prefs?.read_preference(/datum/preference/choiced/meridian_theme) || "meridian",
 		// APHELION EDIT ADDITION END
 	))
 
@@ -321,6 +322,12 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 /datum/lobby_menu/proc/on_message(type, payload, href_list)
 	if(type == "ready")
 		send_init()
+		return TRUE
+	if(type == "setMeridianTheme")
+		if(!client?.set_meridian_theme(payload?["theme"]))
+			send_update(list(
+				"meridianTheme" = client?.prefs?.read_preference(/datum/preference/choiced/meridian_theme) || "meridian",
+			))
 		return TRUE
 
 	if(type != "action")

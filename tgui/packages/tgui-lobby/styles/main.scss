@@ -1,13 +1,17 @@
 @use 'sass:meta';
-@use 'aphelion'; // APHELION EDIT ADDITION - LOBBY_MENU_REWORK - Aphelion's plain-text nav/terminal/notice/trait styling
 
 @include meta.load-css('~tgui/styles/reset');
 @include meta.load-css('~tgui-core/styles/base.scss');
 @include meta.load-css('~tgui-core/styles/colors.scss');
 @include meta.load-css('~tgui-core/styles/vars-components.scss');
+@include meta.load-css('~tgui-core/styles/components/Floating.scss');
 @include meta.load-css('~tgui-core/styles/components/Tooltip.scss');
 @include meta.load-css('~tgui/styles/visual-system/display-font.scss');
+@include meta.load-css('~tgui/styles/visual-system/tokens.scss');
+@include meta.load-css('~tgui/styles/visual-system/themes.scss');
+@include meta.load-css('~tgui/styles/visual-system/theme-picker.scss');
 @include meta.load-css('~tgui/styles/visual-system/loader.scss');
+@include meta.load-css('./aphelion.scss');
 
 .Tooltip {
   //font-family: 'Pixellari', monospace; // APHELION EDIT REMOVAL

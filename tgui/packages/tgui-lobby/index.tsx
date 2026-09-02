@@ -7,6 +7,10 @@ import { globalEvents } from 'tgui-core/events';
 import { assetMap } from './assets';
 import { LobbyMenu } from './LobbyMenu';
 import { updateScaling } from './scaling';
+import {
+  isLobbyKeyboardInteractionTarget,
+  isThemePickerInteractionTarget,
+} from './themeFocus';
 
 let reactRoot: Root | null = null;
 
@@ -20,10 +24,19 @@ document.onreadystatechange = () => {
   });
 
   globalEvents.on('keydown', (key) => {
-    if (key.isModifierKey()) return;
+    if (
+      key.isModifierKey() ||
+      key.event.key === 'Tab' ||
+      isLobbyKeyboardInteractionTarget(key.event.target)
+    ) {
+      return;
+    }
     setTimeout(focusMap);
   });
-  window.addEventListener('mouseup', () => {
+  window.addEventListener('mouseup', (event) => {
+    if (isThemePickerInteractionTarget(event.target)) {
+      return;
+    }
     setTimeout(focusMap);
   });
 

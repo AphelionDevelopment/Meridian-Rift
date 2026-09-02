@@ -32,7 +32,7 @@ export function NavMenu({
       {!!serverState.canJoin && (
         <>
           <MenuButton
-            onClick={(event: MouseEvent) =>
+            onClick={(event: MouseEvent<HTMLButtonElement>) =>
               sendAction('join', { ctrlClick: event.ctrlKey })
             }
           >
@@ -107,7 +107,10 @@ export function NavMenu({
         )}
 
       {!!serverState.stationTraits.length && <hr />}
-      <StationTraitList traits={serverState.stationTraits} assetMap={assetMap} />
+      <StationTraitList
+        traits={serverState.stationTraits}
+        assetMap={assetMap}
+      />
 
       {!!serverState.traitFeedback && (
         <div className="trait_feedback">{serverState.traitFeedback}</div>

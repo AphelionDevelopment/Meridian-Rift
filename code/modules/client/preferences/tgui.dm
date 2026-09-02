@@ -124,6 +124,7 @@
 	var/mob/client_mob = client:mob
 	for(var/datum/tgui/open_ui as anything in client_mob?.tgui_open_uis)
 		open_ui.send_config_update()
+	client:lobby_menu?.send_update(list("meridianTheme" = value))
 
 /**
  * Validate, persist, and distribute a MeridianOS theme selection.
