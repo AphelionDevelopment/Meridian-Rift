@@ -43,9 +43,19 @@
 		considered_component.nullify_pipenet(src)
 	return ..()
 
+/** Reconciles a dirty pipeline and wakes machinery whose inputs may have changed. */
 /datum/pipeline/process()
 	if(!update || building)
 		return
+	// NOVA EDIT ADDITION START - DOGMOS
+	for(var/obj/machinery/atmospherics/components/atmos_machine as anything in other_atmos_machines)
+		SSair.start_processing_machine(atmos_machine)
+	for(var/obj/machinery/atmospherics/pipe/atmos_pipe as anything in members)
+		if(atmos_pipe.wake_on_pipeline_atmos)
+			SSair.start_processing_machine(atmos_pipe)
+		for(var/obj/machinery/meter/pipe_meter as anything in atmos_pipe.dogmos_pipeline_meters)
+			SSair.start_processing_machine(pipe_meter)
+	// NOVA EDIT ADDITION END
 	reconcile_air()
 	//Only react if the mix has changed, and don't keep updating if it hasn't
 	update = air.react(src)

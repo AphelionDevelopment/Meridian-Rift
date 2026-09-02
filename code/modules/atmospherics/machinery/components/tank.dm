@@ -158,16 +158,21 @@
 	air_contents.adjust_gas(gastype, moles_to_add)
 	air_contents.archive()
 
+/** Processes gas reactions and pressure damage, sleeping while the tank is stable. */
 /obj/machinery/atmospherics/components/tank/process_atmos()
-	if(air_contents.react(src))
+	var/reaction_occurred = air_contents.react(src)
+	if(reaction_occurred)
 		update_parents()
 
-	if(air_contents.return_pressure() > max_pressure)
+	var/overpressure = air_contents.return_pressure() > max_pressure
+	if(overpressure)
 		take_damage(0.1, BRUTE, sound_effect = FALSE)
 		if(prob(40))
 			playsound(src, pick(breaking_sounds), 30, vary = TRUE)
 
 	refresh_window()
+	if(!reaction_occurred && !overpressure)
+		return PROCESS_KILL // NOVA EDIT ADDITION - DOGMOS
 
 ///////////////////////////////////////////////////////////////////
 // Port stuff

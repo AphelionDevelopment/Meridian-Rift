@@ -45,9 +45,15 @@ SUBSYSTEM_DEF(air)
 	var/cost_post_process = 0
 	/// Cost of Dogmos' Katmos equalization pass.
 	var/cost_equalize = 0
+	// APHELION EDIT ADDITION START - DOGMOS
+	/// Pipenets that performed reconciliation during the most recently started pipenet pass.
+	var/dogmos_pipenets_reconciled = 0
+	/// Candidate mixture references visited by those pipenet reconciliations.
+	var/dogmos_pipenet_mixtures_reconciled = 0
+	// APHELION EDIT ADDITION END
 
 	/// Maximum FDM iterations per Dogmos processing call.
-	var/share_max_steps = 4 // APHELION EDIT CHANGE - DOGMOS - ORIGINAL: var/share_max_steps = 1
+	var/share_max_steps = 1
 	/// Whether the Katmos pressure equalizer runs after FDM.
 	var/equalize_enabled = TRUE
 	/// Whether space-adjacent heat loss uses blackbody radiation instead of the gameplay sink.
@@ -500,12 +506,22 @@ SUBSYSTEM_DEF(air)
 /datum/controller/subsystem/air/proc/process_pipenets(resumed = FALSE)
 	if (!resumed)
 		src.currentrun = networks.Copy()
+		// APHELION EDIT ADDITION START - DOGMOS
+		dogmos_pipenets_reconciled = 0
+		dogmos_pipenet_mixtures_reconciled = 0
+		// APHELION EDIT ADDITION END
 	//cache for sanic speed (lists are references anyways)
 	var/list/currentrun = src.currentrun
 	while(currentrun.len)
 		var/datum/thing = currentrun[currentrun.len]
 		currentrun.len--
 		if(thing)
+			// APHELION EDIT ADDITION START - DOGMOS
+			var/datum/pipeline/network = thing
+			if(network.update && !network.building)
+				dogmos_pipenets_reconciled++
+				dogmos_pipenet_mixtures_reconciled += length(network.other_airs) + 1
+			// APHELION EDIT ADDITION END
 			thing.process()
 		else
 			networks.Remove(thing)
@@ -810,6 +826,11 @@ SUBSYSTEM_DEF(air)
 ///Adds a turf to active processing, handles duplicates. Call this with blockchanges == TRUE if you want to nuke the assoc excited group
 /datum/controller/subsystem/air/proc/add_to_active(turf/open/activate, blockchanges = FALSE)
 	if(istype(activate) && activate.air)
+		// NOVA EDIT ADDITION START - DOGMOS
+		for(var/obj/machinery/atmospherics/atmos_machine in activate)
+			if(atmos_machine.wake_on_turf_atmos)
+				start_processing_machine(atmos_machine)
+		// NOVA EDIT ADDITION END
 		activate.significant_share_ticker = 0
 		if(blockchanges && activate.excited_group) //This is used almost exclusivly for shuttles, so the excited group doesn't stay behind
 			activate.excited_group.garbage_collect() //Nuke it

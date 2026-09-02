@@ -7,7 +7,7 @@ Meridian-Rift is a BYOND/DreamMaker SS13 codebase downstream of Nova Sector and 
 - All DM work: [.github/guides/STYLE.md](.github/guides/STYLE.md), [.github/guides/AUTODOC.md](.github/guides/AUTODOC.md), and [.github/guides/STANDARDS.md](.github/guides/STANDARDS.md).
 - Routing: [docs/agent/README.md](docs/agent/README.md) and [docs/agent/source-authority.md](docs/agent/source-authority.md).
 - Placement: [docs/agent/placement-and-markers.md](docs/agent/placement-and-markers.md) and [modular_nova/readme.md](modular_nova/readme.md).
-- General gates: [docs/agent/verification.md](docs/agent/verification.md), [docs/agent/meridian-mcp.md](docs/agent/meridian-mcp.md), [docs/agent/generated-content.md](docs/agent/generated-content.md), and [docs/agent/upstream-drift.md](docs/agent/upstream-drift.md).
+- General gates: [docs/agent/verification.md](docs/agent/verification.md), [docs/agent/meridian-mcp.md](docs/agent/meridian-mcp.md), [docs/agent/rift-controller.md](docs/agent/rift-controller.md), [docs/agent/generated-content.md](docs/agent/generated-content.md), and [docs/agent/upstream-drift.md](docs/agent/upstream-drift.md).
 - Dogmos ownership: [docs/agent/dogmos-integration.md](docs/agent/dogmos-integration.md), [docs/agent/dogmos-gameplay-events.md](docs/agent/dogmos-gameplay-events.md), and [docs/agent/dogmos-service-lifecycle.md](docs/agent/dogmos-service-lifecycle.md).
 - Dogmos measurement and gates: [docs/agent/dogmos-performance-and-memory.md](docs/agent/dogmos-performance-and-memory.md) and [docs/agent/dogmos-verification.md](docs/agent/dogmos-verification.md).
 - Native contract: [docs/agent/native-artifacts.md](docs/agent/native-artifacts.md).

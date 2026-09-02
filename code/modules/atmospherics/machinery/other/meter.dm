@@ -25,6 +25,9 @@
 	SSair.stop_processing_machine(src)
 	if(!isnull(target))
 		UnregisterSignal(target, COMSIG_QDELETING)
+		// NOVA EDIT ADDITION START - DOGMOS
+		target.dogmos_pipeline_meters -= src
+		// NOVA EDIT ADDITION END
 		target = null
 	return ..()
 
@@ -50,6 +53,9 @@
 			candidate = pipe
 	if(candidate)
 		target = candidate
+		// NOVA EDIT ADDITION START - DOGMOS
+		target.dogmos_pipeline_meters |= src
+		// NOVA EDIT ADDITION END
 		RegisterSignal(target, COMSIG_QDELETING, PROC_REF(drop_meter))
 		setAttachLayer(candidate.piping_layer)
 
@@ -119,6 +125,9 @@
 	if(new_greyscale != greyscale_colors)//dont update if nothing has changed since last update
 		greyscale_colors = new_greyscale
 		set_greyscale(greyscale_colors)
+	// NOVA EDIT ADDITION START - DOGMOS
+	return PROCESS_KILL
+	// NOVA EDIT ADDITION END
 
 /obj/machinery/meter/proc/status()
 	if (target)

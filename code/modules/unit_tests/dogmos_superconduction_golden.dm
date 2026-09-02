@@ -75,7 +75,6 @@
 	// the Dogmos-side pending dicts have no visibility into.
 	TEST_ASSERT(!length(SSdogmos.dogmos_pending_turf_heat) && !length(SSdogmos.dogmos_pending_turf_heat_adjacency) && !length(SSair.adjacent_rebuild), \
 		"The test pair's heat topology did not reach dogmosd before temperature seeding (SSair.adjacent_rebuild: [length(SSair.adjacent_rebuild)]).")
-
 	turf_a.set_temperature(700)
 	turf_b.set_temperature(T20C)
 	SSair.remove_from_active(turf_a)
@@ -89,13 +88,13 @@
 		"Seeding turf_a at 700K and turf_b at T20C did not produce an asymmetric pair ([a_before] vs [b_before]) - test setup is broken, not the thing under test.")
 
 	var/a_after = a_before
+	var/b_after = b_before
 	for(var/attempt in 1 to 20)
 		sleep(SSair.wait)
 		a_after = turf_a.dogmos_heat_temperature()
-		if(a_after != a_before)
+		b_after = turf_b.dogmos_heat_temperature()
+		if(a_after != a_before && b_after != b_before)
 			break
-
-	var/b_after = turf_b.dogmos_heat_temperature()
 
 	TEST_ASSERT(a_after < a_before, \
 		"turf_a's temperature ([a_before] -> [a_after]) did not decrease after conducting with cooler turf_b (cost_superconductivity [SSair.cost_superconductivity]) - heat is not flowing out of the hotter turf.")

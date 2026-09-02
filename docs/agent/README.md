@@ -8,6 +8,8 @@
 | Source conflicts and lineage | [Source authority](source-authority.md) |
 | Aphelion/Nova placement and markers | [Placement and markers](placement-and-markers.md), [Nova handbook](../../modular_nova/readme.md) |
 | General verification | [Verification](verification.md) |
+| Agent compile, boot, test, and soak control | [RIFT controller](rift-controller.md) |
+| Dogmos RIFT migration evidence | [Dogmos harness verification](2026-08-31-dogmos-harness-verification.md) |
 | DreamMaker navigation | [Meridian-MCP](meridian-mcp.md) |
 | Lore and generated artifacts | [Generated content](generated-content.md) |
 | tg/Nova merge review | [Upstream drift](upstream-drift.md) |

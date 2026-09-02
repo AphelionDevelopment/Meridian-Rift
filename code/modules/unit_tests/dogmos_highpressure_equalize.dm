@@ -12,6 +12,7 @@
 	air_a.set_moles(/datum/gas/oxygen, original_a_o2 * 10)
 	air_a.set_moles(/datum/gas/nitrogen, original_a_n2 * 10)
 
+	/* // APHELION EDIT REMOVAL START - DOGMOS
 	SSair.active_turfs |= turf_a
 	SSair.active_turfs |= turf_b
 	SSair.process_turfs_auxtools(100)
@@ -29,6 +30,24 @@
 	SSair.process_turf_equalize_auxtools(100)
 	var/after = SSair.num_equalize_processed
 	var/a_after_eq = air_a.get_moles(/datum/gas/oxygen)
+	*/ // APHELION EDIT REMOVAL END
+	// APHELION EDIT ADDITION START - DOGMOS
+	SSair.remove_from_active(turf_a)
+	SSair.remove_from_active(turf_b)
+	SSair.add_to_active(turf_a)
+	SSair.add_to_active(turf_b)
+
+	var/a_before_eq = air_a.get_moles(/datum/gas/oxygen)
+	var/before = SSair.num_equalize_processed
+	var/a_after_eq = a_before_eq
+	var/after = before
+	for(var/attempt in 1 to 20)
+		sleep(SSair.wait)
+		after = SSair.num_equalize_processed
+		a_after_eq = air_a.get_moles(/datum/gas/oxygen)
+		if(after > before && a_after_eq < a_before_eq)
+			break
+	// APHELION EDIT ADDITION END
 
 	TEST_ASSERT(after > before, \
 		"num_equalize_processed ([before] -> [after]) did not increase after seeding a high-pressure turf pair and running the equalizer - the FFI call did not process anything real.")

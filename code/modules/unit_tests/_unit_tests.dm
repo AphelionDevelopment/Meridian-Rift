@@ -424,6 +424,7 @@
 #include "~nova\accessory_layers.dm"
 #include "~nova\augment_items.dm"
 #include "~nova\automapper.dm"
+#include "~nova\cigarettes.dm"
 #include "~nova\clothing_variation_icons.dm"
 #include "~nova\digi_underclothes.dm"
 #include "~nova\liver_nova.dm"

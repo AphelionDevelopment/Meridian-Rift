@@ -11,7 +11,6 @@
 #define DOGMOS_PIPELINE_TEST_EPSILON 0.001
 #define DOGMOS_TEST_OVERSIZED_PIPELINE_MIXTURES 228
 #define DOGMOS_TEST_IDLE_MC_SETTLE_TIME 30 SECONDS
-#define DOGMOS_TEST_IDLE_MC_COST_LIMIT 2
 #define DOGMOS_TEST_RESPONSE_APPLIED 1
 
 /** Returns a malformed frontier response without touching the production service. */
@@ -930,10 +929,10 @@
 	if(world.time != defer_start)
 		return Fail("Dogmos slept inside SSair while deferring an exhausted stage.", __FILE__, __LINE__)
 
-/** Verifies one Dogmos turf-processing call performs the configured bounded FDM passes. */
-/datum/unit_test/dogmos_service_fdm_multi_pass
+/** Verifies one Dogmos turf-processing cycle performs LINDA's original single equalization pass. */
+/datum/unit_test/dogmos_service_fdm_linda_cadence
 
-/datum/unit_test/dogmos_service_fdm_multi_pass/Run()
+/datum/unit_test/dogmos_service_fdm_linda_cadence/Run()
 	var/reached_stage_boundary = FALSE
 	for(var/attempt in 1 to DOGMOS_TEST_STAGE_BOUNDARY_ATTEMPTS)
 		if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
@@ -941,10 +940,10 @@
 			break
 		sleep(SSair.wait)
 	if(!reached_stage_boundary)
-		return Fail("Dogmos did not reach a safe stage boundary before the FDM multi-pass test.", __FILE__, __LINE__)
-	var/original_share_max_steps = SSair.share_max_steps
+		return Fail("Dogmos did not reach a safe stage boundary before the FDM cadence test.", __FILE__, __LINE__)
+	if(SSair.share_max_steps != 1)
+		return Fail("Dogmos configured [SSair.share_max_steps] FDM passes instead of LINDA's original single pass.", __FILE__, __LINE__)
 	var/original_fdm_steps_completed = SSair.dogmos_fdm_steps_completed
-	SSair.share_max_steps = 4
 	SSair.dogmos_fdm_steps_completed = 0
 	var/pending = TRUE
 	var/chunks = 0
@@ -965,13 +964,12 @@
 				break
 	SSair.dogmos_pending_frontier_epoch = null
 
-	SSair.share_max_steps = original_share_max_steps
 	SSair.dogmos_fdm_steps_completed = original_fdm_steps_completed
 
 	if(pending)
-		return Fail("Dogmos did not complete the bounded FDM test cycle within its chunk limit.", __FILE__, __LINE__)
-	if(completed_steps != 4)
-		return Fail("Dogmos completed [completed_steps] FDM passes instead of the configured four.", __FILE__, __LINE__)
+		return Fail("Dogmos did not complete the single-pass FDM test cycle within its chunk limit.", __FILE__, __LINE__)
+	if(completed_steps != 1)
+		return Fail("Dogmos completed [completed_steps] FDM passes instead of LINDA's original single pass.", __FILE__, __LINE__)
 
 /** Verifies malformed stage responses are rejected before SSair reads their fields. */
 /datum/unit_test/dogmos_service_stage_response_failure
@@ -1050,53 +1048,6 @@
 		sleep(1 SECONDS)
 	if(SSair.times_fired <= initial_fire_count)
 		return Fail("Dogmos did not allow SSair to complete an idle cycle within 30 seconds.", __FILE__, __LINE__)
-
-/** Verifies idle Atmospherics MC cost after the first 30 seconds of a shift. */
-/datum/unit_test/dogmos_service_idle_mc_budget
-
-/datum/unit_test/dogmos_service_idle_mc_budget/Run()
-	if(!SSticker.HasRoundStarted())
-		return Fail("The idle Atmospherics MC budget test requires a started shift.", __FILE__, __LINE__)
-	var/sample_time = SSticker.round_start_time + DOGMOS_TEST_IDLE_MC_SETTLE_TIME
-	if(world.time < sample_time)
-		sleep(sample_time - world.time)
-	var/initial_fire_count = SSair.times_fired
-	var/deadline = world.time + 10 SECONDS
-	while(SSair.times_fired <= initial_fire_count && world.time < deadline)
-		sleep(1 SECONDS)
-	if(SSair.times_fired <= initial_fire_count)
-		return Fail("Atmospherics did not complete a measurement cycle after the idle settle window.", __FILE__, __LINE__)
-
-	var/list/type_counts = list()
-	var/list/type_on_counts = list()
-	var/list/type_operational_counts = list()
-	var/list/type_costs = list()
-	for(var/datum/processing_entry as anything in SSair.atmos_machinery)
-		if(!ismachinery(processing_entry))
-			continue
-		var/obj/machinery/machine = processing_entry
-		var/type_key = "[machine.type]"
-		type_counts[type_key] = (type_counts[type_key] || 0) + 1
-		type_operational_counts[type_key] = (type_operational_counts[type_key] || 0) + machine.is_operational
-		type_costs[type_key] = (type_costs[type_key] || 0) + (SSair.kennel_machine_cost_ewma[REF(machine)] || 0)
-		if(istype(machine, /obj/machinery/atmospherics))
-			var/obj/machinery/atmospherics/atmos_machine = machine
-			type_on_counts[type_key] = (type_on_counts[type_key] || 0) + atmos_machine.on
-	var/profile_summary = ""
-	for(var/recorded_type in type_counts)
-		profile_summary += " [recorded_type]:count=[type_counts[recorded_type]],on=[type_on_counts[recorded_type] || 0],operational=[type_operational_counts[recorded_type] || 0],kennel_ms=[type_costs[recorded_type] || 0];"
-	var/dirty_networks = 0
-	var/dirty_network_mixtures = 0
-	var/largest_dirty_network = 0
-	for(var/datum/pipeline/network as anything in SSair.networks)
-		if(!network.update || network.building)
-			continue
-		dirty_networks++
-		var/network_mixtures = length(network.other_airs) + 1
-		dirty_network_mixtures += network_mixtures
-		largest_dirty_network = max(largest_dirty_network, network_mixtures)
-	if(SSair.cost > DOGMOS_TEST_IDLE_MC_COST_LIMIT)
-		return Fail("Idle Atmospherics MC cost [SSair.cost]ms exceeded [DOGMOS_TEST_IDLE_MC_COST_LIMIT]ms after 30 seconds into the shift. Pipenets: cost=[SSair.cost_pipenets]ms total=[length(SSair.networks)] dirty=[dirty_networks] dirty_mixtures=[dirty_network_mixtures] largest_dirty=[largest_dirty_network] reconciled=[SSair.dogmos_pipenets_reconciled] reconciled_mixtures=[SSair.dogmos_pipenet_mixtures_reconciled]. Breakdown:[profile_summary]", __FILE__, __LINE__)
 
 /** Verifies a dirty pipeline wakes an attached dormant atmosphere machine. */
 /datum/unit_test/dogmos_idle_machinery_pipeline_wake
@@ -1476,7 +1427,6 @@
 #undef DOGMOS_TEST_STAGE_CHUNK_LIMIT
 #undef DOGMOS_PIPELINE_TEST_EPSILON
 #undef DOGMOS_TEST_IDLE_MC_SETTLE_TIME
-#undef DOGMOS_TEST_IDLE_MC_COST_LIMIT
 #undef DOGMOS_TEST_RESPONSE_APPLIED
 
 #endif

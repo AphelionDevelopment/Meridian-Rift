@@ -64,6 +64,10 @@ SUBSYSTEM_DEF(time_track)
 			"air_hotspots_cost",
 			"air_superconductivity_cost",
 			"air_pipenets_cost",
+			// APHELION EDIT ADDITION START - DOGMOS
+			"air_pipenets_reconciled",
+			"air_pipenet_mixtures_reconciled",
+			// APHELION EDIT ADDITION END
 			"air_rebuilds_cost",
 			// NOVA EDIT ADDITION START - DOGMOS
 			"air_equalize_cost",
@@ -161,6 +165,10 @@ SUBSYSTEM_DEF(time_track)
 			SSair.cost_hotspots,
 			SSair.cost_superconductivity,
 			SSair.cost_pipenets,
+			// APHELION EDIT ADDITION START - DOGMOS
+			SSair.dogmos_pipenets_reconciled,
+			SSair.dogmos_pipenet_mixtures_reconciled,
+			// APHELION EDIT ADDITION END
 			SSair.cost_rebuilds,
 			// NOVA EDIT ADDITION START - DOGMOS
 			SSair.cost_equalize,

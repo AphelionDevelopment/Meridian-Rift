@@ -1,4 +1,6 @@
 /obj/machinery/atmospherics/pipe/heat_exchanging
+	wake_on_pipeline_atmos = TRUE // NOVA EDIT ADDITION - DOGMOS
+	wake_on_turf_atmos = TRUE // NOVA EDIT ADDITION - DOGMOS
 	var/minimum_temperature_difference = 20
 	var/thermal_conductivity = WINDOW_HEAT_TRANSFER_COEFFICIENT
 	color = "#404040"
@@ -15,14 +17,21 @@
 
 	add_atom_colour("#404040", FIXED_COLOUR_PRIORITY)
 
+/** Wakes atmosphere processing when a mob is buckled onto the pipe. */
+/obj/machinery/atmospherics/pipe/heat_exchanging/post_buckle_mob(mob/living/buckled_mob)
+	. = ..()
+	SSair.start_processing_machine(src) // NOVA EDIT ADDITION - DOGMOS
+
 /obj/machinery/atmospherics/pipe/heat_exchanging/is_connectable(obj/machinery/atmospherics/pipe/heat_exchanging/target, given_layer, HE_type_check = TRUE)
 	if(istype(target, /obj/machinery/atmospherics/pipe/heat_exchanging) != HE_type_check)
 		return FALSE
 	. = ..()
 
+/** Exchanges heat with the environment, sleeping after thermal convergence. */
 /obj/machinery/atmospherics/pipe/heat_exchanging/process_atmos()
 	var/environment_temperature = 0
 	var/datum/gas_mixture/pipe_air = return_air()
+	var/temperature_interacted = FALSE
 
 	var/turf/local_turf = loc
 	if(istype(local_turf))
@@ -41,6 +50,7 @@
 		return // APHELION EDIT ADDITION - Ignore non-turf locations.
 	if(abs(environment_temperature-pipe_air.return_temperature()) > minimum_temperature_difference)
 		parent.temperature_interact(local_turf, volume, thermal_conductivity)
+		temperature_interacted = TRUE
 
 
 	//heatup/cooldown any mobs buckled to ourselves based on our temperature
@@ -52,6 +62,8 @@
 		for(var/mob/living/buckled_mob as anything in buckled_mobs)
 			buckled_mob.bodytemperature = avg_temp
 		pipe_air.set_temperature(avg_temp)
+	if(!temperature_interacted && !has_buckled_mobs())
+		return PROCESS_KILL // NOVA EDIT ADDITION - DOGMOS
 
 /obj/machinery/atmospherics/pipe/heat_exchanging/process(seconds_per_tick)
 	if(!parent)

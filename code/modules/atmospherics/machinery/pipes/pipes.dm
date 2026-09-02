@@ -11,6 +11,10 @@
 	can_unwrench = 1
 	/// The pipeline this pipe is a member of
 	var/datum/pipeline/parent = null
+	// NOVA EDIT ADDITION START - DOGMOS
+	/// Pipe meters that wake when this pipe's pipeline reconciles.
+	var/list/obj/machinery/meter/dogmos_pipeline_meters = list()
+	// NOVA EDIT ADDITION END
 
 	paintable = TRUE
 
