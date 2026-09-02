@@ -13,7 +13,7 @@ import {
 import type { BooleanLike } from 'tgui-core/react';
 import { useBackend, useSharedState } from '../backend';
 import { Window } from '../layouts';
-import { DiagnosticLoader } from './common/DiagnosticLoader';
+import { LoadingScreen } from './common/LoadingScreen';
 
 type Data =
   | {
@@ -97,7 +97,7 @@ export function QuantumConsole(props) {
   return (
     <Window title="Quantum Console" width={500} height={500}>
       <Window.Content>
-        {!!data.connected && !data.ready && <DiagnosticLoader />}
+        {!!data.connected && !data.ready && <LoadingScreen />}
         <AccessView />
       </Window.Content>
     </Window>

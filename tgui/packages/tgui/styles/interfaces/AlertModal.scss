@@ -14,19 +14,17 @@
   justify-content: center;
 }
 
-.TimeoutBar {
+.AlertModal__Loader {
   width: 100%;
   position: relative;
   height: var(--border-thickness-large);
-  overflow: hidden;
 }
 
-.TimeoutBar__progress {
+.AlertModal__LoaderProgress {
   position: absolute;
-  inset: 0;
-  transition-property: background-color, transform;
+  transition-property: background-color, width;
   transition-duration: var(--transition-time-slow);
   transition-timing-function: ease-out;
-  transform-origin: left center;
   background-color: var(--color-primary);
+  height: 100%;
 }

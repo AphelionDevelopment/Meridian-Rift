@@ -1,6 +1,6 @@
 import { useBackend } from '../../backend';
 import { Window } from '../../layouts';
-import { TimeoutBar } from '../common/TimeoutBar';
+import { Loader } from '../common/Loader';
 import { ListInputModal } from './ListInputModal';
 
 type ListInputData = {
@@ -29,7 +29,7 @@ export const ListInputWindow = () => {
 
   return (
     <Window title={title} width={325} height={windowHeight}>
-      {!!timeout && <TimeoutBar value={timeout} />}
+      {timeout && <Loader value={timeout} />}
       <Window.Content>
         <ListInputModal
           items={items}

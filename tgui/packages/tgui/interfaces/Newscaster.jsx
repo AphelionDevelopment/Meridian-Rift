@@ -24,7 +24,7 @@ import { decodeHtmlEntities } from 'tgui-core/string';
 import { useBackend, useSharedState } from '../backend';
 import { processedText } from '../process';
 import { BountyBoardContent } from './BountyBoard';
-import { DiagnosticLoader } from './common/DiagnosticLoader';
+import { LoadingScreen } from './common/LoadingScreen';
 import { UserDetails } from './Vending';
 
 const CENSOR_MESSAGE =
@@ -81,7 +81,7 @@ const NewscasterChannelCreation = (props) => {
   const { creating_channel, awaiting_approval, name, desc } = data;
 
   if (awaiting_approval) {
-    return <DiagnosticLoader label="Awaiting Central Command approval…" />;
+    return <LoadingScreen label="Awaiting Central Command approval..." />;
   }
 
   if (!creating_channel) {

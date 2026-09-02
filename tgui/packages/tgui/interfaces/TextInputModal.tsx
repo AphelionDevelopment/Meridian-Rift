@@ -6,7 +6,7 @@ import { KEY } from 'tgui-core/keys';
 import { useBackend } from '../backend';
 import { Window } from '../layouts';
 import { InputButtons } from './common/InputButtons';
-import { TimeoutBar } from './common/TimeoutBar';
+import { Loader } from './common/Loader';
 
 type TextInputData = {
   large_buttons: boolean;
@@ -73,7 +73,7 @@ export const TextInputModal = (props) => {
 
   return (
     <Window title={title} width={325} height={windowHeight}>
-      {!!timeout && <TimeoutBar value={timeout} />}
+      {timeout && <Loader value={timeout} />}
       <Window.Content onKeyDown={handleKeyDown}>
         <Section fill>
           <Stack fill vertical>

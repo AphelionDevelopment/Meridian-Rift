@@ -14,7 +14,7 @@ import { createSearch, decodeHtmlEntities } from 'tgui-core/string';
 import { useBackend } from '../backend';
 import { Window } from '../layouts';
 import { InputButtons } from './common/InputButtons';
-import { TimeoutBar } from './common/TimeoutBar';
+import { Loader } from './common/Loader';
 
 type Data = {
   items: string[];
@@ -59,7 +59,7 @@ export const CheckboxInput = (props) => {
 
   return (
     <Window title={title} width={425} height={300}>
-      {!!timeout && <TimeoutBar value={timeout} />}
+      {!!timeout && <Loader value={timeout} />}
       <Window.Content>
         <Stack fill vertical g={0}>
           <Stack.Item>
