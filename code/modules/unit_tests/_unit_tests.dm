@@ -384,8 +384,9 @@
 #include "~nova\liver_nova.dm"
 #include "~nova\neuroware_chips.dm"
 #include "~nova\opposing_force.dm"
-#include "~nova\shuttle.dm"
 #include "~nova\preferences_preview_decoration.dm" // APHELION EDIT ADDITION
+#include "~nova\shuttle.dm"
+#include "~nova\title_screen_settings.dm" // APHELION EDIT ADDITION
 // NOVA EDIT END
 // END_INCLUDE
 #ifdef REFERENCE_TRACKING_DEBUG //Don't try and parse this file if ref tracking isn't turned on. IE: don't parse ref tracking please mr linter

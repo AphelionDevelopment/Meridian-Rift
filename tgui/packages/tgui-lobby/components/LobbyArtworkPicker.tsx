@@ -11,16 +11,42 @@ import {
 } from 'react';
 import { Floating, Icon } from 'tgui-core/components';
 import { classes } from 'tgui-core/react';
-import type { LobbyTitleArtVariant, LobbyTitleTexture } from './TitleArtwork';
+import type {
+  LobbyTitleArtVariant,
+  LobbyTitleScreenOption,
+  LobbyTitleTexture,
+} from './TitleArtwork';
 
 export type LobbyArtworkPickerValue = {
   classicAlt: boolean;
   texture: LobbyTitleTexture;
   variant: LobbyTitleArtVariant;
+  /// Whether the server rotates screens each round or stays on the pinned one.
+  rotate: boolean;
+  /// Pinned screen file name, or null for the neutral Meridian Rift master.
+  selected: string | null;
+  /// Screens available in the server's title screen config directory.
+  screens: readonly LobbyTitleScreenOption[];
 };
 
+/**
+ * One admin change. A discriminated union rather than a whole-value onChange so
+ * each edit maps to exactly one server message and cannot smuggle along a stale
+ * copy of the other fields.
+ */
+export type LobbyArtworkAction =
+  | { type: 'screen'; name: string | null }
+  | { type: 'rotate'; rotate: boolean }
+  | { type: 'overlay'; name: string; overlay: boolean }
+  | {
+      type: 'presentation';
+      classicAlt: boolean;
+      texture: LobbyTitleTexture;
+      variant: LobbyTitleArtVariant;
+    };
+
 export type LobbyArtworkPickerProps = {
-  onChange: (value: LobbyArtworkPickerValue) => void;
+  onAction: (action: LobbyArtworkAction) => void;
   value: LobbyArtworkPickerValue;
 } & Partial<{
   className: string;
@@ -86,6 +112,8 @@ export const LOBBY_ARTWORK_OPTIONS: readonly ArtworkOption[] = [
 ] as const;
 
 const CLASSIC_ALT_LABEL = 'Classic Alt';
+const DEFAULT_SCREEN_LABEL = 'Meridian Rift (default)';
+const ROTATE_LABEL = 'Rotate title screens';
 
 function getSelectedOptionIndex(value: LobbyArtworkPickerValue): number {
   return Math.max(
@@ -98,7 +126,7 @@ function getSelectedOptionIndex(value: LobbyArtworkPickerValue): number {
 }
 
 export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
-  const { className, onChange, placement = 'bottom-end', value } = props;
+  const { className, onAction, placement = 'bottom-end', value } = props;
   const [isOpen, setIsOpen] = useState(false);
   const floatingRef = useRef<ComponentRef<typeof Floating>>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -107,9 +135,21 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
   const typeaheadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerId = useId();
   const menuId = useId();
-  const selectedIndex = getSelectedOptionIndex(value);
-  const selectedOption = LOBBY_ARTWORK_OPTIONS[selectedIndex];
+  const screens = value.screens;
+  // One flat, ordered list of focusable items drives both roving focus and
+  // typeahead. Every index below is derived from it so the two cannot drift.
+  const screenRadioIndex = (index: number) => 1 + index * 2;
+  const screenOverlayIndex = (index: number) => 2 + index * 2;
+  const rotateIndex = 1 + screens.length * 2;
+  const artworkStartIndex = rotateIndex + 1;
+  const classicAltIndex = artworkStartIndex + LOBBY_ARTWORK_OPTIONS.length;
+  const selectedIndex =
+    artworkStartIndex + getSelectedOptionIndex(value);
+  const selectedOption = LOBBY_ARTWORK_OPTIONS[getSelectedOptionIndex(value)];
   const itemLabels = [
+    DEFAULT_SCREEN_LABEL,
+    ...screens.flatMap((screen) => [screen.name, `${screen.name} overlay`]),
+    ROTATE_LABEL,
     ...LOBBY_ARTWORK_OPTIONS.map(({ label }) => label),
     CLASSIC_ALT_LABEL,
   ];
@@ -140,8 +180,9 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
   };
 
   const selectArtwork = (option: ArtworkOption) => {
-    onChange({
-      ...value,
+    onAction({
+      type: 'presentation',
+      classicAlt: value.classicAlt,
       texture: option.texture,
       variant: option.variant,
     });
@@ -149,8 +190,28 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
   };
 
   const toggleClassicAlt = () => {
-    onChange({ ...value, classicAlt: !value.classicAlt });
+    onAction({
+      type: 'presentation',
+      classicAlt: !value.classicAlt,
+      texture: value.texture,
+      variant: value.variant,
+    });
     closeAndFocusTrigger();
+  };
+
+  const selectScreen = (name: string | null) => {
+    onAction({ type: 'screen', name });
+    closeAndFocusTrigger();
+  };
+
+  // Overlay and rotation are toggles an admin is likely to flip more than once,
+  // so they leave the menu open rather than closing on every click.
+  const toggleOverlay = (screen: LobbyTitleScreenOption) => {
+    onAction({ type: 'overlay', name: screen.name, overlay: !screen.overlay });
+  };
+
+  const toggleRotate = () => {
+    onAction({ type: 'rotate', rotate: !value.rotate });
   };
 
   const handleTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -268,6 +329,111 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
             className="MeridianThemePicker__heading LobbyArtworkPicker__heading"
             role="presentation"
           >
+            Title screen
+          </div>
+          <div
+            className="MeridianThemePicker__options LobbyArtworkPicker__options"
+            role="presentation"
+          >
+            <button
+              aria-checked={value.selected === null}
+              className="MeridianThemePicker__option LobbyArtworkPicker__option"
+              onClick={() => selectScreen(null)}
+              ref={(node) => {
+                itemRefs.current[0] = node;
+              }}
+              role="menuitemradio"
+              tabIndex={-1}
+              type="button"
+            >
+              <span
+                aria-hidden="true"
+                className="MeridianThemePicker__check LobbyArtworkPicker__check"
+              >
+                {value.selected === null ? <Icon name="check" /> : null}
+              </span>
+              <span className="MeridianThemePicker__label LobbyArtworkPicker__label">
+                <strong>{DEFAULT_SCREEN_LABEL}</strong>
+                <span>Neutral wordmark, tinted by the active theme</span>
+              </span>
+            </button>
+            {screens.map((screen, index) => {
+              const isSelected = value.selected === screen.name;
+              return (
+                <div
+                  className="LobbyArtworkPicker__screenRow"
+                  key={screen.name}
+                  role="presentation"
+                >
+                  <button
+                    aria-checked={isSelected}
+                    className="MeridianThemePicker__option LobbyArtworkPicker__option LobbyArtworkPicker__screenChoice"
+                    onClick={() => selectScreen(screen.name)}
+                    ref={(node) => {
+                      itemRefs.current[screenRadioIndex(index)] = node;
+                    }}
+                    role="menuitemradio"
+                    tabIndex={-1}
+                    type="button"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="MeridianThemePicker__check LobbyArtworkPicker__check"
+                    >
+                      {isSelected ? <Icon name="check" /> : null}
+                    </span>
+                    <span className="MeridianThemePicker__label LobbyArtworkPicker__label">
+                      <strong>{screen.name}</strong>
+                    </span>
+                  </button>
+                  <button
+                    aria-checked={screen.overlay}
+                    aria-label={`Overlay the Meridian Rift wordmark on ${screen.name}`}
+                    className="LobbyArtworkPicker__overlayToggle"
+                    onClick={() => toggleOverlay(screen)}
+                    ref={(node) => {
+                      itemRefs.current[screenOverlayIndex(index)] = node;
+                    }}
+                    role="menuitemcheckbox"
+                    tabIndex={-1}
+                    type="button"
+                  >
+                    <span aria-hidden="true">
+                      {screen.overlay ? <Icon name="check" /> : null}
+                    </span>
+                    <span>Overlay</span>
+                  </button>
+                </div>
+              );
+            })}
+            <button
+              aria-checked={value.rotate}
+              className="MeridianThemePicker__option LobbyArtworkPicker__option"
+              onClick={toggleRotate}
+              ref={(node) => {
+                itemRefs.current[rotateIndex] = node;
+              }}
+              role="menuitemcheckbox"
+              tabIndex={-1}
+              type="button"
+            >
+              <span
+                aria-hidden="true"
+                className="MeridianThemePicker__check LobbyArtworkPicker__check"
+              >
+                {value.rotate ? <Icon name="check" /> : null}
+              </span>
+              <span className="MeridianThemePicker__label LobbyArtworkPicker__label">
+                <strong>{ROTATE_LABEL}</strong>
+                <span>Pick a new screen each round instead of staying put</span>
+              </span>
+            </button>
+          </div>
+          <div className="LobbyArtworkPicker__separator" role="separator" />
+          <div
+            className="MeridianThemePicker__heading LobbyArtworkPicker__heading"
+            role="presentation"
+          >
             Source × display geometry
           </div>
           <div
@@ -285,7 +451,7 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
                   key={`${option.texture}-${option.variant}`}
                   onClick={() => selectArtwork(option)}
                   ref={(node) => {
-                    itemRefs.current[index] = node;
+                    itemRefs.current[artworkStartIndex + index] = node;
                   }}
                   role="menuitemradio"
                   tabIndex={-1}
@@ -319,7 +485,7 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
               className="MeridianThemePicker__option LobbyArtworkPicker__option LobbyArtworkPicker__option--classic-alt"
               onClick={toggleClassicAlt}
               ref={(node) => {
-                itemRefs.current[LOBBY_ARTWORK_OPTIONS.length] = node;
+                itemRefs.current[classicAltIndex] = node;
               }}
               role="menuitemcheckbox"
               tabIndex={-1}

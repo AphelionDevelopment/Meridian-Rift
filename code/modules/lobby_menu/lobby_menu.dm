@@ -231,7 +231,7 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 
 	window.send_message("init", list(
 		"titleImageUrl" = SSassets.transport.get_asset_url(SStitle.current_title_asset_name), // APHELION EDIT CHANGE - LOBBY_MENU_REWORK - ORIGINAL: "titleImageUrl" = SSassets.transport.get_asset_url(LOBBY_TITLE_ASSET_NAME),
-		"titleImageTreatment" = SStitle.uses_meridian_title_art() ? "meridian" : null, // APHELION EDIT ADDITION
+		"titleImageTreatment" = SStitle.get_title_treatment(), // APHELION EDIT ADDITION
 		"gamePhase" = game_phase,
 		"isReady" = istype(player) && player.ready == PLAYER_READY_TO_PLAY,
 		"canReady" = game_phase == "pregame" || game_phase == "startup",

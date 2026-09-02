@@ -18,11 +18,17 @@ const DEFAULT_VALUE: LobbyArtworkPickerValue = {
   classicAlt: false,
   texture: 'original',
   variant: 'convex',
+  rotate: true,
+  selected: null,
+  screens: [
+    { name: 'station_alpha.png', overlay: false },
+    { name: 'nebula_dawn.png', overlay: true },
+  ],
 };
 
 describe('LobbyArtworkPicker', () => {
   it('renders eight radio presets and an orthogonal Classic Alt checkbox', () => {
-    render(<LobbyArtworkPicker onChange={() => {}} value={DEFAULT_VALUE} />);
+    render(<LobbyArtworkPicker onAction={() => {}} value={DEFAULT_VALUE} />);
     const trigger = screen.getByRole('button', {
       name: /change lobby artwork/i,
     });
@@ -44,7 +50,7 @@ describe('LobbyArtworkPicker', () => {
   });
 
   it('supports complete menu navigation, typeahead, Escape, and focus return', async () => {
-    render(<LobbyArtworkPicker onChange={() => {}} value={DEFAULT_VALUE} />);
+    render(<LobbyArtworkPicker onAction={() => {}} value={DEFAULT_VALUE} />);
     const trigger = screen.getByRole('button', {
       name: /change lobby artwork/i,
     });
@@ -76,7 +82,7 @@ describe('LobbyArtworkPicker', () => {
 
   it('opens from arrow keys at the corresponding boundary', () => {
     const view = render(
-      <LobbyArtworkPicker onChange={() => {}} value={DEFAULT_VALUE} />,
+      <LobbyArtworkPicker onAction={() => {}} value={DEFAULT_VALUE} />,
     );
     const trigger = screen.getByRole('button', {
       name: /change lobby artwork/i,
@@ -86,7 +92,7 @@ describe('LobbyArtworkPicker', () => {
     expect(document.activeElement).toBe(screen.getByRole('menuitemcheckbox'));
 
     view.unmount();
-    render(<LobbyArtworkPicker onChange={() => {}} value={DEFAULT_VALUE} />);
+    render(<LobbyArtworkPicker onAction={() => {}} value={DEFAULT_VALUE} />);
     const nextTrigger = screen.getByRole('button', {
       name: /change lobby artwork/i,
     });
@@ -97,8 +103,8 @@ describe('LobbyArtworkPicker', () => {
   });
 
   it('emits immutable composite and Classic Alt changes, then returns focus', async () => {
-    const onChange = mock(() => {});
-    render(<LobbyArtworkPicker onChange={onChange} value={DEFAULT_VALUE} />);
+    const onAction = mock(() => {});
+    render(<LobbyArtworkPicker onAction={onAction} value={DEFAULT_VALUE} />);
     const trigger = screen.getByRole('button', {
       name: /change lobby artwork/i,
     });
@@ -108,7 +114,8 @@ describe('LobbyArtworkPicker', () => {
       screen.getByRole('menuitemradio', { name: /navarobl - d convex/i }),
     );
     await Promise.resolve();
-    expect(onChange).toHaveBeenCalledWith({
+    expect(onAction).toHaveBeenCalledWith({
+      type: 'presentation',
       classicAlt: false,
       texture: 'navarobl',
       variant: 'convex-bezel',
@@ -120,7 +127,8 @@ describe('LobbyArtworkPicker', () => {
       screen.getByRole('menuitemcheckbox', { name: /classic alt/i }),
     );
     await Promise.resolve();
-    expect(onChange).toHaveBeenCalledWith({
+    expect(onAction).toHaveBeenCalledWith({
+      type: 'presentation',
       classicAlt: true,
       texture: 'original',
       variant: 'convex',
@@ -129,8 +137,8 @@ describe('LobbyArtworkPicker', () => {
   });
 
   it('dismisses on outside press without selecting anything', async () => {
-    const onChange = mock(() => {});
-    render(<LobbyArtworkPicker onChange={onChange} value={DEFAULT_VALUE} />);
+    const onAction = mock(() => {});
+    render(<LobbyArtworkPicker onAction={onAction} value={DEFAULT_VALUE} />);
     const trigger = screen.getByRole('button', {
       name: /change lobby artwork/i,
     });
@@ -142,7 +150,7 @@ describe('LobbyArtworkPicker', () => {
     fireEvent.pointerDown(document.body);
 
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
-    expect(onChange).not.toHaveBeenCalled();
+    expect(onAction).not.toHaveBeenCalled();
     expect(
       screen
         .getByRole('menu')

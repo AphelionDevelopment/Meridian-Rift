@@ -15,6 +15,12 @@ import {
 import { useRootThemeClasses } from 'tgui/hooks/useRootThemeClasses';
 import { AphelionLobbyMenu } from './AphelionLobbyMenu';
 import type { StartupMessage } from './components/BootTerminal';
+import type {
+  LobbyTitleArtVariant,
+  LobbyTitleScreenOption,
+  LobbyTitleTexture,
+  LobbyTitleTreatment,
+} from './components/TitleArtwork';
 import type { StationTrait } from './components/StationTraitList';
 // APHELION EDIT ADDITION END
 /* APHELION EDIT REMOVAL START - LOBBY_MENU_REWORK - moved to components/StationTraitList.tsx
@@ -29,7 +35,7 @@ type StationTrait = {
 
 export type ServerState = {
   titleImageUrl: string;
-  titleImageTreatment: 'meridian' | null; // APHELION EDIT ADDITION
+  titleImageTreatment: LobbyTitleTreatment; // APHELION EDIT ADDITION
   gamePhase: 'startup' | 'pregame' | 'setting_up' | 'playing' | 'postgame';
   isReady: boolean;
   canReady: boolean;
@@ -60,6 +66,19 @@ export type ServerState = {
   progressCurrent: number;
   progressTotal: number;
   meridianTheme: MeridianBaseThemeId;
+  /// Neutral wordmark asset, composited over a picture in overlay treatment.
+  titleMarkUrl: string;
+  /// Every screen in the config directory, with its own overlay opt-in.
+  titleScreens: LobbyTitleScreenOption[];
+  /// Pinned screen file name, or null for the neutral Meridian Rift master.
+  titleSelected: string | null;
+  titleRotate: boolean;
+  titleVariant: LobbyTitleArtVariant;
+  titleTexture: LobbyTitleTexture;
+  titleClassicAlt: boolean;
+  /// Whether this client holds the rank that owns the title screen. The server
+  /// re-checks on every message; this only decides whether the menu renders.
+  canSetTitleScreen: boolean;
   // APHELION EDIT ADDITION END
 };
 

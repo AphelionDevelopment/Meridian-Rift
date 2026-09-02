@@ -21,7 +21,7 @@ afterEach(() => {
 describe('TitleArtwork', () => {
   it('uses the convex glass treatment by default', () => {
     const { container } = render(
-      <TitleArtwork branded src="asset://meridian-rift.png" />,
+      <TitleArtwork treatment="mask" src="asset://meridian-rift.png" />,
     );
 
     const artwork = container.querySelector('.lobby-title-art');
@@ -46,7 +46,7 @@ describe('TitleArtwork', () => {
     document.documentElement.dataset.lobbyTitleTexture = 'navarobl';
     const { container } = render(
       <TitleArtwork
-        branded
+        treatment="mask"
         src="asset://meridian-rift.png"
         textureSrc="asset://navarobl-scanlines.png"
       />,
@@ -68,7 +68,7 @@ describe('TitleArtwork', () => {
     document.documentElement.classList.add('theme-meridian_pipboy');
     const { container } = render(
       <TitleArtwork
-        branded
+        treatment="mask"
         src="asset://meridian-rift.png"
         textureSrc="asset://navarobl-scanlines.png"
       />,
@@ -83,7 +83,7 @@ describe('TitleArtwork', () => {
     document.documentElement.classList.add('theme-meridian_pipboy');
     const { container } = render(
       <TitleArtwork
-        branded
+        treatment="mask"
         src="asset://meridian-rift.png"
         texture="original"
         textureSrc="asset://navarobl-scanlines.png"
@@ -98,7 +98,7 @@ describe('TitleArtwork', () => {
   it('applies controlled geometry and component-scoped Classic Alt presentation', () => {
     const { container } = render(
       <TitleArtwork
-        branded
+        treatment="mask"
         presentation="classic-alt"
         src="asset://meridian-rift.png"
         texture="navarobl"
@@ -119,7 +119,7 @@ describe('TitleArtwork', () => {
   it('falls back to Original when NavaroBL texture bytes are unavailable', () => {
     const { container } = render(
       <TitleArtwork
-        branded
+        treatment="mask"
         src="asset://meridian-rift.png"
         texture="navarobl"
       />,
@@ -142,7 +142,7 @@ describe('TitleArtwork', () => {
 
   it('keeps operator-provided title screens as ordinary images', () => {
     const { container } = render(
-      <TitleArtwork branded={false} src="asset://operator-title.png" />,
+      <TitleArtwork treatment="none" src="asset://operator-title.png" />,
     );
 
     expect(container.querySelector('.lobby-title-art')).toBeNull();

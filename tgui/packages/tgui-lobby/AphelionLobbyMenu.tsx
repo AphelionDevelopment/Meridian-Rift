@@ -1,21 +1,49 @@
 // THIS IS AN APHELION UI FILE
 
-import { useState } from 'react';
 import type { MeridianBaseThemeId } from 'tgui/constants/theme';
 import { MeridianThemePicker } from 'tgui/layouts/MeridianThemePicker';
 import { assetMap } from './assets';
 import { BootTerminal } from './components/BootTerminal';
 import {
+  type LobbyArtworkAction,
   LobbyArtworkPicker,
   type LobbyArtworkPickerValue,
 } from './components/LobbyArtworkPicker';
 import { NavMenu } from './components/NavMenu';
 import { NoticeBanner } from './components/NoticeBanner';
-import {
-  DEFAULT_LOBBY_TITLE_ART_VARIANT,
-  TitleArtwork,
-} from './components/TitleArtwork';
+import { TitleArtwork } from './components/TitleArtwork';
 import type { ServerState } from './LobbyMenu';
+
+/**
+ * Forward one admin change to the server.
+ *
+ * The server is the single source of truth: nothing is applied optimistically,
+ * so the menu only moves once the broadcast comes back. That also means every
+ * open lobby stays in step, not just the one that made the change.
+ */
+function sendArtworkAction(action: LobbyArtworkAction) {
+  switch (action.type) {
+    case 'screen':
+      Byond.sendMessage('setTitleScreen', { screen: action.name });
+      break;
+    case 'rotate':
+      Byond.sendMessage('setTitleRotation', { rotate: action.rotate });
+      break;
+    case 'overlay':
+      Byond.sendMessage('setTitleOverlay', {
+        screen: action.name,
+        overlay: action.overlay,
+      });
+      break;
+    case 'presentation':
+      Byond.sendMessage('setTitlePresentation', {
+        classicAlt: action.classicAlt,
+        texture: action.texture,
+        variant: action.variant,
+      });
+      break;
+  }
+}
 
 /**
  * Aphelion's own lobby layout - plain-text/Fixedsys nav menu and boot terminal, ported
@@ -32,20 +60,21 @@ export function AphelionLobbyMenu({
   onMeridianThemeChange: (theme: MeridianBaseThemeId) => void;
   serverState: ServerState;
 }) {
-  const [artworkOverride, setArtworkOverride] =
-    useState<LobbyArtworkPickerValue | null>(null);
   const navaroTextureSrc =
     assetMap['meridian_rift_scanlines_navarobl.png'] || undefined;
-  const isPipBoyTheme = meridianTheme === 'meridian_pipboy';
-  const artworkValue: LobbyArtworkPickerValue = artworkOverride ?? {
-    classicAlt: false,
-    texture: isPipBoyTheme && navaroTextureSrc ? 'navarobl' : 'original',
-    variant: DEFAULT_LOBBY_TITLE_ART_VARIANT,
+  // Presentation is server-wide now, so it comes straight off serverState
+  // rather than being mirrored into local state.
+  const artworkValue: LobbyArtworkPickerValue = {
+    classicAlt: serverState.titleClassicAlt,
+    texture: serverState.titleTexture,
+    variant: serverState.titleVariant,
+    rotate: serverState.titleRotate,
+    selected: serverState.titleSelected,
+    screens: serverState.titleScreens ?? [],
   };
+  // The server re-checks the rank on every message; this only hides the menu.
   const showArtworkPicker =
-    !serverState.transparent &&
-    !!serverState.titleImageUrl &&
-    serverState.titleImageTreatment === 'meridian';
+    !serverState.transparent && serverState.canSetTitleScreen;
 
   return (
     <div
@@ -53,11 +82,12 @@ export function AphelionLobbyMenu({
     >
       {!serverState.transparent && !!serverState.titleImageUrl && (
         <TitleArtwork
-          branded={serverState.titleImageTreatment === 'meridian'}
+          markSrc={serverState.titleMarkUrl}
           presentation={artworkValue.classicAlt ? 'classic-alt' : 'classic'}
           src={serverState.titleImageUrl}
           texture={artworkValue.texture}
           textureSrc={navaroTextureSrc}
+          treatment={serverState.titleImageTreatment}
           variant={artworkValue.variant}
         />
       )}
@@ -69,7 +99,7 @@ export function AphelionLobbyMenu({
       >
         {showArtworkPicker && (
           <LobbyArtworkPicker
-            onChange={setArtworkOverride}
+            onAction={sendArtworkAction}
             placement="bottom-end"
             value={artworkValue}
           />

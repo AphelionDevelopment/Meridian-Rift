@@ -10,3 +10,18 @@
 
 /// Base name for the lobby's background image asset. The title image changes over time
 #define LOBBY_TITLE_ASSET_PREFIX "lobby_title_screen"
+/// Asset name for the neutral Meridian Rift wordmark. Unlike the title screen this
+/// never changes, so it registers once under a fixed name.
+#define LOBBY_TITLE_MARK_ASSET_NAME "lobby_title_mark.png"
+
+/// Server-wide, admin-chosen title screen presentation. Survives restarts.
+#define TITLE_SETTINGS_FILE "data/title_screen_settings.json"
+#define TITLE_SETTINGS_VERSION "1"
+
+/// How the lobby should render the current title screen.
+/// No Meridian treatment; the raw image fills the backdrop.
+#define TITLE_TREATMENT_NONE "none"
+/// The image is a neutral alpha master that TGUI tints with the active theme.
+#define TITLE_TREATMENT_MASK "mask"
+/// The image renders as-is with the themed wordmark composited over it.
+#define TITLE_TREATMENT_OVERLAY "overlay"

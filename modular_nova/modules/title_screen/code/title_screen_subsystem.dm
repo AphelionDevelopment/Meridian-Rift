@@ -17,6 +17,22 @@ SUBSYSTEM_DEF(title)
 	var/title_html
 	/// The list of possible title screens to rotate through, as file path texts.
 	var/title_screens = list()
+	/// Config-directory file names, index-aligned with title_screens. The icons
+	/// themselves carry no name, so this is what the admin dropdown selects by.
+	var/list/title_screen_names = list()
+
+	/// Admin-pinned title screen file name, or null to rotate/fall back.
+	var/selected_title_name
+	/// Whether change_title_screen() is allowed to pick a new screen each round.
+	var/rotate_title_screens = TRUE
+	/// File name => TRUE when that screen should carry the themed wordmark overlay.
+	var/list/title_overlays = list()
+	/// Server-wide presentation applied on top of whichever screen is showing.
+	var/title_variant = "convex"
+	var/title_texture = "original"
+	var/title_classic_alt = FALSE
+	/// Cached asset URL for the neutral wordmark used by overlay mode.
+	var/title_mark_asset_registered = FALSE
 
 	/// average realtime seconds it takes to load the map we're currently running
 	var/average_completion_time = DEFAULT_TITLE_MAP_LOADTIME
@@ -50,6 +66,7 @@ SUBSYSTEM_DEF(title)
 	// Progress stuff
 	check_progress_reference_time()
 	load_progress_json()
+	load_title_settings()
 
 	if(startup_splash)
 		change_title_screen(startup_splash)
@@ -62,6 +79,14 @@ SUBSYSTEM_DEF(title)
 			ASSERT(fexists(file_path))
 			var/icon/title2use = new(fcopy_rsc(file_path))
 			title_screens += title2use
+			// Keep the config file name index-aligned with its icon so the admin
+			// dropdown has a stable key to select and persist by.
+			title_screen_names += i
+
+	// A screen pinned in a previous round may have been removed from the config
+	// directory since; drop the selection rather than pinning to nothing.
+	if(selected_title_name && !(selected_title_name in title_screen_names))
+		selected_title_name = null
 
 	return SS_INIT_SUCCESS
 
@@ -136,6 +161,48 @@ SUBSYSTEM_DEF(title)
 	// We're done, don't touch it again this round.
 	progress_json = null
 
+/**
+ * Load the server-wide title screen presentation chosen by an admin.
+ *
+ * Mirrors load_progress_json(): a missing or version-mismatched file simply
+ * leaves the compiled defaults in place rather than failing initialization.
+ */
+/datum/controller/subsystem/title/proc/load_title_settings()
+	var/json_file = file(TITLE_SETTINGS_FILE)
+	if(!fexists(json_file))
+		return
+
+	var/list/settings = json_decode(file2text(json_file))
+	if(!islist(settings) || settings["_version"] != TITLE_SETTINGS_VERSION)
+		return
+
+	selected_title_name = istext(settings["selected"]) ? settings["selected"] : null
+	rotate_title_screens = !!settings["rotate"]
+	title_variant = istext(settings["variant"]) ? settings["variant"] : title_variant
+	title_texture = istext(settings["texture"]) ? settings["texture"] : title_texture
+	title_classic_alt = !!settings["classicAlt"]
+
+	// Overlay flags are keyed by config file name. Unknown keys are kept rather
+	// than pruned, so temporarily removing an image does not lose its setting.
+	var/list/stored_overlays = settings["overlays"]
+	title_overlays = islist(stored_overlays) ? stored_overlays.Copy() : list()
+
+/// Write the current presentation back out. Called by every setter.
+/datum/controller/subsystem/title/proc/save_title_settings()
+	var/json_file = file(TITLE_SETTINGS_FILE)
+	var/list/settings = list(
+		"_version" = TITLE_SETTINGS_VERSION,
+		"selected" = selected_title_name,
+		"rotate" = rotate_title_screens,
+		"variant" = title_variant,
+		"texture" = title_texture,
+		"classicAlt" = title_classic_alt,
+		"overlays" = title_overlays,
+	)
+
+	fdel(json_file)
+	WRITE_FILE(json_file, json_encode(settings))
+
 /datum/controller/subsystem/title/Recover()
 	startup_splash = SStitle.startup_splash
 	file_path = SStitle.file_path
@@ -143,6 +210,15 @@ SUBSYSTEM_DEF(title)
 	current_title_screen = SStitle.current_title_screen
 	current_notice = SStitle.current_notice
 	title_screens = SStitle.title_screens
+	title_screen_names = SStitle.title_screen_names
+
+	selected_title_name = SStitle.selected_title_name
+	rotate_title_screens = SStitle.rotate_title_screens
+	title_overlays = SStitle.title_overlays
+	title_variant = SStitle.title_variant
+	title_texture = SStitle.title_texture
+	title_classic_alt = SStitle.title_classic_alt
+	title_mark_asset_registered = SStitle.title_mark_asset_registered
 
 	average_completion_time = SStitle.average_completion_time
 	startup_message_timings = SStitle.startup_message_timings
@@ -165,18 +241,66 @@ SUBSYSTEM_DEF(title)
 	title_asset_generation++
 	current_title_asset_name = "[LOBBY_TITLE_ASSET_PREFIX]_[title_asset_generation].png"
 	SSassets.transport.register_asset(current_title_asset_name, current_title_screen)
+	ensure_title_mark_asset()
+	var/list/payload = get_title_payload()
 	for(var/datum/lobby_menu/menu as anything in GLOB.lobby_menus)
 		if(!menu.client)
 			continue
 		SSassets.transport.send_assets(menu.client, current_title_asset_name)
-		menu.send_update(list(
-			"titleImageUrl" = SSassets.transport.get_asset_url(current_title_asset_name),
-			"titleImageTreatment" = uses_meridian_title_art() ? "meridian" : null,
-		))
+		SSassets.transport.send_assets(menu.client, LOBBY_TITLE_MARK_ASSET_NAME)
+		menu.send_update(payload)
 
-/// Whether the current image is the neutral Meridian Rift alpha master that TGUI may theme-tint.
-/datum/controller/subsystem/title/proc/uses_meridian_title_art()
-	return current_title_screen == DEFAULT_TITLE_SCREEN_IMAGE
+/**
+ * Registers the neutral wordmark used by overlay mode.
+ *
+ * Unlike the title screen this content never changes, so it keeps one fixed
+ * name instead of the generation counter that show_title_screen() needs.
+ */
+/datum/controller/subsystem/title/proc/ensure_title_mark_asset()
+	if(title_mark_asset_registered)
+		return
+	SSassets.transport.register_asset(LOBBY_TITLE_MARK_ASSET_NAME, DEFAULT_TITLE_SCREEN_IMAGE)
+	title_mark_asset_registered = TRUE
+
+/**
+ * How the lobby should render whatever screen is currently showing.
+ *
+ * The default image is a neutral alpha master, so it is tinted directly. A
+ * config screen is a finished picture, so it only gains the themed wordmark
+ * when an admin has opted that specific file in.
+ */
+/datum/controller/subsystem/title/proc/get_title_treatment()
+	if(current_title_screen == DEFAULT_TITLE_SCREEN_IMAGE)
+		return TITLE_TREATMENT_MASK
+	if(selected_title_name && title_overlays[selected_title_name])
+		return TITLE_TREATMENT_OVERLAY
+	return TITLE_TREATMENT_NONE
+
+
+/// The server-wide title state every lobby menu needs, shared by init and updates.
+/datum/controller/subsystem/title/proc/get_title_payload()
+	ensure_title_mark_asset()
+	return list(
+		"titleImageUrl" = SSassets.transport.get_asset_url(current_title_asset_name),
+		"titleMarkUrl" = SSassets.transport.get_asset_url(LOBBY_TITLE_MARK_ASSET_NAME),
+		"titleImageTreatment" = get_title_treatment(),
+		"titleScreens" = get_title_screen_options(),
+		"titleSelected" = selected_title_name,
+		"titleRotate" = rotate_title_screens,
+		"titleVariant" = title_variant,
+		"titleTexture" = title_texture,
+		"titleClassicAlt" = title_classic_alt,
+	)
+
+/// The admin dropdown's options: every config screen plus its overlay flag.
+/datum/controller/subsystem/title/proc/get_title_screen_options()
+	var/list/options = list()
+	for(var/screen_name in title_screen_names)
+		options += list(list(
+			"name" = screen_name,
+			"overlay" = !!title_overlays[screen_name],
+		))
+	return options
 
 /**
  * Adds a notice to the main title screen in the form of big red text!
@@ -193,13 +317,100 @@ SUBSYSTEM_DEF(title)
 	if(new_screen)
 		current_title_screen = new_screen
 	else
-		if(LAZYLEN(title_screens))
-			current_title_screen = pick(title_screens)
-		else
-			current_title_screen = DEFAULT_TITLE_SCREEN_IMAGE
+		current_title_screen = resolve_unattended_screen()
 
 	check_finish_progress()
 	show_title_screen()
+
+/**
+ * Picks the screen for an unattended change, i.e. the round-end rotation.
+ *
+ * Rotation is the historical behaviour and stays the default. When an admin has
+ * turned it off, the pinned selection wins instead. Gating here rather than at
+ * the ticker call site is what lets a chosen screen persist across rounds
+ * without editing core code.
+ */
+/datum/controller/subsystem/title/proc/resolve_unattended_screen()
+	if(!rotate_title_screens)
+		var/icon/pinned = get_title_screen_icon(selected_title_name)
+		return pinned || DEFAULT_TITLE_SCREEN_IMAGE
+
+	if(LAZYLEN(title_screens))
+		return pick(title_screens)
+	return DEFAULT_TITLE_SCREEN_IMAGE
+
+/// Resolve a config file name to its preloaded icon, or null when unknown.
+/datum/controller/subsystem/title/proc/get_title_screen_icon(screen_name)
+	if(!istext(screen_name))
+		return null
+	var/index = title_screen_names.Find(screen_name)
+	if(!index)
+		return null
+	return title_screens[index]
+
+/**
+ * Push the current settings to every open lobby.
+ *
+ * Unlike show_title_screen() this does not touch the asset cache, so the
+ * toggles that only change presentation cannot churn through generations of
+ * identical registered images.
+ */
+/datum/controller/subsystem/title/proc/broadcast_title_settings()
+	var/list/payload = get_title_payload()
+	for(var/datum/lobby_menu/menu as anything in GLOB.lobby_menus)
+		if(!menu.client)
+			continue
+		menu.send_update(payload)
+
+/**
+ * Admin-facing setters.
+ *
+ * Each validates its input, persists, and reuses the existing broadcast path.
+ * None of them check rights: callers are responsible for that, so the checks
+ * stay next to the transport that can be reached from a client.
+ */
+/datum/controller/subsystem/title/proc/set_title_selection(screen_name)
+	if(isnull(screen_name) || screen_name == "")
+		// The empty selection means the neutral Meridian Rift master.
+		selected_title_name = null
+		current_title_screen = DEFAULT_TITLE_SCREEN_IMAGE
+	else
+		var/icon/chosen = get_title_screen_icon(screen_name)
+		if(!chosen)
+			return FALSE
+		selected_title_name = screen_name
+		current_title_screen = chosen
+
+	save_title_settings()
+	show_title_screen()
+	return TRUE
+
+/datum/controller/subsystem/title/proc/set_title_rotation(rotate)
+	rotate_title_screens = !!rotate
+	save_title_settings()
+	broadcast_title_settings()
+	return TRUE
+
+/datum/controller/subsystem/title/proc/set_title_overlay(screen_name, enabled)
+	if(!get_title_screen_icon(screen_name))
+		return FALSE
+	title_overlays[screen_name] = !!enabled
+	save_title_settings()
+	broadcast_title_settings()
+	return TRUE
+
+/datum/controller/subsystem/title/proc/set_title_presentation(variant, texture, classic_alt)
+	var/static/list/valid_variants = list("flat", "edge", "convex", "convex-bezel")
+	var/static/list/valid_textures = list("original", "navarobl")
+	if(!(variant in valid_variants) || !(texture in valid_textures))
+		return FALSE
+
+	title_variant = variant
+	title_texture = texture
+	title_classic_alt = !!classic_alt
+	save_title_settings()
+	broadcast_title_settings()
+	return TRUE
 
 /**
  * Update a user's character setup name.
