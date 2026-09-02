@@ -12,6 +12,7 @@
 @include meta.load-css('~tgui/styles/visual-system/theme-picker.scss');
 @include meta.load-css('~tgui/styles/visual-system/loader.scss');
 @include meta.load-css('./aphelion.scss');
+@include meta.load-css('./title-art.scss');
 
 .Tooltip {
   //font-family: 'Pixellari', monospace; // APHELION EDIT REMOVAL

@@ -6,6 +6,7 @@ import {
   render,
   screen,
 } from '@testing-library/react';
+import { assetMap } from './assets';
 import type { ServerState } from './LobbyMenu';
 import { LobbyMenu } from './LobbyMenu';
 
@@ -22,6 +23,7 @@ let sendMessage: ReturnType<typeof mock>;
 function makeServerState(overrides: Partial<ServerState> = {}): ServerState {
   return {
     titleImageUrl: 'asset://title.png',
+    titleImageTreatment: 'meridian',
     gamePhase: 'startup',
     isReady: false,
     canReady: true,
@@ -66,6 +68,8 @@ beforeEach(() => {
   Byond.subscribeTo = mock((name: string, callback: LobbySubscription) => {
     subscriptions.set(name, callback);
   }) as typeof Byond.subscribeTo;
+  assetMap['meridian_rift_scanlines_navarobl.png'] =
+    'asset://navarobl-scanlines.png';
 });
 
 afterEach(() => {
@@ -76,6 +80,7 @@ afterEach(() => {
   window.cancelAnimationFrame = originalCancelAnimationFrame;
   document.documentElement.classList.remove('runtime-marker');
   document.documentElement.style.removeProperty('--lobby-bg');
+  delete assetMap['meridian_rift_scanlines_navarobl.png'];
 });
 
 describe('LobbyMenu MeridianOS integration', () => {
@@ -157,11 +162,135 @@ describe('LobbyMenu MeridianOS integration', () => {
 
     emit('state', { transparent: false });
 
-    expect(document.querySelector<HTMLImageElement>('.bg')?.src).toContain(
-      'asset://title.png',
-    );
+    expect(document.querySelector('.lobby-title-art')).toBeTruthy();
+    expect(
+      document.querySelector<HTMLImageElement>('.lobby-title-art__fallback')
+        ?.src,
+    ).toContain('asset://title.png');
     expect(document.documentElement.style.getPropertyValue('--lobby-bg')).toBe(
       'black',
     );
+  });
+
+  it('keeps artwork comparisons window-local across state and phase updates', async () => {
+    render(<LobbyMenu />);
+    emit('init', makeServerState());
+
+    const trigger = screen.getByRole('button', {
+      name: /change lobby artwork/i,
+    });
+    fireEvent.click(trigger);
+    fireEvent.click(
+      screen.getByRole('menuitemradio', {
+        name: /navarobl - d convex \+ bezel/i,
+      }),
+    );
+    await act(async () => Promise.resolve());
+
+    let artwork = document.querySelector('.lobby-title-art');
+    expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
+    expect(artwork?.getAttribute('data-variant')).toBe('convex-bezel');
+
+    fireEvent.click(trigger);
+    fireEvent.click(
+      screen.getByRole('menuitemcheckbox', { name: /classic alt/i }),
+    );
+    await act(async () => Promise.resolve());
+    artwork = document.querySelector('.lobby-title-art');
+    expect(artwork?.getAttribute('data-presentation')).toBe('classic-alt');
+
+    emit('state', { gamePhase: 'pregame', playerCount: 9 });
+    artwork = document.querySelector('.lobby-title-art');
+    expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
+    expect(artwork?.getAttribute('data-variant')).toBe('convex-bezel');
+    expect(artwork?.getAttribute('data-presentation')).toBe('classic-alt');
+    expect(sendMessage).not.toHaveBeenCalled();
+
+    emit('state', { transparent: true });
+    expect(
+      screen.queryByRole('button', { name: /change lobby artwork/i }),
+    ).toBeNull();
+    expect(document.querySelector('.lobby-title-art')).toBeNull();
+
+    emit('state', { transparent: false });
+    expect(
+      screen.getByRole('button', { name: /change lobby artwork/i }),
+    ).toBeTruthy();
+    artwork = document.querySelector('.lobby-title-art');
+    expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
+    expect(artwork?.getAttribute('data-variant')).toBe('convex-bezel');
+    expect(artwork?.getAttribute('data-presentation')).toBe('classic-alt');
+  });
+
+  it('hides comparison controls for operator-provided artwork', () => {
+    render(<LobbyMenu />);
+    emit(
+      'init',
+      makeServerState({
+        titleImageTreatment: null,
+      }),
+    );
+
+    expect(
+      screen.queryByRole('button', { name: /change lobby artwork/i }),
+    ).toBeNull();
+    expect(document.querySelector('.lobby-title-art')).toBeNull();
+    expect(document.querySelector('.bg')?.getAttribute('src')).toBe(
+      'asset://title.png',
+    );
+    expect(
+      screen.getByRole('button', { name: /change base interface theme/i }),
+    ).toBeTruthy();
+  });
+
+  it('uses Pip-Boy scanlines automatically but honors an explicit Original choice', async () => {
+    render(<LobbyMenu />);
+    emit(
+      'init',
+      makeServerState({
+        meridianTheme: 'meridian_pipboy',
+      }),
+    );
+
+    expect(
+      document.querySelector('.lobby-title-art')?.getAttribute('data-texture'),
+    ).toBe('navarobl');
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /change lobby artwork/i }),
+    );
+    fireEvent.click(
+      screen.getByRole('menuitemradio', { name: /original - c convex/i }),
+    );
+    await act(async () => Promise.resolve());
+
+    expect(
+      document.querySelector('.lobby-title-art')?.getAttribute('data-texture'),
+    ).toBe('original');
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('resets the temporary comparison only when the lobby remounts', async () => {
+    const view = render(<LobbyMenu />);
+    emit('init', makeServerState());
+    fireEvent.click(
+      screen.getByRole('button', { name: /change lobby artwork/i }),
+    );
+    fireEvent.click(
+      screen.getByRole('menuitemradio', { name: /navarobl - a flat/i }),
+    );
+    await act(async () => Promise.resolve());
+    expect(
+      document.querySelector('.lobby-title-art')?.getAttribute('data-variant'),
+    ).toBe('flat');
+
+    view.unmount();
+    render(<LobbyMenu />);
+    emit('init', makeServerState());
+
+    const artwork = document.querySelector('.lobby-title-art');
+    expect(artwork?.getAttribute('data-variant')).toBe('convex');
+    expect(artwork?.getAttribute('data-texture')).toBe('original');
+    expect(artwork?.getAttribute('data-presentation')).toBe('classic');
   });
 });

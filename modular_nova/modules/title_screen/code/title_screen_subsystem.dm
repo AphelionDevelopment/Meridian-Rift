@@ -169,7 +169,14 @@ SUBSYSTEM_DEF(title)
 		if(!menu.client)
 			continue
 		SSassets.transport.send_assets(menu.client, current_title_asset_name)
-		menu.send_update(list("titleImageUrl" = SSassets.transport.get_asset_url(current_title_asset_name)))
+		menu.send_update(list(
+			"titleImageUrl" = SSassets.transport.get_asset_url(current_title_asset_name),
+			"titleImageTreatment" = uses_meridian_title_art() ? "meridian" : null,
+		))
+
+/// Whether the current image is the neutral Meridian Rift alpha master that TGUI may theme-tint.
+/datum/controller/subsystem/title/proc/uses_meridian_title_art()
+	return current_title_screen == DEFAULT_TITLE_SCREEN_IMAGE
 
 /**
  * Adds a notice to the main title screen in the form of big red text!

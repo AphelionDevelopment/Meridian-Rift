@@ -29,6 +29,7 @@ type StationTrait = {
 
 export type ServerState = {
   titleImageUrl: string;
+  titleImageTreatment: 'meridian' | null;
   gamePhase: 'startup' | 'pregame' | 'setting_up' | 'playing' | 'postgame';
   isReady: boolean;
   canReady: boolean;

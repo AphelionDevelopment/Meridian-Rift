@@ -8,8 +8,8 @@ import { assetMap } from './assets';
 import { LobbyMenu } from './LobbyMenu';
 import { updateScaling } from './scaling';
 import {
+  isLobbyDisplayControlInteractionTarget,
   isLobbyKeyboardInteractionTarget,
-  isThemePickerInteractionTarget,
 } from './themeFocus';
 
 let reactRoot: Root | null = null;
@@ -34,7 +34,7 @@ document.onreadystatechange = () => {
     setTimeout(focusMap);
   });
   window.addEventListener('mouseup', (event) => {
-    if (isThemePickerInteractionTarget(event.target)) {
+    if (isLobbyDisplayControlInteractionTarget(event.target)) {
       return;
     }
     setTimeout(focusMap);
