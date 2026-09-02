@@ -1,6 +1,7 @@
 /datum/job/blueshield
 	title = JOB_BLUESHIELD
-	description = "Protect heads of staff, get your fancy gun stolen, cry as the captain touches the supermatter."
+	description = "Your highest-priority directive from the Astraeus Star Federation is asset protection. Keep the Heads of Staff alive by any means necessary. \
+		High-grade firepower is authorised, but you still serve the Captain and the Astraeus Federation Consultant; do not forget this. Work with your team across the station to make your mission easier and more likely to succeed."
 	auto_deadmin_role_flags = DEADMIN_POSITION_SECURITY
 	faction = FACTION_STATION
 	total_positions = 1

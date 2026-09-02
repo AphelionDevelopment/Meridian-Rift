@@ -551,7 +551,8 @@
 */
 /datum/job/science_guard
 	title = JOB_SCIENCE_GUARD
-	description = "Figure out why the emails aren't working, keep an eye on the eggheads, protect them from their latest mistakes."
+	description = "Ensure that the extremely volatile Science Department and its staff remain safe for an entire shift. \
+		Protect roboticists from subverted robots and angry customers, and protect scientists from themselves and their experiments."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -651,7 +652,8 @@
 */
 /datum/job/orderly
 	title = JOB_ORDERLY
-	description = "Defend the medical department, hold down idiots who refuse the vaccine, assist medical with prep and/or cleanup."
+	description = "Keeping the Medical Department operating smoothly is a full-time job. Move patients where they need to go, assisting with patch jobs and IVs. \
+		Keep the doctors up to date on patient histories and the details of each case. Escort unauthorised personnel out of the Trauma Centre, and ensure that no one endangers Medbay staff while they are busy saving lives."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -747,7 +749,8 @@
 */
 /datum/job/engineering_guard
 	title = JOB_ENGINEERING_GUARD
-	description = "Monitor the supermatter, keep an eye on atmospherics, make sure everyone is wearing Proper Protective Equipment."
+	description = "Secure the Engineering Department and ensure that its vital station apparatus remains safe at all times. \
+		Assist engineers with any tasks that need an extra pair of hands, and practise your core construction skills on the side."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -848,7 +851,8 @@
 */
 /datum/job/customs_agent
 	title = JOB_CUSTOMS_AGENT
-	description = "Inspect the packages coming to and from the station, protect the cargo department, beat the shit out of people trying to ship Cocaine to the Spinward Stellar Coalition."
+	description = "Keep the Cargo Department, its Guild members, and the vital goods flowing through its supply lanes safe. \
+		Watch for contraband and anyone who would take advantage of the Aphelion's free-trade hub."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2
@@ -941,7 +945,8 @@
 */
 /datum/job/bouncer
 	title = JOB_BOUNCER
-	description = "Make sure people don't jump the kitchen counter, stop Chapel vandalism, check bargoer's IDs, prevent the dreaded \"food fight\"."
+	description = "Protect the Service Department from vandals and troublemakers. Help every Service discipline prepare for the day, and be ready to assist the public as a member of the Service team. \
+		Remember, the bar is not your only responsibility."
 	faction = FACTION_STATION
 	total_positions = 2
 	spawn_positions = 2

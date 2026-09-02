@@ -7308,6 +7308,8 @@
 #include "interface\fonts\spess_font.dm"
 #include "interface\fonts\tiny_unicode.dm"
 #include "interface\fonts\vcr_osd_mono.dm"
+
+#include "modular_aphelion\modules\job_desc_overrides\job_desc_overrides.dm"
 #include "modular_aphelion\modules\shipbreaking\code\areas.dm"
 #include "modular_aphelion\modules\shipbreaking\code\docking_clamp.dm"
 #include "modular_aphelion\modules\shipbreaking\code\prior_owners_base.dm"
