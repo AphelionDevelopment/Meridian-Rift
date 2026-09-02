@@ -3,9 +3,13 @@
  * @copyright 2020 Aleksej Komarov
  * @license MIT
  */
-import { useAtom } from 'jotai';
+import { useAtom } from 'jotai'; // APHELION EDIT ADDITION
 import { useState } from 'react';
 import { JSONTree } from 'react-json-tree';
+/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+import { Divider, NoticeBox, Section, Stack, Tabs } from 'tgui-core/components';
+*/ // APHELION EDIT REMOVAL END
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 import {
   Button,
   Divider,
@@ -24,7 +28,12 @@ import {
   TextArea,
   Tooltip,
 } from 'tgui-core/components';
+// APHELION EDIT ADDITION END
 import { useBackend } from '../backend';
+/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+import { tgui16 } from '../constants/theme';
+*/ // APHELION EDIT REMOVAL END
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 import {
   MERIDIAN_BASE_THEME_IDS,
   MERIDIAN_BASE_THEME_OPTIONS,
@@ -32,8 +41,9 @@ import {
   tgui16,
 } from '../constants/theme';
 import { debugThemeAtom } from '../events/store';
+// APHELION EDIT ADDITION END
 import { Pane, Window } from '../layouts';
-import { DiagnosticLoaderComparison } from './DiagnosticLoaderComparison';
+import { DiagnosticLoaderComparison } from './DiagnosticLoaderComparison'; // APHELION EDIT ADDITION
 
 type Props = {
   panel?: boolean;
@@ -45,7 +55,7 @@ enum Tab {
   Shared = 'shared',
   Chunks = 'outgoingPayloadQueues',
   Components = 'components',
-  LoaderStudy = 'loader-study',
+  LoaderStudy = 'loader-study', // APHELION EDIT ADDITION
 }
 
 const tabs = [
@@ -59,11 +69,14 @@ export function KitchenSink(props: Props) {
   const { panel } = props;
 
   const [activeTab, setActiveTab] = useState(Tab.Config);
+  // APHELION EDIT ADDITION START - MERIDIAN_UI
   const [showModal, setShowModal] = useState(false);
   const [debugTheme, setDebugTheme] = useAtom(debugThemeAtom);
+  // APHELION EDIT ADDITION END
 
   const Layout = panel ? Pane : Window;
 
+  // APHELION EDIT ADDITION START - MERIDIAN_UI
   const changeTheme = (direction: -1 | 1) => {
     const currentIndex = debugTheme
       ? MERIDIAN_BASE_THEME_IDS.indexOf(debugTheme)
@@ -76,9 +89,23 @@ export function KitchenSink(props: Props) {
     setDebugTheme(MERIDIAN_BASE_THEME_IDS[nextIndex]);
   };
 
+  // APHELION EDIT ADDITION END
   return (
+    /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+    <Layout title="Kitchen Sink" width={600} height={500}>
+    */ // APHELION EDIT REMOVAL END
+    // APHELION EDIT ADDITION START - MERIDIAN_UI
     <Layout title="MeridianOS Development Showcase" width={800} height={720}>
+    {/* APHELION EDIT ADDITION END */}
       <Layout.Content>
+        {/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+        <Stack fill>
+          <Stack.Item grow>
+        // APHELION EDIT REMOVAL END */}
+        {/* APHELION EDIT ADDITION START - MERIDIAN_UI
+             The showcase gains a theme switcher rail above the tab column, so
+             the outer Stack becomes vertical and the tabs move into their own
+             Stack.Item further down. */}
         <Stack className="MeridianShowcase" vertical fill>
           <Stack.Item>
             <div
@@ -101,6 +128,20 @@ export function KitchenSink(props: Props) {
                   selected={!debugTheme}
                   onClick={() => setDebugTheme(null)}
                 >
+                  {/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+                  {tab.name}
+                </Tabs.Tab>
+              ))}
+              <Divider />
+              <Tabs.Tab
+                selected={activeTab === Tab.Components}
+                onClick={() => setActiveTab(Tab.Components)}
+              >
+                Components
+              </Tabs.Tab>
+            </Tabs>
+                  // APHELION EDIT REMOVAL END */}
+                  {/* APHELION EDIT ADDITION START - MERIDIAN_UI */}
                   Inherit
                 </Button>
                 <Button
@@ -133,7 +174,17 @@ export function KitchenSink(props: Props) {
                 />
               </div>
             </div>
+                  {/* APHELION EDIT ADDITION END */}
           </Stack.Item>
+          {/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+          <Stack.Item grow={4}>
+            {activeTab === Tab.Components ? (
+              <ComponentsPage />
+            ) : (
+              <TreePage tab={activeTab} />
+            )}
+          // APHELION EDIT REMOVAL END */}
+          {/* APHELION EDIT ADDITION START - MERIDIAN_UI */}
           <Stack.Item grow>
             <Stack fill>
               <Stack.Item grow>
@@ -173,9 +224,11 @@ export function KitchenSink(props: Props) {
                 )}
               </Stack.Item>
             </Stack>
+          {/* APHELION EDIT ADDITION END */}
           </Stack.Item>
         </Stack>
       </Layout.Content>
+      {/* APHELION EDIT ADDITION START - MERIDIAN_UI */}
       {showModal && (
         <Modal onEscape={() => setShowModal(false)}>
           <h2>Bounded diagnostic modal</h2>
@@ -185,10 +238,15 @@ export function KitchenSink(props: Props) {
           </Button>
         </Modal>
       )}
+      {/* APHELION EDIT ADDITION END */}
     </Layout>
   );
 }
 
+/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+function ComponentsPage() {
+*/ // APHELION EDIT REMOVAL END
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 function ComponentsPage(props: { onShowModal: () => void }) {
   const { onShowModal } = props;
   const [inputValue, setInputValue] = useState('Meridian relay 04');
@@ -201,7 +259,17 @@ function ComponentsPage(props: { onShowModal: () => void }) {
   const [checked, setChecked] = useState(true);
   const [radioValue, setRadioValue] = useState('primary');
 
+// APHELION EDIT ADDITION END
   return (
+    /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+    <Section fill>
+      <NoticeBox info>All component stories have been moved.</NoticeBox>
+      View them here{' '}
+      <a href="https://tgstation.github.io/tgui-core">
+        https://tgstation.github.io/tgui-core
+      </a>
+    */ // APHELION EDIT REMOVAL END
+    // APHELION EDIT ADDITION START - MERIDIAN_UI
     <Section fill scrollable title="MeridianOS component board">
       <div className="MeridianShowcase__board" data-meridian-component-board>
         <Section title="Control states">
@@ -357,6 +425,7 @@ function ComponentsPage(props: { onShowModal: () => void }) {
           </div>
         </Section>
       </div>
+    {/* APHELION EDIT ADDITION END */}
     </Section>
   );
 }
