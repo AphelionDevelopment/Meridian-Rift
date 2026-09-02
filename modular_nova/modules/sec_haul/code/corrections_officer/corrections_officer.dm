@@ -1,6 +1,7 @@
 /datum/job/corrections_officer
 	title = JOB_CORRECTIONS_OFFICER
-	description = "Guard the permabrig, stand around looking imposing, get fired for abusing the prisoners"
+	description = "Steward the inmates in the prison; they are under your protection while you are on shift. Ensure that they have proper food, safe lodgings, and enough enrichment to keep them from tearing their cells apart. \
+		Aid the Warden and Service personnel with paroles when necessary, and help prisoners who can reintegrate into Federation society get back on their feet."
 	auto_deadmin_role_flags = DEADMIN_POSITION_SECURITY
 	faction = FACTION_STATION
 	total_positions = 1
@@ -57,6 +58,3 @@
 	belt = /obj/item/modular_computer/pda/security
 
 	id_trim = /datum/id_trim/job/corrections_officer
-
-
-
