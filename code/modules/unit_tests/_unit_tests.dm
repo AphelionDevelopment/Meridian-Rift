@@ -285,7 +285,6 @@
 #include "plantgrowth_tests.dm"
 #include "preference_species.dm"
 #include "preferences.dm"
-#include "preferences_preview_decoration.dm" // APHELION EDIT ADDITION - MERIDIAN_UI
 #include "projectiles.dm"
 #include "punpun.dm"
 #include "quirks.dm"
@@ -386,6 +385,7 @@
 #include "~nova\neuroware_chips.dm"
 #include "~nova\opposing_force.dm"
 #include "~nova\shuttle.dm"
+#include "~nova\preferences_preview_decoration.dm" // APHELION EDIT ADDITION
 // NOVA EDIT END
 // END_INCLUDE
 #ifdef REFERENCE_TRACKING_DEBUG //Don't try and parse this file if ref tracking isn't turned on. IE: don't parse ref tracking please mr linter
