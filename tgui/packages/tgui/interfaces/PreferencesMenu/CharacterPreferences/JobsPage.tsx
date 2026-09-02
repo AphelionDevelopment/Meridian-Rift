@@ -31,7 +31,7 @@ type PriorityButtonProps = {
   onClick: () => void;
 };
 
-export function PriorityButton(props: PriorityButtonProps) {
+export function PriorityButton(props: PriorityButtonProps) { // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: function PriorityButton(props: PriorityButtonProps) {
   const className = `PreferencesMenu__Jobs__departments__priority`;
 
   return (
@@ -43,15 +43,24 @@ export function PriorityButton(props: PriorityButtonProps) {
           props.modifier && `${className}--${props.modifier}`,
           props.enabled && `${className}--enabled`, // APHELION EDIT ADDITION
         ])}
+        /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+        color={props.enabled ? props.color : 'white'}
+        circular
+        */ // APHELION EDIT REMOVAL END
+        /* APHELION EDIT ADDITION START - MERIDIAN_UI */
         aria-label={props.name}
         aria-pressed={props.enabled}
         color={props.enabled ? props.color : 'transparent'}
+        /* APHELION EDIT ADDITION END */
         onClick={props.onClick}
         tooltip={props.name}
         tooltipPosition="bottom"
         height="100%"
         width="100%"
-      >
+        /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+        />
+        */ // APHELION EDIT REMOVAL END
+      > {/* APHELION EDIT ADDITION START - MERIDIAN_UI */}
         {props.enabled && (
           <span
             aria-hidden="true"
@@ -61,6 +70,7 @@ export function PriorityButton(props: PriorityButtonProps) {
           </span>
         )}
       </Button>
+      {/* APHELION EDIT ADDITION END */}
     </Stack.Item>
   );
 }

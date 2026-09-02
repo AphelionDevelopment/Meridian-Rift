@@ -108,15 +108,20 @@ function FoodList(props: FoodListProps) {
         </Box>
       }
     >
+      {/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+      <Stack ml={2}>
+      // APHELION EDIT REMOVAL END */}
+      {/* APHELION EDIT ADDITION START - MERIDIAN_UI */}
       <Stack
         className="PreferencesMenu__SpeciesDietGroup"
         align="center"
         g={0.5}
       >
+      {/* APHELION EDIT ADDITION END */}
         {food.map((food) => {
           return (
             FOOD_ICONS[food] && (
-              <Stack.Item key={food}>
+              <Stack.Item key={food}> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: <Stack.Item> with key on the Icon */}
                 <Icon
                   className={className}
                   size={1.4}
@@ -144,7 +149,7 @@ function Diet(props: DietProps) {
   const { liked_food, disliked_food, toxic_food } = diet;
 
   return (
-    <Stack className="PreferencesMenu__SpeciesDiet" align="center" g={0.5}>
+    <Stack className="PreferencesMenu__SpeciesDiet" align="center" g={0.5}> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: <Stack> */}
       <Stack.Item>
         <FoodList
           food={liked_food}
@@ -180,7 +185,7 @@ type SpeciesPerkProps = {
   perk: Perk;
 };
 
-export function SpeciesPerk(props: SpeciesPerkProps) {
+export function SpeciesPerk(props: SpeciesPerkProps) { // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: function SpeciesPerk(props: SpeciesPerkProps) {
   const { className, perk } = props;
 
   return (
@@ -194,6 +199,22 @@ export function SpeciesPerk(props: SpeciesPerkProps) {
         </Box>
       }
     >
+      {/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+      <Box className={className} width="32px" height="32px">
+        <Icon
+          name={perk.ui_icon}
+          size={1.5}
+          ml={0}
+          mt={1}
+          style={{
+            textAlign: 'center',
+            height: '100%',
+            width: '100%',
+          }}
+        />
+      </Box>
+      // APHELION EDIT REMOVAL END */}
+      {/* APHELION EDIT ADDITION START - MERIDIAN_UI */}
       <Box
         className={classes(['PreferencesMenu__SpeciesPerk', className])}
         width="32px"
@@ -201,6 +222,7 @@ export function SpeciesPerk(props: SpeciesPerkProps) {
       >
         <Icon name={perk.ui_icon} size={1.5} />
       </Box>
+      {/* APHELION EDIT ADDITION END */}
     </Tooltip>
   );
 }
@@ -285,12 +307,17 @@ function SpeciesPageInner(props: SpeciesPageInnerProps) {
       <Stack.Item grow>
         <Stack fill>
           <Stack.Item>
+            {/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+            <Box height="calc(100vh - 170px)" overflowY="auto" pr={3}>
+            // APHELION EDIT REMOVAL END */}
+            {/* APHELION EDIT ADDITION START - MERIDIAN_UI */}
             <Box
               className="PreferencesMenu__SpeciesList"
               height="calc(100vh - 170px)"
               overflowY="auto"
               pr={3}
             >
+            {/* APHELION EDIT ADDITION END */}
               {species.map(([speciesKey, species]) => {
                 // NOVA EDIT START - Nova star-only species
                 let speciesPage = (
@@ -313,11 +340,19 @@ function SpeciesPageInner(props: SpeciesPageInnerProps) {
                     tooltip={species.name}
                     style={{
                       display: 'block',
-                      height: '66px',
-                      width: '66px',
+                      height: '66px', // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: height: '64px',
+                      width: '66px', // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: width: '64px',
                     }}
                   >
+                    {/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+                    <Box
+                      className={classes(['species64x64', species.icon])}
+                      ml={-1}
+                    />
+                    // APHELION EDIT REMOVAL END */}
+                    {/* APHELION EDIT ADDITION START - MERIDIAN_UI */}
                     <Box className={classes(['species64x64', species.icon])} />
+                    {/* APHELION EDIT ADDITION END */}
                   </Button>
                 );
                 if (
