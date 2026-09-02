@@ -214,11 +214,17 @@
 	//Update individual gas_mixtures by volume ratio
 
 	for(var/obj/machinery/atmospherics/pipe/member in members)
+		/* // APHELION EDIT REMOVAL START - DOGMOS
 		member.air_temporary = new
 		member.air_temporary.set_volume(member.volume)
 		member.air_temporary.copy_from_ratio(air, member.volume / air.return_volume())
 
 		member.air_temporary.set_temperature(air.return_temperature())
+		*/ // APHELION EDIT REMOVAL END
+		// APHELION EDIT ADDITION START - DOGMOS
+		member.air_temporary = new(member.volume)
+		member.air_temporary.equalize_with(air)
+		// APHELION EDIT ADDITION END
 
 /datum/pipeline/proc/temperature_interact(turf/target, share_volume, thermal_conductivity)
 	var/total_heat_capacity = air.heat_capacity()

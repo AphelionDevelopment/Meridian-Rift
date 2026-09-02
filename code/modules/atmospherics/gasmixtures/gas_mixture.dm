@@ -15,6 +15,10 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 	var/list/reaction_results
 	/// When this gas mixture was last touched by pipeline processing.
 	var/pipeline_cycle = -1
+	// APHELION EDIT ADDITION START - DOGMOS
+	/// Whether Dogmos has accepted this mixture's monotonic immutable finalization.
+	var/dogmos_immutable = FALSE
+	// APHELION EDIT ADDITION END
 
 /datum/gas_mixture/New(volume)
 	if(!isnull(volume))

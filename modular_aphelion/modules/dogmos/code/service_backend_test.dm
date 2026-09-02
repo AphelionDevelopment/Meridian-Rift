@@ -12,6 +12,8 @@
 #define DOGMOS_TEST_OVERSIZED_PIPELINE_MIXTURES 228
 #define DOGMOS_TEST_IDLE_MC_SETTLE_TIME 30 SECONDS
 #define DOGMOS_TEST_RESPONSE_APPLIED 1
+#define DOGMOS_TEST_SNAPSHOT_REVISION_LOW 1
+#define DOGMOS_TEST_SNAPSHOT_REVISION_HIGH 2
 
 /** Returns a malformed frontier response without touching the production service. */
 /proc/dogmos_test_reject_frontier_chunk(list/fields)
@@ -156,11 +158,39 @@
 
 	second.return_temperature()
 	var/misses_after_warm = SSdogmos.dogmos_mixture_cache_misses
+	var/hits_after_warm = SSdogmos.dogmos_mixture_cache_hits
+	first.equalize_with(second)
+	first.return_temperature()
+	second.return_temperature()
+	if(SSdogmos.dogmos_mixture_cache_misses != misses_after_warm + 1 || SSdogmos.dogmos_mixture_cache_hits != hits_after_warm + 1)
+		return Fail("Equalizing from a mixture did not preserve its read-only source snapshot.", __FILE__, __LINE__)
+
+	second.return_temperature()
+	misses_after_warm = SSdogmos.dogmos_mixture_cache_misses
+	hits_after_warm = SSdogmos.dogmos_mixture_cache_hits
 	first.copy_from(second)
 	first.return_temperature()
 	second.return_temperature()
+	if(SSdogmos.dogmos_mixture_cache_misses != misses_after_warm + 1 || SSdogmos.dogmos_mixture_cache_hits != hits_after_warm + 1)
+		return Fail("Copying from a mixture did not preserve its read-only source snapshot.", __FILE__, __LINE__)
+
+	second.return_temperature()
+	misses_after_warm = SSdogmos.dogmos_mixture_cache_misses
+	hits_after_warm = SSdogmos.dogmos_mixture_cache_hits
+	first.merge(second)
+	first.return_temperature()
+	second.return_temperature()
+	if(SSdogmos.dogmos_mixture_cache_misses != misses_after_warm + 1 || SSdogmos.dogmos_mixture_cache_hits != hits_after_warm + 1)
+		return Fail("Merging a mixture did not preserve its read-only source snapshot.", __FILE__, __LINE__)
+
+	first.return_temperature()
+	second.return_temperature()
+	misses_after_warm = SSdogmos.dogmos_mixture_cache_misses
+	first.transfer_to(second, 0.1)
+	first.return_temperature()
+	second.return_temperature()
 	if(SSdogmos.dogmos_mixture_cache_misses != misses_after_warm + 2)
-		return Fail("A two-mixture mutation did not evict both cached handles.", __FILE__, __LINE__)
+		return Fail("Transferring gas did not evict both mutated mixture snapshots.", __FILE__, __LINE__)
 
 	var/list/fake_snapshot = new/list(42)
 	SSdogmos.store_mixture_snapshot_cache(1, 7, fake_snapshot)
@@ -189,12 +219,157 @@
 	first.return_temperature()
 	if(SSdogmos.dogmos_mixture_cache_misses != misses_before_immutable + 1)
 		return Fail("Marking a mixture immutable did not evict its cached snapshot.", __FILE__, __LINE__)
+	SSdogmos.evict_mixture_snapshot_cache(first.dogmos_slot, first.dogmos_generation)
+	var/misses_before_local_immutable_check = SSdogmos.dogmos_mixture_cache_misses
 	if(!first.is_immutable())
 		return Fail("Dogmos did not retain the mixture's immutable state.", __FILE__, __LINE__)
+	if(SSdogmos.dogmos_mixture_cache_misses != misses_before_local_immutable_check)
+		return Fail("Checking a finalized mixture's immutable state fetched a service snapshot.", __FILE__, __LINE__)
+	first.set_temperature(320)
+	if(first.return_temperature() != 290)
+		return Fail("Dogmos accepted a mutation after immutable finalization.", __FILE__, __LINE__)
 
 /datum/unit_test/dogmos_service_mixture_snapshot_cache/Destroy()
 	QDEL_NULL(first)
 	QDEL_NULL(second)
+	SSdogmos.reset_mixture_snapshot_cache()
+	return ..()
+
+/** Verifies pipeline rebuild storage preserves state without repeatedly fetching its source. */
+/datum/unit_test/dogmos_service_pipeline_temporary_air
+	/// Pipeline released during teardown.
+	var/datum/pipeline/test_pipeline
+	/// Pipeline-owned mixture released during teardown.
+	var/datum/gas_mixture/pipeline_air
+	/// First pipe detached before pipeline teardown.
+	var/obj/machinery/atmospherics/pipe/first_pipe
+	/// Second pipe detached before pipeline teardown.
+	var/obj/machinery/atmospherics/pipe/second_pipe
+
+/datum/unit_test/dogmos_service_pipeline_temporary_air/Run()
+	if(!SSdogmos.service_ready)
+		return Fail("dogmosd did not pass startup identity and health checks.", __FILE__, __LINE__)
+
+	test_pipeline = new
+	pipeline_air = new(300)
+	pipeline_air.set_temperature(350)
+	pipeline_air.set_moles(/datum/gas/oxygen, 30)
+	pipeline_air.set_moles(/datum/gas/nitrogen, 15)
+	test_pipeline.set_air(pipeline_air)
+
+	first_pipe = allocate(/obj/machinery/atmospherics/pipe/smart/simple)
+	second_pipe = allocate(/obj/machinery/atmospherics/pipe/smart/simple)
+	first_pipe.volume = 100
+	second_pipe.volume = 200
+	test_pipeline.members = list(first_pipe, second_pipe)
+
+	SSdogmos.reset_mixture_snapshot_cache()
+	var/misses_before = SSdogmos.dogmos_mixture_cache_misses
+	test_pipeline.temporarily_store_air()
+	var/expected_snapshot_misses = 0
+	var/actual_snapshot_misses = SSdogmos.dogmos_mixture_cache_misses - misses_before
+	if(actual_snapshot_misses != expected_snapshot_misses)
+		return Fail("Pipeline temporary storage used [actual_snapshot_misses] snapshots; expected direct native equalization without snapshots.", __FILE__, __LINE__)
+
+	var/list/first_snapshot = first_pipe.air_temporary.dogmos_snapshot()
+	var/list/second_snapshot = second_pipe.air_temporary.dogmos_snapshot()
+	var/first_revision = SSdogmos.join_u32_words(first_snapshot[DOGMOS_TEST_SNAPSHOT_REVISION_LOW], first_snapshot[DOGMOS_TEST_SNAPSHOT_REVISION_HIGH])
+	var/second_revision = SSdogmos.join_u32_words(second_snapshot[DOGMOS_TEST_SNAPSHOT_REVISION_LOW], second_snapshot[DOGMOS_TEST_SNAPSHOT_REVISION_HIGH])
+	if(first_revision != 2 || second_revision != 2)
+		return Fail("Pipeline temporary storage produced revisions [first_revision] and [second_revision]; expected constructor initialization plus one equalization command.", __FILE__, __LINE__)
+
+	if(abs(first_pipe.air_temporary.return_volume() - 100) > DOGMOS_PIPELINE_TEST_EPSILON || abs(second_pipe.air_temporary.return_volume() - 200) > DOGMOS_PIPELINE_TEST_EPSILON)
+		return Fail("Pipeline temporary storage did not preserve member volumes.", __FILE__, __LINE__)
+	if(abs(first_pipe.air_temporary.return_temperature() - 350) > DOGMOS_PIPELINE_TEST_EPSILON || abs(second_pipe.air_temporary.return_temperature() - 350) > DOGMOS_PIPELINE_TEST_EPSILON)
+		return Fail("Pipeline temporary storage did not preserve the source temperature.", __FILE__, __LINE__)
+	if(abs(first_pipe.air_temporary.get_moles(/datum/gas/oxygen) - 10) > DOGMOS_PIPELINE_TEST_EPSILON || abs(second_pipe.air_temporary.get_moles(/datum/gas/oxygen) - 20) > DOGMOS_PIPELINE_TEST_EPSILON)
+		return Fail("Pipeline temporary storage did not distribute oxygen by member volume.", __FILE__, __LINE__)
+	if(abs(first_pipe.air_temporary.get_moles(/datum/gas/nitrogen) - 5) > DOGMOS_PIPELINE_TEST_EPSILON || abs(second_pipe.air_temporary.get_moles(/datum/gas/nitrogen) - 10) > DOGMOS_PIPELINE_TEST_EPSILON)
+		return Fail("Pipeline temporary storage did not distribute nitrogen by member volume.", __FILE__, __LINE__)
+	if(abs(first_pipe.air_temporary.get_moles(/datum/gas/oxygen) + second_pipe.air_temporary.get_moles(/datum/gas/oxygen) - 30) > DOGMOS_PIPELINE_TEST_EPSILON)
+		return Fail("Pipeline temporary storage did not conserve total oxygen.", __FILE__, __LINE__)
+	if(abs(first_pipe.air_temporary.get_moles(/datum/gas/nitrogen) + second_pipe.air_temporary.get_moles(/datum/gas/nitrogen) - 15) > DOGMOS_PIPELINE_TEST_EPSILON)
+		return Fail("Pipeline temporary storage did not conserve total nitrogen.", __FILE__, __LINE__)
+
+/datum/unit_test/dogmos_service_pipeline_temporary_air/Destroy()
+	test_pipeline?.members.Cut()
+	if(first_pipe)
+		QDEL_NULL(first_pipe.air_temporary)
+		first_pipe.parent = null
+	if(second_pipe)
+		QDEL_NULL(second_pipe.air_temporary)
+		second_pipe.parent = null
+	QDEL_NULL(test_pipeline)
+	QDEL_NULL(pipeline_air)
+	SSdogmos.reset_mixture_snapshot_cache()
+	return ..()
+
+/** Verifies one yielded pipeline expansion publishes its accumulated volume once. */
+/datum/unit_test/dogmos_service_pipeline_expansion_volume_batch
+	/// Pipeline released during teardown.
+	var/datum/pipeline/test_pipeline
+	/// Pipeline mixture released during teardown.
+	var/datum/gas_mixture/pipeline_air
+	/// Allocated pipes detached from the pipeline and each other during teardown.
+	var/list/obj/machinery/atmospherics/pipe/test_pipes
+
+/datum/unit_test/dogmos_service_pipeline_expansion_volume_batch/Run()
+	if(!SSdogmos.service_ready)
+		return Fail("dogmosd did not pass startup identity and health checks.", __FILE__, __LINE__)
+
+	test_pipeline = new
+	pipeline_air = new(10)
+	test_pipeline.set_air(pipeline_air)
+	test_pipes = list()
+	for(var/pipe_index in 1 to 4)
+		var/obj/machinery/atmospherics/pipe/smart/simple/test_pipe = allocate(/obj/machinery/atmospherics/pipe/smart/simple)
+		test_pipe.has_gas_visuals = FALSE
+		test_pipe.volume = pipe_index * 10
+		test_pipe.nodes = list()
+		test_pipes += test_pipe
+
+	var/obj/machinery/atmospherics/pipe/first_pipe = test_pipes[1]
+	for(var/pipe_index in 2 to length(test_pipes))
+		var/obj/machinery/atmospherics/pipe/connected_pipe = test_pipes[pipe_index]
+		first_pipe.nodes += connected_pipe
+		connected_pipe.nodes += first_pipe
+
+	first_pipe.parent = test_pipeline
+	test_pipeline.members = list(first_pipe)
+	var/list/revision_before_snapshot = pipeline_air.dogmos_snapshot()
+	var/revision_before = SSdogmos.join_u32_words(revision_before_snapshot[DOGMOS_TEST_SNAPSHOT_REVISION_LOW], revision_before_snapshot[DOGMOS_TEST_SNAPSHOT_REVISION_HIGH])
+
+	SSdogmos.reset_mixture_snapshot_cache()
+	var/misses_before = SSdogmos.dogmos_mixture_cache_misses
+	var/list/border = list(first_pipe)
+	SSair.expand_pipeline(test_pipeline, border)
+	for(var/obj/machinery/atmospherics/pipe/test_pipe as anything in test_pipes)
+		if(test_pipe.parent != test_pipeline || !(test_pipe in test_pipeline.members))
+			return Fail("Pipeline expansion did not attach every discovered pipe.", __FILE__, __LINE__)
+
+	var/list/final_snapshot = pipeline_air.dogmos_snapshot()
+	var/final_revision = SSdogmos.join_u32_words(final_snapshot[DOGMOS_TEST_SNAPSHOT_REVISION_LOW], final_snapshot[DOGMOS_TEST_SNAPSHOT_REVISION_HIGH])
+	if(final_revision != revision_before + 1)
+		return Fail("Pipeline expansion advanced mixture revision from [revision_before] to [final_revision]; expected one accumulated volume mutation.", __FILE__, __LINE__)
+	if(abs(pipeline_air.return_volume() - 100) > DOGMOS_PIPELINE_TEST_EPSILON)
+		return Fail("Pipeline expansion did not publish the summed member volume.", __FILE__, __LINE__)
+	var/actual_snapshot_misses = SSdogmos.dogmos_mixture_cache_misses - misses_before
+	if(actual_snapshot_misses != 2)
+		return Fail("Pipeline expansion used [actual_snapshot_misses] snapshots; expected one initial volume read and one final verification snapshot.", __FILE__, __LINE__)
+
+	SSdogmos.reset_mixture_snapshot_cache()
+	var/empty_misses_before = SSdogmos.dogmos_mixture_cache_misses
+	SSair.expand_pipeline(test_pipeline, list())
+	if(SSdogmos.dogmos_mixture_cache_misses != empty_misses_before)
+		return Fail("An empty pipeline expansion fetched mixture state.", __FILE__, __LINE__)
+
+/datum/unit_test/dogmos_service_pipeline_expansion_volume_batch/Destroy()
+	test_pipeline?.members.Cut()
+	for(var/obj/machinery/atmospherics/pipe/test_pipe as anything in test_pipes)
+		test_pipe.parent = null
+		test_pipe.nodes = new(test_pipe.device_type)
+	QDEL_NULL(test_pipeline)
+	QDEL_NULL(pipeline_air)
 	SSdogmos.reset_mixture_snapshot_cache()
 	return ..()
 
@@ -929,7 +1104,7 @@
 	if(world.time != defer_start)
 		return Fail("Dogmos slept inside SSair while deferring an exhausted stage.", __FILE__, __LINE__)
 
-/** Verifies one Dogmos turf-processing cycle performs LINDA's original single equalization pass. */
+/** Verifies one Dogmos turf-processing cycle performs the configured FDM pass count. */
 /datum/unit_test/dogmos_service_fdm_linda_cadence
 
 /datum/unit_test/dogmos_service_fdm_linda_cadence/Run()
@@ -941,8 +1116,7 @@
 		sleep(SSair.wait)
 	if(!reached_stage_boundary)
 		return Fail("Dogmos did not reach a safe stage boundary before the FDM cadence test.", __FILE__, __LINE__)
-	if(SSair.share_max_steps != 1)
-		return Fail("Dogmos configured [SSair.share_max_steps] FDM passes instead of LINDA's original single pass.", __FILE__, __LINE__)
+	var/expected_steps = max(1, round(SSair.share_max_steps))
 	var/original_fdm_steps_completed = SSair.dogmos_fdm_steps_completed
 	SSair.dogmos_fdm_steps_completed = 0
 	var/pending = TRUE
@@ -967,9 +1141,9 @@
 	SSair.dogmos_fdm_steps_completed = original_fdm_steps_completed
 
 	if(pending)
-		return Fail("Dogmos did not complete the single-pass FDM test cycle within its chunk limit.", __FILE__, __LINE__)
-	if(completed_steps != 1)
-		return Fail("Dogmos completed [completed_steps] FDM passes instead of LINDA's original single pass.", __FILE__, __LINE__)
+		return Fail("Dogmos did not complete the configured FDM test cycle within its chunk limit.", __FILE__, __LINE__)
+	if(completed_steps != expected_steps)
+		return Fail("Dogmos completed [completed_steps] FDM passes instead of the configured [expected_steps].", __FILE__, __LINE__)
 
 /** Verifies malformed stage responses are rejected before SSair reads their fields. */
 /datum/unit_test/dogmos_service_stage_response_failure
@@ -1428,5 +1602,7 @@
 #undef DOGMOS_PIPELINE_TEST_EPSILON
 #undef DOGMOS_TEST_IDLE_MC_SETTLE_TIME
 #undef DOGMOS_TEST_RESPONSE_APPLIED
+#undef DOGMOS_TEST_SNAPSHOT_REVISION_LOW
+#undef DOGMOS_TEST_SNAPSHOT_REVISION_HIGH
 
 #endif

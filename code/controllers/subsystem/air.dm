@@ -53,7 +53,7 @@ SUBSYSTEM_DEF(air)
 	// APHELION EDIT ADDITION END
 
 	/// Maximum FDM iterations per Dogmos processing call.
-	var/share_max_steps = 1
+	var/share_max_steps = 4
 	/// Whether the Katmos pressure equalizer runs after FDM.
 	var/equalize_enabled = TRUE
 	/// Whether space-adjacent heat loss uses blackbody radiation instead of the gameplay sink.
@@ -761,6 +761,9 @@ SUBSYSTEM_DEF(air)
 
 ///Rebuilds a pipeline by expanding outwards, while yielding when sane
 /datum/controller/subsystem/air/proc/expand_pipeline(datum/pipeline/net, list/border)
+	// APHELION EDIT ADDITION START - DOGMOS
+	var/expanded_volume
+	// APHELION EDIT ADDITION END
 	while(border.len)
 		var/obj/machinery/atmospherics/borderline = border[border.len]
 		border.len--
@@ -787,7 +790,14 @@ SUBSYSTEM_DEF(air)
 			net.members += item
 			border += item
 
+			/* // APHELION EDIT REMOVAL START - DOGMOS
 			net.air.set_volume(net.air.return_volume() + item.volume)
+			*/ // APHELION EDIT REMOVAL END
+			// APHELION EDIT ADDITION START - DOGMOS
+			if(isnull(expanded_volume))
+				expanded_volume = net.air.return_volume()
+			expanded_volume += item.volume
+			// APHELION EDIT ADDITION END
 			item.replace_pipenet(item.parent, net)
 
 			if(item.air_temporary)
@@ -795,7 +805,15 @@ SUBSYSTEM_DEF(air)
 				item.air_temporary = null
 
 		if (MC_TICK_CHECK)
+			// APHELION EDIT ADDITION START - DOGMOS
+			if(!isnull(expanded_volume))
+				net.air.set_volume(expanded_volume)
+			// APHELION EDIT ADDITION END
 			return
+	// APHELION EDIT ADDITION START - DOGMOS
+	if(!isnull(expanded_volume))
+		net.air.set_volume(expanded_volume)
+	// APHELION EDIT ADDITION END
 
 ///Removes a turf from processing, and causes its excited group to clean up so things properly adapt to the change
 /datum/controller/subsystem/air/proc/remove_from_active(turf/open/T)
