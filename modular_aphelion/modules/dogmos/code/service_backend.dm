@@ -58,6 +58,9 @@
 // direct-mapped, so anything past that is guaranteed to evict something the same prefetch just
 // stored. Capped here rather than at the service, which will happily return far more.
 #define DOGMOS_MIXTURE_PREFETCH_LIMIT DOGMOS_MIXTURE_CACHE_BUCKETS
+// Mirrors dogmos-core's DEFAULT_MIXTURE_VOLUME_LITERS. A freshly registered mixture already has
+// this volume on the service side.
+#define DOGMOS_DEFAULT_MIXTURE_VOLUME 2500
 // Mirrors Rust's MINIMUM_MOLES_DELTA_TO_MOVE (world.rs) exactly, as its own constant rather than
 // reusing DM's similarly-named MINIMUM_MOLES_DELTA_TO_MOVE (atmos_core.dm) - that one is a
 // derived, independently-tunable formula (MOLES_CELLSTANDARD * MINIMUM_AIR_RATIO_TO_MOVE) that
@@ -459,7 +462,11 @@
 	var/response = dogmos_mixture_lifecycle_batch(list(DOGMOS_LIFECYCLE_REGISTER, slot, generation))
 	if(!finalize_mixture_registration(mixture, slot, generation, response))
 		return
-	mixture.set_volume(mixture.initial_volume)
+	// The service creates a mixture already at its own default volume, so sending that same value
+	// back is a wasted round trip - and it is the common case, because every turf uses it.
+	// Measured over initialization this removes about half of all mixture commands.
+	if(mixture.initial_volume != DOGMOS_DEFAULT_MIXTURE_VOLUME)
+		mixture.set_volume(mixture.initial_volume)
 
 /** Unregisters one gas mixture and makes its slot eligible for generational reuse. */
 /datum/controller/subsystem/dogmos/proc/unregister_mixture(datum/gas_mixture/mixture)
@@ -2217,6 +2224,7 @@
 #undef DOGMOS_MIXTURE_SNAPSHOT_HEAT_CAPACITY
 #undef DOGMOS_MIXTURE_SNAPSHOT_IMMUTABLE
 #undef DOGMOS_MIXTURE_SNAPSHOT_GASES_START
+#undef DOGMOS_DEFAULT_MIXTURE_VOLUME
 #undef DOGMOS_MIXTURE_PREFETCH_LIMIT
 #undef DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS
 #undef DOGMOS_LIFECYCLE_REGISTER
