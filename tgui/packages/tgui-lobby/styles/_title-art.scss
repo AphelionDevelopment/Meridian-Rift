@@ -112,25 +112,34 @@
     var(--lobby-title-phosphor),
     var(--lobby-title-phosphor-secondary)
   );
+  --lobby-title-bezel-depth: clamp(12px, 3.8vmin, 56px);
+  --lobby-title-bezel-screw-offset: clamp(6px, 1.9vmin, 28px);
 
   position: absolute;
-  top: 50%;
-  left: 50%;
+  inset: 0;
   z-index: 0;
-  width: 90vmin;
-  height: 90vmin;
   pointer-events: none;
-  transform: translate(-50%, -50%);
   isolation: isolate;
 }
 
 .lobby-title-art__bezel,
 .lobby-title-art__screen,
-.lobby-title-art__fallback,
-.lobby-title-art__mark,
 .lobby-title-art__scanlines {
   position: absolute;
   inset: 0;
+}
+
+// The glass is viewport-sized, while the neutral square mask stays at its
+// existing 90vmin scale. This preserves the wordmark's proportions without
+// bringing back an opaque square around it on widescreen clients.
+.lobby-title-art__fallback,
+.lobby-title-art__mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 90vmin;
+  height: 90vmin;
+  transform: translate(-50%, -50%);
 }
 
 .lobby-title-art__bezel {
@@ -188,8 +197,6 @@
 
 .lobby-title-art__fallback {
   z-index: 1;
-  width: 100%;
-  height: 100%;
   object-fit: contain;
   filter: grayscale(1) brightness(1.35);
 }
@@ -237,15 +244,14 @@
     );
 }
 
-// C/D: optical curvature is confined to the glass. The content remains in the
-// same square and at the same scale as the flat comparisons.
+// C/D: optical curvature is confined to the glass. C stays full-bleed so its
+// shading meets the viewport instead of revealing a second rectangle. D clips
+// the glass only where the physical perimeter bezel begins.
 :is(.lobby-title-art--convex, .lobby-title-art--convex-bezel)
   .lobby-title-art__screen {
-  border-radius: 9% / 7%;
   box-shadow:
     inset 0 0 2.2vmin rgb(255 255 255 / 5%),
     inset 0 0 8vmin rgb(0 0 0 / 92%);
-  clip-path: inset(0 round 9% / 7%);
 }
 
 :is(.lobby-title-art--convex, .lobby-title-art--convex-bezel)
@@ -266,44 +272,44 @@
     );
 }
 
-:is(.lobby-title-art--convex, .lobby-title-art--convex-bezel)
-  .lobby-title-art__mark {
-  transform: scale(0.985, 0.97);
-}
-
-// D: the same curved glass with an original, unbranded industrial monitor rim.
+// D: the same curved glass with an original, unbranded industrial monitor rim
+// occupying the viewport perimeter.
 .lobby-title-art--convex-bezel .lobby-title-art__bezel::before {
   position: absolute;
-  inset: -4.25%;
+  inset: 0;
   z-index: 0;
+  box-sizing: border-box;
   border: max(1px, 0.12vmin) solid
     color-mix(in srgb, var(--lobby-boundary, #4b6b78) 48%, #050708);
-  border-radius: 12% / 9%;
   content: '';
   background:
     radial-gradient(
-      circle at 4.6% 6.2%,
-      #798184 0 0.34%,
-      #111516 0.42% 0.9%,
-      transparent 1%
+      circle at var(--lobby-title-bezel-screw-offset)
+        var(--lobby-title-bezel-screw-offset),
+      #798184 0 max(1px, 0.2vmin),
+      #111516 max(1.5px, 0.26vmin) max(3px, 0.52vmin),
+      transparent max(3.5px, 0.58vmin)
     ),
     radial-gradient(
-      circle at 95.4% 6.2%,
-      #798184 0 0.34%,
-      #111516 0.42% 0.9%,
-      transparent 1%
+      circle at calc(100% - var(--lobby-title-bezel-screw-offset))
+        var(--lobby-title-bezel-screw-offset),
+      #798184 0 max(1px, 0.2vmin),
+      #111516 max(1.5px, 0.26vmin) max(3px, 0.52vmin),
+      transparent max(3.5px, 0.58vmin)
     ),
     radial-gradient(
-      circle at 4.6% 93.8%,
-      #798184 0 0.34%,
-      #111516 0.42% 0.9%,
-      transparent 1%
+      circle at var(--lobby-title-bezel-screw-offset)
+        calc(100% - var(--lobby-title-bezel-screw-offset)),
+      #798184 0 max(1px, 0.2vmin),
+      #111516 max(1.5px, 0.26vmin) max(3px, 0.52vmin),
+      transparent max(3.5px, 0.58vmin)
     ),
     radial-gradient(
-      circle at 95.4% 93.8%,
-      #798184 0 0.34%,
-      #111516 0.42% 0.9%,
-      transparent 1%
+      circle at calc(100% - var(--lobby-title-bezel-screw-offset))
+        calc(100% - var(--lobby-title-bezel-screw-offset)),
+      #798184 0 max(1px, 0.2vmin),
+      #111516 max(1.5px, 0.26vmin) max(3px, 0.52vmin),
+      transparent max(3.5px, 0.58vmin)
     ),
     repeating-linear-gradient(
       104deg,
@@ -319,6 +325,9 @@
 }
 
 .lobby-title-art--convex-bezel .lobby-title-art__screen {
+  inset: var(--lobby-title-bezel-depth);
+  border-radius: 8.1vmin / 6.3vmin;
+  clip-path: inset(0 round 8.1vmin / 6.3vmin);
   box-shadow:
     0 0 0 0.55vmin #050708,
     0 0 0 0.78vmin
@@ -398,8 +407,10 @@
   }
 
   .lobby-title-art .lobby-title-art__screen {
+    inset: 0;
     border-radius: 0;
     outline: 1px solid CanvasText;
+    outline-offset: -1px;
     box-shadow: none;
     clip-path: none;
   }
@@ -414,7 +425,7 @@
   .lobby-title-art__mark {
     background: CanvasText;
     filter: none;
-    transform: none;
+    transform: translate(-50%, -50%);
   }
 
   .lobby-title-art__fallback {
