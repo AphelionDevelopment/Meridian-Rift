@@ -1,3 +1,4 @@
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 /datum/unit_test/preferences_preview_decoration
 
 /datum/unit_test/preferences_preview_decoration/Run()
@@ -182,3 +183,4 @@
 
 	qdel(preview)
 	TEST_ASSERT(QDELETED(preview), "Destroying the preview left its map-view object alive.")
+// APHELION EDIT ADDITION END

@@ -37,6 +37,4 @@ export const tgui16 = {
   base0F: '#cc6633',
 } as const;
 */ // APHELION EDIT REMOVAL END
-// APHELION EDIT ADDITION START - MERIDIAN_UI
-export { MERIDIAN_BASE16 as tgui16 } from './meridian-theme';
-// APHELION EDIT ADDITION END
+export { MERIDIAN_BASE16 as tgui16 } from './meridian-theme'; // APHELION EDIT ADDITION

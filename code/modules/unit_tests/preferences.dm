@@ -75,6 +75,7 @@
 				errored = TRUE
 
 			TEST_ASSERT(errored, "[preference_type] implemented icon_for, but does not have should_generate_icons = TRUE")
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 
 /datum/unit_test/preferences_meridian_theme
 
@@ -186,3 +187,4 @@
 /datum/lobby_menu/meridian_theme_unit_test/send_update(list/data)
 	update_count++
 	captured_theme = data["meridianTheme"]
+// APHELION EDIT ADDITION END

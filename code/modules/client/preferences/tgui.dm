@@ -92,6 +92,7 @@
 
 	INVOKE_ASYNC(client, TYPE_VERB_REF(/client, refresh_tgui))
 	client.tgui_say?.load()
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 
 /// Account-wide MeridianOS presentation selected from the in-window gear menu.
 /datum/preference/choiced/meridian_theme
@@ -157,3 +158,4 @@
 /// Test/client-interface parity for preference behavior without a live BYOND client.
 /datum/client_interface/proc/set_meridian_theme(raw_theme)
 	return prefs?.set_meridian_theme(raw_theme)
+// APHELION EDIT ADDITION END

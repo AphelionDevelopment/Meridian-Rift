@@ -238,11 +238,13 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	if (.)
 		return
 
+	// APHELION EDIT ADDITION START - MERIDIAN_UI
 	// Window-local presentation state must remain clearable even when character
 	// creation is disabled after the Preferences window has already opened.
 	if(action == "set_preview_decoration")
 		return character_preview_view?.set_meridian_decoration(params["mode"], params["region"])
 
+	// APHELION EDIT ADDITION END
 	if(SSlag_switch.measures[DISABLE_CREATOR] && action != "change_slot")
 		to_chat(usr, "The creator has been disabled. Please do not ahelp.")
 		return
@@ -455,6 +457,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	var/image/canvas
 	var/last_canvas_size
 	var/last_canvas_state
+	// APHELION EDIT ADDITION START - MERIDIAN_UI
 	/// Window-local presentation state. It is never written to preferences.
 	var/meridian_decoration_mode = MERIDIAN_PREVIEW_DECORATION_NONE
 	/// Validated region whose single native leader is shown, or null for base chrome.
@@ -463,23 +466,28 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	var/image/meridian_decoration_overlay
 	/// Runtime-rastered leader, kept separate from the fixed equal-size frame.
 	var/image/meridian_decoration_leader_overlay
+	// APHELION EDIT ADDITION END
 	// NOVA EDIT ADDITION END
 
 /atom/movable/screen/map_view/char_preview/Initialize(mapload, datum/hud/hud_owner, datum/preferences/preferences)
 	. = ..()
 	src.preferences = preferences
 
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 /atom/movable/screen/map_view/char_preview/setDir(newdir)
 	var/old_dir = dir
 	. = ..()
 	if(dir != old_dir)
 		rebuild_meridian_canvas_overlays()
 
+// APHELION EDIT ADDITION END
 /atom/movable/screen/map_view/char_preview/Destroy()
 	// NOVA EDIT ADDITION START: Better character preview
 	canvas?.cut_overlays()
+	// APHELION EDIT ADDITION START - MERIDIAN_UI
 	meridian_decoration_overlay = null
 	meridian_decoration_leader_overlay = null
+	// APHELION EDIT ADDITION END
 	canvas = null
 	// NOVA EDIT ADDITION END
 	QDEL_NULL(body)
@@ -489,7 +497,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 
 /// Updates the currently displayed body
 /atom/movable/screen/map_view/char_preview/proc/update_body()
-	var/preview_direction = dir
+	var/preview_direction = dir // APHELION EDIT ADDITION
 	if (isnull(body))
 		create_body()
 	else
@@ -523,12 +531,15 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	last_canvas_size = canvas_size
 	last_canvas_state = canvas_state
 
+	// APHELION EDIT ADDITION START - MERIDIAN_UI
 	// `appearance =` above may carry the rendered dummy's direction. Preserve
 	// the user's current rotation before rebuilding the directional canvas.
 	dir = preview_direction
 	rebuild_meridian_canvas_overlays()
+	// APHELION EDIT ADDITION END
 	// NOVA EDIT ADDITION END
 
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 /// Returns whether a region belongs to the requested finite decoration mode.
 /atom/movable/screen/map_view/char_preview/proc/is_valid_meridian_decoration_region(requested_mode, requested_region)
 	var/static/list/body_regions = list(
@@ -643,6 +654,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 				canvas.add_overlay(meridian_decoration_leader_overlay)
 
 	appearance = canvas.appearance
+// APHELION EDIT ADDITION END
 /atom/movable/screen/map_view/char_preview/proc/create_body()
 	QDEL_NULL(body)
 

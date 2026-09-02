@@ -231,7 +231,7 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 
 	window.send_message("init", list(
 		"titleImageUrl" = SSassets.transport.get_asset_url(SStitle.current_title_asset_name), // APHELION EDIT CHANGE - LOBBY_MENU_REWORK - ORIGINAL: "titleImageUrl" = SSassets.transport.get_asset_url(LOBBY_TITLE_ASSET_NAME),
-		"titleImageTreatment" = SStitle.uses_meridian_title_art() ? "meridian" : null,
+		"titleImageTreatment" = SStitle.uses_meridian_title_art() ? "meridian" : null, // APHELION EDIT ADDITION
 		"gamePhase" = game_phase,
 		"isReady" = istype(player) && player.ready == PLAYER_READY_TO_PLAY,
 		"canReady" = game_phase == "pregame" || game_phase == "startup",
@@ -260,7 +260,7 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 		"startupMessages" = GLOB.startup_messages,
 		"progressCurrent" = world.timeofday - SStitle.progress_reference_time,
 		"progressTotal" = SStitle.average_completion_time,
-		"meridianTheme" = client?.prefs?.read_preference(/datum/preference/choiced/meridian_theme) || "meridian",
+		"meridianTheme" = client?.prefs?.read_preference(/datum/preference/choiced/meridian_theme) || "meridian", // APHELION EDIT ADDITION
 		// APHELION EDIT ADDITION END
 	))
 
@@ -324,12 +324,14 @@ ADMIN_VERB(toggle_lobby_transparency, R_ADMIN, "Toggle Lobby Transparency", "Tog
 	if(type == "ready")
 		send_init()
 		return TRUE
+	// APHELION EDIT ADDITION START - MERIDIAN_UI
 	if(type == "setMeridianTheme")
 		if(!client?.set_meridian_theme(payload?["theme"]))
 			send_update(list(
 				"meridianTheme" = client?.prefs?.read_preference(/datum/preference/choiced/meridian_theme) || "meridian",
 			))
 		return TRUE
+	// APHELION EDIT ADDITION END
 
 	if(type != "action")
 		return FALSE
