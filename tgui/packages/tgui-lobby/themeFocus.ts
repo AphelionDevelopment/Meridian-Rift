@@ -1,3 +1,4 @@
+// THIS IS AN APHELION UI FILE
 const LOBBY_PICKER_SELECTOR = [
   '.MeridianThemePicker',
   '.MeridianThemePicker__floating',

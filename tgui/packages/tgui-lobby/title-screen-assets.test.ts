@@ -1,3 +1,4 @@
+// THIS IS AN APHELION UI FILE
 import { describe, expect, it } from 'bun:test';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

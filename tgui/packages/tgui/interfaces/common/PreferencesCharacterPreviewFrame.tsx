@@ -1,3 +1,4 @@
+// THIS IS AN APHELION UI FILE
 import { type CSSProperties, type ReactNode, useEffect } from 'react';
 import { classes } from 'tgui-core/react';
 import type { sendAct } from '../../events/act';

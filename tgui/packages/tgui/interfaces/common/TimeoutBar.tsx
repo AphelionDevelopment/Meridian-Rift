@@ -1,3 +1,4 @@
+// THIS IS AN APHELION UI FILE
 import { Box } from 'tgui-core/components';
 
 export type TimeoutBarProps = {

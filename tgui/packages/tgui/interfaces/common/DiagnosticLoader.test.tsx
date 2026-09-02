@@ -1,3 +1,4 @@
+// THIS IS AN APHELION UI FILE
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { fireEvent, render } from '@testing-library/react';
 import { DiagnosticLoader } from './DiagnosticLoader';

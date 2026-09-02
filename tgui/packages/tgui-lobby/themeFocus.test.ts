@@ -1,3 +1,4 @@
+// THIS IS AN APHELION UI FILE
 import { describe, expect, it } from 'bun:test';
 import {
   isLobbyDisplayControlInteractionTarget,

@@ -1,3 +1,4 @@
+// THIS IS AN APHELION UI FILE
 import type { CSSProperties, ReactNode } from 'react';
 import { Section } from 'tgui-core/components';
 
