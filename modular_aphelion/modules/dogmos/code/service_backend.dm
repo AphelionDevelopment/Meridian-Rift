@@ -54,6 +54,10 @@
 #define DOGMOS_MIXTURE_SNAPSHOT_IMMUTABLE 10
 #define DOGMOS_MIXTURE_SNAPSHOT_GASES_START 11
 #define DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS (2 + DOGMOS_MIXTURE_SNAPSHOT_FIELDS)
+// A prefetch cannot usefully load more mixtures than the snapshot cache has buckets: the cache is
+// direct-mapped, so anything past that is guaranteed to evict something the same prefetch just
+// stored. Capped here rather than at the service, which will happily return far more.
+#define DOGMOS_MIXTURE_PREFETCH_LIMIT DOGMOS_MIXTURE_CACHE_BUCKETS
 // Mirrors Rust's MINIMUM_MOLES_DELTA_TO_MOVE (world.rs) exactly, as its own constant rather than
 // reusing DM's similarly-named MINIMUM_MOLES_DELTA_TO_MOVE (atmos_core.dm) - that one is a
 // derived, independently-tunable formula (MOLES_CELLSTANDARD * MINIMUM_AIR_RATIO_TO_MOVE) that
@@ -1176,13 +1180,21 @@
 	var/list/response = SSdogmos.mixture_command(list(kind, flags, dogmos_slot, dogmos_generation, secondary_slot, secondary_generation, scalar_one, scalar_two, scalar_three, gas_id, aux), expected_response)
 	if(!is_read_only_dogmos_command(kind))
 		SSdogmos.evict_mixture_snapshot_cache(dogmos_slot, dogmos_generation)
-		SSdogmos.evict_mixture_snapshot_cache(secondary_slot, secondary_generation)
+		if(secondary_slot && !is_read_only_dogmos_secondary(kind))
+			SSdogmos.evict_mixture_snapshot_cache(secondary_slot, secondary_generation)
 	return response
 
 /** Returns whether a canonical mixture command cannot change either mixture. */
 /datum/gas_mixture/proc/is_read_only_dogmos_command(kind)
 	switch(kind)
 		if(DOGMOS_COMMAND_GET_MOLES, DOGMOS_COMMAND_TEMPERATURE, DOGMOS_COMMAND_VOLUME, DOGMOS_COMMAND_HEAT_CAPACITY, DOGMOS_COMMAND_PARTIAL_HEAT_CAPACITY, DOGMOS_COMMAND_TOTAL_MOLES, DOGMOS_COMMAND_PRESSURE, DOGMOS_COMMAND_THERMAL_ENERGY, DOGMOS_COMMAND_GET_MOLES_BY_FLAGS, DOGMOS_COMMAND_BURNABILITY, DOGMOS_COMMAND_COMPARE, DOGMOS_COMMAND_IS_IMMUTABLE)
+			return TRUE
+	return FALSE
+
+/** Returns whether a mutating command only reads its secondary mixture. */
+/datum/gas_mixture/proc/is_read_only_dogmos_secondary(kind)
+	switch(kind)
+		if(DOGMOS_COMMAND_COPY_FROM, DOGMOS_COMMAND_EQUALIZE_WITH, DOGMOS_COMMAND_MERGE)
 			return TRUE
 	return FALSE
 
@@ -1226,6 +1238,68 @@
 			CRASH("dogmosd returned pipenet mixture [slot]:[generation] at index [mixture_index], expected [gas_mixture.dogmos_slot]:[gas_mixture.dogmos_generation].")
 		var/list/snapshot = response_fields.Copy(record_start + 2, record_start + DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS)
 		SSdogmos.store_mixture_snapshot_cache(slot, generation, snapshot)
+
+/**
+ * Warms the snapshot cache for a working set of mixtures with one service round trip.
+ *
+ * mixture_snapshot() costs a round trip per cache miss, so reading N cold mixtures costs N round
+ * trips. Naming them up front collapses that into one, which is worth doing whenever the caller
+ * already knows what it is about to read - a subsystem's turf frontier, a pipenet, an atmos
+ * machine's connected mixtures.
+ *
+ * Only worth calling when the results will actually be read this tick: the cache is invalidated
+ * wholesale by epoch, so a prefetch that nothing consumes is a wasted round trip. The request is
+ * capped at DOGMOS_MIXTURE_PREFETCH_LIMIT because the cache is direct-mapped and a larger
+ * prefetch would evict itself.
+ *
+ * The service omits handles it can no longer resolve rather than failing the whole batch, so
+ * records are matched by the handle they carry and not by request position, and the returned
+ * count may be lower than the number requested. Returns how many snapshots were cached.
+ */
+/datum/controller/subsystem/dogmos/proc/prefetch_mixture_snapshots(list/datum/gas_mixture/gas_mixture_list)
+	if(!service_ready || !length(gas_mixture_list))
+		return 0
+
+	var/list/request_fields = list()
+	var/requested = 0
+	for(var/datum/gas_mixture/gas_mixture as anything in gas_mixture_list)
+		var/slot = gas_mixture.dogmos_slot
+		var/generation = gas_mixture.dogmos_generation
+		if(!slot || isnull(generation))
+			continue
+		request_fields += slot
+		request_fields += generation
+		requested++
+		if(requested >= DOGMOS_MIXTURE_PREFETCH_LIMIT)
+			break
+
+	if(!requested)
+		return 0
+
+	var/list/response_fields = dogmos_mixture_snapshot_batch(request_fields)
+	if(!islist(response_fields))
+		CRASH("dogmosd returned a malformed mixture snapshot batch: not a list.")
+	var/field_count = length(response_fields)
+	if(field_count % DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS)
+		CRASH("dogmosd returned a truncated mixture snapshot batch: [field_count] fields is not a whole number of [DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS]-field records.")
+	var/record_count = field_count / DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS
+	// Records may be omitted, never invented. More back than went out means the service and this
+	// caller disagree about the record layout, which would silently poison the cache.
+	if(record_count > requested)
+		CRASH("dogmosd returned [record_count] mixture snapshots for [requested] requested handles.")
+
+	var/cached = 0
+	for(var/record_index in 1 to record_count)
+		var/record_start = (record_index - 1) * DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS + 1
+		var/slot = response_fields[record_start]
+		var/generation = response_fields[record_start + 1]
+		// Keyed by the exact handle, so a snapshot that went stale between the request and now is
+		// simply never matched by lookup_mixture_snapshot_cache() rather than being served.
+		var/list/snapshot = response_fields.Copy(record_start + 2, record_start + DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS)
+		store_mixture_snapshot_cache(slot, generation, snapshot)
+		cached++
+
+	return cached
 
 /// Returns the numeric gas id installed for a native string id.
 /datum/gas_mixture/proc/dogmos_gas_id(gas_id)
@@ -1394,11 +1468,13 @@
 
 /// Returns whether this mixture is immutable.
 /datum/gas_mixture/proc/is_immutable()
-	return dogmos_snapshot()[DOGMOS_MIXTURE_SNAPSHOT_IMMUTABLE]
+	return dogmos_immutable
 
 /// Marks this mixture immutable.
 /datum/gas_mixture/proc/mark_immutable()
-	return dogmos_command(DOGMOS_COMMAND_MARK_IMMUTABLE)[2]
+	var/updated = dogmos_command(DOGMOS_COMMAND_MARK_IMMUTABLE)[2]
+	dogmos_immutable = TRUE
+	return updated
 
 /// Returns the oxidation power at an optional temperature.
 /datum/gas_mixture/proc/get_oxidation_power(temperature)
@@ -2141,6 +2217,7 @@
 #undef DOGMOS_MIXTURE_SNAPSHOT_HEAT_CAPACITY
 #undef DOGMOS_MIXTURE_SNAPSHOT_IMMUTABLE
 #undef DOGMOS_MIXTURE_SNAPSHOT_GASES_START
+#undef DOGMOS_MIXTURE_PREFETCH_LIMIT
 #undef DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS
 #undef DOGMOS_LIFECYCLE_REGISTER
 #undef DOGMOS_LIFECYCLE_UNREGISTER

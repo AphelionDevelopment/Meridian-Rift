@@ -6,12 +6,12 @@
       "format": "elf",
       "platform": "linux",
       "role": "service",
-      "sha256": "8c9a3a2f621e6867c3f30cf9990b199191c49593f94e0ac5453bc396012668f8",
+      "sha256": "e83b39d2609d6cc99156fcdc721509f4e0648bccb6da2c3470e583dc35dfd953",
       "size": 417448,
       "symbols": {
         "file": "linux/dogmosd.debug",
-        "sha256": "28823c8e512d67f0d4f50bf1296d1f4e8080f82b8e24c6454486584e51a605b9",
-        "size": 2035776
+        "sha256": "9ae5d14aa31c3906c39c4afa2f51140325d3f651c5bd214145a748c908355dda",
+        "size": 2035808
       },
       "target": "x86_64-unknown-linux-gnu"
     },
@@ -21,12 +21,12 @@
       "format": "elf",
       "platform": "linux",
       "role": "shim",
-      "sha256": "62a7913e5ed42e0077594f0eb199621435a658b22df877c3ec209927f50aa0b4",
-      "size": 1139812,
+      "sha256": "9ab905f04ab66b7add0bbcd530f9c2a897a3385f7c2d228a0e3fe1fc4357d7e6",
+      "size": 1152828,
       "symbols": {
         "file": "linux/libdogmos.so.debug",
-        "sha256": "085b20397f882e49af80c245d9130ffb346633c6a61b7ded36dcd46b7bc4b017",
-        "size": 9767132
+        "sha256": "080dbd078f715277a9cfc7cf5a7991450b6d77fbffdbff206379ec6c7fec6e45",
+        "size": 9849052
       },
       "target": "i686-unknown-linux-gnu"
     },
@@ -36,12 +36,12 @@
       "format": "pe",
       "platform": "windows",
       "role": "service",
-      "sha256": "e86d05606a6c6a49725ae41718987be219e864b8b8e3e483424bb2b8d409f268",
-      "size": 873984,
+      "sha256": "46051e522eb68b4114b5fe36bf66760e67a3b6247a0f4ebc2b8ec5739a4bced8",
+      "size": 869376,
       "symbols": {
         "file": "windows/dogmosd.pdb",
-        "sha256": "efad627913d88ab24c7436923b2032f05901fadead6f0662cf062de94147bb86",
-        "size": 14471168
+        "sha256": "3d0f5d344db34d1cc7e17d27d79e25c0e4b18705142ff57b68c1c61aad9d8286",
+        "size": 14004224
       },
       "target": "x86_64-pc-windows-msvc"
     },
@@ -51,24 +51,24 @@
       "format": "pe",
       "platform": "windows",
       "role": "shim",
-      "sha256": "85a7deec2477a66536a82c671e1f94ca9601b958f6df2ae6be8ab7a1a0b3df0d",
-      "size": 652800,
+      "sha256": "373e162842b971d77e7e36220b29998be117a34cb1f2ff8e0691532fe880110e",
+      "size": 662528,
       "symbols": {
         "file": "windows/dogmos.pdb",
-        "sha256": "ec477f86e499ba62bf2150669ab61d64f79432e1fa180e4c58d9f201cf15e377",
-        "size": 9506816
+        "sha256": "39e4641698ba57cdde9d7b9dc0d468446e02d23cb27559d577e4e432cfdd1120",
+        "size": 9572352
       },
       "target": "i686-pc-windows-msvc"
     }
   ],
   "bindings": {
     "file": "dogmos_bindings.dm",
-    "sha256": "0d7a246bb05f8a820630d4168d954dc223be85d6d6d349480e013d8a6f03c6d2",
-    "size": 4178
+    "sha256": "f0cd299e9d961f5e56f776cd897e4d95caa2b0b9ec133645a40f9d80e3812ce3",
+    "size": 4301
   },
   "build_profile": "release",
   "capabilities": {
-    "feature_fingerprint": "5fb82b00e54717f3012486b7d3e34d1384f4d5438814859dd15fdee4b87480f5",
+    "feature_fingerprint": "8691f3e1e88c5dba8ff06507bc1064823c18c09232b3000a5fc863893e35d1a0",
     "features": [
       "aphelion_reactions",
       "katmos",
@@ -78,7 +78,7 @@
     ]
   },
   "schema_version": 1,
-  "source_revision": "7f5177fc3726a5c445491259d04a75a94a872006",
+  "source_revision": "380632a58ccd9dc6b0e29f30562712f2c2843efc",
   "toolchain": {
     "byond": "516.1687",
     "byondapi_revision": "721dd4690b60954687e41d8691d0040f398d91a6",
@@ -88,7 +88,7 @@
     "abi": 2,
     "dogmos-byond": "2.3.0",
     "dogmos-server": "2.3.0",
-    "protocol": 12,
+    "protocol": 13,
     "workspace": "2.3.0"
   }
 }
