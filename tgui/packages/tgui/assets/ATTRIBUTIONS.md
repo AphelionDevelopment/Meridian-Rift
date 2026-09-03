@@ -18,9 +18,6 @@ attached seams, and control endcaps identified during visual research.
 
 | File | License | SHA-256 | Purpose |
 | --- | --- | --- | --- |
-| `styles/assets/meridian-cyberpunk-window-frame.svg` | Repository AGPL-3.0 | `F24A8DAB14B4E69721291200B12280863BC5303C2D67B78C8C947F3D85A63EB0` | Scalable Cyberpunk outer chassis with fixed-corner registration sockets. |
-| `styles/assets/meridian-cyberpunk-panel-frame.svg` | Repository AGPL-3.0 | `29839036F0D041D1B50C3FDCE1E9C3CC06B8C50344F605FCC61C44A533CD8309` | First-level panel chassis; center slices contain structural rails only. |
-| `styles/assets/meridian-cyberpunk-control-frame.svg` | Repository AGPL-3.0 | `8816AF06128719FBBBFB33C7BCA1B0D9304112D96CBD100A1AF9C3302795B7E5` | Restrained control endcaps and attached status pins. |
 
 ## Visual research only — no source bytes incorporated
 

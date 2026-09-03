@@ -143,7 +143,7 @@
 #define PDA_THEME_MERIDIAN_NAME "MeridianOS"
 ///Deprecated source-level alias for the canonical MeridianOS display name.
 #define PDA_THEME_NTOS_NAME PDA_THEME_MERIDIAN_NAME
-#define PDA_THEME_DARK_MODE_NAME "MeridianOS Dark Mode"
+#define PDA_THEME_DARK_MODE_NAME "NTOS Dark mode"
 // APHELION EDIT ADDITION END
 #define PDA_THEME_RETRO_NAME "Retro"
 #define PDA_THEME_SYNTH_NAME "Synth"

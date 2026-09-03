@@ -100,10 +100,55 @@
     box-shadow: var(--console-control-depth);
   }
 
-  .Button {
+  // One alignment rule for every inline control. Upstream leaves these on
+  // `baseline`, which lines controls up by the text inside them -- fine when
+  // everything on the row is text, wrong once a row mixes an icon-only button,
+  // a text button and an input. Sharing `middle` makes the row line up by box
+  // instead. Every inline control has to be in this list: a control left on
+  // `baseline` beside one set to `middle` is exactly the ~1px step this fixes.
+  // Kept on one line: Sass preserves line breaks inside :is(), and a compiled
+  // selector with embedded newlines is matched by browsers but not by every
+  // CSS parser -- which silently costs us test coverage of this rule.
+  // stylelint-disable-next-line
+  :is(.Button, .Input, .NumberInput, .TextArea, .Dropdown, .ProgressBar, .Slider) {
     vertical-align: middle;
+  }
+
+  // `vertical-align: middle` centres an inline-block's *margin* box, so an
+  // uneven block margin moves the visible box by half the difference. Upstream
+  // gives every .Button `margin-bottom: var(--space-xs)` and then takes it back
+  // on `:last-child`, which is invisible under `baseline` but drops the last
+  // button of every row a pixel below its siblings once we align by box. Split
+  // the same gutter across both edges: wrapped rows keep their separation, and
+  // a symmetric margin cannot shift the box at all.
+  // `:last-child` is restated because upstream's reset is emitted *after* this
+  // file in the bundle, so merely matching its specificity loses the cascade.
+  // Physical properties on purpose: upstream sets `margin-bottom`, and mixing
+  // a logical shorthand into that cascade is needlessly subtle.
+  .Button,
+  .Button:last-child {
+    margin-top: calc(var(--space-xs) / 2);
+    margin-bottom: calc(var(--space-xs) / 2);
+  }
+
+  // Restated because upstream zeroes these at the same specificity we just
+  // matched. Zero is symmetric, so these stay aligned with everything else.
+  .Stack > .Button,
+  .Stack__item > .Button {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .Button {
     border: 1px solid var(--console-border-strong);
     box-shadow: var(--console-control-depth);
+  }
+
+  // Table cells default to baseline, which aligns a fluid (block) button in one
+  // cell against an inline-block button in the next by their text baselines --
+  // and an icon-only button has no text to align. Centre the row instead.
+  .Table__cell {
+    vertical-align: middle;
   }
 
   .Button:not(.Button--compact):not(
