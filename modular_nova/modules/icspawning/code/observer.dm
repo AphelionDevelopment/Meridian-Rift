@@ -71,7 +71,7 @@
 				if("Subspace Tech")
 					dresscode = /datum/outfit/admin/subspace
 				if("Show All Outfits")
-					dresscode = src.client.robust_dress_shop_nova()
+					dresscode = client.robust_dress_shop_nova()
 					if (!dresscode)
 						return
 
