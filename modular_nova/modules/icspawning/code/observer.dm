@@ -33,7 +33,7 @@
 			var/method = tgui_alert(usr, "Select spawn method for this slot", "Save Custom Slot", spawn_options)
 			if(!method)
 				return
-			var/outfit = user.client.robust_dress_shop_nova()
+			var/outfit = usr.client.robust_dress_shop_nova()
 			if(!outfit)
 				return
 
@@ -71,7 +71,7 @@
 				if("Subspace Tech")
 					dresscode = /datum/outfit/admin/subspace
 				if("Show All Outfits")
-					dresscode = user.client.robust_dress_shop_nova()
+					dresscode = usr.client.robust_dress_shop_nova()
 					if (!dresscode)
 						return
 
