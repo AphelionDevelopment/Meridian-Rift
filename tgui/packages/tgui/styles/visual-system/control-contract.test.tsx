@@ -25,6 +25,12 @@ const THEME_SOURCE = readFileSync(
   join(import.meta.dir, '_themes.scss'),
   'utf8',
 );
+// The cyberpunk chassis artwork is no longer part of the window skin; the one
+// place it still dresses a control is the augments region selector.
+const LIMBS_SOURCE = readFileSync(
+  join(import.meta.dir, '../interfaces/LimbsPage.scss'),
+  'utf8',
+);
 const TOKEN_SOURCE = readFileSync(
   join(import.meta.dir, '_tokens.scss'),
   'utf8',
@@ -295,10 +301,14 @@ describe('MeridianOS shared control geometry', () => {
       expect(source).not.toContain('--button-height');
     }
 
-    const artworkIndex = DECORATION_SOURCE.indexOf(
+    // The window skin was reverted, so no theme decoration may reintroduce
+    // frame artwork that changes the shared control box.
+    expect(DECORATION_SOURCE).not.toContain('border-image-source');
+
+    const artworkIndex = LIMBS_SOURCE.indexOf(
       'meridian-cyberpunk-control-frame.svg',
     );
-    const cyberpunkControlRule = DECORATION_SOURCE.slice(
+    const cyberpunkControlRule = LIMBS_SOURCE.slice(
       artworkIndex - 320,
       artworkIndex + 240,
     );

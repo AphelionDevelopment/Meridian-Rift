@@ -385,7 +385,7 @@
       bottom right / 8px 8px no-repeat;
 }
 
-.theme-meridian_augmentation {
+:is(.theme-meridian_cyberpunk, .theme-meridian_augmentation) {
   .TitleBar {
     background-image:
       linear-gradient(90deg, transparent 0 64%, var(--console-border-control) 64% 68%, transparent 68%),
@@ -401,87 +401,6 @@
     height: 3px;
     background: var(--console-interaction-selected);
     box-shadow: 14px 0 0 -1px var(--console-border-control);
-  }
-}
-
-.theme-meridian_cyberpunk {
-  .Section {
-    isolation: isolate;
-  }
-
-  .Window::before {
-    box-sizing: border-box;
-    border-color: transparent;
-    border-image-source: url('tgui/styles/assets/meridian-cyberpunk-window-frame.svg');
-    border-image-slice: 16;
-    border-image-width: 8px;
-    border-image-repeat: stretch;
-    clip-path: none;
-    opacity: 0.92;
-  }
-
-  .Window::after,
-  .TitleBar::after,
-  .Section__title::after {
-    display: none;
-  }
-
-  .TitleBar {
-    background-image: none;
-  }
-
-  .Button:not(.PreferencesMenu__Jobs__departments__priority):not(
-      .PreferencesMenu__SpeciesButton
-    ) {
-    // Keep the shared 24px control box. The artwork may paint two pixels
-    // inward, but its physical border must match every other MeridianOS skin.
-    border: 1px solid transparent;
-    border-image-source: url('tgui/styles/assets/meridian-cyberpunk-control-frame.svg');
-    border-image-slice: 6;
-    border-image-width: 2px;
-    border-image-repeat: stretch;
-  }
-
-  .Section::before {
-    inset: -1px;
-    box-sizing: border-box;
-    border: 5px solid transparent;
-    border-image-source: url('tgui/styles/assets/meridian-cyberpunk-panel-frame.svg');
-    border-image-slice: 12;
-    border-image-width: 5px;
-    border-image-repeat: stretch;
-    z-index: 0;
-    opacity: 0.82;
-    background: none;
-  }
-
-  .Section__title,
-  .Section__rest {
-    position: relative;
-    z-index: 1;
-  }
-
-  .Section > .Section__title > .Section__titleText {
-    display: inline-flex;
-    align-items: center;
-    min-height: 18px;
-    padding: 0 16px 0 7px;
-    background: linear-gradient(
-      90deg,
-      color-mix(
-        in srgb,
-        var(--console-interaction-accent) 18%,
-        var(--console-surface-raised)
-      ),
-      var(--console-surface-raised) 74%
-    );
-    clip-path: polygon(
-      0 0,
-      calc(100% - 8px) 0,
-      100% 50%,
-      calc(100% - 8px) 100%,
-      0 100%
-    );
   }
 }
 
