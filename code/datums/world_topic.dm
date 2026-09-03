@@ -54,8 +54,8 @@
 /// Whether this topic accepts the sender address. Subtypes override to restrict.
 /datum/world_topic/proc/AddressAllowed(addr)
 	return TRUE
-// APHELION EDIT ADDITION END
 
+// APHELION EDIT ADDITION END
 /datum/world_topic/proc/Run(list/input)
 	CRASH("Run() not implemented for [type]!")
 
