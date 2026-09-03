@@ -1,12 +1,18 @@
+// Shared material exports only match mineral sheets, which these custom sheets do not inherit,
+// so they need explicit export types. Costs were 0.175 / 0.275 before the structure-vs-speedrun rebalance.
 /datum/export/material/aluminum
-	cost = CARGO_CRATE_VALUE * 0.175
+	cost = CARGO_CRATE_VALUE * 0.3
 	material_id = /datum/material/aluminum
 	message = "cm3 of aluminum"
+	export_types = list(/obj/item/stack/sheet/aluminum)
+	use_shared_exports = FALSE
 
 /datum/export/material/nanocarbon
-	cost = CARGO_CRATE_VALUE * 0.275
+	cost = CARGO_CRATE_VALUE * 0.5
 	material_id = /datum/material/nanocarbon
 	message = "cm3 of nanocarbon"
+	export_types = list(/obj/item/stack/sheet/nanocarbon)
+	use_shared_exports = FALSE
 
 /datum/export/salvage_generic
 	cost = CARGO_CRATE_VALUE * 0.375
