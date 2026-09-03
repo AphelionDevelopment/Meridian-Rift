@@ -105,6 +105,29 @@ describe('LobbyArtworkPicker', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
+  it('roves focus onto a per-screen overlay toggle', () => {
+    render(<LobbyArtworkPicker onAction={() => {}} value={DEFAULT_VALUE} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: /change lobby artwork/i }),
+    );
+    const menu = screen.getByRole('menu');
+    const firstScreen = screen.getAllByRole('menuitemradio')[1];
+    const firstOverlay = screen.getByRole('menuitemcheckbox', {
+      name: /overlay .*station_alpha\.png/i,
+    });
+
+    // The overlay toggles are the only menu items not rendered as a plain
+    // <button>: their ref has to survive a shared component's prop spread to
+    // reach focus(). Nothing else in this suite lands on one, and when a
+    // <Tooltip> wrapper claimed that ref the toggles were silently
+    // unreachable by keyboard while every other assertion still passed.
+    fireEvent.keyDown(menu, { key: 'Home' });
+    fireEvent.keyDown(menu, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(firstScreen);
+    fireEvent.keyDown(menu, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(firstOverlay);
+  });
+
   it('opens from arrow keys at the corresponding boundary', () => {
     const view = render(
       <LobbyArtworkPicker onAction={() => {}} value={DEFAULT_VALUE} />,

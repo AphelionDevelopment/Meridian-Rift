@@ -1,4 +1,6 @@
 // THIS IS AN APHELION UI FILE
+@use '../base';
+
 .theme-console {
   --console-border-subtle: color-mix(in srgb, var(--console-border-control) 50%, transparent);
   --console-border-strong: color-mix(in srgb, var(--console-border-control) 72%, var(--console-text-primary));
@@ -58,6 +60,40 @@
   );
   --console-chrome-safe-left: calc(
     var(--console-frame-gap-left) + var(--console-frame-left-weight)
+  );
+  // Title bar geometry. The bar sizes from the inside out: a constant interior
+  // that always seats a full-height control, plus whatever band the skin's
+  // frame needs above it. A thick-framed skin therefore grows the bar instead
+  // of squeezing its controls out through the frame rule. The `max()` floor is
+  // upstream's own 32px, so every thin-framed skin keeps its stock height.
+  --console-titlebar-control: #{base.rem(24px)};
+  --console-titlebar-base: #{base.rem(32px)};
+  // 1px of breathing room above and below the control, plus the bar's own 1px
+  // bottom border -- the same slack upstream's 32px bar leaves around a 24px
+  // control, restated so it survives a taller bar.
+  --console-titlebar-slack: #{base.rem(3px)};
+  --console-titlebar-height: max(
+    var(--console-titlebar-base),
+    calc(
+      var(--console-chrome-safe-top) + var(--console-titlebar-control) +
+        var(--console-titlebar-slack)
+    )
+  );
+  // The frame's pin (.Window::after) paints at z 201, above the title bar and
+  // its opaque background, so it cannot be tucked behind a control -- the bar
+  // has to leave it a lane instead. These describe the pin's painted footprint
+  // so the pin and the bar size that lane from one source: `width` is the box,
+  // `reach` how far a skin's box-shadow spills right of it (toward the close
+  // button), `tail` how far it spills left (toward the utilities cluster).
+  --console-window-pin-width: 6px;
+  --console-window-pin-reach: 0px;
+  --console-window-pin-tail: 0px;
+  // The gap the utilities cluster keeps to its right. The 3px is the pin's own
+  // clearance from the close button, which is what upstream's 9px margin
+  // amounted to for a stock 6px pin -- so thin-pinned skins are unchanged.
+  --console-window-pin-lane: calc(
+    3px + var(--console-window-pin-width) + var(--console-window-pin-reach) +
+      var(--console-window-pin-tail)
   );
   --console-control-depth: inset 0 0 0 1px var(--console-border-subtle);
   --console-overlay-shadow: 0 4px 12px rgb(0 0 0 / 46%);

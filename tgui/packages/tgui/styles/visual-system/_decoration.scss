@@ -35,16 +35,16 @@
   .Window::after {
     position: fixed;
     // Sit just inboard of the close button, which is itself held off the
-    // frame by --console-chrome-safe-right. `--console-window-pin-reach` is
-    // how far a skin's box-shadow dash extends past the pin's own right edge;
-    // without it those skins paint their dash onto the close button.
-    --console-window-pin-reach: 0px;
+    // frame by --console-chrome-safe-right. The pin's footprint tokens live
+    // on the theme class, not here, because .TitleBar__utilities has to read
+    // the same numbers to keep out of the pin's way -- a custom property
+    // declared on this pseudo-element would be invisible to it.
     top: calc(var(--console-chrome-safe-top) + 2px);
     right: calc(
       var(--console-chrome-safe-right) + 48px + var(--console-window-pin-reach)
     );
     z-index: 201;
-    width: 6px;
+    width: var(--console-window-pin-width);
     height: 6px;
     content: '';
     background: var(--console-interaction-accent);
@@ -53,12 +53,36 @@
 
   // The frame paints above the title bar (z 200 vs 101), so anything the bar
   // lays out under that band gets a rule drawn straight through it. Reserve
-  // the band as padding: the bar keeps its full-bleed background and its 32px
-  // height, but no control is placed inside the frame any more.
+  // the band, but reserve it *once*: the bar already carries a top border of
+  // --console-frame-top-weight (see _components.scss), so padding only owes
+  // the gap outboard of it. Subtracting rather than assuming keeps this exact
+  // if that border ever changes.
+  //
+  // The band is added to the bar's height, never taken out of it -- a 32px
+  // bar minus a 9px band leaves 23px, which cannot seat a 24px control, and
+  // `align-items: center` then pushes the overflow out through the frame rule
+  // above and the bar's bottom edge below. Sizing from --console-titlebar-
+  // height makes the interior constant for every skin.
   .TitleBar {
-    padding-block-start: var(--console-chrome-safe-top);
+    block-size: var(--console-titlebar-height);
+    padding-block-start: max(
+      0px,
+      calc(var(--console-chrome-safe-top) - var(--console-frame-top-weight))
+    );
     padding-inline: var(--console-chrome-safe-left)
       var(--console-chrome-safe-right);
+  }
+
+  // Upstream pins the content below a hardcoded 32px bar. Follow the bar
+  // instead, or a grown bar covers the top of the content.
+  .Window__rest {
+    top: var(--console-titlebar-height);
+  }
+
+  // Give the pin its lane. Upstream's flat 9px margin happens to equal the
+  // lane a stock 6px pin needs, so only skins that enlarge the pin move.
+  .TitleBar__utilities {
+    margin-inline-end: var(--console-window-pin-lane);
   }
 
   .TitleBar::after {
@@ -228,6 +252,9 @@
 }
 
 .theme-meridian_pipboy {
+  --console-window-pin-width: 12px;
+  --console-window-pin-tail: 17px; // -18px offset, -1px spread
+
   .Window::before {
     border-color: var(--console-border-strong);
     box-shadow:
@@ -236,7 +263,6 @@
   }
 
   .Window::after {
-    width: 12px;
     height: 4px;
     background: var(--console-interaction-selected);
     box-shadow: -18px 0 0 -1px var(--console-border-control);
@@ -325,6 +351,9 @@
 }
 
 .theme-meridian_diagnostic {
+  --console-window-pin-reach: 8px; // 10px offset, -2px spread
+  --console-window-pin-tail: 8px;
+
   .Section::before {
     inset: 5px -1px;
     border-left: 2px solid var(--console-interaction-accent);
@@ -333,7 +362,6 @@
   }
 
   .Window::after {
-    --console-window-pin-reach: 8px;
     border-radius: 50%;
     box-shadow:
       -10px 0 0 -2px var(--console-interaction-selected),
@@ -386,6 +414,9 @@
 }
 
 :is(.theme-meridian_cyberpunk, .theme-meridian_augmentation) {
+  --console-window-pin-width: 11px;
+  --console-window-pin-reach: 13px; // 14px offset, -1px spread
+
   .TitleBar {
     background-image:
       linear-gradient(90deg, transparent 0 64%, var(--console-border-control) 64% 68%, transparent 68%),
@@ -396,8 +427,6 @@
   }
 
   .Window::after {
-    --console-window-pin-reach: 13px;
-    width: 11px;
     height: 3px;
     background: var(--console-interaction-selected);
     box-shadow: 14px 0 0 -1px var(--console-border-control);
@@ -418,6 +447,8 @@
 }
 
 .theme-meridian_relay {
+  --console-window-pin-tail: 11px; // -12px offset, -1px spread
+
   .Section > .Section__title > .Section__titleText {
     display: inline-block;
     padding: 1px 6px;
