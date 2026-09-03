@@ -20,5 +20,9 @@ icon-smoothing-2025 = true
 
 [map_renderer]
 # These are not invisible for some reason???
-hide_invisible = ["/turf/open/genturf"]
+hide_invisible = [
+  "/turf/open/genturf",
+  "/turf/open/openspace",
+  "/turf/open/space/openspace",
+]
 # APHELION EDIT ADDITION END
