@@ -1,5 +1,6 @@
 // THIS IS AN APHELION UI FILE
 @use '../base';
+@use '../functions.scss' as *;
 
 .MeridianThemePicker {
   display: inline-flex;
@@ -39,8 +40,20 @@
   &__menu {
     box-sizing: border-box;
     width: base.rem(264px);
-    max-width: calc(100vw - #{base.rem(16px)});
-    max-height: calc(100vh - #{base.rem(48px)});
+    // Raw vw/vh are not the layout viewport once BYOND scales the window --
+    // vp() applies --scaling-amount the way .TitleBar's width does. The insets
+    // are the chrome the menu must clear, not magic numbers: it hangs off the
+    // trigger at the bottom of the title bar, so it owes the bar's height plus
+    // the frame's bottom band. Fallbacks keep the classic theme, which defines
+    // no --console-* tokens, on its previous clamp.
+    max-width: calc(
+      #{vp(100vw)} - var(--console-chrome-safe-left, 0px) -
+        var(--console-chrome-safe-right, 0px) - #{base.rem(16px)}
+    );
+    max-height: calc(
+      #{vp(100vh)} - var(--console-titlebar-height, #{base.rem(32px)}) -
+        var(--console-chrome-safe-bottom, 0px) - #{base.rem(16px)}
+    );
     overflow: hidden;
     color: var(--dropdown-menu-color);
     background: var(--dropdown-menu-background);
@@ -60,7 +73,11 @@
   }
 
   &__options {
-    max-height: calc(100vh - #{base.rem(82px)});
+    // The menu's own clamp less the heading above this scroller.
+    max-height: calc(
+      #{vp(100vh)} - var(--console-titlebar-height, #{base.rem(32px)}) -
+        var(--console-chrome-safe-bottom, 0px) - #{base.rem(50px)}
+    );
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: base.rem(4px);

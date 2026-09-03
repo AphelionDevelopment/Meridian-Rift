@@ -1,8 +1,10 @@
 // THIS IS AN APHELION UI FILE
 
 import {
+  type AriaAttributes,
   type ComponentProps,
   type ComponentRef,
+  type HTMLAttributes,
   type KeyboardEvent,
   useEffect,
   useId,
@@ -16,6 +18,21 @@ import type {
   LobbyTitleScreenOption,
   LobbyTitleTexture,
 } from './TitleArtwork';
+
+/**
+ * tgui-core's CheckProps covers Button's own options and nothing else, but
+ * Button funnels every prop it does not recognise through computeBoxProps onto
+ * the <div> it renders -- so the menu semantics and the ref really do land on
+ * the element. Declaring that once keeps the call site type-checked rather than
+ * casting at the use, and the roving-focus test covers the behaviour.
+ */
+const OverlayCheckbox = Button.Checkbox as (
+  props: ComponentProps<typeof Button.Checkbox> &
+    AriaAttributes &
+    Pick<HTMLAttributes<HTMLElement>, 'role' | 'tabIndex' | 'title'> & {
+      ref?: (node: HTMLElement | null) => void;
+    },
+) => ReturnType<typeof Button.Checkbox>;
 
 export type LobbyArtworkPickerValue = {
   classicAlt: boolean;
@@ -380,7 +397,7 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
                       <strong>{abbreviateScreenName(screen.name)}</strong>
                     </span>
                   </button>
-                  <Button.Checkbox
+                  <OverlayCheckbox
                     aria-checked={screen.overlay}
                     aria-label={`Overlay Meridian Rift on ${screen.name}`}
                     // The shared checkbox, so it picks up whatever the active
@@ -393,7 +410,7 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
                     }}
                     role="menuitemcheckbox"
                     tabIndex={-1}
-                    tooltip={`Overlay Meridian Rift on ${screen.name}`}
+                    title={`Overlay Meridian Rift on ${screen.name}`}
                   />
                 </div>
               );
