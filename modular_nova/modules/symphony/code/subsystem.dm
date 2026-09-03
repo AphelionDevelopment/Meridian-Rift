@@ -16,9 +16,10 @@ SUBSYSTEM_DEF(symphony)
 	for(var/client/checked as anything in GLOB.clients.Copy())
 		if(!checked || !checked.ckey)
 			continue
-		// We've got the real answer in bulk, so the stale per-ckey cache can go.
-		symphony_invalidate_whitelist_cache(checked.ckey)
-		if(holders[checked.ckey])
+		// We've got the real answer in bulk, so write it over whatever the per-ckey cache held. Blanking it instead just forces everyone to re-query for something we already know.
+		var/whitelisted = holders[checked.ckey] ? TRUE : FALSE
+		symphony_seed_whitelist_cache(checked.ckey, whitelisted)
+		if(whitelisted)
 			continue
 		if(checked.holder)
 			continue

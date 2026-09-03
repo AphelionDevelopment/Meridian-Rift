@@ -259,6 +259,11 @@
   &--centered {
     text-align: center;
   }
+
+  // For notices that aren't a refusal - the nav text colour, not the error red.
+  &--muted {
+    color: #cde;
+  }
 }
 
 .unchecked {

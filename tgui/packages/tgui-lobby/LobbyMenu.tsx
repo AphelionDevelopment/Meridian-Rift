@@ -53,7 +53,8 @@ export type ServerState = {
   startupMessages: StartupMessage[];
   progressCurrent: number;
   progressTotal: number;
-  whitelistGate: boolean;
+  /** 'checking' until the first whitelist lookup resolves - don't draw the gate on it. */
+  whitelistGate: 'open' | 'blocked' | 'checking' | 'unavailable';
   // APHELION EDIT ADDITION END
 };
 

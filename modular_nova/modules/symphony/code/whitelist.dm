@@ -1,10 +1,27 @@
-/// Does this ckey hold a Discord role that grants the in-game role? Fail-closed, a DB error is a no.
+/**
+ * Returns whether this ckey holds a Discord role that grants the given in-game role.
+ *
+ * Joins the Discord link table against the role grants, so an account nobody has linked is
+ * simply a no.
+ *
+ * A failed query is NOT a no. It comes back null, so the caller can tell "we asked, and the
+ * answer is no" from "we never got to ask". Anything gating entry should still treat null as
+ * a refusal; anything writing the player a message about it should not.
+ *
+ * Arguments:
+ * - target_ckey: The ckey to look up.
+ * - role_key: The grant key to test for, e.g. "whitelist".
+ *
+ * Returns:
+ * - TRUE/FALSE: Whether they hold a role granting it.
+ * - null: The database was unreachable, or the query failed.
+ */
 /proc/symphony_has_ingame_role(target_ckey, role_key)
 	target_ckey = ckey(target_ckey)
 	if(!target_ckey || !role_key)
 		return FALSE
 	if(!SSdbcore.Connect())
-		return FALSE
+		return null
 
 	var/datum/db_query/query = SSdbcore.NewQuery(
 		"SELECT 1 FROM [format_table_name("discord_links")] AS dl \
@@ -15,7 +32,7 @@
 	)
 	if(!query.warn_execute())
 		qdel(query)
-		return FALSE
+		return null
 	. = query.NextRow()
 	qdel(query)
 
@@ -57,6 +74,28 @@ GLOBAL_VAR_INIT(symphony_whitelist_epoch, 0)
 	GLOB.symphony_whitelist_cache_expiry -= target_ckey
 	GLOB.symphony_whitelist_epoch++
 
+/**
+ * Writes an answer we already know to be good straight into the whitelist cache.
+ *
+ * SSsymphony pulls the entire whitelist in one query, so by the time it walks the client list it
+ * is holding the real answer for every one of them. Blanking their cache entries instead of
+ * filling them just makes each of them turn around and re-query for what we already had.
+ *
+ * The epoch bump is what stops a lookup still asleep on the database from landing its staler
+ * single-row result on top of this one.
+ *
+ * Arguments:
+ * - target_ckey: The ckey to write.
+ * - whitelisted: TRUE or FALSE. Never pass null - the cache uses that to mean "don't know".
+ */
+/proc/symphony_seed_whitelist_cache(target_ckey, whitelisted)
+	target_ckey = ckey(target_ckey)
+	if(!target_ckey)
+		return
+	GLOB.symphony_whitelist_cache[target_ckey] = whitelisted
+	GLOB.symphony_whitelist_cache_expiry[target_ckey] = world.time + SYMPHONY_WHITELIST_CACHE_TIME
+	GLOB.symphony_whitelist_epoch++
+
 /// Cache-only lookup, never touches the DB and so never sleeps. TRUE/FALSE if cached, null if we don't know yet.
 /proc/symphony_whitelist_cache_peek(target_ckey)
 	target_ckey = ckey(target_ckey)
@@ -67,11 +106,26 @@ GLOBAL_VAR_INIT(symphony_whitelist_epoch, 0)
 		return null
 	return GLOB.symphony_whitelist_cache[target_ckey]
 
-/// TRUE if the gate is off, or we hold the whitelist role. Fail-OPEN when disabled - it's a gate, not an entitlement.
-/// Can sleep on a cache miss - use symphony_whitelist_cache_peek() if you need a non-sleeping version
-/proc/is_symphony_whitelisted(target_ckey)
-	if(!CONFIG_GET(flag/symphony_enabled))
-		return TRUE
+/**
+ * Returns whether this ckey holds the whitelist role, and whether we could even find out.
+ *
+ * The cached, sleep-capable path everything else here is built on. A hit answers out of the
+ * cache, a miss goes to the database and caches whatever comes back.
+ *
+ * Only ever caches a real answer. Banking a database outage as "not whitelisted" would keep
+ * refusing them for the rest of the TTL after the database came back, and would have the lobby
+ * draw a rejection at someone whose whitelist was never in question.
+ *
+ * Can sleep on a cache miss - use symphony_whitelist_cache_peek() where you can't afford that.
+ *
+ * Arguments:
+ * - target_ckey: The ckey to look up.
+ *
+ * Returns:
+ * - TRUE/FALSE: Whether they hold the whitelist role.
+ * - null: The database was unreachable, so nothing was cached and nothing is known.
+ */
+/proc/symphony_whitelist_lookup(target_ckey)
 	target_ckey = ckey(target_ckey)
 	if(!target_ckey)
 		return FALSE
@@ -79,17 +133,57 @@ GLOBAL_VAR_INIT(symphony_whitelist_epoch, 0)
 	if(!isnull(cached))
 		return cached
 	var/epoch = GLOB.symphony_whitelist_epoch
-	. = symphony_has_ingame_role(target_ckey, "whitelist")
+	var/answer = symphony_has_ingame_role(target_ckey, "whitelist")
+	if(isnull(answer))
+		return null
 	// A revoke can land while we wait on the DB. Don't cache over it.
-	if(epoch != GLOB.symphony_whitelist_epoch)
-		return
-	GLOB.symphony_whitelist_cache[target_ckey] = .
-	GLOB.symphony_whitelist_cache_expiry[target_ckey] = world.time + SYMPHONY_WHITELIST_CACHE_TIME
+	if(epoch == GLOB.symphony_whitelist_epoch)
+		GLOB.symphony_whitelist_cache[target_ckey] = answer
+		GLOB.symphony_whitelist_cache_expiry[target_ckey] = world.time + SYMPHONY_WHITELIST_CACHE_TIME
+	return answer
 
-/// The entitlement version, fail-CLOSED - if the module is off then nothing granted it, so nobody has it.
+/**
+ * Returns whether this ckey is allowed into the round.
+ *
+ * The blunt version of symphony_whitelist_lookup(), for the paths that only want a yes or a no.
+ *
+ * Fails OPEN when the module is disabled - it's a gate, not an entitlement, so nothing being
+ * enforced means everyone walks through. Fails CLOSED on a database error.
+ *
+ * Reach for symphony_whitelist_lookup() instead anywhere you need to tell "no" apart from
+ * "couldn't ask", which is anything that ejects a player or writes them a reason why.
+ *
+ * Arguments:
+ * - target_ckey: The ckey to check.
+ *
+ * Returns:
+ * - TRUE/FALSE: Whether they may play.
+ */
+/proc/is_symphony_whitelisted(target_ckey)
+	if(!CONFIG_GET(flag/symphony_enabled))
+		return TRUE
+	return symphony_whitelist_lookup(target_ckey) ? TRUE : FALSE
+
+/**
+ * Returns whether this ckey actually holds the whitelist role as an entitlement.
+ *
+ * The mirror image of is_symphony_whitelisted(). That one asks "may they play", this one asks
+ * "did Discord genuinely grant them this", which is what you want when hanging a perk off the
+ * role rather than gating entry on it.
+ *
+ * So it fails CLOSED when the module is disabled - if nothing is handing the role out then
+ * nobody holds it - and it skips the cache, because the handful of things asking can afford
+ * the query.
+ *
+ * Arguments:
+ * - target_ckey: The ckey to check.
+ *
+ * Returns:
+ * - TRUE/FALSE: Whether they hold the role. A database error is a FALSE.
+ */
 /proc/symphony_holds_whitelist_role(target_ckey)
 	if(!CONFIG_GET(flag/symphony_enabled))
 		return FALSE
-	return symphony_has_ingame_role(target_ckey, "whitelist")
+	return symphony_has_ingame_role(target_ckey, "whitelist") ? TRUE : FALSE
 
 #undef SYMPHONY_WHITELIST_CACHE_TIME
