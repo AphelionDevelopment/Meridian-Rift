@@ -142,6 +142,21 @@ describe('MeridianOS visual assets', () => {
     );
   });
 
+  it('ships sanitized, bounded first-party Cyberpunk control artwork', () => {
+    // The window and panel chassis went with the skin revert; this endcap set
+    // is the one piece still dressing a control, in the augments selector.
+    const artwork = readFileSync(
+      resolve(assetRoot, 'meridian-cyberpunk-control-frame.svg'),
+      'utf8',
+    );
+
+    expect(Buffer.byteLength(artwork)).toBeLessThanOrEqual(25 * 1024);
+    expect(artwork).toContain('<svg');
+    expect(artwork).toContain('viewBox=');
+    expect(artwork).not.toMatch(/<(?:script|filter|image|foreignObject|font)/i);
+    expect(artwork).not.toMatch(/(?:href|src)\s*=\s*["'](?:https?:|data:)/i);
+  });
+
   it('keeps loader motion localized, bounded, and source independent', () => {
     const loaderStyles = readFileSync(loaderStylePath, 'utf8');
 

@@ -18,6 +18,7 @@ attached seams, and control endcaps identified during visual research.
 
 | File | License | SHA-256 | Purpose |
 | --- | --- | --- | --- |
+| `styles/assets/meridian-cyberpunk-control-frame.svg` | Repository AGPL-3.0 | `8816AF06128719FBBBFB33C7BCA1B0D9304112D96CBD100A1AF9C3302795B7E5` | Restrained control endcaps and attached status pins, used by the augments region selector. |
 
 ## Visual research only — no source bytes incorporated
 

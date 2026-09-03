@@ -50,10 +50,12 @@ used here.
   text-free: readable labels live in normal HTML outside the native surface.
 - Main, Species, Loadout, and the hidden 1x1 Quirks preview remain plain. No
   preview leader or targeting overlay is mounted outside the Augments page.
-- Augments always uses the stronger red/cyan exterior shell, independent of the
-  selected MeridianOS skin. Entering Augments initializes Markings immediately;
-  changing tabs replaces the native state, and leaving the page or destroying
-  the owning window clears it.
+- The Augments shell follows the active MeridianOS skin: `--augmentation-*`
+  derives from the console tokens, so each skin dresses the workbench in its own
+  palette. Cyberpunk and Augmentation pin the stronger red/cyan themselves,
+  which is the look every skin used to be given. Entering Augments initializes
+  Markings immediately; changing tabs replaces the native state, and leaving the
+  page or destroying the owning window clears it.
 - The preview hook sends `{ mode, region }` through `set_preview_decoration`.
   DM validates the region against the selected mode: body-zone IDs are accepted
   only for Markings and Body Parts, while the explicit implant IDs are accepted

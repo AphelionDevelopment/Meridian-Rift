@@ -589,6 +589,13 @@
       display: none;
     }
 
+    // The footer is space-between, so hiding the hint leaves the rotation
+    // controls as its only child and pushes them flush left, out from under
+    // the preview they belong to. Centre them once the hint is gone.
+    &__schematicFooter {
+      justify-content: center;
+    }
+
     &__editorToolbar {
       grid-template-columns: minmax(0, 1fr);
     }
