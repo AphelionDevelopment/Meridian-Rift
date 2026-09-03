@@ -48,7 +48,7 @@
 
 /obj/structure/salvage_cart/Initialize(mapload)
 	. = ..()
-	create_storage(max_slots = 7, max_specific_storage = WEIGHT_CLASS_BULKY, max_total_storage = WEIGHT_CLASS_BULKY * 7)
+	create_storage(max_slots = 20, max_specific_storage = WEIGHT_CLASS_BULKY, max_total_storage = WEIGHT_CLASS_BULKY * 7)
 	RegisterSignal(atom_storage, COMSIG_STORAGE_STORED_ITEM, PROC_REF(on_storage_changed))
 	RegisterSignal(atom_storage, COMSIG_STORAGE_REMOVED_ITEM, PROC_REF(on_storage_changed))
 	register_context()
