@@ -59,21 +59,21 @@
 	)
 
 /datum/export/salvage_shipmind
-	cost = CARGO_CRATE_VALUE * 3
+	cost = CARGO_CRATE_VALUE * 2.5
 	unit_name = "recovered shipmind"
 	export_types = list(
 		/obj/structure/shuttle_decoration/liquid_tank/battery/shipmind,
 	)
 
 /datum/export/salvage_reactor
-	cost = CARGO_CRATE_VALUE * 5
+	cost = CARGO_CRATE_VALUE * 4
 	unit_name = "salvaged bloom reactor"
 	export_types = list(
 		/obj/structure/shuttle_decoration/liquid_tank/reactor,
 	)
 
 /datum/export/salvage_reactor/super
-	cost = CARGO_CRATE_VALUE * 7.5
+	cost = CARGO_CRATE_VALUE * 6
 	unit_name = "salvaged large bloom reactor"
 	export_types = list(
 		/obj/structure/shuttle_decoration/liquid_tank/reactor/super,

@@ -1,5 +1,5 @@
 /datum/export/epic_loot_valuables
-	cost = CARGO_CRATE_VALUE * 0.75
+	cost = CARGO_CRATE_VALUE * 1.25
 	unit_name = "recovered valuables"
 	export_types = list(
 		/obj/item/epic_loot/press_pass,
@@ -10,7 +10,7 @@
 	)
 
 /datum/export/epic_loot_valuables_super
-	cost = CARGO_CRATE_VALUE
+	cost = CARGO_CRATE_VALUE * 1.5
 	unit_name = "recovered high valuables"
 	export_types = list(
 		/obj/item/epic_loot/ssd,
