@@ -66,14 +66,14 @@
 	)
 
 /datum/export/salvage_reactor
-	cost = CARGO_CRATE_VALUE * 4
+	cost = CARGO_CRATE_VALUE * 38 // Was x4 before the unstable-reactor risk/reward tradeoff.
 	unit_name = "salvaged bloom reactor"
 	export_types = list(
 		/obj/structure/shuttle_decoration/liquid_tank/reactor,
 	)
 
 /datum/export/salvage_reactor/super
-	cost = CARGO_CRATE_VALUE * 6
+	cost = CARGO_CRATE_VALUE * 44 // Was x6 before the unstable-reactor risk/reward tradeoff.
 	unit_name = "salvaged large bloom reactor"
 	export_types = list(
 		/obj/structure/shuttle_decoration/liquid_tank/reactor/super,
