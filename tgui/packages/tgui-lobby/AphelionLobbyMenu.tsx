@@ -80,7 +80,11 @@ export function AphelionLobbyMenu({
     <div
       className={`lobby ${serverState.transparent ? 'lobby--transparent' : ''}`}
     >
-      {!serverState.transparent && !!serverState.titleImageUrl && (
+      {/* The boot terminal owns the screen during startup, so the title
+          artwork stays out of the way until the round is loaded. */}
+      {serverState.gamePhase !== 'startup' &&
+        !serverState.transparent &&
+        !!serverState.titleImageUrl && (
         <TitleArtwork
           markSrc={serverState.titleMarkUrl}
           presentation={artworkValue.classicAlt ? 'classic-alt' : 'classic'}

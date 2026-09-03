@@ -186,7 +186,7 @@ describe('LobbyMenu MeridianOS integration', () => {
 
   it('sends presentation changes to the server rather than applying them locally', async () => {
     render(<LobbyMenu />);
-    emit('init', makeServerState());
+    emit('init', makeServerState({ gamePhase: 'pregame' }));
 
     const trigger = screen.getByRole('button', {
       name: /change lobby artwork/i,
@@ -244,9 +244,22 @@ describe('LobbyMenu MeridianOS integration', () => {
     ).toBeTruthy();
   });
 
+  it('keeps the title artwork off screen while the round is loading', () => {
+    render(<LobbyMenu />);
+    emit('init', makeServerState({ gamePhase: 'startup' }));
+
+    // The boot terminal owns the screen during startup.
+    expect(document.querySelector('.lobby-title-art')).toBeNull();
+    expect(document.querySelector('.bg')).toBeNull();
+    expect(document.querySelector('.boot_terminal')).toBeTruthy();
+
+    emit('state', { gamePhase: 'pregame' });
+    expect(document.querySelector('.lobby-title-art')).toBeTruthy();
+  });
+
   it('renders an untreated screen as a plain backdrop', () => {
     render(<LobbyMenu />);
-    emit('init', makeServerState({ titleImageTreatment: 'none' }));
+    emit('init', makeServerState({ gamePhase: 'pregame', titleImageTreatment: 'none' }));
 
     expect(document.querySelector('.lobby-title-art')).toBeNull();
     expect(document.querySelector('.bg')?.getAttribute('src')).toBe(
@@ -256,7 +269,7 @@ describe('LobbyMenu MeridianOS integration', () => {
 
   it('composites the wordmark over a screen in the overlay treatment', () => {
     render(<LobbyMenu />);
-    emit('init', makeServerState({ titleImageTreatment: 'overlay' }));
+    emit('init', makeServerState({ gamePhase: 'pregame', titleImageTreatment: 'overlay' }));
 
     const artwork = document.querySelector('.lobby-title-art');
     expect(artwork?.getAttribute('data-treatment')).toBe('overlay');
@@ -265,7 +278,7 @@ describe('LobbyMenu MeridianOS integration', () => {
 
   it('renders the texture the server chose', () => {
     render(<LobbyMenu />);
-    emit('init', makeServerState({ titleTexture: 'navarobl' }));
+    emit('init', makeServerState({ gamePhase: 'pregame', titleTexture: 'navarobl' }));
 
     expect(
       document.querySelector('.lobby-title-art')?.getAttribute('data-texture'),
@@ -274,14 +287,14 @@ describe('LobbyMenu MeridianOS integration', () => {
 
   it('restores the server presentation after a remount', () => {
     const view = render(<LobbyMenu />);
-    emit('init', makeServerState({ titleVariant: 'flat' }));
+    emit('init', makeServerState({ gamePhase: 'pregame', titleVariant: 'flat' }));
     expect(
       document.querySelector('.lobby-title-art')?.getAttribute('data-variant'),
     ).toBe('flat');
 
     view.unmount();
     render(<LobbyMenu />);
-    emit('init', makeServerState({ titleVariant: 'flat' }));
+    emit('init', makeServerState({ gamePhase: 'pregame', titleVariant: 'flat' }));
 
     // Nothing is client-local any more, so the choice survives the remount.
     const artwork = document.querySelector('.lobby-title-art');

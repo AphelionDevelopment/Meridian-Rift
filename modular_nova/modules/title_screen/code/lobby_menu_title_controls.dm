@@ -10,6 +10,16 @@
 /// Rank that may change the title screen, matching ADMIN_VERB(admin_change_title_screen).
 #define TITLE_SCREEN_ADMIN_RIGHTS R_FUN
 
+/**
+ * The lobby browser never received the Font Awesome asset that TGUI windows
+ * send, so every <Icon> in the lobby rendered as an empty element: the theme
+ * picker's tick marks and the title screen overlay checkboxes were invisible.
+ * Sending it here keeps the fix out of core lobby_menu.dm.
+ */
+/datum/lobby_menu/initialize_browser()
+	. = ..()
+	window.send_asset(get_asset_datum(/datum/asset/simple/namespaced/fontawesome))
+
 /datum/lobby_menu/send_init()
 	. = ..()
 	// serverUpdate merges a Partial<ServerState> over the state serverInit just

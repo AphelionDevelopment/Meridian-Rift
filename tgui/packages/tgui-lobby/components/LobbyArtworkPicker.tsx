@@ -113,6 +113,15 @@ export const LOBBY_ARTWORK_OPTIONS: readonly ArtworkOption[] = [
 
 const CLASSIC_ALT_LABEL = 'Classic Alt';
 const DEFAULT_SCREEN_LABEL = 'Meridian Rift (default)';
+
+/**
+ * Config screen names are long enough to crowd the row out, so the extension is
+ * dropped for display and the full file name is carried in the title tooltip.
+ */
+function abbreviateScreenName(name: string): string {
+  return name.replace(/\.[a-z0-9]+$/i, '');
+}
+
 const ROTATE_LABEL = 'Rotate title screens';
 
 function getSelectedOptionIndex(value: LobbyArtworkPickerValue): number {
@@ -148,7 +157,10 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
   const selectedOption = LOBBY_ARTWORK_OPTIONS[getSelectedOptionIndex(value)];
   const itemLabels = [
     DEFAULT_SCREEN_LABEL,
-    ...screens.flatMap((screen) => [screen.name, `${screen.name} overlay`]),
+    ...screens.flatMap((screen) => [
+      abbreviateScreenName(screen.name),
+      `${screen.name} overlay`,
+    ]),
     ROTATE_LABEL,
     ...LOBBY_ARTWORK_OPTIONS.map(({ label }) => label),
     CLASSIC_ALT_LABEL,
@@ -374,6 +386,7 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
                     }}
                     role="menuitemradio"
                     tabIndex={-1}
+                    title={screen.name}
                     type="button"
                   >
                     <span
@@ -383,7 +396,7 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
                       {isSelected ? <Icon name="check" /> : null}
                     </span>
                     <span className="MeridianThemePicker__label LobbyArtworkPicker__label">
-                      <strong>{screen.name}</strong>
+                      <strong>{abbreviateScreenName(screen.name)}</strong>
                     </span>
                   </button>
                   <Button.Checkbox
