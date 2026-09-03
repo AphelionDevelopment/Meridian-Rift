@@ -250,6 +250,16 @@ The approved test-first follow-ups are implemented in the working tree:
    read-only source snapshots; transfers still invalidate both mutated mixtures. Commands without
    a secondary no longer call the eviction helper with a zero handle.
 
+5. The snapshot cache increased from 512 to 2048 direct-mapped buckets. With approximately 2,300
+   active turfs and hundreds of machinery, the prior 512-bucket cache suffered frequent collision
+   evictions; the 4x increase reduces those while widening the batch prefetch limit.
+6. `process_atmos_machinery()` now batch-prefetches the `airs[]` and turf air snapshots of every
+   atmos component before the processing loop starts. One batch IPC call replaces one per unique
+   mixture accessed, using the existing `prefetch_mixture_snapshots()` infrastructure.
+7. `walk_active_turfs_batch()` now batch-prefetches the air snapshots of the walk batch turfs and
+   their `atmos_adjacent_turfs` neighbors before the settling walk. `compare()` reads both the
+   source and each neighbor's air; the prefetch collapses those first-access misses into one batch.
+
 No native source, protocol, generated binding, installed artifact, manifest, Cargo file, workflow,
 or release tool was changed. The sibling `aphelion-dogmos` checkout remains clean at
 `7f5177fc3726a5c445491259d04a75a94a872006`.

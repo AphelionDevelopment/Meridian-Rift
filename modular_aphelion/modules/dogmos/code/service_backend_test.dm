@@ -1590,6 +1590,51 @@
 	if(failure_message)
 		return Fail(failure_message, __FILE__, __LINE__)
 
+/** Verifies that machinery prefetch populates the snapshot cache in one batch IPC call. */
+/datum/unit_test/dogmos_service_machinery_prefetch
+	var/list/obj/machinery/atmospherics/components/test_components = list()
+	var/list/datum/gas_mixture/test_mixtures = list()
+
+/datum/unit_test/dogmos_service_machinery_prefetch/Run()
+	var/obj/machinery/atmospherics/components/unary/vent_pump/vent = allocate(/obj/machinery/atmospherics/components/unary/vent_pump)
+	test_components += vent
+	for(var/datum/gas_mixture/mix as anything in vent.airs)
+		if(mix)
+			test_mixtures += mix
+	var/turf/open/vent_turf = vent.loc
+	if(istype(vent_turf) && vent_turf.air)
+		test_mixtures += vent_turf.air
+
+	if(!length(test_mixtures))
+		return Fail("No prefetchable mixtures from allocated vent pump.", __FILE__, __LINE__)
+
+	SSdogmos.reset_mixture_snapshot_cache()
+	var/misses_before = SSdogmos.dogmos_mixture_cache_misses
+	SSdogmos.prefetch_mixture_snapshots(test_mixtures)
+	var/misses_after_prefetch = SSdogmos.dogmos_mixture_cache_misses
+	if(misses_after_prefetch != misses_before)
+		return Fail("Prefetch should not increment cache misses, but misses went from [misses_before] to [misses_after_prefetch].", __FILE__, __LINE__)
+
+	for(var/datum/gas_mixture/mix as anything in test_mixtures)
+		if(!mix.dogmos_slot)
+			continue
+		var/list/cached = SSdogmos.lookup_mixture_snapshot_cache(mix.dogmos_slot, mix.dogmos_generation)
+		if(!cached)
+			return Fail("Prefetch did not populate cache for slot [mix.dogmos_slot].", __FILE__, __LINE__)
+
+	var/reads_misses_before = SSdogmos.dogmos_mixture_cache_misses
+	for(var/datum/gas_mixture/mix as anything in test_mixtures)
+		mix.return_pressure()
+		mix.return_temperature()
+	if(SSdogmos.dogmos_mixture_cache_misses != reads_misses_before)
+		return Fail("Getters after prefetch caused [SSdogmos.dogmos_mixture_cache_misses - reads_misses_before] cache misses; expected zero.", __FILE__, __LINE__)
+
+/datum/unit_test/dogmos_service_machinery_prefetch/Destroy()
+	test_components.Cut()
+	test_mixtures.Cut()
+	SSdogmos.reset_mixture_snapshot_cache()
+	return ..()
+
 #undef DOGMOS_WORLD_GENERATION_WORD_MAX
 #undef DOGMOS_TEST_STAGE_EXCITED_GROUPS
 #undef DOGMOS_TEST_STAGE_EQUALIZE

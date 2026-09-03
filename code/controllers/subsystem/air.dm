@@ -562,6 +562,9 @@ SUBSYSTEM_DEF(air)
 /datum/controller/subsystem/air/proc/process_atmos_machinery(resumed = FALSE)
 	if (!resumed)
 		src.currentrun = atmos_machinery.Copy()
+		// APHELION EDIT ADDITION START - DOGMOS
+		dogmos_prefetch_machinery_snapshots(src.currentrun)
+		// APHELION EDIT ADDITION END
 	//cache for sanic speed (lists are references anyways)
 	var/list/currentrun = src.currentrun
 	while(currentrun.len)
@@ -682,6 +685,10 @@ SUBSYSTEM_DEF(air)
 	var/list/batch = turfs.Copy(active_turfs_walk_cursor + 1, batch_end + 1)
 	dogmos_visual_refresh_batch = batch
 
+	// APHELION EDIT ADDITION START - DOGMOS
+	dogmos_prefetch_walk_snapshots(batch)
+	// APHELION EDIT ADDITION END
+
 	for(var/turf/open/T as anything in batch)
 		if(!T || !T.air)
 			continue
@@ -694,6 +701,38 @@ SUBSYSTEM_DEF(air)
 
 	// Removals may have shortened the list since batch_end was computed.
 	active_turfs_walk_cursor = (batch_end >= length(active_turfs)) ? 0 : batch_end
+
+// APHELION EDIT ADDITION START - DOGMOS
+/** Batch-fetches turf air snapshots for the active-turf walk batch and their neighbors.
+ * compare() reads both the turf and each adjacent turf's air; prefetching them in one IPC call
+ * replaces one per unique mixture the walk will access.
+ */
+/datum/controller/subsystem/air/proc/dogmos_prefetch_walk_snapshots(list/batch)
+	var/list/datum/gas_mixture/prefetch = list()
+	for(var/turf/open/T as anything in batch)
+		if(T?.air)
+			prefetch += T.air
+		for(var/turf/open/neighbor as anything in T.atmos_adjacent_turfs)
+			if(neighbor?.air)
+				prefetch += neighbor.air
+	if(length(prefetch))
+		SSdogmos.prefetch_mixture_snapshots(prefetch)
+
+/** Batch-fetches mixture snapshots that atmos machinery will read this phase.
+ * One IPC round trip replaces one per unique mixture accessed during process_atmos_machinery().
+ */
+/datum/controller/subsystem/air/proc/dogmos_prefetch_machinery_snapshots(list/machines)
+	var/list/datum/gas_mixture/prefetch = list()
+	for(var/obj/machinery/atmospherics/components/component in machines)
+		for(var/datum/gas_mixture/mix as anything in component.airs)
+			if(mix)
+				prefetch += mix
+		var/turf/open/component_turf = component.loc
+		if(istype(component_turf) && component_turf.air)
+			prefetch += component_turf.air
+	if(length(prefetch))
+		SSdogmos.prefetch_mixture_snapshots(prefetch)
+// APHELION EDIT ADDITION END
 
 /** Refreshes the walked turfs after their gas diffusion, reactions, and callbacks are complete. */
 /datum/controller/subsystem/air/proc/refresh_dogmos_visuals()
