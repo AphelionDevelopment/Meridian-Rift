@@ -37,6 +37,7 @@
 	family_heirlooms = list(/obj/item/book/manual/wiki/security_space_law, /obj/item/clothing/head/security_cap, /obj/item/clothing/mask/whistle)
 
 	job_flags = STATION_JOB_FLAGS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_HANDS_BOUND
 
 // OUTFIT
 /datum/outfit/job/corrections_officer
@@ -55,6 +56,6 @@
 	messenger = /obj/item/storage/backpack/messenger/sec
 	head = /obj/item/clothing/head/security_garrison
 	box = /obj/item/storage/box/survival/security
-	belt = /obj/item/modular_computer/pda/security
+	belt = /obj/item/modular_computer/pda/crew/security
 
 	id_trim = /datum/id_trim/job/corrections_officer
