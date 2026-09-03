@@ -1,17 +1,15 @@
 /**
  * # Magnalock module
  *
- * Short-range kinesis variant for salvage work.
- *
- * Throws held objects with weak force
- * at half grab range instead of doing nothing.
+ * Coreless weak kinesis variant for salvage work. Needs no anomaly core,
+ * so engineers can print it without anomaly research. Uses the base kinesis
+ * grab range and throws held objects with weak force at half grab range.
  */
 
 /**
  * Weak kinesis module for handling cargo and salvage.
  *
- * Uses the base kinesis grab range. Launch throws with
- * minimal force for workplace accidents.
+ * Coreless and prebuilt, so it works straight out of the lathe.
  */
 /obj/item/mod/module/anomaly_locked/kinesis/weak
 	name = "MOD magnalock module"
@@ -19,7 +17,7 @@
 		This piece of technology allows the user to generate precise magnetic fields, \
 		letting them move objects at a limited range. \
 		Oddly enough, it doesn't seem to work on living creatures."
-	// No coreless var exists here, so the module needs a core.
+	coreless = TRUE
 	prebuilt = TRUE
 
 /**
@@ -39,7 +37,8 @@
 /**
  * Research design for the magnalock module.
  *
- * Buildable once engineering MOD research is unlocked.
+ * Sits on the engineering node instead of the anomalock node,
+ * since the module needs no core.
  */
 /datum/design/module/mod_kinesis/weak
 	materials = list(

@@ -17,6 +17,9 @@ epic loot containers, and the Tarkon shipbreaking port ruin.
 - `code/modules/asset_cache/assets/sheetmaterials.dm`: adds the shipbreaking stacks spritesheet.
 - `code/_globalvars/traits/_traits.dm` and `code/_globalvars/traits/admin_tooling.dm`: three new traits.
 - `tgui/packages/tgui/interfaces/Fabrication/MaterialIcon.tsx` and `MaterialAccessBar.tsx`: aluminum/nanocarbon display.
+- `code/datums/components/anomalock_module.dm`: `coreless` flag that skips the anomaly core requirement.
+- `code/modules/mod/modules/_module.dm`: `coreless` var on anomalock modules, passed to the component.
+- `code/datums/storage/subtypes/bags.dm`: construction bags hold epic loot, nanocarbon shards, demo charges.
 
 ### Modular Overrides:
 
