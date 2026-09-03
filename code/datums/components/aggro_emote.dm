@@ -6,6 +6,14 @@
 	var/living_only
 	/// List of emotes to play
 	var/list/emote_list
+	// APHELION EDIT ADDITION START - Fleshmind
+	/// Audible emotes to play
+	var/list/audible_emote_list
+	/// Do we taunt the target?
+	var/list/speak_list
+	/// Do we play any sounds?
+	var/list/sounds
+	// APHELION EDIT ADDITION END
 	/// Chance to play an emote
 	var/emote_chance
 	/// Chance to subtract every time we play an emote (permanently)
@@ -17,6 +25,11 @@
 	target_key = BB_CURRENT_TARGET,
 	living_only = FALSE,
 	list/emote_list,
+	// APHELION EDIT ADDITION START - Fleshmind
+	list/speak_list,
+	list/sounds,
+	list/audible_emote_list,
+	// APHELION EDIT ADDITION END
 	emote_chance = 30,
 	minimum_chance = 2,
 	subtract_chance = 7,
@@ -30,6 +43,11 @@
 
 	src.target_key = target_key
 	src.emote_list = emote_list
+	// APHELION EDIT ADDITION START - Fleshmind
+	src.speak_list = speak_list
+	src.sounds = sounds
+	src.audible_emote_list = audible_emote_list
+	// APHELION EDIT ADDITION END
 	src.emote_chance = emote_chance
 	src.minimum_chance = minimum_chance
 	src.subtract_chance = subtract_chance
@@ -46,9 +64,28 @@
 /datum/component/aggro_emote/proc/on_target_changed(atom/source)
 	SIGNAL_HANDLER
 	var/atom/new_target = source.ai_controller.blackboard[target_key]
+	// APHELION EDIT ADDITION START - Fleshmind
+	var/emotes_length = LAZYLEN(emote_list)
+	var/audible_emote_length = LAZYLEN(audible_emote_list)
+	var/speak_emote_length = LAZYLEN(speak_list)
+	var/total_choices_length = audible_emote_length + speak_emote_length + emotes_length
+	if(!total_choices_length)
+		return
+	var/random_number_in_range = rand(1, total_choices_length)
+	var/sound_to_play = LAZYLEN(sounds) ? pick(sounds) : null
+	emote_chance = max(emote_chance - subtract_chance, minimum_chance)
+	// APHELION EDIT ADDITION END
 	if (isnull(new_target) || !prob(emote_chance))
 		return
 	if (living_only && !isliving(new_target))
 		return // If we don't want to bark at food items or chairs or windows
-	emote_chance = max(emote_chance - subtract_chance, minimum_chance)
-	source.manual_emote("[pick(emote_list)] at [new_target].")
+	// APHELION EDIT CHANGE START - Fleshmind - ORIGINAL: emote_chance = max(emote_chance - subtract_chance, minimum_chance) + source.manual_emote("[pick(emote_list)] at [new_target].")
+	if(random_number_in_range <= audible_emote_length)
+		source.manual_emote("[pick(audible_emote_list)]")
+		playsound(source, sound_to_play, 80, vary = TRUE)
+	else if(random_number_in_range <= (audible_emote_length + emotes_length))
+		source.manual_emote("[pick(emote_list)] at [new_target].")
+	else
+		INVOKE_ASYNC(source, TYPE_PROC_REF(/atom/movable, say), pick(speak_list), forced = "AI Controller")
+		playsound(source, sound_to_play, 80, vary = TRUE)
+	// APHELION EDIT CHANGE END
