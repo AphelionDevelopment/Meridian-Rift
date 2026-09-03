@@ -1781,7 +1781,7 @@
 			continue
 		// Consider it contirubuted by the wound itself
 		// Not -surgery_bloodloss as this way clamping the vessels reduces the overall bleeding
-		cached_bleed_rate -= UNCLAMPED_VESSELS_BLEEDING
+		cached_bleed_rate -= min(iter_wound.blood_flow, UNCLAMPED_VESSELS_BLEEDING) // APHELION EDIT CHANGE - ORIGINAL: cached_bleed_rate -= UNCLAMPED_VESSELS_BLEEDING
 		surgery_bloodloss = 0
 
 	if(owner.body_position == LYING_DOWN)

@@ -279,7 +279,7 @@
 	var/amount_bled = -adjust_blood_volume(-amount)
 
 	// Blood loss still happens in locker, floor stays clean
-	if(isturf(loc) && prob(sqrt(amount_bled) * BLOOD_DRIP_RATE_MOD))
+	if(amount_bled > 0 && isturf(loc) && prob(sqrt(amount_bled) * BLOOD_DRIP_RATE_MOD)) // APHELION EDIT CHANGE - ORIGINAL: if(isturf(loc) && prob(sqrt(amount_bled) * BLOOD_DRIP_RATE_MOD))
 		add_splatter_floor(loc, (amount_bled <= 10))
 
 /mob/living/carbon/human/bleed(amount)
