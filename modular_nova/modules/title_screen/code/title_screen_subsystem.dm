@@ -10,6 +10,7 @@ SUBSYSTEM_DEF(title)
 	var/icon/startup_splash
 
 	/// The current title screen being displayed, as a file path text.
+	/// Set only through set_showing(), never on its own.
 	var/current_title_screen
 	/// The current notice text, or null.
 	var/current_notice
@@ -23,6 +24,10 @@ SUBSYSTEM_DEF(title)
 
 	/// Admin-pinned title screen file name, or null to rotate/fall back.
 	var/selected_title_name
+	/// Config file name of the screen actually showing, or null for the neutral master
+	/// and admin uploads. Distinct from selected_title_name: a rotation changes what is
+	/// displayed without touching the admin pin, and the overlay flag is keyed by the screen actually showing rather than the pinned one.
+	var/current_title_name
 	/// Whether change_title_screen() is allowed to pick a new screen each round.
 	var/rotate_title_screens = TRUE
 	/// File name => TRUE when that screen should carry the themed wordmark overlay.
@@ -207,7 +212,7 @@ SUBSYSTEM_DEF(title)
 	startup_splash = SStitle.startup_splash
 	file_path = SStitle.file_path
 
-	current_title_screen = SStitle.current_title_screen
+	set_showing(SStitle.current_title_screen, SStitle.current_title_name)
 	current_notice = SStitle.current_notice
 	title_screens = SStitle.title_screens
 	title_screen_names = SStitle.title_screen_names
@@ -268,11 +273,14 @@ SUBSYSTEM_DEF(title)
  * The default image is a neutral alpha master, so it is tinted directly. A
  * config screen is a finished picture, so it only gains the themed wordmark
  * when an admin has opted that specific file in.
+ *
+ * Keyed on the screen actually showing rather than the pinned one, so a rotation
+ * carries whatever overlay flag the screen it landed on was given.
  */
 /datum/controller/subsystem/title/proc/get_title_treatment()
 	if(current_title_screen == DEFAULT_TITLE_SCREEN_IMAGE)
 		return TITLE_TREATMENT_MASK
-	if(selected_title_name && title_overlays[selected_title_name])
+	if(current_title_name && title_overlays[current_title_name])
 		return TITLE_TREATMENT_OVERLAY
 	return TITLE_TREATMENT_NONE
 
@@ -303,6 +311,22 @@ SUBSYSTEM_DEF(title)
 	return options
 
 /**
+ * Sets which screen is showing, together with the config file name it came from.
+ *
+ * The overlay flag is looked up by name, so a screen and its name drifting apart
+ * means the lobby renders one picture's treatment on top of another's. Assigning
+ * the two only ever as a pair is what makes that unrepresentable.
+ *
+ * Arguments:
+ * * screen - the icon or file resource to display.
+ * * screen_name - its config file name, or null when it has none: the neutral
+ * master, the boot splash, and admin uploads are not config screens.
+ */
+/datum/controller/subsystem/title/proc/set_showing(screen, screen_name)
+	current_title_screen = screen
+	current_title_name = screen_name
+
+/**
  * Adds a notice to the main title screen in the form of big red text!
  */
 /datum/controller/subsystem/title/proc/set_notice(new_title)
@@ -315,9 +339,10 @@ SUBSYSTEM_DEF(title)
  */
 /datum/controller/subsystem/title/proc/change_title_screen(new_screen)
 	if(new_screen)
-		current_title_screen = new_screen
+		// An upload or the boot splash, neither of which is a config screen with a flag.
+		set_showing(new_screen, null)
 	else
-		current_title_screen = resolve_unattended_screen()
+		resolve_unattended_screen()
 
 	check_finish_progress()
 	show_title_screen()
@@ -329,15 +354,26 @@ SUBSYSTEM_DEF(title)
  * turned it off, the pinned selection wins instead. Gating here rather than at
  * the ticker call site is what lets a chosen screen persist across rounds
  * without editing core code.
+ *
+ * Applies the pick through set_showing() rather than only returning it, so
+ * get_title_treatment() can tell which screen's overlay flag applies to whatever
+ * the rotation just landed on. The chosen screen is returned as well, for callers
+ * that want to inspect the result.
  */
 /datum/controller/subsystem/title/proc/resolve_unattended_screen()
 	if(!rotate_title_screens)
 		var/icon/pinned = get_title_screen_icon(selected_title_name)
-		return pinned || DEFAULT_TITLE_SCREEN_IMAGE
+		set_showing(pinned || DEFAULT_TITLE_SCREEN_IMAGE, pinned ? selected_title_name : null)
+		return current_title_screen
 
 	if(LAZYLEN(title_screens))
-		return pick(title_screens)
-	return DEFAULT_TITLE_SCREEN_IMAGE
+		// By index rather than pick(), so the name stays with the icon we landed on.
+		var/rolled = rand(1, length(title_screens))
+		set_showing(title_screens[rolled], title_screen_names[rolled])
+		return current_title_screen
+
+	set_showing(DEFAULT_TITLE_SCREEN_IMAGE, null)
+	return current_title_screen
 
 /// Resolve a config file name to its preloaded icon, or null when unknown.
 /datum/controller/subsystem/title/proc/get_title_screen_icon(screen_name)
@@ -373,13 +409,13 @@ SUBSYSTEM_DEF(title)
 	if(isnull(screen_name) || screen_name == "")
 		// The empty selection means the neutral Meridian Rift master.
 		selected_title_name = null
-		current_title_screen = DEFAULT_TITLE_SCREEN_IMAGE
+		set_showing(DEFAULT_TITLE_SCREEN_IMAGE, null)
 	else
 		var/icon/chosen = get_title_screen_icon(screen_name)
 		if(!chosen)
 			return FALSE
 		selected_title_name = screen_name
-		current_title_screen = chosen
+		set_showing(chosen, screen_name)
 
 	save_title_settings()
 	show_title_screen()

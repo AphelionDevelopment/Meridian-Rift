@@ -37,15 +37,17 @@ describe('LobbyArtworkPicker', () => {
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(trigger);
 
-    // The default master, one radio per configured screen, then the presets.
+    // The configured screens lead, then the default master, then the presets. The
+    // default trails the pictures because it is the fallback, not a rotation candidate.
     const radios = screen.getAllByRole('menuitemradio');
     expect(radios).toHaveLength(DEFAULT_VALUE.screens.length + 1 + 8);
-    expect(radios[0].textContent).toContain('Meridian Rift (default)');
-    expect(radios[0].getAttribute('aria-checked')).toBe('true');
     // The row shows a shortened name and carries the full one on hover.
-    expect(radios[1].textContent).toContain('station_alpha');
-    expect(radios[1].textContent).not.toContain('.png');
-    expect(radios[1].getAttribute('title')).toBe('station_alpha.png');
+    expect(radios[0].textContent).toContain('station_alpha');
+    expect(radios[0].textContent).not.toContain('.png');
+    expect(radios[0].getAttribute('title')).toBe('station_alpha.png');
+    const defaultRadio = radios[DEFAULT_VALUE.screens.length];
+    expect(defaultRadio.textContent).toContain('Meridian Rift (default)');
+    expect(defaultRadio.getAttribute('aria-checked')).toBe('true');
 
     const presets = radios.slice(DEFAULT_VALUE.screens.length + 1);
     expect(presets[0].textContent).toContain('Original - A Flat');
