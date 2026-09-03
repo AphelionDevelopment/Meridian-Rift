@@ -4,6 +4,21 @@
 #define SALVAGE_SHUTTLE_NEWEST_PRODUCED (2004 + STATION_YEAR_OFFSET)
 #define SALVAGE_SHUTTLE_LATEST_USED (2025 + STATION_YEAR_OFFSET)
 
+/// Percent chance per open floor turf to spawn a dust decal when a salvage ship loads.
+#define SALVAGE_CONDITION_DUST_CHANCE 14
+/// Percent chance per open floor turf to spawn an ash decal when a salvage ship loads.
+#define SALVAGE_CONDITION_ASH_CHANCE 5
+/// Percent chance per open floor turf to spawn a cobweb decal when a salvage ship loads.
+#define SALVAGE_CONDITION_COBWEB_CHANCE 3
+/// Percent chance per light fixture to arrive dead (broken or burned out) on a salvage ship.
+#define SALVAGE_CONDITION_LIGHT_DEAD_CHANCE 30
+/// Share of dead lights that burn out instead of smashing.
+#define SALVAGE_CONDITION_LIGHT_BURNED_SHARE 35
+/// Percent chance per open floor turf beside a wall to stain with rust-toned grime.
+#define SALVAGE_CONDITION_RUST_CHANCE 4
+/// Percent chance per ship to leave a dried-blood-and-remains cluster behind.
+#define SALVAGE_CONDITION_REMAINS_CHANCE 40
+
 /datum/map_template/shuttle/salvage_scrap
 	name = "DEBUG: Salvage Shuttle Basetype"
 	description = "Surely there would be a ship here."
@@ -50,6 +65,49 @@
 			recolorable_thing.color = prior_owner_datum.ship_primary_colour
 		else if(HAS_TRAIT(recolorable_thing, TRAIT_SHIP_SECONDARY_COLOUR))
 			recolorable_thing.color = prior_owner_datum.ship_secondary_colour
+	apply_abandoned_condition(shuttle_area)
+
+/**
+ * Scatters dust, ash, and cobweb decals across open floors, stains floors
+ * beside walls with rust-toned grime, kills a share of light fixtures, and
+ * rarely leaves a dried-blood-and-remains cluster behind. Runs once per
+ * ship load, never per-tick.
+ * Arguments:
+ * * shuttle_area - Area the ship loaded into.
+ */
+/datum/map_template/shuttle/salvage_scrap/proc/apply_abandoned_condition(area/shuttle_area)
+	var/list/turf/open/floor/ship_floors = list()
+	for (var/list/zlevel_turfs as anything in shuttle_area.get_zlevel_turf_lists())
+		for(var/turf/open/floor/ship_floor in zlevel_turfs)
+			ship_floors += ship_floor
+			if(prob(SALVAGE_CONDITION_DUST_CHANCE))
+				new /obj/effect/decal/cleanable/dirt/dust(ship_floor)
+			if(prob(SALVAGE_CONDITION_ASH_CHANCE))
+				new /obj/effect/decal/cleanable/ash(ship_floor)
+			if(prob(SALVAGE_CONDITION_COBWEB_CHANCE))
+				var/obj/effect/decal/cleanable/cobweb/cobweb_type = pick(/obj/effect/decal/cleanable/cobweb, /obj/effect/decal/cleanable/cobweb/cobweb2)
+				new cobweb_type(ship_floor)
+			if(prob(SALVAGE_CONDITION_RUST_CHANCE))
+				for(var/wall_dir as anything in GLOB.cardinals)
+					if(!isclosedturf(get_step(ship_floor, wall_dir)))
+						continue
+					// Stand-in until art provides a rust-stain decal state.
+					var/obj/effect/decal/cleanable/dirt/rust_stain = new(ship_floor)
+					rust_stain.color = COLOR_ORANGE_BROWN
+					break
+			for(var/obj/machinery/light/ship_light in ship_floor)
+				if(!prob(SALVAGE_CONDITION_LIGHT_DEAD_CHANCE))
+					continue
+				if(prob(SALVAGE_CONDITION_LIGHT_BURNED_SHARE))
+					ship_light.burn_out()
+				else
+					ship_light.break_light_tube(skip_sound_and_sparks = TRUE)
+	if(!length(ship_floors))
+		return
+	if(prob(SALVAGE_CONDITION_REMAINS_CHANCE))
+		var/turf/open/floor/remains_turf = pick(ship_floors)
+		new /obj/effect/decal/cleanable/blood/old(remains_turf)
+		new /obj/effect/decal/remains/human(remains_turf)
 
 /obj/docking_port/mobile/salvage
 	name = "salvaged shuttle"
@@ -110,3 +168,10 @@
 #undef SALVAGE_SHUTTLE_OLDEST_PRODUCED
 #undef SALVAGE_SHUTTLE_NEWEST_PRODUCED
 #undef SALVAGE_SHUTTLE_LATEST_USED
+#undef SALVAGE_CONDITION_DUST_CHANCE
+#undef SALVAGE_CONDITION_ASH_CHANCE
+#undef SALVAGE_CONDITION_COBWEB_CHANCE
+#undef SALVAGE_CONDITION_LIGHT_DEAD_CHANCE
+#undef SALVAGE_CONDITION_LIGHT_BURNED_SHARE
+#undef SALVAGE_CONDITION_RUST_CHANCE
+#undef SALVAGE_CONDITION_REMAINS_CHANCE
