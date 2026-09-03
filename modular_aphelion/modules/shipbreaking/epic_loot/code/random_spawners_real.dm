@@ -298,6 +298,18 @@
 		/obj/effect/spawner/random/epic_loot/random_computer_parts = 1,
 		/obj/effect/spawner/random/epic_loot/random_tools = 1,
 		/obj/effect/spawner/random/epic_loot/random_construction = 1,
+		/obj/effect/spawner/random/epic_loot/random_rare_materials = 0.25,
+	)
+
+/obj/effect/spawner/random/epic_loot/random_rare_materials
+	name = "random rare material cache"
+	icon_state = "random_component"
+	loot = list(
+		/obj/item/stack/sheet/mineral/uranium = 3,
+		/obj/item/stack/sheet/mineral/diamond = 2,
+		/obj/item/stack/ore/bluespace_crystal = 2,
+		/obj/item/coin/diamond = 1,
+		/obj/item/coin/uranium = 1,
 	)
 
 // Sellable components
@@ -488,6 +500,7 @@
 		/obj/item/epic_loot/hdd = 1,
 		/obj/effect/spawner/random/epic_loot/pocket_valuable = 2,
 		/obj/effect/spawner/random/epic_loot/random_documents = 2,
+		/obj/effect/spawner/random/epic_loot/random_rare_materials = 1,
 	)
 
 // Unsorted yeah
