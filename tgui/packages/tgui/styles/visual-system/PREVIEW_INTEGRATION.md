@@ -22,77 +22,6 @@ before mount, remounting, listener cleanup, native unparenting, awaited ordering
 stale-generation cancellation, and resume sequencing. No delay, geometry
 perturbation, or `screen_loc` shake is used.
 
-## Ownership boundary and A-F investigation
-
-The browser and a secondary BYOND map are separate native control surfaces.
-[BYOND's control reference](https://secure.byond.com/docs/ref/skinparams.html)
-documents map controls and `screen-loc`; repository map-view code registers map
-objects and popup plane groups directly with the client. The internal
-`healthdoll` is useful only as evidence that native screen objects can render in
-a HUD plane. None of its anatomical art, hit regions, or body assumptions is
-used here.
-
-| Approach | Experiment | Result | Reason | Performance / maintenance |
-|---|---|---|---|---|
-| A. HTML over native map | Cross the map edge with the frame's corner/leader pseudo-elements and inspect z-order in BYOND 516. | Exterior half implemented; native-runtime crossing remains to be recorded on a BYOND-capable host. Not selected for interior marks. | HTML can own the surrounding chassis, but the implementation does not assume browser pixels can paint through an independently owned native map surface. | Cheap static CSS; brittle if used as an interior-overlay trick. |
-| B. Native HUD/appearance | Add exact-size transparent Markings, Body Parts, and Internal Implants states after the body appearance on the existing preview canvas. | Implemented. Each base mode has corner-only chrome; each validated selected region has one leader in four BYOND directions. DMI metadata, alpha, state names, 32/64/96 dimensions, replacement behavior, and cleanup are automated; live z-order remains a BYOND acceptance check. | It keeps all interior marks on the same native surface and cannot enlarge the existing canvas. | One static appearance; no processing loop or extra registered map object. |
-| C. Hybrid | Combine A's exterior chassis with B's equal-size native interior, scoped to Augments. | Selected production architecture. | Each renderer owns only pixels it can reliably control. The existing `ByondUi` width, height, rotation, map registration, and cleanup remain authoritative. | Small static CSS plus three compact first-party DMI states; no recurring work. |
-| D. Oversized native map/masking | Prototype only if an equal-size appearance cannot satisfy the composition; compare map bounds and autoscale before/after. | Rejected by design; no oversized control was introduced. | CSS masking cannot be relied on for a native child, and a larger map risks changing the very autoscale contract being repaired. | High regression and maintenance cost. |
-| E. Snapshot/render target | Evaluate a browser-owned image of the preview against live equipment, direction, species, and appearance updates. | Feasible as a static capture, rejected for production. | It duplicates or delays the live appearance pipeline and complicates rotation and equipment updates. | Additional capture/update traffic and synchronization state. |
-| F. Native-window internals | Trace `ByondUi` `winset`, map-object registration, popup plane groups, and browser layout as separate surfaces. | Source-level investigation confirms separate ownership; BYOND 516 instrumentation remains part of final runtime acceptance. | It explains why a lifecycle event plus a hybrid frame is robust and why ordinary CSS is not claimed to cross the map surface. | No new runtime mechanism; establishes a stable maintenance boundary. |
-
-## Final composition and contract
-
-- `PreferencesCharacterPreviewFrame` accepts only `none` or one of three
-  Augments states: `augmentation_markings`, `augmentation_body_parts`, and
-  `augmentation_implants`. It never changes the child map's dimensions and all
-  exterior chrome is pointer-transparent. Its map-local chrome is deliberately
-  text-free: readable labels live in normal HTML outside the native surface.
-- Main, Species, Loadout, and the hidden 1x1 Quirks preview remain plain. No
-  preview leader or targeting overlay is mounted outside the Augments page.
-- Augments always uses the stronger red/cyan exterior shell, independent of the
-  selected MeridianOS skin. Entering Augments initializes Markings immediately;
-  changing tabs replaces the native state, and leaving the page or destroying
-  the owning window clears it.
-- The preview hook sends `{ mode, region }` through `set_preview_decoration`.
-  DM validates the region against the selected mode: body-zone IDs are accepted
-  only for Markings and Body Parts, while the explicit implant IDs are accepted
-  only for Internal Implants. Mode and region live only on the ephemeral preview
-  map object and are never saved. A null region selects corner-only base chrome.
-  This presentation-only action remains available through the creator lag
-  switch so a tab change or page teardown can always replace or clear the
-  overlay.
-- Native overlay order is background canvas, current body appearance, then one
-  equal-size decoration appearance. State or region changes cut and rebuild
-  that stack, so overlays cannot accumulate. Rotation also rebuilds it, keeps
-  the canvas and decoration directions synchronized with the preview, and lets
-  BYOND select the south, north, east, or west frame from the active state.
-- Augments uses an overview/detail workbench modeled on Microfusion's useful
-  schematic grammar. Real buttons around the square preview show each region
-  and its current value; selecting one renders that region's existing controls
-  once in the adjacent editor. The browser-owned rule from each button stops at
-  the native map edge, where a DMI-owned line continues to the broad body
-  target. At narrow widths the workbench stacks above its editor without
-  copying backend data into layout state or running a measurement loop.
-- Markings and Body Parts map head, chest, arm, hand, and leg regions. Internal
-  Implants maps brain to the skull; eyes and ears to the face/head; mouth and
-  tongue to the mouth; heart and lungs to the upper chest; and liver and stomach
-  to the abdomen. These are stable registration coordinates, not silhouette
-  tracing, so nonhuman, oversized, and taur previews remain plausible. Nothing
-  captures input.
-- One JSON schema is authoritative for region IDs, panel side/lane, map-edge
-  socket, and native target coordinates. React uses it to place selectors and
-  the Python generator uses it to produce the base and selected-region states
-  in all three 32/64/96 DMI atlases. Each state stores directions in BYOND order
-  (south, north, east, west). The generator contains no pixel font or text
-  drawing; tests validate schema bounds, uniqueness, four-direction metadata,
-  directional frame differences, and reviewed SHA-256 atlas goldens.
-
-The DMI sources are original Meridian-authored geometry generated by
-`modular_nova/modules/character_preview_background/tools/generate_preview_decorations.py`;
-no third-party or healthdoll pixels are
-included.
-
 ## Runtime acceptance still required
 
 This checkout does not have BYOND/Dream Maker installed. Run the requested 50
@@ -100,5 +29,5 @@ cold opens plus 50 reopens in BYOND 516/WebView2 across 32/64/96 canvases,
 100/125/150/200% Windows scaling, the 780/940px height transition, all four
 directions, and ordinary/oversized/taur/non-human/transformed bodies. Record DOM
 rectangle, DPR, native `winget` rectangle, geometry-finished, DM-visible, and map
-registration timestamps. Acceptance remains: no tiny first render, no scale
-change with decoration, no orphan controls/overlays, and no reopen workaround.
+registration timestamps. Acceptance remains: no tiny first render and no reopen
+workaround.

@@ -384,7 +384,6 @@
 #include "~nova\liver_nova.dm"
 #include "~nova\neuroware_chips.dm"
 #include "~nova\opposing_force.dm"
-#include "~nova\preferences_preview_decoration.dm" // APHELION EDIT ADDITION
 #include "~nova\shuttle.dm"
 #include "~nova\title_screen_settings.dm" // APHELION EDIT ADDITION
 // NOVA EDIT END
