@@ -19,7 +19,7 @@
 
 /obj/structure/shuttle_decoration/Initialize(mapload)
 	. = ..()
-	//ADD_TRAIT(src, TRAIT_RECYCLE_LIKE_ITEM, TRAIT_GENERIC)
+	ADD_TRAIT(src, TRAIT_RECYCLE_LIKE_ITEM, TRAIT_GENERIC)
 	AddElement(/datum/element/simple_rotation, ROTATION_NEEDS_ROOM)
 	register_context()
 

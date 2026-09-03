@@ -210,5 +210,6 @@
 		Any generator that would need this is either much too large or much too old to be seen around here."
 	icon_state = "fuel_conditioner"
 	w_class = WEIGHT_CLASS_NORMAL
+	custom_materials = list(/datum/material/plastic = SHEET_MATERIAL_AMOUNT)
 	drop_sound = 'sound/items/handling/cardboard_box/cardboardbox_drop.ogg'
 	pickup_sound = 'sound/items/handling/cardboard_box/cardboardbox_pickup.ogg'
