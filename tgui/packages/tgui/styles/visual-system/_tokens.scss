@@ -137,12 +137,15 @@
   --console-space-2: 8px;
   --console-space-3: 12px;
   --console-space-4: 16px;
-  --augmentation-frame: #8f3541;
-  --augmentation-surface: #0c090b;
-  --augmentation-readout: #61c8c1;
-  --augmentation-text: #dce7e7;
+  // The augments workbench follows the active skin like every other surface.
+  // Cyberpunk and Augmentation pin their own red/cyan in _themes.scss, which is
+  // the look this palette used to force on all twelve.
+  --augmentation-frame: var(--console-border-control);
+  --augmentation-surface: var(--console-surface-base);
+  --augmentation-readout: var(--console-interaction-accent);
+  --augmentation-text: var(--console-text-primary);
   --augmentation-focus: var(--console-interaction-focus);
-  --augmentation-glow: rgb(88 209 201 / 18%);
+  --augmentation-glow: color-mix(in srgb, var(--console-interaction-accent) 24%, transparent);
 
   // tgui-core bridge. Shared component rules below consume only these semantics.
   --color-base: var(--console-surface-base);

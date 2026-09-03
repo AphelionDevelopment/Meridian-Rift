@@ -47,12 +47,6 @@
   --console-heading-tracking: 0.12em;
   --console-control-depth: inset 0 -3px 0 var(--console-surface-recessed), inset 0 0 0 1px var(--console-border-control);
   --console-overlay-shadow: 0 0 18px color-mix(in srgb, var(--console-interaction-accent) 18%, transparent);
-  --augmentation-frame: var(--console-border-control);
-  --augmentation-surface: var(--console-surface-base);
-  --augmentation-readout: var(--console-interaction-accent);
-  --augmentation-text: var(--console-text-primary);
-  --augmentation-focus: var(--console-interaction-focus);
-  --augmentation-glow: color-mix(in srgb, var(--console-interaction-accent) 24%, transparent);
 }
 
 .theme-meridian_vector {
