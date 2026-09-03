@@ -14,6 +14,13 @@
 	export_types = list(/obj/item/stack/sheet/nanocarbon)
 	use_shared_exports = FALSE
 
+// A shard holds half a sheet of nanocarbon, and the material export rounds the sheet count
+// down to zero, so it sells through its own per-item export instead.
+/datum/export/nanocarbon_shard
+	cost = CARGO_CRATE_VALUE * 0.25
+	unit_name = "nanocarbon shard"
+	export_types = list(/obj/item/nanocarbon_shard)
+
 /datum/export/salvage_generic
 	cost = CARGO_CRATE_VALUE * 0.375
 	unit_name = "general salvage"
