@@ -48,9 +48,418 @@
 }
 
 .LimbsPage {
+  --augments-preview-size: clamp(168px, 34vw, 280px);
+
+  height: 100%;
+  min-height: 0;
+
+  &__workspaceHost {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  &__presetDialog {
+    position: fixed;
+    z-index: 100;
+    top: 60%;
+    left: 50%;
+    width: min(400px, calc(100vw - 24px));
+    max-width: 400px;
+    transform: translate(-50%, -50%);
+  }
+
+  &__workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(270px, 2fr);
+    gap: 8px;
+    height: 100%;
+    min-height: 0;
+  }
+
+  &__schematicSection,
+  &__editorSection {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  &__schematicSection > .Section__rest > .Section__content {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  &__schematic {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  &__schematicStatus {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    min-height: 28px;
+    margin-bottom: 8px;
+    padding: 0 8px;
+    color: var(--console-text-secondary);
+    border-bottom: 1px solid var(--augmentation-frame);
+    font-family: var(--font-family-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+
+    strong {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--augmentation-readout);
+      font-size: inherit;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__schematicStatusState {
+    padding-left: 8px;
+    color: var(--augmentation-text);
+    border-left: 1px solid var(--augmentation-frame);
+  }
+
+  &__bodyMap {
+    display: grid;
+    grid-template-areas:
+      '. top .'
+      'left preview right'
+      '. bottom .';
+    grid-template-columns:
+      minmax(72px, 1fr)
+      var(--augments-preview-size)
+      minmax(72px, 1fr);
+    grid-template-rows: 34px var(--augments-preview-size) 34px;
+    width: 100%;
+    min-width: 0;
+    align-items: stretch;
+  }
+
+  &__previewViewport {
+    grid-area: preview;
+    width: var(--augments-preview-size);
+    height: var(--augments-preview-size);
+    min-width: 0;
+    min-height: 0;
+    place-self: center;
+  }
+
+  &__calloutRail {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+
+    &--top {
+      grid-area: top;
+    }
+
+    &--right {
+      grid-area: right;
+    }
+
+    &--bottom {
+      grid-area: bottom;
+    }
+
+    &--left {
+      grid-area: left;
+    }
+  }
+
+  &__regionSelector {
+    position: absolute;
+    z-index: 1;
+    display: flex;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 28px;
+    margin: 0;
+    padding: 3px 7px;
+    flex-direction: column;
+    justify-content: center;
+    color: var(--augmentation-text);
+    background: var(--augmentation-surface);
+    border: 1px solid var(--augmentation-frame);
+    border-radius: 0;
+    font: inherit;
+    line-height: 1.1;
+    cursor: pointer;
+
+    &::before,
+    &::after {
+      position: absolute;
+      content: '';
+      pointer-events: none;
+    }
+
+    &::before {
+      z-index: 2;
+      box-sizing: border-box;
+      width: 5px;
+      height: 5px;
+      background: var(--augmentation-surface);
+      border: 1px solid var(--augmentation-readout);
+    }
+
+    &::after {
+      z-index: 0;
+      border-color: var(--augmentation-frame);
+      border-style: solid;
+      border-width: 0;
+    }
+
+    &:hover {
+      color: var(--console-text-primary);
+      background: color-mix(
+        in srgb,
+        var(--augmentation-readout) 9%,
+        var(--augmentation-surface)
+      );
+      border-color: var(--augmentation-readout);
+    }
+
+    &[aria-pressed='true'] {
+      color: var(--console-text-primary);
+      background: color-mix(
+        in srgb,
+        var(--augmentation-readout) 14%,
+        var(--augmentation-surface)
+      );
+      border-color: var(--augmentation-readout);
+
+      &::before {
+        background: var(--augmentation-readout);
+        box-shadow: inset 0 0 0 1px var(--augmentation-surface);
+      }
+
+      &::after {
+        border-color: var(--augmentation-readout);
+      }
+    }
+
+    &[data-available='false'] {
+      border-style: dashed;
+
+      .LimbsPage__regionSummary {
+        text-decoration: line-through;
+      }
+    }
+
+    &:focus-visible {
+      z-index: 4;
+      outline: 2px solid var(--augmentation-focus);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 3px var(--console-interaction-focus-contrast);
+    }
+
+    &--left,
+    &--right {
+      top: var(--augments-callout-edge);
+      width: calc(100% - 10px);
+      max-width: 132px;
+      transform: translateY(-50%);
+
+      &::after {
+        top: 50%;
+        width: 11px;
+        border-top-width: 1px;
+      }
+    }
+
+    &--left {
+      right: 10px;
+      align-items: flex-end;
+      text-align: right;
+
+      &::before {
+        top: calc(50% - 2px);
+        right: -3px;
+      }
+
+      &::after {
+        left: 100%;
+      }
+    }
+
+    &--right {
+      left: 10px;
+      align-items: flex-start;
+      text-align: left;
+
+      &::before {
+        top: calc(50% - 2px);
+        left: -3px;
+      }
+
+      &::after {
+        right: 100%;
+      }
+    }
+
+    &--top,
+    &--bottom {
+      left: var(--augments-callout-edge);
+      width: min(132px, 100%);
+      transform: translateX(-50%);
+      align-items: center;
+      text-align: center;
+
+      &::after {
+        left: 50%;
+        height: 7px;
+        border-left-width: 1px;
+      }
+    }
+
+    &--top {
+      top: 0;
+
+      &::before {
+        bottom: -3px;
+        left: calc(50% - 2px);
+      }
+
+      &::after {
+        top: 100%;
+      }
+    }
+
+    &--bottom {
+      bottom: 0;
+
+      &::before {
+        top: -3px;
+        left: calc(50% - 2px);
+      }
+
+      &::after {
+        bottom: 100%;
+      }
+    }
+  }
+
+  &__regionLabel,
+  &__regionSummary {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__regionLabel {
+    font-family: var(--font-family-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  &__regionSummary {
+    margin-top: 2px;
+    color: var(--console-text-secondary);
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: normal;
+  }
+
+  &__schematicFooter {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 36px;
+    margin-top: 8px;
+    padding-top: 8px;
+    color: var(--console-text-secondary);
+    border-top: 1px solid var(--console-border-separator);
+    font-family: var(--font-family-mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  &__rotationControls {
+    flex: 0 0 auto;
+  }
+
+  &__schematicHint {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  &__socketKey {
+    display: inline-block;
+    box-sizing: border-box;
+    width: 7px;
+    height: 7px;
+    flex: 0 0 auto;
+    background: var(--augmentation-readout);
+    border: 1px solid var(--augmentation-frame);
+  }
+
+  &__editorToolbar,
+  &__balance {
+    margin-bottom: 12px;
+    padding: 8px;
+    color: var(--console-text-secondary);
+    background: var(--augmentation-surface);
+    border: 1px solid var(--augmentation-frame);
+    font-family: var(--font-family-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  &__editorToolbar {
+    display: grid;
+    grid-template-columns: minmax(90px, auto) minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+  }
+
+  &__balance {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    strong {
+      min-width: 40px;
+      padding-left: 8px;
+      color: var(--augmentation-readout);
+      border-left: 1px solid var(--augmentation-frame);
+      font-size: 13px;
+      text-align: right;
+    }
+  }
+
+  &__emptyRegion {
+    padding: 16px;
+    color: var(--console-text-secondary);
+    border: 1px dashed var(--console-border-control);
+    text-align: center;
+  }
+
   &__hover-text {
     position: relative;
     display: block;
+
+    &:focus-within {
+      outline: 1px solid var(--augmentation-focus);
+      outline-offset: 2px;
+    }
   }
 
   &__hover-text--tooltip-wrapper {
@@ -61,12 +470,13 @@
     max-width: 250px;
     z-index: 100;
     pointer-events: none;
-    background: #c0152a;
+    background: var(--augmentation-frame);
     clip-path: polygon(0% 0%, calc(100% - 12px) 0%, 100% 100%, 12px 100%);
     padding: 1px;
     visibility: hidden;
     opacity: 0;
-    filter: drop-shadow(0 0 6px #c0152a) drop-shadow(0 0 12px #c0152a66);
+    filter: drop-shadow(0 0 6px var(--augmentation-frame))
+      drop-shadow(0 0 12px var(--augmentation-glow));
 
     &.visible {
       visibility: visible;
@@ -79,11 +489,160 @@
   }
 
   &__hover-text--tooltip {
-    background: #0f0505;
-    color: #00e5d4;
+    background: var(--augmentation-surface);
+    color: var(--augmentation-readout);
     padding: 4px 12px;
     font-size: 11px;
     white-space: normal;
     word-break: break-word;
+  }
+
+}
+
+:is(
+  .theme-meridian_vector,
+  .theme-meridian_cyberpunk,
+  .theme-meridian_augmentation
+) .LimbsPage :is(.Section__titleText, .LimbsPage__regionLabel) {
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+:is(.theme-meridian_cyberpunk, .theme-meridian_augmentation)
+  .LimbsPage__regionSelector {
+  border: 1px solid transparent;
+  border-image-source: url('tgui/styles/assets/meridian-cyberpunk-control-frame.svg');
+  border-image-slice: 6;
+  border-image-width: 2px;
+  border-image-repeat: stretch;
+}
+
+.theme-meridian_highline .LimbsPage {
+  &__hover-text--tooltip-wrapper {
+    filter: none;
+  }
+
+  &__hover-text--tooltip-wrapper.visible {
+    opacity: 1;
+    animation: none;
+  }
+
+  &__regionSelector {
+    background: var(--augmentation-surface);
+    border: 2px solid var(--console-border-strong);
+
+    &[aria-pressed='true'] {
+      color: var(--console-text-on-accent);
+      background: var(--console-text-primary);
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .LimbsPage {
+    --augments-preview-size: clamp(168px, 44vw, 236px);
+
+    &__workspaceHost {
+      overflow: auto;
+    }
+
+    &__workspace {
+      grid-template-columns: minmax(0, 1fr);
+      height: auto;
+    }
+
+    &__schematicSection {
+      min-height: 390px;
+    }
+
+    &__editorSection {
+      min-height: 240px;
+    }
+  }
+}
+
+@media (max-width: 420px) {
+  .LimbsPage {
+    --augments-preview-size: clamp(152px, 42vw, 184px);
+
+    &__bodyMap {
+      grid-template-columns:
+        minmax(68px, 1fr)
+        var(--augments-preview-size)
+        minmax(68px, 1fr);
+    }
+
+    &__regionSelector--left,
+    &__regionSelector--right {
+      width: calc(100% - 6px);
+      padding-inline: 4px;
+    }
+
+    &__regionSummary {
+      display: none;
+    }
+
+    &__schematicStatusState,
+    &__schematicHint {
+      display: none;
+    }
+
+    &__editorToolbar {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .LimbsPage__regionSelector {
+    color: ButtonText;
+    background: ButtonFace;
+    border-color: ButtonText;
+    border-image: none;
+
+    &::before {
+      background: ButtonFace;
+      border-color: ButtonText;
+    }
+
+    &::after {
+      border-color: ButtonText;
+    }
+
+    &:hover,
+    &[aria-pressed='true'] {
+      color: HighlightText;
+      background: Highlight;
+      border-color: Highlight;
+
+      &::before {
+        background: HighlightText;
+        border-color: Highlight;
+      }
+
+      &::after {
+        border-color: Highlight;
+      }
+    }
+
+    &:focus-visible {
+      outline-color: Highlight;
+      box-shadow: 0 0 0 3px Canvas;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .LimbsPage__hover-text--tooltip-wrapper.visible {
+    opacity: 1;
+    animation: none;
+
+    .LimbsPage__hover-text--tooltip {
+      clip-path: none;
+      transform: none;
+      animation: none;
+    }
   }
 }

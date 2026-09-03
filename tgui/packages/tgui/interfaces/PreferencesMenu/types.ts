@@ -162,6 +162,7 @@ export type RoboticStyle = {
 
 export type AugmentSlot = {
   slot: string;
+  preview_region: string; // APHELION EDIT ADDITION - MERIDIAN_UI
   body_zone?: string;
   slot_flag?: number;
   is_bodypart: boolean;
