@@ -7390,6 +7390,8 @@
 #include "modular_aphelion\modules\shipbreaking\code\shuttle_parts\windows.dm"
 #include "modular_aphelion\modules\shipbreaking\code\tools\collector_vacuum.dm"
 #include "modular_aphelion\modules\shipbreaking\code\tools\demo_charge.dm"
+#include "modular_aphelion\modules\shipbreaking\code\tools\salvage_cutter.dm"
+#include "modular_aphelion\modules\shipbreaking\code\tools\salvage_wrench.dm"
 #include "modular_aphelion\modules\shipbreaking\code\tools\rnd.dm"
 #include "modular_aphelion\modules\shipbreaking\epic_loot\code\_basetype.dm"
 #include "modular_aphelion\modules\shipbreaking\epic_loot\code\random_spawners_real.dm"

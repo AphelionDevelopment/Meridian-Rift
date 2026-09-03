@@ -107,6 +107,10 @@
 
 /obj/machinery/recycler/CanAllowThrough(atom/movable/mover, border_dir)
 	. = ..()
+// APHELION EDIT ADDITION START - SHIPBREAKING - Salvage structures can be shoved in from any side, not just the front
+	if(isobj(mover) && !isitem(mover) && HAS_TRAIT(mover, TRAIT_RECYCLE_LIKE_ITEM))
+		return TRUE
+// APHELION EDIT ADDITION END
 	if(!anchored)
 		return
 	if(border_dir == dir)
