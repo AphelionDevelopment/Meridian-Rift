@@ -52,8 +52,12 @@ beforeAll(async () => {
     preferencesCss,
   ] = await Promise.all(
     [
-      // Dropdown @uses Button, so this entry includes both legacy margin
-      // contracts in the same order as production core styles.
+      // Dropdown @uses Button, which is how the core Button sheet reaches
+      // this fixture. In production it arrives the same way -- but from
+      // interfaces/Fabricator.scss, which main.scss loads *after* the visual
+      // system. So it is appended last below, not first: injecting it first
+      // hid a real cascade bug where upstream's `.Button:last-child` margin
+      // reset beat an equal-specificity theme-console rule.
       '../../../../node_modules/tgui-core/styles/components/Dropdown.scss',
       '../../../../node_modules/tgui-core/styles/components/NoticeBox.scss',
       '../../../../node_modules/tgui-core/styles/components/Tabs.scss',
@@ -71,14 +75,14 @@ beforeAll(async () => {
   // Substitute two sentinel colors so the real compiled selectors and import
   // order can still prove that Highline's inverse state wins the cascade.
   productionStyle.textContent = (
-    controlsCss +
     noticeBoxCss +
     tabsCss +
     tokenCss +
     themeCss +
     componentCss +
     decorationCss +
-    preferencesCss
+    preferencesCss +
+    controlsCss
   )
     .replaceAll('var(--console-interaction-pressed)', 'rgb(1, 2, 3)')
     .replaceAll('var(--console-text-primary)', 'rgb(255, 255, 255)');
@@ -232,8 +236,8 @@ describe('MeridianOS shared control geometry', () => {
       expect(getComputedStyle(sectionDropdownControl).height).toBe('24px');
       expect(getComputedStyle(sectionButtons).gap).toBe('2px');
 
+      // Horizontal gutters are upstream's and unchanged.
       expect(getComputedStyle(ungroupedButton).marginRight).toBe('2px');
-      expect(getComputedStyle(ungroupedButton).marginBottom).toBe('2px');
       for (const groupedControl of [
         switcherInherit,
         iconOnly,
@@ -242,7 +246,40 @@ describe('MeridianOS shared control geometry', () => {
         sectionAction,
       ]) {
         expect(getComputedStyle(groupedControl).marginRight).toBe('0px');
-        expect(getComputedStyle(groupedControl).marginBottom).toBe('0px');
+      }
+
+      // Vertical margins must stay symmetric on every button, `:last-child`
+      // included. `vertical-align: middle` centres the margin box, so an
+      // uneven block margin drops that button below its neighbours -- which is
+      // what upstream's `:last-child { margin-bottom: 0 }` used to do to the
+      // last button of every row. The total gutter is preserved, just split.
+      for (const button of [
+        ungroupedButton,
+        switcherInherit,
+        iconOnly,
+        sectionAction,
+        view.getByLabelText('Compact icon'),
+      ]) {
+        const style = getComputedStyle(button);
+        expect(style.marginTop).toBe(style.marginBottom);
+      }
+      // happy-dom does not evaluate calc(), so the total gutter is pinned at
+      // the source instead: the same --space-xs upstream uses, split in two.
+      expect(COMPONENT_SOURCE).toContain(
+        'margin-top: calc(var(--space-xs) / 2)',
+      );
+      expect(COMPONENT_SOURCE).toContain(
+        'margin-bottom: calc(var(--space-xs) / 2)',
+      );
+
+      // Every inline control shares one alignment, or a row that mixes them
+      // steps by ~1px. NumberInput was the worst of these at 3.3px.
+      for (const control of [
+        ungroupedButton,
+        switcherDropdown,
+        sectionDropdown,
+      ]) {
+        expect(getComputedStyle(control).verticalAlign).toBe('middle');
       }
       expect(getComputedStyle(loadoutCategoryTab).paddingTop).toBe('3px');
       expect(getComputedStyle(loadoutCategoryTab).paddingBottom).toBe('3px');
