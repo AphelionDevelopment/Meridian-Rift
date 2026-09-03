@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Floating, Icon } from 'tgui-core/components';
+import { Button, Floating, Icon } from 'tgui-core/components';
 import { classes } from 'tgui-core/react';
 import type {
   LobbyTitleArtVariant,
@@ -129,7 +129,7 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
   const { className, onAction, placement = 'bottom-end', value } = props;
   const [isOpen, setIsOpen] = useState(false);
   const floatingRef = useRef<ComponentRef<typeof Floating>>(null);
-  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const itemRefs = useRef<Array<HTMLElement | null>>([]);
   const openFocus = useRef<'first' | 'last' | 'selected'>('selected');
   const typeahead = useRef('');
   const typeaheadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -337,7 +337,7 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
           >
             <button
               aria-checked={value.selected === null}
-              className="MeridianThemePicker__option LobbyArtworkPicker__option"
+              className="MeridianThemePicker__option LobbyArtworkPicker__option LobbyArtworkPicker__option--noSwatch"
               onClick={() => selectScreen(null)}
               ref={(node) => {
                 itemRefs.current[0] = node;
@@ -367,7 +367,7 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
                 >
                   <button
                     aria-checked={isSelected}
-                    className="MeridianThemePicker__option LobbyArtworkPicker__option LobbyArtworkPicker__screenChoice"
+                    className="MeridianThemePicker__option LobbyArtworkPicker__option LobbyArtworkPicker__option--noSwatch LobbyArtworkPicker__screenChoice"
                     onClick={() => selectScreen(screen.name)}
                     ref={(node) => {
                       itemRefs.current[screenRadioIndex(index)] = node;
@@ -386,9 +386,12 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
                       <strong>{screen.name}</strong>
                     </span>
                   </button>
-                  <button
+                  <Button.Checkbox
                     aria-checked={screen.overlay}
                     aria-label={`Overlay the Meridian Rift wordmark on ${screen.name}`}
+                    // The shared checkbox, so it picks up whatever the active
+                    // skin uses for a ticked control rather than a fixed colour.
+                    checked={screen.overlay}
                     className="LobbyArtworkPicker__overlayToggle"
                     onClick={() => toggleOverlay(screen)}
                     ref={(node) => {
@@ -396,19 +399,14 @@ export function LobbyArtworkPicker(props: LobbyArtworkPickerProps) {
                     }}
                     role="menuitemcheckbox"
                     tabIndex={-1}
-                    type="button"
-                  >
-                    <span aria-hidden="true">
-                      {screen.overlay ? <Icon name="check" /> : null}
-                    </span>
-                    <span>Overlay</span>
-                  </button>
+                    tooltip={`Overlay the Meridian Rift wordmark on ${screen.name}`}
+                  />
                 </div>
               );
             })}
             <button
               aria-checked={value.rotate}
-              className="MeridianThemePicker__option LobbyArtworkPicker__option"
+              className="MeridianThemePicker__option LobbyArtworkPicker__option LobbyArtworkPicker__option--noSwatch"
               onClick={toggleRotate}
               ref={(node) => {
                 itemRefs.current[rotateIndex] = node;

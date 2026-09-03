@@ -61,6 +61,34 @@
     0 0 0 1px #050708;
 }
 
+// A title screen row pairs its radio with its own overlay checkbox, so the two
+// controls share one line and the filename takes whatever is left.
+.LobbyArtworkPicker__screenRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.LobbyArtworkPicker__screenChoice {
+  // .MeridianThemePicker__option is width: 100%, which fights the flex row, and
+  // min-width: 0 is what lets a long filename ellipsise at the row's real width.
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.LobbyArtworkPicker__overlayToggle {
+  flex: 0 0 auto;
+  margin: 0 6px 0 0;
+}
+
+// .MeridianThemePicker__option is a three-column grid: check, swatch, label.
+// These rows have no swatch, so without dropping that track the label lands in
+// the 28px swatch column and ellipsises down to a single character.
+.LobbyArtworkPicker__option--noSwatch {
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+}
+
 .LobbyArtworkPicker__separator {
   margin: 5px 6px 0;
   border-top: 1px solid var(--color-border);
