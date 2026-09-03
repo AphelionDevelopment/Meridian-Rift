@@ -1,7 +1,8 @@
 GLOBAL_LIST_INIT(aluminum_recipes, list(
 	new/datum/stack_recipe("water cycler", /obj/structure/sink/cycler, 2, time = 1 SECONDS, crafting_flags = CRAFT_CHECK_DENSITY | CRAFT_ONE_PER_TURF | CRAFT_ON_SOLID_GROUND, category = CAT_FURNITURE), \
 	new/datum/stack_recipe("space toilet", /obj/structure/toilet/space, 1, time = 1 SECONDS, crafting_flags = CRAFT_CHECK_DENSITY | CRAFT_ONE_PER_TURF | CRAFT_ON_SOLID_GROUND, category = CAT_FURNITURE), \
-	new/datum/stack_recipe("spacer airlock assembly", /obj/structure/door_assembly/spacer, 4, time = 5 SECONDS, crafting_flags = CRAFT_CHECK_DENSITY | CRAFT_ONE_PER_TURF | CRAFT_ON_SOLID_GROUND, category = CAT_DOORS),
+	new/datum/stack_recipe("spacer airlock assembly", /obj/structure/door_assembly/spacer, 4, time = 5 SECONDS, crafting_flags = CRAFT_CHECK_DENSITY | CRAFT_ONE_PER_TURF | CRAFT_ON_SOLID_GROUND, category = CAT_DOORS), \
+	new/datum/stack_recipe("salvage hand-cart", /obj/vehicle/ridden/salvage_cart, 8, time = 5 SECONDS, crafting_flags = CRAFT_CHECK_DENSITY | CRAFT_ONE_PER_TURF | CRAFT_ON_SOLID_GROUND, category = CAT_MISC),
 	))
 
 /obj/item/stack/sheet/aluminum
