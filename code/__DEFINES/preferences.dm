@@ -126,14 +126,6 @@
 /// Open the keybindings window
 #define PREFERENCE_TAB_KEYBINDINGS 2
 
-// APHELION EDIT ADDITION START - MERIDIAN_UI
-/// Non-persistent decoration modes accepted by the Preferences preview.
-#define MERIDIAN_PREVIEW_DECORATION_NONE "none"
-#define MERIDIAN_PREVIEW_DECORATION_AUGMENTATION_MARKINGS "augmentation_markings"
-#define MERIDIAN_PREVIEW_DECORATION_AUGMENTATION_BODY_PARTS "augmentation_body_parts"
-#define MERIDIAN_PREVIEW_DECORATION_AUGMENTATION_IMPLANTS "augmentation_implants"
-
-// APHELION EDIT ADDITION END
 /// These will be shown in the character sidebar, but at the bottom.
 #define PREFERENCE_CATEGORY_FEATURES "features"
 
