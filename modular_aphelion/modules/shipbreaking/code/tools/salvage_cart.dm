@@ -48,13 +48,15 @@
 
 /obj/structure/salvage_cart/Initialize(mapload)
 	. = ..()
-	create_storage(max_slots = 20, max_specific_storage = WEIGHT_CLASS_BULKY, max_total_storage = WEIGHT_CLASS_BULKY * 7)
+	create_storage(max_slots = 7, max_specific_storage = WEIGHT_CLASS_BULKY, max_total_storage = WEIGHT_CLASS_BULKY * 7)
+	atom_storage.click_alt_open = FALSE
 	RegisterSignal(atom_storage, COMSIG_STORAGE_STORED_ITEM, PROC_REF(on_storage_changed))
 	RegisterSignal(atom_storage, COMSIG_STORAGE_REMOVED_ITEM, PROC_REF(on_storage_changed))
 	register_context()
 
 /obj/structure/salvage_cart/Destroy()
 	drop_loaded_structures()
+	atom_storage?.remove_all()
 	return ..()
 
 /**
@@ -221,6 +223,9 @@
 		unload_structure(user)
 		return CLICK_ACTION_SUCCESS
 	return NONE
+
+/obj/structure/salvage_cart/attack_hand_secondary(mob/user, list/modifiers)
+	return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
 
 /**
  * Draws the storage fill level.
