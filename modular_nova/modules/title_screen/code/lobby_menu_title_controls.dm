@@ -61,10 +61,15 @@
 		send_update(get_title_control_payload())
 		return
 
+	// Picking a screen replaces the lobby for everyone who is connected and
+	// keeps it that way across restarts, so make the admin say it out loud
+	// first. The prompt sleeps, so it runs off the message pump.
+	if(type == "setTitleScreen")
+		INVOKE_ASYNC(src, PROC_REF(confirm_and_set_title_screen), payload?["screen"])
+		return
+
 	var/applied = FALSE
 	switch(type)
-		if("setTitleScreen")
-			applied = SStitle.set_title_selection(payload?["screen"])
 		if("setTitleRotation")
 			applied = SStitle.set_title_rotation(payload?["rotate"])
 		if("setTitleOverlay")
@@ -82,5 +87,37 @@
 		return
 
 	log_admin("[key_name(client)] changed the title screen presentation ([type]).")
+
+/**
+ * Confirms a server-wide title screen change, then applies it.
+ *
+ * Always re-checks rights after the prompt: it sleeps for as long as the admin
+ * takes to answer, and their holder can be gone by the time it returns. On any
+ * refusal the authoritative state is sent back so the menu snaps out of its
+ * optimistic selection.
+ */
+/datum/lobby_menu/proc/confirm_and_set_title_screen(screen_name)
+	var/label = "the default Meridian Rift screen"
+	if(!isnull(screen_name) && screen_name != "")
+		label = "\"[screen_name]\""
+
+	var/answer = tgui_alert(
+		client,
+		"Switch the lobby title screen to [label]? This changes what every connected player sees right now, and it stays that way across rounds until someone changes it again.",
+		"Change the title screen for everyone?",
+		list("Change it for everyone", "Cancel"),
+		timeout = 30 SECONDS,
+	)
+
+	if(answer != "Change it for everyone" || !can_set_title_screen())
+		send_update(get_title_control_payload())
+		return
+
+	if(!SStitle.set_title_selection(screen_name))
+		send_update(get_title_control_payload())
+		return
+
+	log_admin("[key_name(client)] changed the title screen to [label] for everyone.")
+	message_admins("[key_name_admin(client)] changed the lobby title screen to [label] for everyone.")
 
 #undef TITLE_SCREEN_ADMIN_RIGHTS
