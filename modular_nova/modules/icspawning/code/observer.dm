@@ -33,7 +33,7 @@
 			var/method = tgui_alert(usr, "Select spawn method for this slot", "Save Custom Slot", spawn_options)
 			if(!method)
 				return
-			var/outfit = usr.client.robust_dress_shop_nova()
+			var/outfit = src.client.robust_dress_shop_nova()
 			if(!outfit)
 				return
 
