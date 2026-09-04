@@ -113,7 +113,12 @@ describe('LobbyArtworkPicker', () => {
       screen.getByRole('button', { name: /change lobby artwork/i }),
     );
     const menu = screen.getByRole('menu');
-    const firstScreen = screen.getAllByRole('menuitemradio')[1];
+    // Addressed by name, not by counting keystrokes from the top: the menu's
+    // order is a design choice that has already changed once, and this test is
+    // about the overlay toggle being reachable at all, not about where it sits.
+    const firstScreen = screen.getByRole('menuitemradio', {
+      name: /station_alpha/i,
+    });
     const firstOverlay = screen.getByRole('menuitemcheckbox', {
       name: /overlay .*station_alpha\.png/i,
     });
@@ -121,10 +126,9 @@ describe('LobbyArtworkPicker', () => {
     // The overlay toggles are the only menu items not rendered as a plain
     // <button>: their ref has to survive a shared component's prop spread to
     // reach focus(). Nothing else in this suite lands on one, and when a
-    // <Tooltip> wrapper claimed that ref the toggles were silently
-    // unreachable by keyboard while every other assertion still passed.
-    fireEvent.keyDown(menu, { key: 'Home' });
-    fireEvent.keyDown(menu, { key: 'ArrowDown' });
+    // <Tooltip> wrapper claimed that ref the toggles were silently unreachable
+    // by keyboard while every other assertion still passed.
+    firstScreen.focus();
     expect(document.activeElement).toBe(firstScreen);
     fireEvent.keyDown(menu, { key: 'ArrowDown' });
     expect(document.activeElement).toBe(firstOverlay);
