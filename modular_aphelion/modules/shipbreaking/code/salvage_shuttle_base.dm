@@ -14,8 +14,8 @@
 #define SALVAGE_CONDITION_LIGHT_DEAD_CHANCE 30
 /// Share of dead lights that burn out instead of smashing.
 #define SALVAGE_CONDITION_LIGHT_BURNED_SHARE 35
-/// Percent chance per wall turf to arrive rusted on a salvage ship.
-#define SALVAGE_CONDITION_WALL_RUST_CHANCE 25
+/// Percent chance per open floor turf beside a wall to stain with rust-toned grime.
+#define SALVAGE_CONDITION_RUST_CHANCE 4
 /// Percent chance per ship to leave a dried-blood-and-remains cluster behind.
 #define SALVAGE_CONDITION_REMAINS_CHANCE 40
 
@@ -68,18 +68,16 @@
 	apply_abandoned_condition(shuttle_area)
 
 /**
- * Scatters dust, ash, and cobweb decals across open floors, rusts some walls,
- * kills a share of light fixtures, and rarely leaves a dried-blood-and-remains
- * cluster behind. Runs once per ship load, never per-tick.
+ * Scatters dust, ash, and cobweb decals across open floors, stains floors
+ * beside walls with rust-toned grime, kills a share of light fixtures, and
+ * rarely leaves a dried-blood-and-remains cluster behind. Runs once per
+ * ship load, never per-tick.
  * Arguments:
  * * shuttle_area - Area the ship loaded into.
  */
 /datum/map_template/shuttle/salvage_scrap/proc/apply_abandoned_condition(area/shuttle_area)
 	var/list/turf/open/floor/ship_floors = list()
 	for (var/list/zlevel_turfs as anything in shuttle_area.get_zlevel_turf_lists())
-		for(var/turf/closed/wall/ship_wall in zlevel_turfs)
-			if(prob(SALVAGE_CONDITION_WALL_RUST_CHANCE))
-				ship_wall.rust_turf()
 		for(var/turf/open/floor/ship_floor in zlevel_turfs)
 			ship_floors += ship_floor
 			if(prob(SALVAGE_CONDITION_DUST_CHANCE))
@@ -89,6 +87,14 @@
 			if(prob(SALVAGE_CONDITION_COBWEB_CHANCE))
 				var/obj/effect/decal/cleanable/cobweb/cobweb_type = pick(/obj/effect/decal/cleanable/cobweb, /obj/effect/decal/cleanable/cobweb/cobweb2)
 				new cobweb_type(ship_floor)
+			if(prob(SALVAGE_CONDITION_RUST_CHANCE))
+				for(var/wall_dir as anything in GLOB.cardinals)
+					if(!isclosedturf(get_step(ship_floor, wall_dir)))
+						continue
+					// Stand-in until art provides a rust-stain decal state.
+					var/obj/effect/decal/cleanable/dirt/rust_stain = new(ship_floor)
+					rust_stain.color = COLOR_ORANGE_BROWN
+					break
 			for(var/obj/machinery/light/ship_light in ship_floor)
 				if(!prob(SALVAGE_CONDITION_LIGHT_DEAD_CHANCE))
 					continue
@@ -167,5 +173,5 @@
 #undef SALVAGE_CONDITION_COBWEB_CHANCE
 #undef SALVAGE_CONDITION_LIGHT_DEAD_CHANCE
 #undef SALVAGE_CONDITION_LIGHT_BURNED_SHARE
-#undef SALVAGE_CONDITION_WALL_RUST_CHANCE
+#undef SALVAGE_CONDITION_RUST_CHANCE
 #undef SALVAGE_CONDITION_REMAINS_CHANCE
