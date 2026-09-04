@@ -37,15 +37,17 @@ describe('LobbyArtworkPicker', () => {
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(trigger);
 
-    // The default master, one radio per configured screen, then the presets.
+    // The configured screens lead, then the default master, then the presets. The
+    // default trails the pictures because it is the fallback, not a rotation candidate.
     const radios = screen.getAllByRole('menuitemradio');
     expect(radios).toHaveLength(DEFAULT_VALUE.screens.length + 1 + 8);
-    expect(radios[0].textContent).toContain('Meridian Rift (default)');
-    expect(radios[0].getAttribute('aria-checked')).toBe('true');
     // The row shows a shortened name and carries the full one on hover.
-    expect(radios[1].textContent).toContain('station_alpha');
-    expect(radios[1].textContent).not.toContain('.png');
-    expect(radios[1].getAttribute('title')).toBe('station_alpha.png');
+    expect(radios[0].textContent).toContain('station_alpha');
+    expect(radios[0].textContent).not.toContain('.png');
+    expect(radios[0].getAttribute('title')).toBe('station_alpha.png');
+    const defaultRadio = radios[DEFAULT_VALUE.screens.length];
+    expect(defaultRadio.textContent).toContain('Meridian Rift (default)');
+    expect(defaultRadio.getAttribute('aria-checked')).toBe('true');
 
     const presets = radios.slice(DEFAULT_VALUE.screens.length + 1);
     expect(presets[0].textContent).toContain('Original - A Flat');
@@ -111,7 +113,12 @@ describe('LobbyArtworkPicker', () => {
       screen.getByRole('button', { name: /change lobby artwork/i }),
     );
     const menu = screen.getByRole('menu');
-    const firstScreen = screen.getAllByRole('menuitemradio')[1];
+    // Addressed by name, not by counting keystrokes from the top: the menu's
+    // order is a design choice that has already changed once, and this test is
+    // about the overlay toggle being reachable at all, not about where it sits.
+    const firstScreen = screen.getByRole('menuitemradio', {
+      name: /station_alpha/i,
+    });
     const firstOverlay = screen.getByRole('menuitemcheckbox', {
       name: /overlay .*station_alpha\.png/i,
     });
@@ -119,10 +126,9 @@ describe('LobbyArtworkPicker', () => {
     // The overlay toggles are the only menu items not rendered as a plain
     // <button>: their ref has to survive a shared component's prop spread to
     // reach focus(). Nothing else in this suite lands on one, and when a
-    // <Tooltip> wrapper claimed that ref the toggles were silently
-    // unreachable by keyboard while every other assertion still passed.
-    fireEvent.keyDown(menu, { key: 'Home' });
-    fireEvent.keyDown(menu, { key: 'ArrowDown' });
+    // <Tooltip> wrapper claimed that ref the toggles were silently unreachable
+    // by keyboard while every other assertion still passed.
+    firstScreen.focus();
     expect(document.activeElement).toBe(firstScreen);
     fireEvent.keyDown(menu, { key: 'ArrowDown' });
     expect(document.activeElement).toBe(firstOverlay);
