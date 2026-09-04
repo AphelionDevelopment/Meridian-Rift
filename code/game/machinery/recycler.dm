@@ -245,12 +245,6 @@
 	return FALSE
 
 /obj/machinery/recycler/proc/recycle_item(obj/item/target)
-// APHELION EDIT ADDITION START - SHIPBREAKING - Hazardous ship tanks rupture
-	if(istype(target, /obj/structure/shuttle_decoration/liquid_tank))
-		var/obj/structure/shuttle_decoration/liquid_tank/hazard_tank = target
-		hazard_tank.rupture_tank()
-		return TRUE
-// APHELION EDIT ADDITION END
 	if(istype(target, /obj/item/grown/log))
 		var/obj/item/grown/log/wood = target
 		var/seed_modifier = wood.seed ? round(wood.seed.potency / 25) : 0
