@@ -327,10 +327,10 @@ const AboutDialog = (props: AboutDialogProps) => {
   return (
     <Dialog title="About Notepad" onClose={close} width={'500px'}>
       <div className="Dialog__body">
-        <span className="NtosNotepad__AboutDialog__logo">MeridianOS</span> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: >NtOS< */}
+        <span className="NtosNotepad__AboutDialog__logo">MeridianOS</span> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: <span className="NtosNotepad__AboutDialog__logo">NtOS</span> */}
         <Divider />
         <Box className="NtosNotepad__AboutDialog__text">
-          <span style={paragraphStyle}>MeridianOS</span> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: Nanotrasen NtOS */}
+          <span style={paragraphStyle}>MeridianOS</span> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: <span style={paragraphStyle}>Nanotrasen NtOS</span> */}
           <span style={paragraphStyle}>
             Version 7815696ecbf1c96e6894b779456d330e
           </span>

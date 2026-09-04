@@ -8,12 +8,10 @@ import { assetMap } from './assets';
 import { LobbyMenu } from './LobbyMenu';
 import { updateScaling } from './scaling';
 // APHELION EDIT ADDITION START - MERIDIAN_UI
-// APHELION EDIT ADDITION START - MERIDIAN_UI
 import {
   isLobbyDisplayControlInteractionTarget,
   isLobbyKeyboardInteractionTarget,
 } from './themeFocus';
-// APHELION EDIT ADDITION END
 // APHELION EDIT ADDITION END
 
 let reactRoot: Root | null = null;

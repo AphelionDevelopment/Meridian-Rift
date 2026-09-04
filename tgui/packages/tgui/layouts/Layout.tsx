@@ -4,18 +4,16 @@
  * @license MIT
  */
 
-import { useAtomValue } from 'jotai'; // APHELION EDIT ADDITION
+import { useAtomValue } from 'jotai'; // APHELION EDIT ADDITION - MERIDIAN_UI
 import { useEffect, useRef } from 'react';
 import type { Box } from 'tgui-core/components';
 import { addScrollableNode, removeScrollableNode } from 'tgui-core/events';
 import { classes } from 'tgui-core/react';
 import { computeBoxClassName, computeBoxProps } from 'tgui-core/ui';
 // APHELION EDIT ADDITION START - MERIDIAN_UI
-// APHELION EDIT ADDITION START - MERIDIAN_UI
 import { resolveMeridianTheme } from '../constants/theme';
 import { debugThemeAtom, meridianThemeAtom } from '../events/store';
 import { useRootThemeClasses } from '../hooks/useRootThemeClasses';
-// APHELION EDIT ADDITION END
 // APHELION EDIT ADDITION END
 
 type BoxProps = React.ComponentProps<typeof Box>;
@@ -28,7 +26,6 @@ type Props = Partial<{
 export function Layout(props: Props) {
   const { className, theme = 'nanotrasen', children, ...rest } = props;
   /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
-
   const themeClass = `theme-${theme}`;
 
   useEffect(() => {

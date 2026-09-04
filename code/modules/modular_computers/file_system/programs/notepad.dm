@@ -13,8 +13,12 @@
 	var/opened_file_uid
 	var/opened_file_on_disk = FALSE
 	var/opened_file_name = "Untitled"
-	// APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: the note opened 'upgrading to the new NtOS and Thinktronic based collaboration effort,'
+	/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
+	var/written_note = "Congratulations on your station upgrading to the new NtOS and Thinktronic based collaboration effort, \
+	*/ // APHELION EDIT REMOVAL END
+	// APHELION EDIT ADDITION START - MERIDIAN_UI
 	var/written_note = "Congratulations on your station upgrading to the new MeridianOS and Thinktronic based collaboration effort, \
+	// APHELION EDIT ADDITION END
 		bringing you the best in electronics and software since 2467!\n\
 		To help with navigation, we have provided the following definitions:\n\
 		Fore - Toward front of ship\n\

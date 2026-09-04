@@ -6,7 +6,8 @@ import { playCollapseSound, playExpandSound, playSelectSound } from './audio';
 
 */ // APHELION EDIT REMOVAL END
 // APHELION EDIT ADDITION START - LOBBY_MENU_REWORK
-import { useCallback, useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useReducer } from 'react'; // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: import { useEffect, useReducer } from 'react';
+// APHELION EDIT ADDITION START - MERIDIAN_UI
 import {
   type MeridianBaseThemeId,
   normalizeMeridianBaseTheme,
@@ -18,6 +19,7 @@ import type {
   LobbyTitleTexture,
   LobbyTitleTreatment,
 } from 'tgui/interfaces/common/TitleArtwork';
+// APHELION EDIT ADDITION END
 import { AphelionLobbyMenu } from './AphelionLobbyMenu';
 import type { StartupMessage } from './components/BootTerminal';
 import type { StationTrait } from './components/StationTraitList';
@@ -64,6 +66,8 @@ export type ServerState = {
   startupMessages: StartupMessage[];
   progressCurrent: number;
   progressTotal: number;
+  // APHELION EDIT ADDITION END
+  // APHELION EDIT ADDITION START - MERIDIAN_UI
   meridianTheme: MeridianBaseThemeId;
   /// Neutral wordmark asset, composited over a picture in overlay treatment.
   titleMarkUrl: string;
@@ -738,10 +742,12 @@ export function LobbyMenu() {
 export function LobbyMenu() {
   const [state, dispatch] = useReducer(lobbyReducer, DEFAULT_STATE);
   const serverState = state.serverState;
+  // APHELION EDIT ADDITION START - MERIDIAN_UI
   const meridianTheme = normalizeMeridianBaseTheme(serverState?.meridianTheme);
   const resolvedTheme = resolveMeridianTheme({ preferred: meridianTheme });
 
   useRootThemeClasses(resolvedTheme.classes);
+  // APHELION EDIT ADDITION END
 
   useEffect(() => {
     Byond.subscribeTo('init', (payload: ServerState) => {
@@ -760,10 +766,12 @@ export function LobbyMenu() {
     );
   }, [serverState?.transparent]);
 
+  // APHELION EDIT ADDITION START - MERIDIAN_UI
   const setMeridianTheme = useCallback((theme: MeridianBaseThemeId) => {
     dispatch({ type: 'serverUpdate', payload: { meridianTheme: theme } });
     Byond.sendMessage('setMeridianTheme', { theme });
   }, []);
+  // APHELION EDIT ADDITION END
 
   if (!serverState) {
     return null;
@@ -771,8 +779,8 @@ export function LobbyMenu() {
 
   return (
     <AphelionLobbyMenu
-      meridianTheme={meridianTheme}
-      onMeridianThemeChange={setMeridianTheme}
+      meridianTheme={meridianTheme} // APHELION EDIT ADDITION - MERIDIAN_UI
+      onMeridianThemeChange={setMeridianTheme} // APHELION EDIT ADDITION - MERIDIAN_UI
       serverState={serverState}
     />
   );

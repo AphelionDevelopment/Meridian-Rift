@@ -150,7 +150,7 @@
 #define PDA_THEME_TERMINAL_NAME "Terminal"
 #define PDA_THEME_SYNDICATE_NAME "Syndicate"
 #define PDA_THEME_CAT_NAME "Cat"
-#define PDA_THEME_LIGHT_MODE_NAME "MeridianOS Light Mode" // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: "NtOS Light Mode"
+#define PDA_THEME_LIGHT_MODE_NAME "MeridianOS Light Mode" // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: #define PDA_THEME_LIGHT_MODE_NAME "NtOS Light Mode"
 #define PDA_THEME_SPOOKY_NAME "Eldritch"
 #define PDA_THEME_HACKERMAN_NAME "Hackerman"
 #define PDA_THEME_ROULETTE_NAME "Roulette Table"
@@ -163,7 +163,6 @@
 #define PDA_THEME_NTOS_LEGACY_NAME "NtOS"
 #define PDA_THEME_DARK_MODE_LEGACY_NAME "NtOS Dark Mode"
 #define PDA_THEME_LIGHT_MODE_LEGACY_NAME "NtOS Light Mode"
-
 // APHELION EDIT ADDITION END
 
 ///List of PDA themes that are accessible to everyone by default.

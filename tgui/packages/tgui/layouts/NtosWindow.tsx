@@ -4,7 +4,7 @@
  * @license MIT
  */
 
-import type { ComponentProps } from 'react'; // APHELION EDIT ADDITION
+import type { ComponentProps } from 'react'; // APHELION EDIT ADDITION - MERIDIAN_UI
 import { Box, Button } from 'tgui-core/components';
 import type { BooleanLike } from 'tgui-core/react';
 
@@ -38,11 +38,8 @@ export type MeridianOSData = { // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL:
 };
 
 // APHELION EDIT ADDITION START - MERIDIAN_UI
-// APHELION EDIT ADDITION START - MERIDIAN_UI
 /** @deprecated Use `MeridianOSData`. */
 export type NTOSData = MeridianOSData;
-// APHELION EDIT ADDITION END
-
 // APHELION EDIT ADDITION END
 type Program = {
   alert: BooleanLike;
@@ -61,7 +58,7 @@ type Login = {
 
 export const MeridianWindow = (props: ComponentProps<typeof Window>) => { // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: export const NtosWindow = (props) => {
   const { title, width = 575, height = 700, children } = props;
-  const { act, data } = useBackend<MeridianOSData>(); // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: useBackend<NTOSData>();
+  const { act, data } = useBackend<MeridianOSData>(); // APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: const { act, data } = useBackend<NTOSData>();
   const {
     PC_device_theme,
     PC_batteryicon,
@@ -99,11 +96,11 @@ export const MeridianWindow = (props: ComponentProps<typeof Window>) => { // APH
               {PC_stationtime}
             </Box>
             <Box inline italic mr={2} opacity={0.33}>
-              {(PC_device_theme === 'syndicate' && 'Syndix') || 'MeridianOS'} {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: || 'NtOS' */}
+              {(PC_device_theme === 'syndicate' && 'Syndix') || 'MeridianOS'} {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: {(PC_device_theme === 'syndicate' && 'Syndix') || 'NtOS'} */}
               {!!PC_lowpower_mode && ' - RUNNING ON LOW POWER MODE'}
             </Box>
           </div>
-          <div className="MeridianHeader__right NtosHeader__right"> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: className="NtosHeader__right" */}
+          <div className="MeridianHeader__right NtosHeader__right"> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: <div className="NtosHeader__right"> */}
             {PC_programheaders.map((header) => (
               <Box key={header.icon} inline mr={1}>
                 <img
@@ -174,7 +171,7 @@ const MeridianWindowContent = (
 ) => {
 // APHELION EDIT ADDITION END
   return (
-    <div className="MeridianWindow__content NtosWindow__content"> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: className="NtosWindow__content" */}
+    <div className="MeridianWindow__content NtosWindow__content"> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: <div className="NtosWindow__content"> */}
       <Window.Content {...props} />
     </div>
   );

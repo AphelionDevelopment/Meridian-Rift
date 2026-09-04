@@ -121,10 +121,11 @@ function FoodList(props: FoodListProps) {
         {food.map((food) => {
           return (
             FOOD_ICONS[food] && (
-              <Stack.Item key={food}> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: <Stack.Item> with key on the Icon */}
+              <Stack.Item key={food}> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: <Stack.Item> */}
                 <Icon
                   className={className}
                   size={1.4}
+                  // key={food} // APHELION EDIT REMOVAL - MERIDIAN_UI
                   name={FOOD_ICONS[food]}
                 />
               </Stack.Item>

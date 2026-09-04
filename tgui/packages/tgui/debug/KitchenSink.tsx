@@ -3,7 +3,7 @@
  * @copyright 2020 Aleksej Komarov
  * @license MIT
  */
-import { useAtom } from 'jotai'; // APHELION EDIT ADDITION
+import { useAtom } from 'jotai'; // APHELION EDIT ADDITION - MERIDIAN_UI
 import { useState } from 'react';
 import { JSONTree } from 'react-json-tree';
 /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
@@ -43,7 +43,7 @@ import {
 import { debugThemeAtom } from '../events/store';
 // APHELION EDIT ADDITION END
 import { Pane, Window } from '../layouts';
-import { DiagnosticLoaderComparison } from './DiagnosticLoaderComparison'; // APHELION EDIT ADDITION
+import { DiagnosticLoaderComparison } from './DiagnosticLoaderComparison'; // APHELION EDIT ADDITION - MERIDIAN_UI
 
 type Props = {
   panel?: boolean;
@@ -55,7 +55,7 @@ enum Tab {
   Shared = 'shared',
   Chunks = 'outgoingPayloadQueues',
   Components = 'components',
-  LoaderStudy = 'loader-study', // APHELION EDIT ADDITION
+  LoaderStudy = 'loader-study', // APHELION EDIT ADDITION - MERIDIAN_UI
 }
 
 const tabs = [
@@ -88,15 +88,9 @@ export function KitchenSink(props: Props) {
       MERIDIAN_BASE_THEME_IDS.length;
     setDebugTheme(MERIDIAN_BASE_THEME_IDS[nextIndex]);
   };
-
   // APHELION EDIT ADDITION END
   return (
-    /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
-    <Layout title="Kitchen Sink" width={600} height={500}>
-    */ // APHELION EDIT REMOVAL END
-    // APHELION EDIT ADDITION START - MERIDIAN_UI
-    <Layout title="MeridianOS Development Showcase" width={800} height={720}>
-    {/* APHELION EDIT ADDITION END */}
+    <Layout title="MeridianOS Development Showcase" width={800} height={720}> {/* APHELION EDIT CHANGE - MERIDIAN_UI - ORIGINAL: <Layout title="Kitchen Sink" width={600} height={500}> */}
       <Layout.Content>
         {/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
         <Stack fill>
@@ -258,7 +252,6 @@ function ComponentsPage(props: { onShowModal: () => void }) {
   const [sliderValue, setSliderValue] = useState(64);
   const [checked, setChecked] = useState(true);
   const [radioValue, setRadioValue] = useState('primary');
-
 // APHELION EDIT ADDITION END
   return (
     /* // APHELION EDIT REMOVAL START - MERIDIAN_UI
