@@ -398,6 +398,13 @@ export function resolveMeridianTheme(
     base,
     classes: [
       `theme-${base}`,
+      // Classic NT borrows nanotrasen's paint wholesale, which leaves it
+      // indistinguishable in CSS from a genuine legacy window. This marker is
+      // the only thing separating the two, so Classic can be given geometry
+      // fixes that must not reach the real legacy themes. It carries no paint.
+      ...(selectedTheme === MERIDIAN_CLASSIC_THEME_ID
+        ? [`theme-${MERIDIAN_CLASSIC_THEME_ID}`]
+        : []),
       ...(isConsole ? ['theme-console'] : []),
       ...modifiers,
     ],
