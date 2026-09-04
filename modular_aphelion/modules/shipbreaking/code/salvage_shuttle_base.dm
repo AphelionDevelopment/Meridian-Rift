@@ -97,7 +97,6 @@
 					for(var/wall_dir as anything in GLOB.cardinals)
 						if(!isclosedturf(get_step(ship_floor, wall_dir)))
 							continue
-						// Stand-in until art provides a rust-stain decal state.
 						var/obj/effect/decal/cleanable/dirt/rust_stain = new(ship_floor)
 						rust_stain.color = COLOR_ORANGE_BROWN
 						break
