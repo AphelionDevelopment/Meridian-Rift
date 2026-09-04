@@ -719,3 +719,59 @@
   font-size: max(13px, 1em);
   font-weight: 400;
 }
+
+// Classic NT is MeridianOS wearing nanotrasen's paint, so it inherits stock
+// tgui's control geometry: a button is sized only by `line-height`, giving a
+// 20px box with no min-height, and .Section__buttons is absolutely positioned
+// so its header never grows to fit what is in it. The result is the cramped
+// action row in the Details header -- text almost touching the fill, icons
+// tight to the edge.
+//
+// Everything below is geometry. No border, colour, background or motif is set
+// here, so Classic keeps looking like Classic. It is scoped to the marker
+// class rather than `.theme-nanotrasen` on purpose: the genuine legacy themes
+// share that paint and must keep their existing proportions exactly.
+.theme-meridian_classic {
+  // Let the header size to its controls instead of to its text line, so a
+  // full-height button is not pressed against the separator.
+  .Section > .Section__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-m);
+  }
+
+  .Section__buttons {
+    position: static;
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-top: 0;
+    margin-left: auto;
+  }
+
+  .Section__buttons > :is(.Button, .Dropdown, .NumberInput) {
+    // The row's gap owns the spacing once these are flex items.
+    margin: 0;
+  }
+
+  // The same comfortable box the console skins use, so a 12px label is not
+  // sitting in a 20px line box with its icon jammed against the edge.
+  .Button:not(.Button--compact) {
+    min-height: 24px;
+  }
+
+  .Button--hasIcon:not(.Button--compact) > .Button__content {
+    display: flex;
+    min-height: 24px;
+    align-items: center;
+  }
+
+  .Button--empty.Button--hasIcon:not(.Button--compact) {
+    min-width: 24px;
+  }
+
+  .Button--empty.Button--hasIcon > .Button__content {
+    justify-content: center;
+  }
+}

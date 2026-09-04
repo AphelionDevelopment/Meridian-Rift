@@ -196,9 +196,18 @@ describe('MeridianOS theme resolution', () => {
       }),
     ).toEqual({
       base: 'nanotrasen',
-      classes: ['theme-nanotrasen'],
+      // Classic wears nanotrasen's paint but carries its own marker, which is
+      // the only way CSS can reach it without also reaching genuine legacy
+      // windows. A real nanotrasen window must never gain this class.
+      classes: ['theme-nanotrasen', 'theme-meridian_classic'],
       isConsole: false,
     });
+    expect(
+      resolveMeridianTheme({ requested: 'nanotrasen' }).classes,
+    ).not.toContain('theme-meridian_classic');
+    expect(
+      resolveMeridianTheme({ requested: 'ntos_darkmode' }).classes,
+    ).not.toContain('theme-meridian_classic');
     expect(
       resolveMeridianTheme({
         requested: 'paper',
