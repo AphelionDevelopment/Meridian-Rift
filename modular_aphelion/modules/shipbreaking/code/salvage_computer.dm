@@ -188,6 +188,7 @@ GLOBAL_LIST_EMPTY(shipbreaking_templates)
 	var/obj/docking_port/mobile/loaded_port = SSshuttle.action_load(salvage_template, docking_clamp.docking_port, FALSE)
 	if(loaded_port && (docking_clamp.docking_port.get_docked() == loaded_port))
 		say("Salvage clamps retrieving ship now, please stand clear of the work bay.")
+		salvage_template.apply_abandoned_condition(loaded_port.shuttle_areas)
 		make_salvage_ticket(salvage_template)
 	else
 		message_admins("[user] tried to load a salvage template ([salvage_template]) but it failed for some reason, this should not happen!")
