@@ -19,6 +19,11 @@
 		Oddly enough, it doesn't seem to work on living creatures."
 	coreless = TRUE
 	prebuilt = TRUE
+	custom_materials = list(
+		/datum/material/iron = SHEET_MATERIAL_AMOUNT * 1.25,
+		/datum/material/glass = SHEET_MATERIAL_AMOUNT,
+		/datum/material/uranium = SHEET_MATERIAL_AMOUNT,
+	)
 
 /**
  * Throws the launched object with weak force.

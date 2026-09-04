@@ -13,6 +13,10 @@
 	inhand_icon_state = "wrench"
 	toolspeed = 0.75
 	force = 8
+	custom_materials = list(
+		/datum/material/iron = SHEET_MATERIAL_AMOUNT,
+		/datum/material/aluminum = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/wrench/salvage_wrench/examine(mob/user)
 	. = ..()

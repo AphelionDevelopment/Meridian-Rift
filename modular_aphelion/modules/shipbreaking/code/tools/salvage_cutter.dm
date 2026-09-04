@@ -17,6 +17,11 @@
 	max_fuel = 80
 	toolspeed = 0.75
 	force = 8
+	custom_materials = list(
+		/datum/material/iron = SHEET_MATERIAL_AMOUNT * 2,
+		/datum/material/glass = HALF_SHEET_MATERIAL_AMOUNT,
+		/datum/material/aluminum = HALF_SHEET_MATERIAL_AMOUNT,
+	)
 
 /obj/item/weldingtool/salvage_cutter/examine(mob/user)
 	. = ..()
