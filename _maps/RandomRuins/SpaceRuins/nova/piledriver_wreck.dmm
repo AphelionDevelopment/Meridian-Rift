@@ -189,7 +189,7 @@
 /obj/effect/mob_spawn/corpse/human/syndicatecommando/lessenedgear,
 /obj/item/ammo_casing,
 /turf/template_noop,
-/area/template_noop)
+/area/space/nearstation)
 "kr" = (
 /obj/structure/shuttle_decoration/wall_plate/armor,
 /turf/closed/wall/mineral/nanocarbon/nodiagonal/primary_colour{
@@ -366,7 +366,7 @@
 "up" = (
 /obj/effect/mob_spawn/corpse/human/syndicatecommando/lessenedgear,
 /turf/template_noop,
-/area/template_noop)
+/area/space/nearstation)
 "uy" = (
 /obj/structure/shuttle_decoration/wall_plate/armor{
 	dir = 1
@@ -625,7 +625,7 @@
 "Hd" = (
 /obj/structure/shuttle_decoration/ladder/directional/north,
 /turf/template_noop,
-/area/template_noop)
+/area/space/nearstation)
 "Hl" = (
 /obj/structure/tank_dispenser/oxygen,
 /obj/effect/turf_decal/delivery,
@@ -784,7 +784,7 @@
 "NY" = (
 /obj/structure/shuttle_decoration/ladder/directional/south,
 /turf/template_noop,
-/area/template_noop)
+/area/space/nearstation)
 "Oo" = (
 /obj/effect/turf_decal/stripes/corner{
 	dir = 4
@@ -996,7 +996,7 @@
 "Yv" = (
 /obj/item/ammo_casing,
 /turf/template_noop,
-/area/template_noop)
+/area/space/nearstation)
 "YZ" = (
 /obj/structure/closet/syndicate/personal,
 /turf/open/floor/iron/colony/nanocarbon,
