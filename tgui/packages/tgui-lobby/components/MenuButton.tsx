@@ -6,6 +6,7 @@ export function MenuButton({
   onClick,
   newPoll,
   disabled,
+  readout,
   iconState,
   assetMap,
   children,
@@ -15,6 +16,8 @@ export function MenuButton({
   newPoll?: boolean;
   /** Inert - no hover/click behavior. Used for the latejoin queue counter and asset-gated buttons. */
   disabled?: boolean;
+  /** A status readout rather than a temporarily unavailable action. */
+  readout?: boolean;
   /** Optional PNG icon (e.g. "ready", "join_game") shown before the label, looked up in assetMap. */
   iconState?: string;
   assetMap?: Record<string, string>;
@@ -23,6 +26,7 @@ export function MenuButton({
   const classes = ['menu_button'];
   if (newPoll) classes.push('menu_newpoll');
   if (disabled) classes.push('info_display');
+  if (readout) classes.push('menu_readout');
 
   const iconUrl = iconState ? assetMap?.[`${iconState}.png`] : undefined;
 

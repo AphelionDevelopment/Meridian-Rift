@@ -7,6 +7,7 @@ import {
   render,
   screen,
 } from '@testing-library/react';
+import { MERIDIAN_BASE_THEME_IDS } from 'tgui/constants/theme';
 import { assetMap } from './assets';
 import type { ServerState } from './LobbyMenu';
 import { LobbyMenu } from './LobbyMenu';
@@ -200,14 +201,24 @@ describe('LobbyMenu MeridianOS integration', () => {
       titleBezel: 'rusty',
     });
     let artwork = document.querySelector('.lobby-title-art');
-    expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
+    expect(artwork?.getAttribute('data-texture')).toBe('none');
+    expect(
+      document
+        .querySelector('.lobby-menu-scanline-overlay')
+        ?.getAttribute('data-texture'),
+    ).toBe('navarobl');
     expect(artwork?.getAttribute('data-variant')).toBe('convex');
     // The rim can change independently of the screen effect.
     expect(artwork?.getAttribute('data-bezel')).toBe('rusty');
 
     emit('state', { gamePhase: 'pregame', playerCount: 9 });
     artwork = document.querySelector('.lobby-title-art');
-    expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
+    expect(artwork?.getAttribute('data-texture')).toBe('none');
+    expect(
+      document
+        .querySelector('.lobby-menu-scanline-overlay')
+        ?.getAttribute('data-texture'),
+    ).toBe('navarobl');
 
     emit('state', { transparent: true });
     expect(
@@ -234,11 +245,14 @@ describe('LobbyMenu MeridianOS integration', () => {
     expect(artwork?.getAttribute('data-treatment')).toBe('screen');
     expect(artwork?.getAttribute('data-variant')).toBe('flat');
     expect(artwork?.getAttribute('data-bezel')).toBe('none');
-    expect(artwork?.getAttribute('data-texture')).toBe('original');
+    expect(artwork?.getAttribute('data-texture')).toBe('none');
     expect(
-      artwork
-        ?.querySelector('.lobby-title-art__fallback')
-        ?.getAttribute('src'),
+      document
+        .querySelector('.lobby-menu-scanline-overlay')
+        ?.getAttribute('data-texture'),
+    ).toBe('original');
+    expect(
+      artwork?.querySelector('.lobby-title-art__fallback')?.getAttribute('src'),
     ).toBe('asset://rotated-title.png');
   });
 
@@ -246,7 +260,13 @@ describe('LobbyMenu MeridianOS integration', () => {
     render(<LobbyMenu />);
     emit('init', makeServerState({ gamePhase: 'pregame' }));
 
-    for (const titleBezel of ['classic', 'none', 'rusty-dark', 'aphelion', 'rusty'] as const) {
+    for (const titleBezel of [
+      'classic',
+      'none',
+      'rusty-dark',
+      'aphelion',
+      'rusty',
+    ] as const) {
       emit('state', { titleBezel });
 
       const artwork = document.querySelector('.lobby-title-art');
@@ -258,15 +278,16 @@ describe('LobbyMenu MeridianOS integration', () => {
         artwork?.classList.contains(`lobby-title-art--bezel-${titleBezel}`),
       ).toBe(true);
       expect(artwork?.getAttribute('data-variant')).toBe('convex');
-      expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
+      expect(artwork?.getAttribute('data-texture')).toBe('none');
+      expect(
+        document
+          .querySelector('.lobby-menu-scanline-overlay')
+          ?.getAttribute('data-texture'),
+      ).toBe('navarobl');
     }
   });
 
-  for (const meridianTheme of [
-    'meridian_pipboy',
-    'meridian_highline',
-    'meridian_aphelion',
-  ] as const) {
+  for (const meridianTheme of MERIDIAN_BASE_THEME_IDS) {
     it(`keeps ${meridianTheme} menu scanlines aligned with each bezel choice`, () => {
       render(<LobbyMenu />);
       emit('init', makeServerState({ gamePhase: 'pregame', meridianTheme }));
@@ -326,10 +347,13 @@ describe('LobbyMenu MeridianOS integration', () => {
 
   it('renders a treated screen without a wordmark', () => {
     render(<LobbyMenu />);
-    emit('init', makeServerState({
-      gamePhase: 'pregame',
-      titleImageTreatment: 'screen',
-    }));
+    emit(
+      'init',
+      makeServerState({
+        gamePhase: 'pregame',
+        titleImageTreatment: 'screen',
+      }),
+    );
 
     // Screen treatment and wordmark are independent: this is the combination the old
     // all-or-nothing overlay flag could not express.
@@ -354,7 +378,10 @@ describe('LobbyMenu MeridianOS integration', () => {
 
   it('renders an untreated screen as a plain backdrop', () => {
     render(<LobbyMenu />);
-    emit('init', makeServerState({ gamePhase: 'pregame', titleImageTreatment: 'none' }));
+    emit(
+      'init',
+      makeServerState({ gamePhase: 'pregame', titleImageTreatment: 'none' }),
+    );
 
     expect(document.querySelector('.lobby-title-art')).toBeNull();
     expect(document.querySelector('.bg')?.getAttribute('src')).toBe(
@@ -364,7 +391,10 @@ describe('LobbyMenu MeridianOS integration', () => {
 
   it('composites the wordmark over a screen in the overlay treatment', () => {
     render(<LobbyMenu />);
-    emit('init', makeServerState({ gamePhase: 'pregame', titleImageTreatment: 'overlay' }));
+    emit(
+      'init',
+      makeServerState({ gamePhase: 'pregame', titleImageTreatment: 'overlay' }),
+    );
 
     const artwork = document.querySelector('.lobby-title-art');
     expect(artwork?.getAttribute('data-treatment')).toBe('overlay');
@@ -373,28 +403,47 @@ describe('LobbyMenu MeridianOS integration', () => {
 
   it('renders the texture the server chose', () => {
     render(<LobbyMenu />);
-    emit('init', makeServerState({ gamePhase: 'pregame', titleTexture: 'navarobl' }));
+    emit(
+      'init',
+      makeServerState({ gamePhase: 'pregame', titleTexture: 'navarobl' }),
+    );
 
     expect(
-      document.querySelector('.lobby-title-art')?.getAttribute('data-texture'),
+      document
+        .querySelector('.lobby-menu-scanline-overlay')
+        ?.getAttribute('data-texture'),
     ).toBe('navarobl');
+    expect(
+      document.querySelector('.lobby-title-art')?.getAttribute('data-texture'),
+    ).toBe('none');
   });
 
   it('restores the server presentation after a remount', () => {
     const view = render(<LobbyMenu />);
-    emit('init', makeServerState({ gamePhase: 'pregame', titleVariant: 'flat' }));
+    emit(
+      'init',
+      makeServerState({ gamePhase: 'pregame', titleVariant: 'flat' }),
+    );
     expect(
       document.querySelector('.lobby-title-art')?.getAttribute('data-variant'),
     ).toBe('flat');
 
     view.unmount();
     render(<LobbyMenu />);
-    emit('init', makeServerState({ gamePhase: 'pregame', titleVariant: 'flat' }));
+    emit(
+      'init',
+      makeServerState({ gamePhase: 'pregame', titleVariant: 'flat' }),
+    );
 
     // Nothing is client-local any more, so the choice survives the remount.
     const artwork = document.querySelector('.lobby-title-art');
     expect(artwork?.getAttribute('data-variant')).toBe('flat');
-    expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
+    expect(artwork?.getAttribute('data-texture')).toBe('none');
+    expect(
+      document
+        .querySelector('.lobby-menu-scanline-overlay')
+        ?.getAttribute('data-texture'),
+    ).toBe('navarobl');
     expect(artwork?.getAttribute('data-presentation')).toBe('classic-alt');
   });
 });

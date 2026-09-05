@@ -84,9 +84,9 @@
   --boot-warning: var(--console-status-warning);
 }
 
-// Classic NT intentionally reproduces the pre-theme HTML menu and carries its
-// purple-to-blue gradient into startup. Regular TGUI resolves this preference
-// to base `theme-nanotrasen`.
+// Classic NT carries its purple-to-blue identity into startup. Its HTML menu
+// uses a quieter reading surface in _instrument-menus.scss. Regular TGUI
+// resolves this preference to base `theme-nanotrasen`.
 .theme-nanotrasen {
   --lobby-canvas: #000;
   --lobby-panel: #000066;

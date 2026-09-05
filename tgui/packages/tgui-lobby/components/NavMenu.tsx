@@ -90,7 +90,7 @@ export function NavMenu({
           </>
         )}
       </MenuButton>
-      <MenuButton disabled>
+      <MenuButton disabled readout>
         LATEJOIN QUEUE: {serverState.latejoinQueue}
       </MenuButton>
 

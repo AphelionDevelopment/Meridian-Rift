@@ -1,14 +1,7 @@
 // THIS IS AN APHELION UI FILE
 
 import type { CSSProperties } from 'react';
-import { Icon } from 'tgui-core/components';
-
 import type { MeridianBaseThemeId } from 'tgui/constants/theme';
-import { MeridianThemePicker } from 'tgui/layouts/MeridianThemePicker';
-import { assetMap } from './assets';
-import { BootTerminal } from './components/BootTerminal';
-import { NavMenu } from './components/NavMenu';
-import { NoticeBanner } from './components/NoticeBanner';
 import {
   resolveLobbyScreenPresentation,
   resolveLobbyTitleArtVariant,
@@ -17,8 +10,14 @@ import {
   resolveLobbyTitleTreatment,
   TitleArtwork,
 } from 'tgui/interfaces/common/TitleArtwork';
+import { MeridianThemePicker } from 'tgui/layouts/MeridianThemePicker';
+import { Icon } from 'tgui-core/components';
+import { assetMap } from './assets';
+import { BootTerminal } from './components/BootTerminal';
+import { NavMenu } from './components/NavMenu';
+import { NoticeBanner } from './components/NoticeBanner';
 import type { ServerState } from './LobbyMenu';
-import { getLobbyMenuHeading } from './menuTheme';
+import { getLobbyMenuHeading, usesSharedLobbyMenu } from './menuTheme';
 
 export function AphelionLobbyMenu({
   meridianTheme,
@@ -88,6 +87,9 @@ export function AphelionLobbyMenu({
   return (
     <div
       className={`lobby ${serverState.transparent ? 'lobby--transparent' : ''}`}
+      data-menu-treatment={
+        usesSharedLobbyMenu(meridianTheme) ? 'instrument' : undefined
+      }
       data-menu-scanlines={scanlineOverlay ? 'true' : undefined}
     >
       {/* The boot terminal owns the screen during startup, so the title

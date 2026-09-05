@@ -1,0 +1,190 @@
+// THIS IS AN APHELION UI FILE
+// Lobby housings borrow the construction of their matching interface themes.
+// Texture and registration marks stay at the edges, clear of the controls.
+
+.theme-meridian .lobby {
+  --menu-panel: linear-gradient(180deg, var(--lobby-panel), var(--lobby-recessed)), var(--lobby-panel);
+  --menu-frame: color-mix(in srgb, var(--lobby-boundary) 76%, var(--lobby-panel));
+  --menu-line: color-mix(in srgb, var(--lobby-boundary) 48%, transparent);
+  --menu-border-top: 1px;
+  --menu-border-right: 1px;
+  --menu-border-bottom: 1px;
+  --menu-border-left: 1px;
+  --menu-radius: 3px;
+  --menu-shadow: 0 0 0 3px var(--lobby-canvas), inset 0 1px 0 color-mix(in srgb, var(--lobby-boundary) 18%, transparent);
+  --menu-rule: linear-gradient(90deg, var(--lobby-accent) 0 62%, transparent 62% 68%, var(--lobby-boundary) 68% 84%, transparent 84% 89%, var(--lobby-boundary) 89%);
+  --menu-rule-height: 2px;
+  --menu-rule-width: 184px;
+  --menu-heading-font: Consolas, 'Courier New', monospace;
+  --menu-heading-tracking: 0.12em;
+  --menu-body-font: 'Segoe UI', Arial, sans-serif;
+  --menu-body-tracking: 0.035em;
+  --menu-hover-face: color-mix(in srgb, var(--lobby-accent) 8%, var(--lobby-panel));
+  --menu-control-rail: 2px;
+}
+
+.theme-meridian_classic .lobby {
+  // Keep the purple-to-blue CRT identity on a quieter, opaque reading surface.
+  --menu-panel: linear-gradient(180deg, #211735, #131527 62%, #0b1030), #211735;
+  --menu-raised: #282641;
+  --menu-text: #ccddee;
+  --menu-muted: #a5b6d0;
+  --menu-accent: #b4a0f2;
+  --menu-secondary: #98b7eb;
+  --menu-focus: #ffe77f;
+  --menu-frame: #71648f;
+  --menu-line: #413952;
+  --menu-border-top: 2px;
+  --menu-border-right: 1px;
+  --menu-border-bottom: 1px;
+  --menu-border-left: 2px;
+  --menu-radius: 3px;
+  --menu-shadow: inset 1px 1px 0 #4b4261, 3px 3px 0 #080813;
+  --menu-rule: linear-gradient(90deg, #9c82d2, #7394d5);
+  --menu-rule-height: 1px;
+  --menu-rule-width: 100%;
+  --menu-heading-font: 'Fixedsys', monospace;
+  --menu-heading-tracking: 0.1em;
+  --menu-body-font: 'Fixedsys', monospace;
+  --menu-body-tracking: 0.025em;
+  --menu-hover-face: #2d2949;
+  --menu-control-rail: 2px;
+}
+
+.theme-meridian_vector .lobby {
+  --menu-panel: linear-gradient(180deg, var(--lobby-panel), var(--lobby-recessed)), var(--lobby-panel);
+  --menu-frame: var(--lobby-boundary);
+  --menu-line: color-mix(in srgb, var(--lobby-boundary) 50%, transparent);
+  --menu-border-top: 3px;
+  --menu-border-right: 3px;
+  --menu-border-bottom: 3px;
+  --menu-border-left: 3px;
+  --menu-radius: 0px;
+  --menu-shadow: 0 0 0 3px var(--lobby-canvas);
+  --menu-rule: repeating-linear-gradient(90deg, var(--lobby-accent) 0 1px, transparent 1px 12px);
+  --menu-rule-height: 4px;
+  --menu-rule-width: 252px;
+  --menu-heading-font: Consolas, 'Courier New', monospace;
+  --menu-heading-tracking: 0.15em;
+  --menu-body-font: Consolas, 'Courier New', monospace;
+  --menu-body-tracking: 0.02em;
+  --menu-hover-face: color-mix(in srgb, var(--lobby-accent) 7%, var(--lobby-panel));
+  --menu-control-rail: 1px;
+
+  .container_nav {
+    border-style: double;
+  }
+}
+
+.theme-meridian_foundry .lobby {
+  --menu-panel:
+    radial-gradient(circle, var(--lobby-boundary) 0 1px, transparent 2px) top 5px left 5px / 6px 6px no-repeat,
+    radial-gradient(circle, var(--lobby-boundary) 0 1px, transparent 2px) bottom 5px right 5px / 6px 6px no-repeat,
+    linear-gradient(180deg, var(--lobby-panel), var(--lobby-recessed)), var(--lobby-panel);
+  --menu-frame: color-mix(in srgb, var(--lobby-boundary) 78%, var(--lobby-panel));
+  --menu-line: color-mix(in srgb, var(--lobby-boundary) 44%, transparent);
+  --menu-border-top: 3px;
+  --menu-border-right: 1px;
+  --menu-border-bottom: 2px;
+  --menu-border-left: 3px;
+  --menu-radius: 1px;
+  --menu-shadow: inset 2px 2px 0 var(--lobby-recessed), inset -1px -1px 0 color-mix(in srgb, var(--lobby-boundary) 30%, transparent), 0 0 0 3px var(--lobby-canvas);
+  --menu-rule: linear-gradient(90deg, var(--lobby-accent) 0 68%, transparent 68% 77%, var(--lobby-boundary) 77% 94%, transparent 94%);
+  --menu-rule-height: 4px;
+  --menu-rule-width: 92px;
+  --menu-heading-font: Bahnschrift, 'Segoe UI', Arial, sans-serif;
+  --menu-heading-tracking: 0.16em;
+  --menu-body-font: Bahnschrift, 'Segoe UI', Arial, sans-serif;
+  --menu-body-tracking: 0.04em;
+  --menu-hover-face: color-mix(in srgb, var(--lobby-accent) 9%, var(--lobby-panel));
+  --menu-control-rail: 3px;
+}
+
+.theme-meridian_diagnostic .lobby {
+  --menu-panel: var(--lobby-recessed);
+  --menu-frame: color-mix(in srgb, var(--lobby-boundary) 82%, var(--lobby-recessed));
+  --menu-line: color-mix(in srgb, var(--lobby-boundary) 42%, transparent);
+  --menu-border-top: 1px;
+  --menu-border-right: 2px;
+  --menu-border-bottom: 1px;
+  --menu-border-left: 2px;
+  --menu-radius: 0px;
+  --menu-shadow: inset 0 0 0 3px var(--lobby-canvas);
+  --menu-rule: repeating-linear-gradient(90deg, var(--lobby-accent-secondary) 0 2px, transparent 2px 8px);
+  --menu-rule-height: 2px;
+  --menu-rule-width: 74px;
+  --menu-heading-font: Consolas, 'Courier New', monospace;
+  --menu-heading-tracking: 0.1em;
+  --menu-body-font: Consolas, 'Courier New', monospace;
+  --menu-body-tracking: 0;
+  --menu-hover-face: color-mix(in srgb, var(--lobby-accent) 7%, var(--lobby-recessed));
+  --menu-control-rail: 2px;
+}
+
+.theme-meridian_afterlight .lobby {
+  --menu-panel:
+    linear-gradient(106deg, transparent 36%, color-mix(in srgb, var(--lobby-boundary) 42%, transparent) 37% 39%, transparent 40%) top 1px right 22px / 68px 2px no-repeat,
+    linear-gradient(180deg, var(--lobby-panel), var(--lobby-recessed)), var(--lobby-panel);
+  --menu-frame: color-mix(in srgb, var(--lobby-boundary) 70%, var(--lobby-panel));
+  --menu-line: color-mix(in srgb, var(--lobby-boundary) 44%, transparent);
+  --menu-border-top: 5px;
+  --menu-border-right: 1px;
+  --menu-border-bottom: 1px;
+  --menu-border-left: 4px;
+  --menu-radius: 2px;
+  --menu-shadow: inset 2px 2px 0 var(--lobby-recessed), inset -1px -1px 0 color-mix(in srgb, var(--lobby-boundary) 22%, transparent), 4px 4px 0 var(--lobby-canvas);
+  --menu-rule: linear-gradient(90deg, var(--lobby-accent) 0 82%, transparent 82% 90%, var(--lobby-accent-secondary) 90%);
+  --menu-rule-height: 2px;
+  --menu-rule-width: 64px;
+  --menu-heading-font: Consolas, 'Courier New', monospace;
+  --menu-heading-tracking: 0.08em;
+  --menu-body-font: 'Fixedsys', monospace;
+  --menu-body-tracking: 0.025em;
+  --menu-hover-face: color-mix(in srgb, var(--lobby-accent) 8%, var(--lobby-panel));
+  --menu-control-rail: 2px;
+}
+
+.theme-meridian_relay .lobby {
+  --menu-panel:
+    radial-gradient(circle, var(--lobby-boundary) 0 1px, transparent 1.5px) bottom 7px left 7px / 4px 4px no-repeat,
+    radial-gradient(circle, var(--lobby-boundary) 0 1px, transparent 1.5px) bottom 7px right 7px / 4px 4px no-repeat,
+    linear-gradient(180deg, var(--lobby-panel), var(--lobby-recessed)), var(--lobby-panel);
+  --menu-frame: color-mix(in srgb, var(--lobby-boundary) 80%, var(--lobby-panel));
+  --menu-line: color-mix(in srgb, var(--lobby-boundary) 48%, transparent);
+  --menu-border-top: 1px;
+  --menu-border-right: 1px;
+  --menu-border-bottom: 3px;
+  --menu-border-left: 1px;
+  --menu-radius: 2px;
+  --menu-shadow: inset 0 -3px 0 var(--lobby-recessed), inset 0 0 0 2px color-mix(in srgb, var(--lobby-boundary) 18%, transparent), 0 0 0 3px var(--lobby-canvas);
+  --menu-rule: linear-gradient(90deg, var(--lobby-accent) 0 42%, transparent 42% 49%, var(--lobby-accent-secondary) 49% 67%, transparent 67% 74%, var(--lobby-boundary) 74%);
+  --menu-rule-height: 3px;
+  --menu-rule-width: 104px;
+  --menu-heading-font: 'Segoe UI', Arial, sans-serif;
+  --menu-heading-tracking: 0.12em;
+  --menu-body-font: Bahnschrift, 'Segoe UI', Arial, sans-serif;
+  --menu-body-tracking: 0.035em;
+  --menu-hover-face: color-mix(in srgb, var(--lobby-accent-secondary) 8%, var(--lobby-panel));
+  --menu-control-rail: 3px;
+}
+
+.theme-meridian_bastion .lobby {
+  --menu-panel: linear-gradient(180deg, var(--lobby-panel), var(--lobby-recessed)), var(--lobby-panel);
+  --menu-frame: color-mix(in srgb, var(--lobby-boundary) 78%, var(--lobby-panel));
+  --menu-line: color-mix(in srgb, var(--lobby-boundary) 50%, transparent);
+  --menu-border-top: 5px;
+  --menu-border-right: 2px;
+  --menu-border-bottom: 3px;
+  --menu-border-left: 5px;
+  --menu-radius: 2px;
+  --menu-shadow: inset 0 0 0 3px var(--lobby-recessed), 0 0 0 3px var(--lobby-canvas), 0 0 0 4px color-mix(in srgb, var(--lobby-boundary) 24%, transparent);
+  --menu-rule: linear-gradient(90deg, var(--lobby-accent) 0 80%, var(--lobby-boundary) 80% 86%, transparent 86% 91%, var(--lobby-accent) 91%);
+  --menu-rule-height: 3px;
+  --menu-rule-width: 144px;
+  --menu-heading-font: Bahnschrift, 'Segoe UI', Arial, sans-serif;
+  --menu-heading-tracking: 0.18em;
+  --menu-body-font: 'Segoe UI', Arial, sans-serif;
+  --menu-body-tracking: 0.05em;
+  --menu-hover-face: color-mix(in srgb, var(--lobby-accent) 8%, var(--lobby-panel));
+  --menu-control-rail: 4px;
+}
