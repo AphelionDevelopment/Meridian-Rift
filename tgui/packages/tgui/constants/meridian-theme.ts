@@ -24,7 +24,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian',
     name: 'Standard',
-    construction: 'Restrained chamfers and a double-rule shell',
+    construction: 'Dark navy and teal for an understated station console.',
     production: true,
     palette: {
       canvas: '#080D10',
@@ -42,8 +42,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian_pipboy',
     name: 'Wastelander',
-    construction:
-      'Weathered olive housing, muted phosphor, and inset label plates',
+    construction: 'Faded olive screens and worn metal from a harsher future.',
     production: true,
     palette: {
       canvas: '#0C100B',
@@ -61,7 +60,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian_vector',
     name: 'Vector',
-    construction: 'Paired notches, calibration ticks, and measurement rails',
+    construction: 'Cool blue readouts and the precision of a flight console.',
     production: true,
     palette: {
       canvas: '#070D16',
@@ -79,7 +78,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian_foundry',
     name: 'Foundry',
-    construction: 'Structural edges, recessed controls, and fastener marks',
+    construction: 'Warm amber controls set into heavy industrial steel.',
     production: true,
     palette: {
       canvas: '#100C08',
@@ -97,7 +96,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian_diagnostic',
     name: 'Diagnostic',
-    construction: 'Square brackets, alignment ticks, and acquisition nodes',
+    construction: 'Green readouts and crisp markings on a clinical terminal.',
     production: true,
     palette: {
       canvas: '#050D09',
@@ -115,7 +114,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian_highline',
     name: 'Highline',
-    construction: 'Ceramic framing, graphite panels, and cool-blue indicators',
+    construction: 'Pale ceramic, graphite panels, and cool blue accents.',
     production: true,
     palette: {
       canvas: '#10151A',
@@ -133,7 +132,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian_synapse',
     name: 'Synapse',
-    construction: 'Asymmetric cuts, violet edges, and teal status pins',
+    construction: 'Violet and teal neon with the mood of a midnight arcade.',
     production: true,
     palette: {
       canvas: '#0C0710',
@@ -151,7 +150,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian_cyberpunk',
     name: 'Cyberpunk',
-    construction: 'Broken red rails, opposing cuts, and cyan inner pins',
+    construction: 'Black and red with sharp cyan accents from the neon sprawl.',
     production: true,
     palette: {
       canvas: '#090304',
@@ -169,7 +168,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian_augmentation',
     name: 'Augmentation',
-    construction: 'Clinical trapezoids, module sockets, and a symmetric axis',
+    construction: 'Cool cyan and surgical red for a cybernetics console.',
     production: true,
     palette: {
       canvas: '#070203',
@@ -187,8 +186,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian_afterlight',
     name: 'Afterlight',
-    construction:
-      'Retro-noir bezel slabs, service plates, and substantial keys',
+    construction: 'Worn charcoal, warm amber, and the glow of an old CRT.',
     production: true,
     palette: {
       canvas: '#07090C',
@@ -206,7 +204,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian_relay',
     name: 'Relay',
-    construction: 'Unequal equipment bays, label plates, and relay lamps',
+    construction: "Steel panels and amber lamps for a working ship's bridge.",
     production: true,
     palette: {
       canvas: '#101314',
@@ -224,7 +222,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian_bastion',
     name: 'Bastion',
-    construction: 'Monumental slab rails, portal corners, and deep recesses',
+    construction: 'Muted gold and deep brown within heavy armored frames.',
     production: true,
     palette: {
       canvas: '#100D0A',
@@ -242,8 +240,7 @@ export const MERIDIAN_THEMES = [
   {
     id: 'meridian_aphelion',
     name: 'Aphelion',
-    construction:
-      'Warm instrument housings, cream labels, and spectrum calibration rules',
+    construction: 'Warm browns, cream lettering, and a touch of retro rainbow.',
     production: true,
     palette: {
       canvas: '#131110',
@@ -277,7 +274,7 @@ export const MERIDIAN_CLASSIC_THEME_ID = 'meridian_classic' as const;
 const MERIDIAN_CLASSIC_THEME = {
   id: MERIDIAN_CLASSIC_THEME_ID,
   name: 'Classic NT',
-  construction: 'Original TGUI component styling and NT watermark',
+  construction: 'Familiar purple and blue with classic Nanotrasen styling.',
   production: true,
 } as const;
 
