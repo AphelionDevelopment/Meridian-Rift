@@ -114,6 +114,7 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	var/skip_minimap_rendering = FALSE
 
 
+// APHELION EDIT ADDITION START - TURF_SIGNAL_TRANSFER
 // ChangeTurf passes the old signal tables here so initialization can update them directly.
 // In particular, Entered() can move or delete existing contents before New() returns.
 /turf/New(loc, list/inherited_listen_lookup, list/inherited_signal_procs)
@@ -121,6 +122,7 @@ GLOBAL_LIST_EMPTY(station_turfs)
 	_signal_procs = inherited_signal_procs
 	return ..(loc)
 
+// APHELION EDIT ADDITION END
 /turf/vv_edit_var(var_name, new_value)
 	var/static/list/banned_edits = list(NAMEOF_STATIC(src, x), NAMEOF_STATIC(src, y), NAMEOF_STATIC(src, z))
 	if(var_name in banned_edits)
@@ -231,7 +233,12 @@ GLOBAL_LIST_EMPTY(station_turfs)
 /// It's possible because turfs are fucked, and if you have one in a list and it's replaced with another one, the list ref points to the new turf
 /// We do it because moving signals over was needlessly expensive, and bloated a very commonly used bit of code
 /turf/_clear_signal_refs()
+	/* // APHELION EDIT REMOVAL START - TURF_SIGNAL_TRANSFER
+	return
+	*/ // APHELION EDIT REMOVAL END
+	// APHELION EDIT ADDITION START - TURF_SIGNAL_TRANSFER
 	UnregisterSignal(src, _signal_procs?[src])
+	// APHELION EDIT ADDITION END
 
 /turf/attack_hand(mob/user, list/modifiers)
 	. = ..()
