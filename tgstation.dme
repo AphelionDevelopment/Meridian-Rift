@@ -7340,6 +7340,7 @@
 #include "modular_aphelion\modules\admin_tech\code\legacy.dm"
 #include "modular_aphelion\modules\job_desc_overrides\job_desc_overrides.dm"
 #include "modular_aphelion\modules\reform-combat\code\armor.dm"
+#include "modular_aphelion\modules\reform-combat\code\baton.dm"
 #include "modular_aphelion\modules\reform-combat\code\health.dm"
 #include "modular_aphelion\modules\storage_navigation\code\storage_exit.dm"
 #include "modular_nova\master_files\code\_globalvars\configuration.dm"

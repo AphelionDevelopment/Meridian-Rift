@@ -4,7 +4,8 @@ Module ID: REFORM_COMBAT
 
 ### Description
 
-This module combines humanoid health and damage slowdown tuning with bounded projectile armor penetration.
+This module combines humanoid health and damage slowdown tuning, bounded projectile
+armor penetration, and stamina-based security baton takedowns.
 All balance settings live in `code/__DEFINES/~aphelion_defines/reform_combat.dm`.
 Edit the defines and rebuild; no other file needs changing to tune these values.
 
@@ -58,11 +59,21 @@ Some high armor ratings retain less protection than under the original formula:
 category, existing armor sources, and the projectile damage reduction cap still apply.
 Pre-hit AP changes, including hardened armor setting AP to zero, are respected.
 The new calculation also supplies armor protection for projectile status effects.
-Melee, thrown attacks, objects, separate secondary damage checks, and mobs with
+Melee armor checks, thrown-attack armor checks, objects, separate secondary damage checks, and mobs with
 their own projectile armor override retain their existing behavior.
+
+Security batons have no fixed knockdown duration. Their delayed collapse callback
+is skipped when that duration is zero, so takedowns depend on accumulated stamina
+damage. The existing 60 stamina damage and 2.5-second attack cooldown still apply.
+At the default 135 stamina incapacitation threshold, a fresh target requires three
+full-strength hits, taking at least five seconds from the first hit. Armor,
+resistance, and runtime threshold modifiers can change this. Other baton types
+retain their existing behavior.
 
 ### TG Proc/File Changes
 
+- `code/game/objects/items/weaponry/melee/baton.dm`: security baton delayed collapse
+  is scheduled only when its knockdown duration is positive.
 - `code/modules/mob/living/carbon/human/human.dm`: `Initialize` applies combat settings;
   `updatehealth` uses the configured damage slowdown threshold.
 - `code/modules/mob/living/carbon/damage_procs.dm`: stamina entry uses the shared threshold.
@@ -75,6 +86,7 @@ their own projectile armor override retain their existing behavior.
 
 ### Modular Overrides
 
+- `code/baton.dm`: security baton knockdown duration is zero.
 - `code/health.dm`: humanoid `get_stamina_crit_threshold` specializes the new living proc.
 
 ### Defines
