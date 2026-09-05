@@ -27,9 +27,9 @@
 		return
 	if(old_value != enabled)
 		// Entries and sleeping queries from the previous enforcement state must be checked again.
-		GLOB.symphony_whitelist_cache.Cut()
-		GLOB.symphony_whitelist_cache_expiry.Cut()
-		GLOB.symphony_whitelist_epoch++
+		SSsymphony.whitelist_cache.Cut()
+		SSsymphony.whitelist_cache_expiry.Cut()
+		SSsymphony.whitelist_epoch++
 		if(enabled)
 			INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(symphony_validate_ready_players))
 

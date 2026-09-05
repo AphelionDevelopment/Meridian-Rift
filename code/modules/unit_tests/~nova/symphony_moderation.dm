@@ -1,11 +1,17 @@
-/// Database fixtures never open a connection or execute SQL.
+/// Supplies Discord role holders and captures ban/note writes for the moderation tests.
+/// Queries run entirely in memory; these fixtures do not validate SQL against a database.
 /datum/controller/subsystem/dbcore/symphony_moderation_test
 	name = "Symphony moderation test fixture"
 	ss_flags = SS_NO_INIT | SS_NO_FIRE
+	/// Role key -> ckeys returned by that role's query.
 	var/list/role_holders = list()
+	/// Last inserted ban row, copied for assertions about stored values.
 	var/list/ban_row
+	/// Parameters supplied when writing the ban's admin note.
 	var/list/note_arguments
+	/// Only the query for this role consumes during_query.
 	var/callback_role
+	/// One-shot state change applied after the selected query captures its rows.
 	var/datum/callback/during_query
 
 /datum/controller/subsystem/dbcore/symphony_moderation_test/New()
@@ -39,6 +45,7 @@
 	ban_row = row.Copy()
 	return TRUE
 
+/// Holds a row snapshot and applies its callback at the simulated query-completion boundary.
 /datum/db_query/symphony_moderation_test
 	var/datum/callback/during_query
 
@@ -60,7 +67,8 @@
 	item = rows[next_row_to_take++]
 	return TRUE
 
-/// Keep real clients, admin holders, configuration, and the database out of these tests.
+/// Isolates the database, client/admin registries, and both Symphony configuration flags.
+/// Each test uses fresh registries; Destroy() restores them before the framework deletes allocated fixtures.
 /datum/unit_test/symphony_moderation
 	abstract_type = /datum/unit_test/symphony_moderation
 	var/datum/controller/subsystem/dbcore/previous_db
@@ -104,6 +112,7 @@
 	CONFIG_SET(flag/symphony_discord_admin_sync, previous_admin_sync)
 	return ..()
 
+/// Panel-supplied HTML must be escaped once in the captured ban reason and generated admin note.
 /datum/unit_test/symphony_moderation/plain_text_ban/Run()
 	var/admin_name = "<img src=x> & Admin"
 	var/reason = "<b>Reason</b> & &lt;literal&gt;"
@@ -119,6 +128,7 @@
 	TEST_ASSERT_EQUAL(test_db.ban_row["reason"], html_encode(reason), "The ban browser must display the external reason as literal text")
 	TEST_ASSERT_EQUAL(test_db.note_arguments["text"], html_encode("Banned via Symphony by [admin_name] (Server): [reason]"), "The notes browser must display the whole external note as literal text")
 
+/// Merge Discord ranks into one holder with combined rights, preserving local and deadmined accounts.
 /datum/unit_test/symphony_moderation/multiple_admin_ranks/Run()
 	var/datum/admin_rank/first_rank = allocate(/datum/admin_rank, "SymphonyFirst", RANK_SOURCE_DB, R_BAN)
 	var/datum/admin_rank/second_rank = allocate(/datum/admin_rank, "SymphonySecond", RANK_SOURCE_DB, R_DEBUG)
@@ -140,6 +150,39 @@
 	TEST_ASSERT_EQUAL(GLOB.admin_datums["symphonytestlocal"], TRUE, "Local/SQL admin holders must retain precedence")
 	TEST_ASSERT_EQUAL(GLOB.deadmins["symphonytestdeadmin"], TRUE, "Local/SQL deadmined holders must retain precedence")
 
+/// Preserve mapping format/order and duplicate handling while reading current ranks and both enable flags.
+/// A later request must produce a fresh response without changing an earlier one.
+/datum/unit_test/symphony_moderation/role_discovery/Run()
+	var/datum/admin_rank/first_rank = allocate(/datum/admin_rank, "SymphonyFirst", RANK_SOURCE_DB, R_BAN)
+	var/datum/admin_rank/duplicate_rank = allocate(/datum/admin_rank, "SymphonyFirst", RANK_SOURCE_TXT, R_DEBUG)
+	var/datum/admin_rank/unnamed_rank = allocate(/datum/admin_rank, "SymphonyUnnamed", RANK_SOURCE_DB, R_BAN)
+	unnamed_rank.name = null
+	GLOB.admin_ranks = list(first_rank, duplicate_rank, unnamed_rank, null)
+	var/datum/world_topic/symphony/ingame_roles/topic = allocate(/datum/world_topic/symphony/ingame_roles)
+	var/list/result = topic.Run(list())
+	var/list/roles = result["roles"]
+	TEST_ASSERT_EQUAL(length(roles), 2, "Role discovery must skip unnamed ranks and coalesce duplicate rank names.")
+	TEST_ASSERT_EQUAL(roles[1]["key"], "whitelist", "Whitelist must remain the first mapping.")
+	TEST_ASSERT_EQUAL(roles[2]["key"], "admin:SymphonyFirst", "Admin mappings must retain their existing key format.")
+	TEST_ASSERT_EQUAL(roles[2]["description"], "Grants the in-game admin rank \"SymphonyFirst\".", "Admin mapping descriptions must retain their existing format.")
+
+	GLOB.admin_ranks = list(first_rank)
+	first_rank.name = "SymphonyRenamed"
+	result = topic.Run(list())
+	var/list/current_roles = result["roles"]
+	TEST_ASSERT_EQUAL(current_roles[2]["key"], "admin:SymphonyRenamed", "Role discovery must reflect current ranks without a separate refresh.")
+	TEST_ASSERT_EQUAL(roles[2]["key"], "admin:SymphonyFirst", "A later request must not mutate an earlier response.")
+
+	for(var/enforcement in list(FALSE, TRUE))
+		CONFIG_SET(flag/symphony_enabled, enforcement)
+		for(var/admin_sync in list(FALSE, TRUE))
+			CONFIG_SET(flag/symphony_discord_admin_sync, admin_sync)
+			result = topic.Run(list())
+			current_roles = result["roles"]
+			TEST_ASSERT_EQUAL(length(current_roles), (enforcement && admin_sync) ? 2 : 1, "Admin mappings require both Symphony enforcement and Discord admin sync.")
+			TEST_ASSERT_EQUAL(current_roles[1]["key"], "whitelist", "Whitelist discovery must remain available when admin sync is disabled.")
+
+/// A local admin grant made at query completion takes precedence over the pending Discord grants.
 /datum/unit_test/symphony_moderation/admin_grant_during_query/Run()
 	var/datum/admin_rank/first_rank = allocate(/datum/admin_rank, "SymphonyFirst", RANK_SOURCE_DB, R_BAN)
 	var/datum/admin_rank/second_rank = allocate(/datum/admin_rank, "SymphonySecond", RANK_SOURCE_DB, R_DEBUG)
@@ -154,6 +197,7 @@
 /datum/unit_test/symphony_moderation/admin_grant_during_query/proc/grant_local_admin()
 	GLOB.admin_datums["symphonytestlate"] = TRUE
 
+/// Disabling Discord sync at query completion must prevent creation of an admin holder.
 /datum/unit_test/symphony_moderation/admin_sync_disabled_during_query/Run()
 	var/datum/admin_rank/rank = allocate(/datum/admin_rank, "SymphonyFirst", RANK_SOURCE_DB, R_BAN)
 	GLOB.admin_ranks = list(rank)

@@ -9,18 +9,16 @@
 		log_input["key"] = "***"
 	return list2params(log_input)
 
-/// Addresses that mean "this machine".
-GLOBAL_LIST_INIT(symphony_local_addresses, list("127.0.0.1", "::1", "localhost"))
-
 /// TRUE if a topic from this sender is allowed to run.
 /proc/symphony_address_allowed(addr)
+	var/static/list/local_addresses = list("127.0.0.1", "::1", "localhost")
 	if(!CONFIG_GET(flag/symphony_topics_local_only))
 		return TRUE
 	// Null addr means the sender is on this machine.
 	if(!addr)
 		return TRUE
 	var/sender = LOWER_TEXT(trim(addr))
-	if(sender in GLOB.symphony_local_addresses)
+	if(sender in local_addresses)
 		return TRUE
 	for(var/allowed in CONFIG_GET(str_list/symphony_topics_allowed_addresses))
 		if(LOWER_TEXT(trim(allowed)) == sender)
@@ -44,11 +42,6 @@ GLOBAL_LIST_INIT(symphony_local_addresses, list("127.0.0.1", "::1", "localhost")
 	if(key_valid)
 		symphony_note_panel(input, addr)
 
-/// What SSymphony last told us about itself. Empty until it says hello.
-GLOBAL_LIST_EMPTY(symphony_panel)
-/// Last authenticated caller refused by the address gate, kept separate from accepted callers.
-GLOBAL_LIST_EMPTY(symphony_panel_refused)
-
 /// Remember who called, so the status verb can compare the two halves.
 /proc/symphony_note_panel(list/input, addr)
 	// No version means a panel too old to introduce itself, which is still worth knowing about.
@@ -61,9 +54,9 @@ GLOBAL_LIST_EMPTY(symphony_panel_refused)
 	)
 	// Refused callers must not overwrite the accepted panel's diagnostic state.
 	if(!symphony_address_allowed(addr))
-		GLOB.symphony_panel_refused = said
+		SSsymphony.panel_refused = said
 		return
-	GLOB.symphony_panel = said
+	SSsymphony.panel = said
 
 /// How long ago a stamp was. DisplayTimeText already says "right now", and "right now ago" reads wrong.
 /proc/symphony_ago(stamp)

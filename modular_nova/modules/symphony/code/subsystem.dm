@@ -5,14 +5,26 @@ SUBSYSTEM_DEF(symphony)
 	ss_flags = SS_BACKGROUND | SS_NO_INIT
 	runlevels = RUNLEVEL_LOBBY | RUNLEVEL_SETUP | RUNLEVEL_GAME
 
+	// Static state survives subsystem replacement, including queries still waiting on the database.
+	/// Admission answers keyed by ckey, shared by lobby updates and enforcement.
+	var/static/list/whitelist_cache = list()
+	/// Expiry time for each cached admission answer.
+	var/static/list/whitelist_cache_expiry = list()
+	/// Incremented when grants change so queries can reject stale results after yielding.
+	var/static/whitelist_epoch = 0
+	/// Last authenticated panel contact accepted by the address gate.
+	var/static/list/panel = list()
+	/// Last authenticated contact refused by the address gate, kept separate for diagnostics.
+	var/static/list/panel_refused = list()
+
 /datum/controller/subsystem/symphony/fire()
 	if(!CONFIG_GET(flag/symphony_enabled))
 		return
 	// One query for the lot. null means we couldn't check, an empty list means nobody holds it.
-	var/epoch = GLOB.symphony_whitelist_epoch
+	var/epoch = SSsymphony.whitelist_epoch
 	var/list/holders = symphony_ingame_role_ckeys("whitelist")
 	// A panel notification or config change during the query makes the whole snapshot obsolete.
-	if(isnull(holders) || !CONFIG_GET(flag/symphony_enabled) || epoch != GLOB.symphony_whitelist_epoch)
+	if(isnull(holders) || !CONFIG_GET(flag/symphony_enabled) || epoch != SSsymphony.whitelist_epoch)
 		return
 	// A copy, because revoking can qdel a client out from under the loop.
 	for(var/client/checked as anything in GLOB.clients.Copy())

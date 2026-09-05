@@ -1,23 +1,22 @@
-/// Minutes in one unit of each interval. MONTH/YEAR are 30/365 days.
-GLOBAL_LIST_INIT(symphony_interval_minutes, list(
-	"SECOND" = 1/60,
-	"MINUTE" = 1,
-	"HOUR" = 60,
-	"DAY" = 1440,
-	"WEEK" = 10080,
-	"MONTH" = 43200,
-	"YEAR" = 525600,
-))
-
 /// Ban length in minutes, 0 being permanent.
 /proc/symphony_ban_minutes(duration, interval)
+	// Minutes per interval; MONTH/YEAR use 30/365 days.
+	var/static/list/interval_minutes = list(
+		"SECOND" = 1/60,
+		"MINUTE" = 1,
+		"HOUR" = 60,
+		"DAY" = 1440,
+		"WEEK" = 10080,
+		"MONTH" = 43200,
+		"YEAR" = 525600,
+	)
 	if(isnull(duration) || duration == "")
 		return 0
 	var/amount = isnum(duration) ? duration : text2num(duration)
 	// Only an omitted duration is permanent; invalid or nonpositive input gets one minute.
 	if(isnull(amount) || amount <= 0)
 		return 1
-	var/per = GLOB.symphony_interval_minutes[interval] || 1
+	var/per = interval_minutes[interval] || 1
 	return max(1, round(amount * per))
 
 /// Queue propagation of an existing local ban to the other servers.

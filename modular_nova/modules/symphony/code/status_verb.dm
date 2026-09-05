@@ -3,7 +3,7 @@ ADMIN_VERB(symphony_status, R_ADMIN, "Symphony Status", "Version and link state 
 	var/list/out = list("<b>SSymphony bridge</b>")
 	out += "Game module: <b>version [SYMPHONY_MODULE_VERSION]</b>"
 
-	var/list/panel = GLOB.symphony_panel
+	var/list/panel = SSsymphony.panel
 	if(!length(panel))
 		out += "Panel: <b>no contact</b> since the last restart."
 	else
@@ -17,7 +17,7 @@ ADMIN_VERB(symphony_status, R_ADMIN, "Symphony Status", "Version and link state 
 			// Older panels can authenticate successfully without supplying version metadata.
 			out += "Panel: in touch from [from], last heard [symphony_ago(panel["at"])], but too old to give a version."
 
-	var/list/barred = GLOB.symphony_panel_refused
+	var/list/barred = SSsymphony.panel_refused
 	if(length(barred))
 		out += span_warning("A topic from [html_encode(barred["addr"])] was refused [symphony_ago(barred["at"])], not an allowed address.")
 

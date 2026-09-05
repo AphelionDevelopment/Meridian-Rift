@@ -1,4 +1,5 @@
 /// Every concrete bridge topic must reject a missing credential before its handler runs.
+/// Uses the normal TryRun() path; successful authentication and address policy are outside this test.
 /datum/unit_test/symphony_topic_authentication/Run()
 	for(var/datum/world_topic/symphony/topic_type as anything in subtypesof(/datum/world_topic/symphony))
 		if(topic_type::abstract_type == topic_type)
@@ -8,6 +9,8 @@
 		var/list/response = json_decode(topic.TryRun(list("format" = "json"), "127.0.0.1"))
 		TEST_ASSERT_EQUAL(response["error"], "Bad Key", "[topic_type] accepted a missing comms key.")
 
+/// Redact decoded credentials across parameter ordering, delimiters, and encoded key names.
+/// Other values and the original authentication input must survive; public topics must not gain a key.
 /datum/unit_test/world_topic_log_redaction/Run()
 	var/list/queries = list(
 		"symphony_kick=1&key=audit-test-secret&target_ckey=testplayer",

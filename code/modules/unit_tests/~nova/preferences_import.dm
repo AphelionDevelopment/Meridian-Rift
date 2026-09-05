@@ -1,3 +1,6 @@
+// Exercise native import helpers directly. Client fixtures supply mock client state;
+// upload dialogs, permission checks, and reconnects are outside these tests.
+
 /// Missing and empty preset collections must be safe before character migrations run.
 /datum/unit_test/preferences_import_loadout_defaults/Run()
 	var/list/legacy = list("/obj/item/cane" = list("name" = "Walking stick"))
@@ -15,6 +18,7 @@
 			TEST_ASSERT_EQUAL(json_encode(presets["Default"]), json_encode(legacy), "The legacy loadout was lost while supplying a modern default.")
 
 /// JSON arrays inside item details must not become numeric list indexes.
+/// Valid text receives UI-equivalent encoding; later cleanup must preserve shared loadout references.
 /datum/unit_test/preferences_import_loadout_details/Run()
 	var/list/clean
 	try
@@ -31,6 +35,7 @@
 	clean = prefs_import_clean_loadout(list("/obj/item/cane" = list("name" = list("invalid"), "description" = 999)))
 	TEST_ASSERT_EQUAL(length(clean["/obj/item/cane"]), 0, "Structured or numeric values cannot be used as item names or descriptions.")
 
+	// Post-migration cleanup relies on pass 1 having converted uploaded arrays to unique path keys.
 	clean = prefs_import_clean_loadout(list("/obj/item/cane", "/obj/item/cane"))
 	TEST_ASSERT_EQUAL(length(clean), 1, "Pass 1 must coalesce duplicate uploaded paths before post-migration cleanup.")
 	clean += null
@@ -43,6 +48,7 @@
 	TEST_ASSERT_EQUAL(length(stripped), 1, "Post-migration cleanup did not remove every empty key.")
 	TEST_ASSERT("/obj/item/cane" in stripped, "Post-migration cleanup removed a valid path.")
 
+/// Reject unsafe augment registry values while preserving the numeric flags used by language entries.
 /datum/unit_test/preferences_import_registry_values/Run()
 	var/list/slot = list("version" = 52, "augments" = list("head" = 999), "augment_limb_styles" = list("head" = list(999)), "languages" = list("/datum/language/common" = 3))
 	prefs_import_pass1(list("version" = 52, "character1" = slot))
@@ -81,6 +87,7 @@
 	TEST_ASSERT_EQUAL(details?["name"], name, "Import double-encoded an exported custom item name.")
 
 /// Player-owned fields import; the destination server retains its commendation state.
+/// Omitting the destination metadata argument models a staff import that restores the complete backup.
 /datum/unit_test/preferences_import_server_metadata/Run()
 	var/list/upload = list("version" = 52, "hearted_until" = 999999999, "unrecognised_server_state" = TRUE, "sound_tts_blips" = TRUE)
 	var/list/local_metadata = list("hearted_until" = 1234, "aphelion_import_notice_seen" = TRUE)
@@ -97,6 +104,7 @@
 	TEST_ASSERT_EQUAL(clean["hearted_until"], 1234, "Staff imports must retain their existing ability to restore a complete backup.")
 
 /// Use the native loadout preference and Nova migration with a supported pre-preset character.
+/// The client is mocked; preference defaults, character loading, and finalization run against memory-only JSON.
 /datum/unit_test/preferences_import_legacy_character/Run()
 	var/datum/client_interface/mock_client = allocate(/datum/client_interface)
 	var/datum/preferences/preferences = allocate(/datum/preferences/preferences_import_test, mock_client)
@@ -130,7 +138,7 @@
 	TEST_ASSERT_EQUAL(preferences.default_slot, 1, "Finalizing secondary slots changed the selected character.")
 	TEST_ASSERT_EQUAL(preferences.read_preference(/datum/preference/name/real_name), "Legacy Import", "Finalizing secondary slots left the wrong character loaded.")
 
-/// A memory-only savefile: all normal migrations run, with no real player's path available.
+/// Native preference loading uses memory-only JSON; file tests explicitly redirect writes to disposable paths.
 /datum/preferences/preferences_import_test/load_path(ckey, filename)
 	load_and_save = FALSE
 	path = "preferences_import_memory_only"
@@ -142,11 +150,12 @@
 	parent = null
 	return ..()
 
-/// Failed candidate verification or pending recovery must leave the original file intact.
+/// Real file writes verify that rejected imports preserve the original and successful replacements are complete.
 /datum/unit_test/preferences_import_replacement
 	var/test_path = "data/preferences_import_unit_test.json"
 
 /datum/unit_test/preferences_import_replacement/Destroy()
+	// Remove the fixture and every recovery artifact even when Run exits on a failed assertion.
 	for(var/suffix in list("", ".importtmp", ".importrestore", ".updatebac"))
 		fdel("[test_path][suffix]")
 	return ..()
@@ -158,6 +167,7 @@
 	TEST_ASSERT(prefs_import_replace(test_path, "invalid JSON"), "A malformed candidate was reported as successfully installed.")
 	TEST_ASSERT_EQUAL(file2text(test_path), original, "Failed candidate verification changed the live file.")
 
+	// A retained recovery file blocks another import until the recovery is resolved.
 	TEST_ASSERT(text2file(original, "[test_path].importrestore"), "Could not create the disposable recovery fixture.")
 	TEST_ASSERT(prefs_import_replace(test_path, "{\"version\":52}"), "A pending recovery backup was overwritten by another import.")
 	TEST_ASSERT_EQUAL(file2text(test_path), original, "A pending recovery changed the live file.")
@@ -169,6 +179,7 @@
 	TEST_ASSERT(!fexists("[test_path].importrestore"), "A successful import left a recovery lock behind.")
 
 /// Keep every filesystem fixture separate from player saves and remove it even after an assertion fails.
+/// Backup fixtures use distinct text markers to verify file retention and ownership.
 /datum/unit_test/preferences_import_files
 	abstract_type = /datum/unit_test/preferences_import_files
 	var/test_path
@@ -184,6 +195,7 @@
 	previous_upload_limit = CONFIG_GET(number/savefile_upload_limit)
 
 /datum/unit_test/preferences_import_files/Destroy()
+	// Tear down allocated datums before restoring config and deleting their disposable files.
 	. = ..()
 	CONFIG_SET(number/preferences_import_backup_limit, previous_player_backup_limit)
 	CONFIG_SET(number/savefile_backup_limit, previous_admin_backup_limit)
@@ -194,6 +206,7 @@
 		fdel("[test_path].importbac-[index]")
 		fdel("[test_path].playerimportbac-[index]")
 
+/// Replace fixture contents explicitly because text2file appends to an existing file.
 /datum/unit_test/preferences_import_files/proc/write_fixture(suffix, contents)
 	var/fixture_path = "[test_path][suffix]"
 	if(fexists(fixture_path) && !fdel(fixture_path))
@@ -215,7 +228,7 @@
 	TEST_ASSERT_EQUAL(file2text("[test_path].importbac"), first_staff_backup, "The player backup changed the first staff backup.")
 	TEST_ASSERT_EQUAL(file2text("[test_path].importbac-2"), second_staff_backup, "The player backup overwrote a retained staff backup.")
 
-/// Missing numbered files must not cause a retained backup to be mistaken for a free slot.
+/// Compact gaps without losing backups, then rotate only the oldest once the player collection is full.
 /datum/unit_test/preferences_import_files/player_backup_gaps/Run()
 	CONFIG_SET(number/preferences_import_backup_limit, 3)
 	TEST_ASSERT(write_fixture("", "current preferences"), "Could not write the current preferences fixture.")
@@ -238,7 +251,7 @@
 	TEST_ASSERT_EQUAL(file2text("[test_path].playerimportbac-3"), next_preferences, "Rotation did not append the newest backup.")
 	TEST_ASSERT(!fexists("[test_path].playerimportbac-4"), "Rotation exceeded the configured backup capacity.")
 
-/// Compaction removes duplicate high slots, including a collection whose capacity is only one file.
+/// Sparse compaction removes leftover high slots; capacity one retains only the latest backup.
 /datum/unit_test/preferences_import_files/player_backup_sparse_and_single/Run()
 	CONFIG_SET(number/preferences_import_backup_limit, 3)
 	TEST_ASSERT(write_fixture("", "current preferences"), "Could not write the current preferences fixture.")
@@ -303,19 +316,21 @@
 	GLOB.persistent_clients = list()
 
 /datum/unit_test/preferences_import_files/with_client/Destroy()
+	// Allocated clients and preferences must tear down against test registries before the originals return.
 	. = ..()
 	GLOB.preferences_datums = previous_preferences
 	GLOB.directory = previous_directory
 	GLOB.persistent_clients_by_ckey = previous_persistent_clients
 	GLOB.persistent_clients = previous_persistent_client_list
 
-/// Closing a preferences UI on logout must not write the pre-import tree over the installed file.
+/// Calling ui_close and load_savefile on stale preferences must not overwrite the installed import.
 /datum/unit_test/preferences_import_files/with_client/detach_stale_preferences/Run()
 	var/datum/client_interface/mock_client = allocate(/datum/client_interface)
 	var/datum/preferences/cached_preferences = allocate(/datum/preferences/preferences_import_test, mock_client)
 	var/datum/preferences/connected_preferences = allocate(/datum/preferences/preferences_import_test, mock_client)
 	mock_client.prefs = connected_preferences
 	GLOB.preferences_datums[mock_client.ckey] = cached_preferences
+	// The registry and connected client can hold different datums; both can still reach the same file.
 	var/list/stale_preferences = list(cached_preferences, connected_preferences)
 	for(var/datum/preferences/preferences as anything in stale_preferences)
 		preferences.path = test_path
@@ -337,6 +352,7 @@
 		TEST_ASSERT_EQUAL(file2text(test_path), imported_contents, "Reloading an invalidated preferences datum restored its ability to overwrite the import.")
 
 /// Both import verbs validate the uploaded container before applying their separate metadata policies.
+/// Real files exercise extension, size, JSON, and native version checks without invoking either verb.
 /datum/unit_test/preferences_import_files/with_client/shared_upload_validation/Run()
 	var/datum/client_interface/mock_client = allocate(/datum/client_interface)
 	var/datum/preferences/preferences = allocate(/datum/preferences/preferences_import_test, mock_client)

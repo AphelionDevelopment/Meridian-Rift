@@ -1,6 +1,3 @@
-/// Prefix on an in-game role key, everything after it is the rank name.
-#define SYMPHONY_ADMIN_ROLE_PREFIX "admin:"
-
 /// Discord admin grants require both the module and admin sync flags.
 /proc/symphony_discord_admin_sync_enabled()
 	return CONFIG_GET(flag/symphony_enabled) && CONFIG_GET(flag/symphony_discord_admin_sync)
@@ -14,7 +11,7 @@
 	for(var/datum/admin_rank/rank as anything in GLOB.admin_ranks)
 		if(!rank?.name)
 			continue
-		var/role_key = "[SYMPHONY_ADMIN_ROLE_PREFIX][rank.name]"
+		var/role_key = "admin:[rank.name]"
 		var/list/holders = symphony_ingame_role_ckeys(role_key)
 		// A failed role query must not grant any ranks.
 		if(isnull(holders))
@@ -38,23 +35,6 @@
 	if(granted)
 		log_admin("Symphony: granted [granted] admin\s from Discord roles.")
 	return granted
-
-/// Rebuilds the panel's admin role keys after GLOB.admin_ranks is loaded.
-/proc/symphony_refresh_admin_role_keys()
-	// Collect keys before removing them so iteration does not skip entries.
-	var/list/stale = list()
-	for(var/key in GLOB.symphony_ingame_roles)
-		if(findtext(key, SYMPHONY_ADMIN_ROLE_PREFIX) == 1)
-			stale += key
-	GLOB.symphony_ingame_roles -= stale
-
-	if(!symphony_discord_admin_sync_enabled())
-		return
-
-	for(var/datum/admin_rank/rank as anything in GLOB.admin_ranks)
-		if(!rank?.name)
-			continue
-		GLOB.symphony_ingame_roles["[SYMPHONY_ADMIN_ROLE_PREFIX][rank.name]"] = "Grants the in-game admin rank \"[rank.name]\"."
 
 /// Rank discovery remains available when Discord sync is disabled.
 /datum/world_topic/symphony/admin_ranks
@@ -84,5 +64,3 @@
 	.["success"] = TRUE
 	.["admins"] = length(GLOB.admin_datums)
 	log_admin("Symphony: admins reloaded from the panel.")
-
-#undef SYMPHONY_ADMIN_ROLE_PREFIX
