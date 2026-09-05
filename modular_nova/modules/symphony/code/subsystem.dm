@@ -9,8 +9,10 @@ SUBSYSTEM_DEF(symphony)
 	if(!CONFIG_GET(flag/symphony_enabled))
 		return
 	// One query for the lot. null means we couldn't check, an empty list means nobody holds it.
+	var/epoch = GLOB.symphony_whitelist_epoch
 	var/list/holders = symphony_ingame_role_ckeys("whitelist")
-	if(isnull(holders))
+	// A panel notification or config change during the query makes the whole snapshot obsolete.
+	if(isnull(holders) || !CONFIG_GET(flag/symphony_enabled) || epoch != GLOB.symphony_whitelist_epoch)
 		return
 	// A copy, because revoking can qdel a client out from under the loop.
 	for(var/client/checked as anything in GLOB.clients.Copy())

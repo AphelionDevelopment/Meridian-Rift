@@ -37,8 +37,8 @@ SUBSYSTEM_DEF(ticker)
 
 	/// Time left until the round starts after all subsystems initialize
 	var/timeLeft = 120 SECONDS
-	/// value used to initialize `timeLeft` when the master subsystem finishes initializing. 
-	/// We do this to allow for the timer to be set manually before all subsystems initialize, 
+	/// value used to initialize `timeLeft` when the master subsystem finishes initializing.
+	/// We do this to allow for the timer to be set manually before all subsystems initialize,
 	/// while also making sure that when the timer does start, it does so at the value we have set.
 	/// This is set to the config value when SSticker initializes, so setting this only makes sense after that point.
 	var/start_at = 120 SECONDS
@@ -228,6 +228,7 @@ SUBSYSTEM_DEF(ticker)
 /datum/controller/subsystem/ticker/proc/setup()
 	to_chat(world, span_boldannounce("Starting game..."))
 	var/init_start = world.timeofday
+	symphony_validate_ready_players() // APHELION EDIT ADDITION - Recheck pending whitelist admission before assigning jobs and antagonists.
 
 	var/list/players_and_readiness = get_player_ready_states()
 	log_game("Players and Readiness: [json_encode(players_and_readiness)]", players_and_readiness)
@@ -479,7 +480,12 @@ SUBSYSTEM_DEF(ticker)
 /datum/controller/subsystem/ticker/proc/create_characters()
 	for(var/i in GLOB.new_player_list)
 		var/mob/dead/new_player/player = i
-		if(player.ready == PLAYER_READY_TO_PLAY && player.mind)
+		// APHELION EDIT ADDITION START - The whitelist check may sleep through a disconnect.
+		var/ready_to_create = player.symphony_validate_ready()
+		if(QDELETED(player))
+			continue
+		// APHELION EDIT ADDITION END
+		if(ready_to_create && player.mind) // APHELION EDIT CHANGE - Revalidate admission after setup yields. - ORIGINAL: if(player.ready == PLAYER_READY_TO_PLAY && player.mind)
 			GLOB.joined_player_list += player.ckey
 			var/atom/destination = player.mind.assigned_role.get_roundstart_spawn_point()
 			if(!destination) // Failed to fetch a proper roundstart location, won't be going anywhere.
@@ -610,7 +616,11 @@ SUBSYSTEM_DEF(ticker)
 
 /datum/controller/subsystem/ticker/proc/transfer_characters()
 	var/list/livings = list()
-	for(var/mob/dead/new_player/player as anything in GLOB.new_player_list)
+	for(var/mob/dead/new_player/player as anything in GLOB.new_player_list.Copy()) // APHELION EDIT CHANGE - Rejected admission creates a replacement lobby.
+		// APHELION EDIT ADDITION START - Close the admission gap while characters were being equipped.
+		if(QDELETED(player) || !player.symphony_validate_roundstart_transfer() || QDELETED(player))
+			continue
+		// APHELION EDIT ADDITION END
 		var/mob/living = player.transfer_character()
 		if(living)
 			qdel(player)

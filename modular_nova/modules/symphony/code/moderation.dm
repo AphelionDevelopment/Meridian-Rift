@@ -1,8 +1,7 @@
 /// The game's own ban notice, for a ban SSymphony wrote to the table.
-/// Mirrors notify_all_banned_players - that's /datum/admins/, and we have no holder.
+/// The panel supplies the notice for an existing row; this legacy topic targets only its ckey.
 /datum/world_topic/symphony/ban_notify
 	keyword = "symphony_ban_notify"
-	require_comms_key = TRUE
 
 /datum/world_topic/symphony/ban_notify/Run(list/input)
 	. = list()
@@ -39,7 +38,6 @@
 /// Kicks a player by ckey for a Discord admin.
 /datum/world_topic/symphony/kick
 	keyword = "symphony_kick"
-	require_comms_key = TRUE
 
 /datum/world_topic/symphony/kick/Run(list/input)
 	. = list()
@@ -65,7 +63,6 @@
 
 /datum/world_topic/symphony/bannable_roles
 	keyword = "symphony_bannable_roles"
-	require_comms_key = TRUE
 	log = FALSE
 
 /// One list, so the topic and the ban's validation can't drift apart.
@@ -93,7 +90,6 @@
 /// No usr in a world topic, so create_ban is out - we insert the ban row ourselves.
 /datum/world_topic/symphony/ban
 	keyword = "symphony_ban"
-	require_comms_key = TRUE
 
 /datum/world_topic/symphony/ban/Run(list/input)
 	. = list()
@@ -150,7 +146,8 @@
 		"role" = role, // 'Server' is a full login ban, anything else is in-round only
 		"expiration_time" = duration,
 		"applies_to_admins" = 0,
-		"reason" = reason,
+		// Existing ban browsers render this field as HTML; panel input is plain text.
+		"reason" = html_encode(reason),
 		"ckey" = target_ckey,
 		"ip" = player_ip,
 		"computerid" = player_cid,
@@ -177,14 +174,13 @@
 	var/safe_what = html_encode(what)
 	message_admins("[safe_admin] (via Symphony) [safe_what] [target_ckey] [dur_txt]. Reason: [safe_reason]")
 
-	var/client/found = GLOB.directory[target_ckey]
-	if(found)
-		build_ban_cache(found) // role bans take effect without a relog
-		if(role == "Server")
-			to_chat(found, span_userdanger("You have been [duration ? "" : "permanently "]banned by [safe_admin].\nReason: [safe_reason]"))
-			qdel(found)
-		else
-			to_chat(found, span_userdanger("You have been [safe_what] by [safe_admin]. Reason: [safe_reason]"))
+	var/player_notice
+	if(role == "Server")
+		player_notice = span_userdanger("You have been [duration ? "" : "permanently "]banned by [safe_admin].\nReason: [safe_reason]")
+	else
+		player_notice = span_userdanger("You have been [safe_what] by [safe_admin]. Reason: [safe_reason]")
+	var/shared_notice = "[player_notice]<br>This ban matches your IP or CID."
+	notify_all_banned_players(target_ckey, player_ip, player_cid, player_notice, shared_notice, role == "Server", applies_to_admins = FALSE)
 	.["success"] = TRUE
 	.["role"] = role
 	.["permanent"] = isnull(duration)
@@ -199,7 +195,7 @@
 		list(
 			"target_ckey" = target_ckey,
 			"admin_ckey" = "symphony",
-			"text" = "Banned via Symphony by [admin_name] ([role]): [reason]",
+			"text" = html_encode("Banned via Symphony by [admin_name] ([role]): [reason]"),
 			"round_id" = GLOB.round_id,
 		),
 	)

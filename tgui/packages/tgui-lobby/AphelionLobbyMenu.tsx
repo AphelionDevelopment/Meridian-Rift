@@ -30,7 +30,10 @@ export function AphelionLobbyMenu({
           progressTotal={serverState.progressTotal}
         />
       ) : serverState.whitelistGate !== 'open' ? (
-        <WhitelistGate state={serverState.whitelistGate} />
+        <WhitelistGate
+          state={serverState.whitelistGate}
+          canSwapServers={serverState.canSwapServers}
+        />
       ) : (
         <>
           {!!serverState.notice && <NoticeBanner text={serverState.notice} />}

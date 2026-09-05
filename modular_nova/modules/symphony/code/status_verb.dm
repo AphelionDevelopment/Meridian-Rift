@@ -23,7 +23,7 @@ ADMIN_VERB(symphony_status, R_ADMIN, "Symphony Status", "Version and link state 
 		out += span_warning("A topic from [html_encode(barred["addr"])] was refused [symphony_ago(barred["at"])], not an allowed address.")
 
 	out += "&nbsp;"
-	out += "Enabled: [CONFIG_GET(flag/symphony_enabled) ? "yes" : "<b>no</b>, the module is inert"]"
+	out += "Whitelist enforcement: [CONFIG_GET(flag/symphony_enabled) ? "on" : "<b>off</b>"]"
 	out += "Panel URL: [CONFIG_GET(string/symphony_url) || "<b>not set</b>"]"
 	out += "Comms key: [CONFIG_GET(string/comms_key) ? "set" : "<b>not set</b>, every topic is refused"]"
 	var/list/allowed = CONFIG_GET(str_list/symphony_topics_allowed_addresses)

@@ -4,7 +4,7 @@
 	if(!CONFIG_GET(flag/symphony_enabled))
 		return
 	target_ckey = ckey(target_ckey)
-	symphony_invalidate_whitelist_cache(target_ckey)
+	symphony_seed_whitelist_cache(target_ckey, FALSE)
 	var/client/found = GLOB.directory[target_ckey]
 	if(!found)
 		return
@@ -14,7 +14,7 @@
 	if(isnewplayer(found.mob))
 		var/mob/dead/new_player/lobby = found.mob
 		to_chat(found, span_userdanger("Your Discord whitelist role was removed."))
-		// Round start never asks the gate, so unready them or they spawn as crew anyway.
+		// Drop their pending admission immediately, as well as updating the visible gate.
 		lobby.ready = PLAYER_NOT_READY
 		// Before show_title_screen(), which re-inits the menu off this.
 		found.lobby_menu?.set_whitelist_gate(TRUE)
@@ -39,6 +39,9 @@
  * - target_ckey: The ckey whose grace period just expired.
  */
 /proc/symphony_enforce_kick(target_ckey)
+	if(!CONFIG_GET(flag/symphony_enabled))
+		return
+	target_ckey = ckey(target_ckey)
 	var/client/found = GLOB.directory[target_ckey]
 	if(!found || isnewplayer(found.mob))
 		return
@@ -46,6 +49,9 @@
 	if(found.holder)
 		return
 	var/whitelisted = symphony_whitelist_lookup(target_ckey)
+	// The query can sleep through a disconnect, staff promotion, lobby return, or enforcement toggle.
+	if(!CONFIG_GET(flag/symphony_enabled) || !found || GLOB.directory[target_ckey] != found || found.holder || !found.mob || isnewplayer(found.mob))
+		return
 	// Couldn't ask. Never eject someone on a blind check - SSsymphony's sweep re-detects a real revoke once the DB is back, and the join gate is still refusing them in the meantime.
 	if(isnull(whitelisted))
 		log_game("Symphony: skipped returning [key_name(found)] to the lobby, the whitelist database was unreachable.")
@@ -56,8 +62,10 @@
 	to_chat(found, span_userdanger("Whitelist lost. Returning you to the lobby."))
 	symphony_return_to_lobby(found)
 
-/proc/symphony_return_to_lobby(client/target)
-	var/mob/old_mob = target.mob
+/proc/symphony_return_to_lobby(client/target, mob/prepared_body)
+	if(!target)
+		return
+	var/mob/old_mob = prepared_body || target.mob
 	if(old_mob && !isnewplayer(old_mob))
 		old_mob.log_message("returned to lobby by discord whitelist enforcement", LOG_GAME)
 		// The lobby mob's Login() makes a new mind, so retire this one or the key owns two.
@@ -65,8 +73,11 @@
 			old_mob.mind.active = FALSE
 	var/mob/dead/new_player/lobby = new()
 	lobby.key = target.key
-	// Before show_title_screen(), which re-inits the menu off this - the gate was never evaluated while they were in a body, so it still holds whatever it said back in the lobby.
-	target.lobby_menu?.set_whitelist_gate(TRUE)
+	if(!target || QDELETED(lobby) || target.mob != lobby)
+		return // Lobby Login() can yield through a disconnect or another client transfer.
+	// Login may also have slept through a grant or config change; keep the current gate state.
+	var/blocked = lobby.symphony_blocks_play_cached()
+	target.lobby_menu?.set_whitelist_gate(isnull(blocked) || blocked)
 	lobby.show_title_screen()
 	// We leave the body behind on purpose, so say so - it could be a live antag.
 	message_admins("Symphony: [key_name_admin(target)] was returned to the lobby by whitelist enforcement. Their body was left in place[old_mob ? " at [AREACOORD(old_mob)]" : ""].")
@@ -84,6 +95,8 @@
 		return
 	// Only revoke if it's an explicit no (FALSE). A DB outage (null) isn't a revoke, and symphony_revoke() would tell them their role was removed when we have no idea whether it was.
 	var/whitelisted = symphony_whitelist_lookup(ckey)
+	if(!src || !CONFIG_GET(flag/symphony_enabled) || holder || !mob || isnewplayer(mob))
+		return
 	if(isnull(whitelisted) || whitelisted)
 		return
 	symphony_revoke(ckey)
@@ -92,7 +105,7 @@
 	// Same - no announcing a whitelist nothing was enforcing.
 	if(!CONFIG_GET(flag/symphony_enabled))
 		return
-	symphony_invalidate_whitelist_cache(target_ckey)
+	symphony_seed_whitelist_cache(target_ckey, TRUE)
 	var/client/found = GLOB.directory[ckey(target_ckey)]
 	if(!found)
 		return

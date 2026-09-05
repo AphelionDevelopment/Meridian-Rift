@@ -1,7 +1,6 @@
 /// Live server status for the SSymphony panel.
 /datum/world_topic/symphony/server_status
 	keyword = "symphony_server_status"
-	require_comms_key = TRUE
 	log = FALSE
 
 /datum/world_topic/symphony/server_status/Run(list/input)
@@ -62,7 +61,6 @@
 /// Live player list for the panel. Ckeys and antag roles, so it's comms-key gated.
 /datum/world_topic/symphony/player_list
 	keyword = "symphony_player_list"
-	require_comms_key = TRUE
 	log = FALSE
 
 /datum/world_topic/symphony/player_list/Run(list/input)

@@ -287,13 +287,8 @@ GLOBAL_VAR_INIT(last_maptick_time, 0)
 			handler = topic_handlers[I]
 			break
 
-	// APHELION EDIT CHANGE BEGIN - scrub the comms key out of the topic log
-	// ORIGINAL: 		log_topic("\"[T]\", from:[addr], master:[master], key:[key]")
 	if((!handler || initial(handler.log)) && config && CONFIG_GET(flag/log_world_topic))
-		// Anchored, or target_ckey= matches too and the log loses the target.
-		var/static/regex/comms_key_scrub = regex("(^|&|\\?)key=\[^&]*", "g")
-		log_topic("\"[comms_key_scrub.Replace(T, "$1key=***")]\", from:[addr], master:[master]")
-	// APHELION EDIT CHANGE END
+		log_topic("\"[world_topic_log_parameters(input)]\", from:[addr], master:[master]") // APHELION EDIT CHANGE - scrub the comms key out of the topic log - ORIGINAL: log_topic("\"[T]\", from:[addr], master:[master], key:[key]")
 
 	if(!handler)
 		return

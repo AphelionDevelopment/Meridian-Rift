@@ -55,6 +55,13 @@
 /datum/world_topic/proc/AddressAllowed(addr)
 	return TRUE
 
+/// Redact the decoded credential, covering every parameter encoding accepted by authentication.
+/proc/world_topic_log_parameters(list/input)
+	var/list/log_input = input.Copy()
+	if("key" in log_input)
+		log_input["key"] = "***"
+	return list2params(log_input)
+
 // APHELION EDIT ADDITION END
 /datum/world_topic/proc/Run(list/input)
 	CRASH("Run() not implemented for [type]!")

@@ -1,11 +1,10 @@
-/// Lets the panel flip the whitelist gate at runtime, it persists to file for the next boot.
+/// Lets the panel flip the whitelist gate for the running server.
 /datum/world_topic/symphony/set_enforcement
 	keyword = "symphony_set_enforcement"
-	require_comms_key = TRUE
 
 /datum/world_topic/symphony/set_enforcement/Run(list/input)
 	. = list()
-	// Not gated behind symphony_enabled like the rest of us, this is the thing that turns it on.
+	// This topic must remain reachable while enforcement is disabled so the panel can turn it on.
 	var/admin_name = input["admin_name"] || "Discord Admin"
 	var/raw = input["enabled"]
 	if(isnull(raw))
@@ -26,6 +25,13 @@
 		.["success"] = FALSE
 		.["message"] = "the game refused the value"
 		return
+	if(old_value != enabled)
+		// Entries and sleeping queries from the previous enforcement state must be checked again.
+		GLOB.symphony_whitelist_cache.Cut()
+		GLOB.symphony_whitelist_cache_expiry.Cut()
+		GLOB.symphony_whitelist_epoch++
+		if(enabled)
+			INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(symphony_validate_ready_players))
 
 	.["success"] = TRUE
 	.["enabled"] = enabled

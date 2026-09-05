@@ -1,7 +1,6 @@
 /// The announcement sounds our announcer knows. The keys are what symphony_announce takes.
 /datum/world_topic/symphony/announce_sounds
 	keyword = "symphony_announce_sounds"
-	require_comms_key = TRUE
 	log = FALSE
 
 /datum/world_topic/symphony/announce_sounds/Run(list/input)
@@ -15,7 +14,6 @@
 /// Message from SSymphony to the round.
 /datum/world_topic/symphony/announce
 	keyword = "symphony_announce"
-	require_comms_key = TRUE
 
 /datum/world_topic/symphony/announce/Run(list/input)
 	. = list()

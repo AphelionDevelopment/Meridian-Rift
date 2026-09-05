@@ -77,9 +77,8 @@ GLOBAL_VAR_INIT(symphony_whitelist_epoch, 0)
 /**
  * Writes an answer we already know to be good straight into the whitelist cache.
  *
- * SSsymphony pulls the entire whitelist in one query, so by the time it walks the client list it
- * is holding the real answer for every one of them. Blanking their cache entries instead of
- * filling them just makes each of them turn around and re-query for what we already had.
+ * Used for panel notifications and the subsystem's checked bulk snapshot. Blanking these
+ * entries instead would make each client query for an answer we already have.
  *
  * The epoch bump is what stops a lookup still asleep on the database from landing its staler
  * single-row result on top of this one.
@@ -129,18 +128,20 @@ GLOBAL_VAR_INIT(symphony_whitelist_epoch, 0)
 	target_ckey = ckey(target_ckey)
 	if(!target_ckey)
 		return FALSE
-	var/cached = symphony_whitelist_cache_peek(target_ckey)
-	if(!isnull(cached))
-		return cached
-	var/epoch = GLOB.symphony_whitelist_epoch
-	var/answer = symphony_has_ingame_role(target_ckey, "whitelist")
-	if(isnull(answer))
-		return null
-	// A revoke can land while we wait on the DB. Don't cache over it.
-	if(epoch == GLOB.symphony_whitelist_epoch)
+	while(TRUE)
+		var/cached = symphony_whitelist_cache_peek(target_ckey)
+		if(!isnull(cached))
+			return cached
+		var/epoch = GLOB.symphony_whitelist_epoch
+		var/answer = symphony_has_ingame_role(target_ckey, "whitelist")
+		// A notification can overtake even a failed query. Use its answer, or retry if it only invalidated the cache.
+		if(epoch != GLOB.symphony_whitelist_epoch)
+			continue
+		if(isnull(answer))
+			return null
 		GLOB.symphony_whitelist_cache[target_ckey] = answer
 		GLOB.symphony_whitelist_cache_expiry[target_ckey] = world.time + SYMPHONY_WHITELIST_CACHE_TIME
-	return answer
+		return answer
 
 /**
  * Returns whether this ckey is allowed into the round.
@@ -182,8 +183,15 @@ GLOBAL_VAR_INIT(symphony_whitelist_epoch, 0)
  * - TRUE/FALSE: Whether they hold the role. A database error is a FALSE.
  */
 /proc/symphony_holds_whitelist_role(target_ckey)
-	if(!CONFIG_GET(flag/symphony_enabled))
-		return FALSE
-	return symphony_has_ingame_role(target_ckey, "whitelist") ? TRUE : FALSE
+	while(CONFIG_GET(flag/symphony_enabled))
+		var/epoch = GLOB.symphony_whitelist_epoch
+		var/answer = symphony_has_ingame_role(target_ckey, "whitelist")
+		if(!CONFIG_GET(flag/symphony_enabled))
+			return FALSE
+		// Imports and perks need a current entitlement too, while retaining their uncached lookup.
+		if(epoch != GLOB.symphony_whitelist_epoch)
+			continue
+		return answer ? TRUE : FALSE
+	return FALSE
 
 #undef SYMPHONY_WHITELIST_CACHE_TIME

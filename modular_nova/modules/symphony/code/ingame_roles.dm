@@ -6,7 +6,6 @@ GLOBAL_LIST_INIT(symphony_ingame_roles, list(
 /// Hands them over so the panel can build its role mapping UI.
 /datum/world_topic/symphony/ingame_roles
 	keyword = "symphony_ingame_roles"
-	require_comms_key = TRUE
 
 /datum/world_topic/symphony/ingame_roles/Run(list/input)
 	. = list()

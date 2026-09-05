@@ -13,14 +13,7 @@ GLOBAL_LIST_INIT(symphony_gate_free_actions, list("server_swap"))
 
 /// TRUE means this new_player isn't getting into the round.
 /mob/dead/new_player/proc/symphony_blocks_play()
-	if(!CONFIG_GET(flag/symphony_enabled))
-		return FALSE
-	if(!client)
-		return TRUE
-	// We're fail-closed, so without this a DB blip locks the admins out of their own round.
-	if(client.holder)
-		return FALSE
-	return !is_symphony_whitelisted(ckey)
+	return symphony_gate_state() != SYMPHONY_GATE_OPEN
 
 /**
  * Returns how the whitelist gate currently stands for this new_player, and why.
@@ -45,11 +38,67 @@ GLOBAL_LIST_INIT(symphony_gate_free_actions, list("server_swap"))
 		return SYMPHONY_GATE_BLOCKED
 	if(client.holder)
 		return SYMPHONY_GATE_OPEN
-	var/answer = symphony_whitelist_lookup(ckey)
+	var/client/checked_client = client
+	var/checked_ckey = ckey
+	var/answer = symphony_whitelist_lookup(checked_ckey)
+	if(QDELETED(src) || !client || client != checked_client || ckey != checked_ckey)
+		return SYMPHONY_GATE_BLOCKED
+	if(!CONFIG_GET(flag/symphony_enabled) || client.holder)
+		return SYMPHONY_GATE_OPEN
 	// Fail-closed still applies, we just don't accuse them of not being whitelisted when we couldn't check.
 	if(isnull(answer))
 		return SYMPHONY_GATE_UNAVAILABLE
 	return answer ? SYMPHONY_GATE_OPEN : SYMPHONY_GATE_BLOCKED
+
+/// Validate pending admission before job selection and again immediately before character creation.
+/mob/dead/new_player/proc/symphony_validate_ready()
+	if(ready != PLAYER_READY_TO_PLAY)
+		return FALSE
+	var/blocked = symphony_blocks_play()
+	if(QDELETED(src) || !client)
+		return FALSE
+	if(blocked)
+		ready = PLAYER_NOT_READY
+		show_title_screen()
+		return FALSE
+	// They may have unreadied while the whitelist lookup slept.
+	return ready == PLAYER_READY_TO_PLAY
+
+/// Equipment and manifest setup can yield after creation; revalidate at the final roundstart transfer.
+/mob/dead/new_player/proc/symphony_validate_roundstart_transfer()
+	var/mob/living/prepared_body = new_character
+	if(!prepared_body)
+		return TRUE
+	if(QDELETED(prepared_body))
+		return FALSE
+	// AI initialization can already have taken the client and unreadied its old lobby on Logout().
+	var/client/checked_client = client || prepared_body?.client
+	if(!checked_client)
+		return TRUE // Preserve the existing transfer behavior for disconnected characters.
+	if(!CONFIG_GET(flag/symphony_enabled) || checked_client.holder)
+		return TRUE
+	var/checked_ckey = checked_client.ckey
+	var/answer = symphony_whitelist_lookup(checked_ckey)
+	if(QDELETED(src) || QDELETED(prepared_body) || new_character != prepared_body)
+		return FALSE
+	if(!checked_client)
+		return !client && !prepared_body.client
+	if(checked_client.ckey != checked_ckey || GLOB.directory[checked_ckey] != checked_client || (checked_client.mob != src && checked_client.mob != prepared_body))
+		return FALSE
+	if(!CONFIG_GET(flag/symphony_enabled) || checked_client.holder || answer)
+		return TRUE
+	// The old lobby no longer owns a mind. Leave the equipped body intact and create a fresh lobby mind.
+	new_character = null
+	symphony_return_to_lobby(checked_client, prepared_body)
+	if(!QDELETED(src))
+		qdel(src)
+	return FALSE
+
+/// May sleep. Display and signal handlers must continue to use the cache-only gate.
+/proc/symphony_validate_ready_players()
+	for(var/mob/dead/new_player/player as anything in GLOB.new_player_list.Copy())
+		if(!QDELETED(player))
+			player.symphony_validate_ready()
 
 /**
  * Returns whether the gate is blocking this new_player, without ever touching the database.
@@ -127,7 +176,7 @@ GLOBAL_LIST_INIT(symphony_gate_free_actions, list("server_swap"))
 		return
 	var/state = player.symphony_gate_state()
 	whitelist_gate_refreshing = FALSE
-	if(!client)
+	if(!client || client.mob != player || player.client != client)
 		return
 	whitelist_gate_state = state
 	send_update(list("whitelistGate" = state))

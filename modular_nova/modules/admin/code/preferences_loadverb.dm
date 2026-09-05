@@ -34,6 +34,8 @@ ADMIN_VERB(import_preferences, R_ADMIN, "Import Preferences", "Upload a characte
 	// Reject non-files, nulls, or blank files
 	if(!isfile(uploaded_file) || !length(uploaded_file))
 		return
+	if(!user || !check_rights_for(user, R_ADMIN))
+		return
 
 	// Prevent simple mistakes
 	if(!findtext("[uploaded_file]", ".json", -5))
@@ -91,8 +93,10 @@ ADMIN_VERB(import_preferences, R_ADMIN, "Import Preferences", "Upload a characte
 		return
 	json_tree = prefs_import_pass1(json_tree)
 
-	// Backup and delete the existing savefile if it exists
-	if(save_exists)
+	// APHELION EDIT CHANGE - Recheck after upload and preserve the staff backup policy.
+	if(!user || !check_rights_for(user, R_ADMIN))
+		return
+	if(fexists(savefile_path))
 		var/backup_limit = CONFIG_GET(number/savefile_backup_limit)
 		if(backup_limit > 0)
 			var/importbac_path = "[savefile_path].importbac"
@@ -103,15 +107,15 @@ ADMIN_VERB(import_preferences, R_ADMIN, "Import Preferences", "Upload a characte
 				return
 			if(total_backups > 0)
 				importbac_path = "[importbac_path]-[total_backups + 1]"
-			fcopy(savefile_path, importbac_path)
-		// Delete the existing savefile
-		fdel(savefile_path)
-		// Delete migration backup saveile
-		// Avoids an edge case where load_preferences() reverts to a stale backup file
-		fdel("[savefile_path].updatebac")
+			if(!fcopy(savefile_path, importbac_path))
+				to_chat(user, span_warning("Could not back up the existing preferences. Nothing was changed."), confidential = TRUE)
+				return
 
-	// Save the new file as text
-	text2file(json_encode(json_tree), file(savefile_path))
+	var/install_error = prefs_import_replace(savefile_path, json_encode(json_tree))
+	if(install_error)
+		to_chat(user, span_warning("Could not install the imported preferences: [install_error]."), confidential = TRUE)
+		log_admin("Preferences import for [player_key] was not installed: [install_error]")
+		return
 
 	// Reset existing datum so it gets reloaded from the new file
 	if(!isnull(GLOB.preferences_datums[player_key]))

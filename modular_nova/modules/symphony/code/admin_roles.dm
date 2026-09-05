@@ -10,7 +10,7 @@
 	if(!symphony_discord_admin_sync_enabled())
 		return 0
 
-	var/granted = 0
+	var/list/ranks_by_ckey = list()
 	for(var/datum/admin_rank/rank as anything in GLOB.admin_ranks)
 		if(!rank?.name)
 			continue
@@ -22,11 +22,22 @@
 		for(var/holder_ckey in holders)
 			if(GLOB.admin_datums[holder_ckey] || GLOB.deadmins[holder_ckey])
 				continue
-			var/list/ranks = ranks_from_rank_name(rank.name)
-			if(!length(ranks))
-				continue
-			new /datum/admins(ranks, holder_ckey)
-			granted++
+			var/list/ranks = ranks_by_ckey[holder_ckey]
+			if(isnull(ranks))
+				ranks_by_ckey[holder_ckey] = list(rank)
+			else
+				ranks |= rank
+
+	// Gather every mapping before creating holders, or the first rank hides later grants.
+	// The queries can sleep: preserve any local/SQL grants made while they were running.
+	if(!symphony_discord_admin_sync_enabled())
+		return 0
+	var/granted = 0
+	for(var/holder_ckey in ranks_by_ckey)
+		if(GLOB.admin_datums[holder_ckey] || GLOB.deadmins[holder_ckey])
+			continue
+		new /datum/admins(ranks_by_ckey[holder_ckey], holder_ckey)
+		granted++
 
 	if(granted)
 		log_admin("Symphony: granted [granted] admin\s from Discord roles.")
@@ -53,7 +64,6 @@
 /// Kept apart from symphony_ingame_roles, this one has to work with Discord sync off.
 /datum/world_topic/symphony/admin_ranks
 	keyword = "symphony_admin_ranks"
-	require_comms_key = TRUE
 
 /datum/world_topic/symphony/admin_ranks/Run(list/input)
 	. = list()
@@ -73,7 +83,6 @@
 
 /datum/world_topic/symphony/reload_admins
 	keyword = "symphony_reload_admins"
-	require_comms_key = TRUE
 
 /datum/world_topic/symphony/reload_admins/Run(list/input)
 	. = list()

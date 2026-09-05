@@ -62,7 +62,6 @@ GLOBAL_LIST_EMPTY(symphony_panel_refused)
 
 /datum/world_topic/symphony/whitelist_revoke
 	keyword = "whitelist_revoke"
-	require_comms_key = TRUE
 
 /datum/world_topic/symphony/whitelist_revoke/Run(list/input)
 	. = list()
@@ -81,7 +80,6 @@ GLOBAL_LIST_EMPTY(symphony_panel_refused)
 
 /datum/world_topic/symphony/whitelist_grant
 	keyword = "whitelist_grant"
-	require_comms_key = TRUE
 
 /datum/world_topic/symphony/whitelist_grant/Run(list/input)
 	. = list()

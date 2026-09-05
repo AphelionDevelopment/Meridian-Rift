@@ -1115,29 +1115,23 @@
  * * kick_banned_players - TRUE if we want to kick affected players, FALSE otherwise. This should generally only be TRUE for server bans.
  * * applies_to_admins - TRUE if this ban applies to admins and we may need to kick them, FALSE otherwise.
  */
-/datum/admins/proc/notify_all_banned_players(banned_player_ckey, banned_player_ip, banned_player_cid, banned_player_message, banned_other_message, kick_banned_players, applies_to_admins)
-	var/client/player_client = GLOB.directory[banned_player_ckey]
-
-	var/appeal_url = "No ban appeal url set!"
-	appeal_url = CONFIG_GET(string/banappeals)
-
-	var/is_admin = FALSE
-	if(player_client)
+// NOVA EDIT CHANGE - shared with Symphony world topics, which have no admin holder.
+/proc/notify_all_banned_players(banned_player_ckey, banned_player_ip, banned_player_cid, banned_player_message, banned_other_message, kick_banned_players, applies_to_admins)
+	var/appeal_url = CONFIG_GET(string/banappeals) || "No ban appeal url set!"
+	// Cache building sleeps and kicking removes clients from the live list.
+	for(var/client/player_client in GLOB.clients.Copy())
+		var/is_target = banned_player_ckey && player_client.ckey == banned_player_ckey
+		if(!is_target && !(banned_player_ip && player_client.address == banned_player_ip) && !(banned_player_cid && player_client.computer_id == banned_player_cid))
+			continue
 		build_ban_cache(player_client)
-		to_chat(player_client, span_boldannounce("[banned_player_message]<br><span class='danger'>To appeal this ban go to [appeal_url]"), confidential = TRUE)
-		if(GLOB.admin_datums[player_client.ckey] || GLOB.deadmins[player_client.ckey])
-			is_admin = TRUE
-		if(kick_banned_players && (!is_admin || (is_admin && applies_to_admins)))
+		if(QDELETED(player_client))
+			continue
+		var/ban_message = is_target ? banned_player_message : banned_other_message
+		to_chat(player_client, span_boldannounce("[ban_message]<br><span class='danger'>To appeal this ban go to [appeal_url]"), confidential = TRUE)
+		var/is_admin = GLOB.admin_datums[player_client.ckey] || GLOB.deadmins[player_client.ckey]
+		if(kick_banned_players && (!is_admin || applies_to_admins))
 			qdel(player_client)
-
-	for(var/client/other_player_client in GLOB.clients - player_client)
-		if(other_player_client.address == banned_player_ip || other_player_client.computer_id == banned_player_cid)
-			build_ban_cache(other_player_client)
-			to_chat(other_player_client, span_boldannounce("[banned_other_message]<br><span class='danger'>To appeal this ban go to [appeal_url]"), confidential = TRUE)
-			if(GLOB.admin_datums[other_player_client.ckey] || GLOB.deadmins[other_player_client.ckey])
-				is_admin = TRUE
-			if(kick_banned_players && (!is_admin || (is_admin && applies_to_admins)))
-				qdel(other_player_client)
+// NOVA EDIT END
 
 #undef MAX_ADMINBANS_PER_ADMIN
 #undef MAX_ADMINBANS_PER_HEADMIN
