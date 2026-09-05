@@ -16,6 +16,7 @@ import {
 import { useRootThemeClasses } from 'tgui/hooks/useRootThemeClasses';
 import type {
   LobbyTitleArtVariant,
+  LobbyTitleBezel,
   LobbyTitleTexture,
   LobbyTitleTreatment,
 } from 'tgui/interfaces/common/TitleArtwork';
@@ -72,7 +73,7 @@ export type ServerState = {
   /// Neutral wordmark asset, composited over a picture in overlay treatment.
   titleMarkUrl: string;
   titleVariant: LobbyTitleArtVariant;
-  titleBezel: boolean;
+  titleBezel: LobbyTitleBezel | boolean | 0 | 1;
   titleTexture: LobbyTitleTexture;
   titleClassicAlt: boolean;
   /// Whether this client holds the rank that owns the title screen. The server

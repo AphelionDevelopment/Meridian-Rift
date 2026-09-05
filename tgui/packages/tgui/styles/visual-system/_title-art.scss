@@ -294,6 +294,33 @@
     inset 0 0 8cqmin rgb(0 0 0 / 92%);
 }
 
+// Original nine-slice SVG armor: fixed-proportion corners and continuous rails
+// at every lobby/manager size. Rspack inlines stylesheet SVGs, so this travels
+// with the asset-cached CSS and needs no separate BYOND resource registration.
+.lobby-title-art--bezel-rusty .lobby-title-art__bezel::before,
+.lobby-title-art--bezel-rusty-dark .lobby-title-art__bezel::before {
+  border: 0 solid transparent;
+  border-width: clamp(38px, 12cqmin, 177px);
+  border-image: url('~tgui/styles/assets/lobby-bezel-rusty.svg') 120 fill / 1 / 0 stretch;
+  background: #211d19;
+  box-shadow: inset 0 0 0 1px #0e0c0b;
+}
+
+.lobby-title-art--bezel-rusty-dark .lobby-title-art__bezel::before {
+  // The same etched metal in a deeper, less orange brown. Apply the finish to
+  // the physical rim alone so the glass, wordmark, and controls keep their color.
+  filter: brightness(0.66) saturate(0.68);
+}
+
+.lobby-title-art--bezel-rusty .lobby-title-art__screen,
+.lobby-title-art--bezel-rusty-dark .lobby-title-art__screen {
+  box-shadow:
+    0 0 0 0.55cqmin #0e0c0b,
+    0 0 0 0.78cqmin #453f36,
+    inset 0 0 2.2cqmin rgb(236 229 216 / 5%),
+    inset 0 0 8cqmin rgb(0 0 0 / 92%);
+}
+
 .theme-nanotrasen .lobby-title-art {
   --lobby-title-phosphor: #cde;
   --lobby-title-phosphor-secondary: #8fb7ff;

@@ -20,11 +20,14 @@
 /// Server-wide, admin-chosen title screen presentation. Survives restarts.
 #define TITLE_SETTINGS_FILE "data/title_screen_settings.json"
 /**
+ * 3: the per-screen bezel is a choice instead of a boolean. Version 2's
+ * enabled bezel becomes Classic; disabled remains None.
  * 2: presentation moved from four server-wide values to a record per screen,
  * so one picture can wear the bezel while another stays flat. Version 1 files
  * are migrated on load by fanning the old globals out across every screen.
  */
-#define TITLE_SETTINGS_VERSION "2"
+#define TITLE_SETTINGS_VERSION "3"
+#define TITLE_SETTINGS_VERSION_BOOLEAN_BEZEL "2"
 #define TITLE_SETTINGS_VERSION_LEGACY "1"
 
 /// Key used for the neutral Meridian Rift master, which has no config file name.
@@ -50,7 +53,11 @@
 #define TITLE_DEFAULT_VARIANT "convex"
 #define TITLE_DEFAULT_TEXTURE "navarobl"
 /// The monitor rim, independent of the screen effect since v2.
-#define TITLE_DEFAULT_BEZEL TRUE
+#define TITLE_BEZEL_NONE "none"
+#define TITLE_BEZEL_CLASSIC "classic"
+#define TITLE_BEZEL_RUSTY "rusty"
+#define TITLE_BEZEL_RUSTY_DARK "rusty-dark"
+#define TITLE_DEFAULT_BEZEL TITLE_BEZEL_RUSTY
 
 /// Rank that may change the title screen, matching ADMIN_VERB(admin_change_title_screen).
 #define TITLE_SCREEN_ADMIN_RIGHTS R_FUN

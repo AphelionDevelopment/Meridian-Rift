@@ -7,12 +7,20 @@ export const LOBBY_TITLE_ART_VARIANTS = ['flat', 'edge', 'convex'] as const;
 
 /**
  * The bezel used to be baked into the variant as `convex-bezel`, which meant
- * only a convex screen could have one. It is its own switch now; this maps the
+ * only a convex screen could have one. It is its own choice now; this maps the
  * stored value forward so saved settings keep working.
  */
 const LEGACY_BEZEL_VARIANT = 'convex-bezel';
 
 export type LobbyTitleArtVariant = (typeof LOBBY_TITLE_ART_VARIANTS)[number];
+
+export const LOBBY_TITLE_BEZELS = [
+  'rusty',
+  'rusty-dark',
+  'classic',
+  'none',
+] as const;
+export type LobbyTitleBezel = (typeof LOBBY_TITLE_BEZELS)[number];
 
 export const LOBBY_TITLE_TEXTURES = ['none', 'original', 'navarobl'] as const;
 
@@ -49,7 +57,7 @@ export function resolveLobbyTitleTreatment(value?: string): LobbyTitleTreatment 
 // Virgin per-title records use the full CRT treatment. Keep the other
 // controlled variants available for deliberate per-screen overrides.
 export const DEFAULT_LOBBY_TITLE_ART_VARIANT: LobbyTitleArtVariant = 'convex';
-export const DEFAULT_LOBBY_TITLE_BEZEL = true;
+export const DEFAULT_LOBBY_TITLE_BEZEL: LobbyTitleBezel = 'rusty';
 export const DEFAULT_LOBBY_TITLE_TEXTURE: LobbyTitleTexture = 'navarobl';
 export const DEFAULT_LOBBY_TITLE_PRESENTATION: LobbyTitlePresentation =
   'classic-alt';
@@ -65,15 +73,23 @@ export function resolveLobbyTitleArtVariant(
     : DEFAULT_LOBBY_TITLE_ART_VARIANT;
 }
 
-/** A stored `convex-bezel` still means "convex, with a bezel". */
+/** Preserve the original rim for old booleans and the retired combined effect. */
 export function resolveLobbyTitleBezel(
-  bezel: boolean | undefined,
+  bezel: string | boolean | number | null | undefined,
   variant?: string,
-): boolean {
-  if (bezel !== undefined) {
-    return bezel;
+): LobbyTitleBezel {
+  if (LOBBY_TITLE_BEZELS.includes(bezel as LobbyTitleBezel)) {
+    return bezel as LobbyTitleBezel;
   }
-  return variant === LEGACY_BEZEL_VARIANT || DEFAULT_LOBBY_TITLE_BEZEL;
+  if (bezel === false || bezel === 0) {
+    return 'none';
+  }
+  if (bezel === true || bezel === 1) {
+    return 'classic';
+  }
+  return bezel === undefined && variant === LEGACY_BEZEL_VARIANT
+    ? 'classic'
+    : DEFAULT_LOBBY_TITLE_BEZEL;
 }
 
 export function resolveLobbyTitleTexture(
@@ -129,7 +145,7 @@ export function TitleArtwork({
   variant: variantProp,
 }: {
   /** The monitor rim, independent of the screen effect. */
-  bezel?: boolean;
+  bezel?: LobbyTitleBezel | boolean | number;
   /** Neutral wordmark, composited over `src` in the overlay treatment. */
   markSrc?: string;
   presentation?: LobbyTitlePresentation;
@@ -187,9 +203,10 @@ export function TitleArtwork({
         `lobby-title-art--texture-${texture}`,
         `lobby-title-art--${presentation}`,
         `lobby-title-art--${treatment}`,
-        bezel && 'lobby-title-art--bezel',
+        bezel !== 'none' && 'lobby-title-art--bezel',
+        `lobby-title-art--bezel-${bezel}`,
       ])}
-      data-bezel={bezel ? 'true' : 'false'}
+      data-bezel={bezel}
       data-presentation={presentation}
       data-texture={texture}
       data-treatment={treatment}

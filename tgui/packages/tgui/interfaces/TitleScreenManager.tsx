@@ -15,9 +15,11 @@ import { useBackend } from '../backend';
 import { Window } from '../layouts';
 import {
   type LobbyTitleArtVariant,
+  type LobbyTitleBezel,
   type LobbyTitleTexture,
   type LobbyTitleTreatment,
   resolveLobbyScreenPresentation,
+  resolveLobbyTitleBezel,
   TitleArtwork,
 } from './common/TitleArtwork';
 
@@ -28,7 +30,7 @@ type ScreenOption = {
   isAlt: BooleanLike;
   url: string | null;
   variant: LobbyTitleArtVariant;
-  bezel: BooleanLike;
+  bezel: LobbyTitleBezel | BooleanLike;
   texture: LobbyTitleTexture;
   wordmark: BooleanLike;
 };
@@ -39,6 +41,7 @@ type Data = {
   screens: ScreenOption[];
   markUrl: string | null;
   variants: Choice[];
+  bezels: Choice[];
   textures: Choice[];
   liveScreen: string | null;
   liveScreenManaged: BooleanLike;
@@ -46,7 +49,7 @@ type Data = {
   draftScreen: string | null;
   draftScreenChosen: BooleanLike;
   draftVariant: LobbyTitleArtVariant;
-  draftBezel: BooleanLike;
+  draftBezel: LobbyTitleBezel | BooleanLike;
   draftTexture: LobbyTitleTexture;
   draftWordmark: BooleanLike;
   pending: BooleanLike;
@@ -88,6 +91,7 @@ export function TitleScreenManager() {
   const {
     screens = [],
     variants = [],
+    bezels = [],
     textures = [],
     markUrl,
     draftScreen,
@@ -99,6 +103,7 @@ export function TitleScreenManager() {
     : undefined;
   const isDefaultScreen = !!(selected?.isDefault || selected?.name === null);
   const treatment = draftTreatment(data);
+  const draftBezel = resolveLobbyTitleBezel(data.draftBezel);
 
   return (
     <Window title="Lobby Title Screen" width={880} height={640}>
@@ -139,7 +144,7 @@ export function TitleScreenManager() {
                   ) : selected?.url ? (
                     <div className="TitleScreenManager__preview">
                       <TitleArtwork
-                        bezel={!!data.draftBezel}
+                        bezel={draftBezel}
                         markSrc={markUrl ?? undefined}
                         presentation={resolveLobbyScreenPresentation(
                           treatment,
@@ -196,15 +201,18 @@ export function TitleScreenManager() {
                         </LabeledList.Item>
 
                         <LabeledList.Item label="Bezel">
-                          <Button.Checkbox
-                            checked={!!data.draftBezel}
-                            tooltip="The monitor rim, independent of the screen effect"
-                            onClick={() =>
-                              act('set', { bezel: !data.draftBezel })
-                            }
-                          >
-                            Show the monitor rim
-                          </Button.Checkbox>
+                          {bezels.map((choice) => (
+                            <Button
+                              aria-pressed={draftBezel === choice.id}
+                              key={choice.id}
+                              {...{ role: 'button' }}
+                              selected={draftBezel === choice.id}
+                              tooltip={choice.desc}
+                              onClick={() => act('set', { bezel: choice.id })}
+                            >
+                              {choice.name}
+                            </Button>
+                          ))}
                         </LabeledList.Item>
                       </LabeledList>
                       {!isDefaultScreen && (

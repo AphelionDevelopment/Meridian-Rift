@@ -123,7 +123,7 @@ describe('TitleArtwork', () => {
 
     const artwork = container.querySelector('.lobby-title-art');
     expect(artwork?.getAttribute('data-variant')).toBe('convex');
-    expect(artwork?.getAttribute('data-bezel')).toBe('true');
+    expect(artwork?.getAttribute('data-bezel')).toBe('classic');
     expect(artwork?.classList.contains('lobby-title-art--bezel')).toBe(true);
     expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
     expect(artwork?.getAttribute('data-presentation')).toBe('classic-alt');
@@ -213,11 +213,42 @@ describe('TitleArtwork', () => {
     // The bezel used to be welded onto the variant, so only a convex screen
     // could have one. Settings saved before the split still resolve.
     expect(resolveLobbyTitleArtVariant('convex-bezel')).toBe('convex');
-    expect(resolveLobbyTitleBezel(undefined, 'convex-bezel')).toBe(true);
-    expect(resolveLobbyTitleBezel(undefined, 'convex')).toBe(true);
+    expect(resolveLobbyTitleBezel(undefined, 'convex-bezel')).toBe('classic');
+    expect(resolveLobbyTitleBezel(undefined, 'convex')).toBe('rusty');
     // An explicit value always wins over the legacy inference.
-    expect(resolveLobbyTitleBezel(false, 'convex-bezel')).toBe(false);
-    expect(resolveLobbyTitleBezel(true, 'flat')).toBe(true);
+    expect(resolveLobbyTitleBezel(false, 'convex-bezel')).toBe('none');
+    expect(resolveLobbyTitleBezel(true, 'flat')).toBe('classic');
+  });
+
+  it('switches bezel materials independently of every screen effect', () => {
+    const { container, rerender } = render(
+      <TitleArtwork treatment="mask" src="asset://mark.png" />,
+    );
+    for (const variant of ['flat', 'edge', 'convex'] as const) {
+      for (const bezel of ['rusty', 'rusty-dark', 'classic', 'none'] as const) {
+        rerender(
+          <TitleArtwork
+            bezel={bezel}
+            variant={variant}
+            treatment="mask"
+            src="asset://mark.png"
+          />,
+        );
+        const artwork = container.querySelector('.lobby-title-art');
+        expect(artwork?.getAttribute('data-bezel')).toBe(bezel);
+        expect(artwork?.getAttribute('data-variant')).toBe(variant);
+        expect(artwork?.classList.contains('lobby-title-art--bezel')).toBe(
+          bezel !== 'none',
+        );
+        expect(
+          artwork?.classList.contains(`lobby-title-art--bezel-${bezel}`),
+        ).toBe(true);
+      }
+    }
+    expect(resolveLobbyTitleBezel('invalid')).toBe('rusty');
+    expect(resolveLobbyTitleBezel('none', 'convex-bezel')).toBe('none');
+    expect(resolveLobbyTitleBezel(0)).toBe('none');
+    expect(resolveLobbyTitleBezel(1)).toBe('classic');
   });
 
   it('turns scanlines off without colliding with the untreated class', () => {

@@ -27,7 +27,7 @@ function makeServerState(overrides: Partial<ServerState> = {}): ServerState {
     titleImageTreatment: 'mask',
     titleMarkUrl: 'asset://meridian-rift-mark.png',
     titleVariant: 'convex',
-    titleBezel: true,
+    titleBezel: 'rusty',
     titleTexture: 'navarobl',
     titleClassicAlt: false,
     canSetTitleScreen: true,
@@ -197,13 +197,13 @@ describe('LobbyMenu MeridianOS integration', () => {
     emit('state', {
       titleTexture: 'navarobl',
       titleVariant: 'convex',
-      titleBezel: true,
+      titleBezel: 'rusty',
     });
     let artwork = document.querySelector('.lobby-title-art');
     expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
     expect(artwork?.getAttribute('data-variant')).toBe('convex');
-    // The rim is its own switch now, not welded onto the screen effect.
-    expect(artwork?.getAttribute('data-bezel')).toBe('true');
+    // The rim can change independently of the screen effect.
+    expect(artwork?.getAttribute('data-bezel')).toBe('rusty');
 
     emit('state', { gamePhase: 'pregame', playerCount: 9 });
     artwork = document.querySelector('.lobby-title-art');
@@ -225,7 +225,7 @@ describe('LobbyMenu MeridianOS integration', () => {
         titleImageUrl: 'asset://rotated-title.png',
         titleImageTreatment: 'screen',
         titleVariant: 'flat',
-        titleBezel: false,
+        titleBezel: 'none',
         titleTexture: 'original',
       }),
     );
@@ -233,7 +233,7 @@ describe('LobbyMenu MeridianOS integration', () => {
     const artwork = document.querySelector('.lobby-title-art');
     expect(artwork?.getAttribute('data-treatment')).toBe('screen');
     expect(artwork?.getAttribute('data-variant')).toBe('flat');
-    expect(artwork?.getAttribute('data-bezel')).toBe('false');
+    expect(artwork?.getAttribute('data-bezel')).toBe('none');
     expect(artwork?.getAttribute('data-texture')).toBe('original');
     expect(
       artwork
@@ -241,6 +241,65 @@ describe('LobbyMenu MeridianOS integration', () => {
         ?.getAttribute('src'),
     ).toBe('asset://rotated-title.png');
   });
+
+  it('updates each bezel choice from broadcasts without changing the screen', () => {
+    render(<LobbyMenu />);
+    emit('init', makeServerState({ gamePhase: 'pregame' }));
+
+    for (const titleBezel of ['classic', 'none', 'rusty-dark', 'rusty'] as const) {
+      emit('state', { titleBezel });
+
+      const artwork = document.querySelector('.lobby-title-art');
+      expect(artwork?.getAttribute('data-bezel')).toBe(titleBezel);
+      expect(artwork?.classList.contains('lobby-title-art--bezel')).toBe(
+        titleBezel !== 'none',
+      );
+      expect(
+        artwork?.classList.contains(`lobby-title-art--bezel-${titleBezel}`),
+      ).toBe(true);
+      expect(artwork?.getAttribute('data-variant')).toBe('convex');
+      expect(artwork?.getAttribute('data-texture')).toBe('navarobl');
+    }
+  });
+
+  for (const meridianTheme of ['meridian_pipboy'] as const) {
+    it(`keeps ${meridianTheme} menu scanlines aligned with each bezel choice`, () => {
+      render(<LobbyMenu />);
+      emit('init', makeServerState({ gamePhase: 'pregame', meridianTheme }));
+
+      const choices = [
+        { incoming: 'rusty', expected: 'rusty' },
+        { incoming: 'rusty-dark', expected: 'rusty-dark' },
+        { incoming: 'classic', expected: 'classic' },
+        { incoming: 'none', expected: 'none' },
+        { incoming: true, expected: 'classic' },
+        { incoming: false, expected: 'none' },
+        { incoming: 1, expected: 'classic' },
+        { incoming: 0, expected: 'none' },
+        { incoming: undefined, expected: 'rusty' },
+      ] as const;
+
+      for (const { incoming, expected } of choices) {
+        emit('state', { titleBezel: incoming });
+
+        const artwork = document.querySelector(
+          '.lobby-title-art:not(.lobby-menu-scanline-overlay)',
+        );
+        const overlay = document.querySelector('.lobby-menu-scanline-overlay');
+        for (const layer of [artwork, overlay]) {
+          expect(layer?.getAttribute('data-bezel')).toBe(expected);
+          expect(layer?.classList.contains('lobby-title-art--bezel')).toBe(
+            expected !== 'none',
+          );
+          expect(
+            layer?.classList.contains(`lobby-title-art--bezel-${expected}`),
+          ).toBe(true);
+        }
+        expect(artwork?.getAttribute('data-texture')).toBe('none');
+        expect(overlay?.getAttribute('data-texture')).toBe('navarobl');
+      }
+    });
+  }
 
   it('shows the title screen button only to an admin who may set it', () => {
     render(<LobbyMenu />);

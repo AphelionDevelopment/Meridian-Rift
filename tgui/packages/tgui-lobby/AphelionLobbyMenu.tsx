@@ -155,11 +155,12 @@ export function AphelionLobbyMenu({
             'lobby-menu-scanline-overlay',
             `lobby-title-art--${scanlineOverlay.variant}`,
             `lobby-title-art--texture-${scanlineOverlay.texture}`,
-            scanlineOverlay.bezel && 'lobby-title-art--bezel',
+            scanlineOverlay.bezel !== 'none' && 'lobby-title-art--bezel',
+            `lobby-title-art--bezel-${scanlineOverlay.bezel}`,
           ]
             .filter(Boolean)
             .join(' ')}
-          data-bezel={scanlineOverlay.bezel ? 'true' : 'false'}
+          data-bezel={scanlineOverlay.bezel}
           data-texture={scanlineOverlay.texture}
           data-variant={scanlineOverlay.variant}
         >

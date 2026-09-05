@@ -110,7 +110,7 @@
 	TEST_ASSERT_EQUAL(fresh["texture"], TITLE_DEFAULT_TEXTURE, "An unconfigured screen did not fall back to the default texture.")
 	TEST_ASSERT_EQUAL(fresh["variant"], "convex", "The virgin screen default is not convex.")
 	TEST_ASSERT_EQUAL(fresh["texture"], "navarobl", "The virgin screen default does not use Version 2 scanlines.")
-	TEST_ASSERT(fresh["bezel"], "The virgin screen default does not show the monitor bezel.")
+	TEST_ASSERT_EQUAL(fresh["bezel"], TITLE_BEZEL_RUSTY, "An unconfigured screen did not default to the Rusty bezel.")
 	TEST_ASSERT(!("framed" in fresh), "The retired per-screen frame option is still exposed.")
 	TEST_ASSERT(!fresh["wordmark"], "An unconfigured screen should start without the wordmark.")
 
@@ -132,18 +132,28 @@
 	// Presentation is validated against the values TGUI can actually render.
 	TEST_ASSERT(!SStitle.set_screen_settings("alpha.png", list("variant" = "nope")), "An unknown screen effect was accepted.")
 	// The rim used to be welded onto the effect as convex-bezel; it is its own
-	// switch now, so the combined value is no longer a valid effect.
+	// choice now, so the combined value is no longer a valid effect.
 	TEST_ASSERT(!SStitle.set_screen_settings("alpha.png", list("variant" = "convex-bezel")), "The retired convex-bezel effect was accepted.")
 	TEST_ASSERT(!SStitle.set_screen_settings("alpha.png", list("texture" = "nope")), "An unknown texture was accepted.")
+	TEST_ASSERT(!SStitle.set_screen_settings("alpha.png", list("bezel" = "nope", "variant" = "flat")), "An unknown bezel was accepted.")
+	TEST_ASSERT(!SStitle.set_screen_settings("alpha.png", list("bezel" = TRUE)), "The retired boolean bezel was accepted as a choice.")
+	TEST_ASSERT(!SStitle.set_screen_settings("alpha.png", list("bezel" = FALSE)), "A false boolean was accepted instead of the None choice.")
+	TEST_ASSERT(!SStitle.set_screen_settings("alpha.png", list("bezel" = list(TITLE_BEZEL_RUSTY))), "A non-text bezel choice was accepted.")
 	TEST_ASSERT(!SStitle.set_screen_settings("alpha.png", list("framed" = FALSE)), "The retired frame option was accepted.")
 	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["variant"], TITLE_DEFAULT_VARIANT, "A rejected effect was still stored.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["bezel"], TITLE_BEZEL_RUSTY, "A rejected bezel changed the screen's presentation.")
 
-	// Scanlines can be turned off, and the rim moves without touching the effect.
+	// Every bezel choice is independent of scanlines and the screen effect.
 	TEST_ASSERT(SStitle.set_screen_settings("alpha.png", list("texture" = "none")), "Turning scanlines off was rejected.")
-	TEST_ASSERT(SStitle.set_screen_settings("alpha.png", list("bezel" = TRUE)), "A valid rim toggle was rejected.")
-	TEST_ASSERT(SStitle.get_screen_settings("alpha.png")["bezel"], "The rim flag was not stored.")
-	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["variant"], TITLE_DEFAULT_VARIANT, "Toggling the rim changed the screen effect.")
-	SStitle.set_screen_settings("alpha.png", list("bezel" = FALSE, "texture" = TITLE_DEFAULT_TEXTURE))
+	SStitle.set_title_selection("alpha.png")
+	for(var/bezel in list(TITLE_BEZEL_NONE, TITLE_BEZEL_CLASSIC, TITLE_BEZEL_RUSTY, TITLE_BEZEL_RUSTY_DARK))
+		TEST_ASSERT(SStitle.set_screen_settings("alpha.png", list("bezel" = bezel)), "The [bezel] bezel choice was rejected.")
+		TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["bezel"], bezel, "The [bezel] bezel choice was not stored.")
+		TEST_ASSERT_EQUAL(SStitle.get_title_screen_option("alpha.png")["bezel"], bezel, "The screen option lost the [bezel] choice.")
+		TEST_ASSERT_EQUAL(SStitle.get_published_title_payload()["titleBezel"], bezel, "The lobby publication lost the [bezel] choice.")
+		TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["variant"], TITLE_DEFAULT_VARIANT, "Changing the bezel changed the screen effect.")
+		TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["texture"], "none", "Changing the bezel changed scanlines.")
+	SStitle.set_screen_settings("alpha.png", list("bezel" = TITLE_BEZEL_NONE, "texture" = TITLE_DEFAULT_TEXTURE))
 
 	// Treatment: the neutral master tints; every picture uses the selected
 	// screen treatment, with the wordmark as its only optional overlay. A stale
@@ -177,6 +187,14 @@
 	TEST_ASSERT_EQUAL(manager_data["liveScreen"], "beta.png", "The title manager reported the pinned screen instead of the screen actually showing.")
 	TEST_ASSERT("rotateTitleScreens" in manager_data, "The title manager omitted the independent live rotation preference.")
 	TEST_ASSERT(!("draftRotate" in manager_data), "Rotation is still represented as part of the screen draft.")
+	TEST_ASSERT_EQUAL(manager_data["draftBezel"], TITLE_BEZEL_RUSTY, "The manager coerced its bezel choice to a boolean.")
+	manager.draft_settings["bezel"] = TITLE_BEZEL_RUSTY_DARK
+	TEST_ASSERT(manager.has_pending_changes(), "Choosing another bezel did not dirty the draft.")
+	TEST_ASSERT_EQUAL(manager.ui_data(null)["draftBezel"], TITLE_BEZEL_RUSTY_DARK, "The manager preview lost its staged bezel choice.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("beta.png")["bezel"], TITLE_BEZEL_RUSTY, "A bezel draft changed the saved presentation before Apply.")
+	manager.reset_draft()
+	TEST_ASSERT_EQUAL(manager.draft_settings["bezel"], TITLE_BEZEL_RUSTY, "Reverting did not restore the live bezel choice.")
+	TEST_ASSERT(!manager.has_pending_changes(), "Reverting a bezel choice left the draft dirty.")
 	var/manager_baseline_variant = manager.draft_settings["variant"]
 	var/external_variant = manager_baseline_variant == "flat" ? "edge" : "flat"
 	SStitle.set_screen_settings("beta.png", list("variant" = external_variant))
@@ -193,10 +211,11 @@
 	TEST_ASSERT(manager.sync_clean_draft_to_live(), "A clean manager did not follow the rotated live screen.")
 	TEST_ASSERT_EQUAL(manager.draft_screen, "alpha.png", "A clean manager kept showing the previous screen's controls after rotation.")
 	TEST_ASSERT(!manager.has_pending_changes(), "Following a rotation dirtied the current screen's presentation draft.")
-	manager.draft_settings["wordmark"] = !manager.draft_settings["wordmark"]
+	manager.draft_settings["bezel"] = TITLE_BEZEL_NONE
 	SStitle.set_showing(SStitle.get_title_screen_icon("beta.png"), "beta.png")
 	TEST_ASSERT(!manager.sync_clean_draft_to_live(), "A rotation discarded a locally modified title-screen draft.")
 	TEST_ASSERT_EQUAL(manager.draft_screen, "alpha.png", "A dirty draft switched screens during rotation.")
+	TEST_ASSERT_EQUAL(manager.draft_settings["bezel"], TITLE_BEZEL_NONE, "A rotation discarded the staged bezel choice.")
 	TEST_ASSERT(manager.has_pending_changes(), "Changing a per-screen presentation field did not dirty the draft.")
 	TEST_ASSERT(manager.draft_requires_selection(), "Applying a preserved draft would not restore its screen after rotation.")
 	qdel(manager)
@@ -204,13 +223,13 @@
 	// Rotation has to carry the complete record belonging to the image it lands
 	// on. Restrict the pool to one screen at a time so every field is exercised
 	// deterministically rather than hoping random rolls cover both records.
-	SStitle.set_screen_settings("alpha.png", list("variant" = "flat", "bezel" = FALSE, "texture" = "original", "wordmark" = FALSE))
-	SStitle.set_screen_settings("beta.png", list("variant" = "convex", "bezel" = TRUE, "texture" = "navarobl", "wordmark" = TRUE))
+	SStitle.set_screen_settings("alpha.png", list("variant" = "flat", "bezel" = TITLE_BEZEL_NONE, "texture" = "original", "wordmark" = FALSE))
+	SStitle.set_screen_settings("beta.png", list("variant" = "convex", "bezel" = TITLE_BEZEL_RUSTY, "texture" = "navarobl", "wordmark" = TRUE))
 	var/list/all_test_names = SStitle.title_screen_names
 	var/list/all_test_screens = SStitle.title_screens
 	var/list/rotation_expectations = list(
-		"alpha.png" = list("variant" = "flat", "bezel" = FALSE, "texture" = "original", "treatment" = TITLE_TREATMENT_SCREEN),
-		"beta.png" = list("variant" = "convex", "bezel" = TRUE, "texture" = "navarobl", "treatment" = TITLE_TREATMENT_OVERLAY),
+		"alpha.png" = list("variant" = "flat", "bezel" = TITLE_BEZEL_NONE, "texture" = "original", "treatment" = TITLE_TREATMENT_SCREEN),
+		"beta.png" = list("variant" = "convex", "bezel" = TITLE_BEZEL_RUSTY, "texture" = "navarobl", "treatment" = TITLE_TREATMENT_OVERLAY),
 	)
 	for(var/screen_name in rotation_expectations)
 		var/screen_index = all_test_names.Find(screen_name)
@@ -282,7 +301,7 @@
 	TEST_ASSERT(!SStitle.get_title_payload()["titleClassicAlt"], "The default master reported the alternate ramp.")
 
 /**
- * Covers the version 1 -> 2 settings migration.
+ * Covers the version 1 -> current settings migration.
  *
  * Version 1 stored one variant/texture/classicAlt for the whole server plus a
  * map of overlay flags. Every screen it knew about therefore looked the same,
@@ -332,14 +351,14 @@
 	))
 	var/list/split = SStitle.get_screen_settings("alpha.png")
 	TEST_ASSERT_EQUAL(split["variant"], "convex", "convex-bezel did not migrate to the convex effect.")
-	TEST_ASSERT(split["bezel"], "convex-bezel did not migrate to a separate rim.")
+	TEST_ASSERT_EQUAL(split["bezel"], TITLE_BEZEL_CLASSIC, "convex-bezel did not preserve its Classic rim.")
 
 	// A sparse v1 file keeps the historical no-rim/Original defaults rather
 	// than inheriting the fuller defaults introduced for new v2 records.
 	SStitle.title_screen_settings = list()
 	SStitle.migrate_legacy_title_settings(list("_version" = TITLE_SETTINGS_VERSION_LEGACY))
 	var/list/historical_defaults = SStitle.get_screen_settings("alpha.png")
-	TEST_ASSERT(!historical_defaults["bezel"], "A legacy title unexpectedly gained the new default bezel.")
+	TEST_ASSERT_EQUAL(historical_defaults["bezel"], TITLE_BEZEL_NONE, "A legacy title unexpectedly gained the new default bezel.")
 	TEST_ASSERT_EQUAL(historical_defaults["texture"], "original", "A legacy title unexpectedly gained Version 2 scanlines.")
 
 	// A ramp flag must not replace a separately pinned configured picture.
@@ -358,12 +377,58 @@
 	var/list/persisted = json_decode(file2text(SStitle.title_settings_file))
 	TEST_ASSERT_EQUAL(persisted["selected"], "alpha.png", "Migration persisted a replacement for the configured pin.")
 
+/// Boolean settings retain their appearance; new settings use the Rusty default.
+/datum/unit_test/title_screen_bezel_migration
+
+/datum/unit_test/title_screen_bezel_migration/Run()
+	allocate(/datum/title_screen_test_state)
+	WRITE_FILE(file(SStitle.title_settings_file), json_encode(list(
+		"_version" = TITLE_SETTINGS_VERSION_BOOLEAN_BEZEL,
+		"selected" = "alpha.png",
+		"rotate" = FALSE,
+		"screens" = list(
+			TITLE_DEFAULT_SCREEN_KEY = list("bezel" = TRUE),
+			"alpha.png" = list("bezel" = FALSE, "variant" = "flat", "texture" = "original", "wordmark" = TRUE),
+			"beta.png" = list("texture" = "none"),
+			"gone.png" = list("bezel" = FALSE),
+		),
+	)))
+	SStitle.load_title_settings()
+	TEST_ASSERT_EQUAL(SStitle.selected_title_name, "alpha.png", "Bezel migration changed the pinned screen.")
+	TEST_ASSERT(!SStitle.rotate_title_screens, "Bezel migration changed the rotation preference.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings(null)["bezel"], TITLE_BEZEL_CLASSIC, "An enabled v2 bezel did not retain the Classic appearance.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["bezel"], TITLE_BEZEL_NONE, "A disabled v2 bezel was enabled during migration.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("beta.png")["bezel"], TITLE_BEZEL_CLASSIC, "A sparse v2 record lost its implicit Classic bezel.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings(TITLE_DEFAULT_ALT_SCREEN_KEY)["bezel"], TITLE_BEZEL_CLASSIC, "An existing screen without a v2 record changed its default appearance.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("gone.png")["bezel"], TITLE_BEZEL_NONE, "Migration discarded the bezel for a temporarily missing screen.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["variant"], "flat", "Bezel migration changed the screen effect.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["texture"], "original", "Bezel migration changed scanlines.")
+	TEST_ASSERT(SStitle.get_screen_settings("alpha.png")["wordmark"], "Bezel migration cleared the wordmark.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("new.png")["bezel"], TITLE_BEZEL_RUSTY, "A newly added screen inherited the historical bezel default.")
+	var/list/persisted = json_decode(file2text(SStitle.title_settings_file))
+	TEST_ASSERT_EQUAL(persisted["_version"], TITLE_SETTINGS_VERSION, "Bezel migration did not persist the current schema version.")
+	var/migrated_file = file2text(SStitle.title_settings_file)
+	SStitle.title_screen_settings = list()
+	SStitle.load_title_settings()
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["bezel"], TITLE_BEZEL_NONE, "Reloading migrated settings changed None to a visible bezel.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings(null)["bezel"], TITLE_BEZEL_CLASSIC, "Reloading migrated settings changed Classic to Rusty.")
+	TEST_ASSERT_EQUAL(file2text(SStitle.title_settings_file), migrated_file, "Loading current settings rewrote the migrated file.")
+	SStitle.set_screen_settings("alpha.png", list("bezel" = TITLE_BEZEL_RUSTY))
+	SStitle.title_screen_settings = list()
+	SStitle.load_title_settings()
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["bezel"], TITLE_BEZEL_RUSTY, "The Rusty choice did not survive a save and reload.")
+	TEST_ASSERT(SStitle.set_screen_settings("alpha.png", list("bezel" = TITLE_BEZEL_RUSTY_DARK)), "The Dark Brown choice was rejected after migration.")
+	SStitle.title_screen_settings = list()
+	SStitle.load_title_settings()
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["bezel"], TITLE_BEZEL_RUSTY_DARK, "The Dark Brown choice did not survive a save and reload.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("beta.png")["bezel"], TITLE_BEZEL_CLASSIC, "Saving another screen changed the migrated Classic bezel.")
+
 /// A transport change must update URLs without exposing an unpublished screen.
 /datum/unit_test/title_screen_published_transport
 
 /datum/unit_test/title_screen_published_transport/Run()
 	allocate(/datum/title_screen_test_state)
-	SStitle.set_screen_settings("alpha.png", list("variant" = "flat", "bezel" = FALSE, "texture" = "none"))
+	SStitle.set_screen_settings("alpha.png", list("variant" = "flat", "bezel" = TITLE_BEZEL_NONE, "texture" = "none"))
 	SStitle.set_title_selection("alpha.png")
 	var/published_asset_name = SStitle.current_title_asset_name
 	var/list/original_payload = SStitle.get_published_title_payload()

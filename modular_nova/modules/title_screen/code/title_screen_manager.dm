@@ -131,12 +131,17 @@
 
 /datum/title_screen_manager/ui_static_data(mob/user)
 	return list(
-		// The screen effect. The bezel is a separate switch, so any of these can
-		// be shown with or without the rim.
+		// Screen effects and bezel choices are independent.
 		"variants" = list(
 			list("id" = "flat", "name" = "Flat", "desc" = "No curvature or falloff"),
 			list("id" = "edge", "name" = "Vignette", "desc" = "Flat glass with a soft edge falloff"),
 			list("id" = "convex", "name" = "Convex", "desc" = "Curved CRT glass"),
+		),
+		"bezels" = list(
+			list("id" = TITLE_BEZEL_RUSTY, "name" = "Rusty", "desc" = "Weathered red-brown steel with worn brass details"),
+			list("id" = TITLE_BEZEL_RUSTY_DARK, "name" = "Dark Brown", "desc" = "Dark brown weathered steel"),
+			list("id" = TITLE_BEZEL_CLASSIC, "name" = "Classic", "desc" = "Original dark monitor rim"),
+			list("id" = TITLE_BEZEL_NONE, "name" = "None", "desc" = "No monitor rim"),
 		),
 		"textures" = list(
 			list("id" = "none", "name" = "None", "desc" = "No scanlines"),
@@ -158,7 +163,7 @@
 		"draftScreen" = draft_screen,
 		"draftScreenChosen" = draft_screen_chosen,
 		"draftVariant" = settings["variant"],
-		"draftBezel" = !!settings["bezel"],
+		"draftBezel" = settings["bezel"],
 		"draftTexture" = settings["texture"],
 		"draftWordmark" = !!settings["wordmark"],
 		"rotateTitleScreens" = !!SStitle.rotate_title_screens,
@@ -192,10 +197,13 @@
 		if("set")
 			if(!draft_screen_chosen)
 				return TRUE
+			if(!isnull(params["bezel"]) && !SStitle.is_title_bezel(params["bezel"]))
+				return TRUE
 			// One control's new value, merged into the draft rather than applied.
-			for(var/field in list("wordmark", "bezel"))
-				if(!isnull(params[field]))
-					draft_settings[field] = !!params[field]
+			if(!isnull(params["wordmark"]))
+				draft_settings["wordmark"] = !!params["wordmark"]
+			if(!isnull(params["bezel"]))
+				draft_settings["bezel"] = params["bezel"]
 			if(!isnull(params["variant"]))
 				draft_settings["variant"] = params["variant"]
 			if(!isnull(params["texture"]))

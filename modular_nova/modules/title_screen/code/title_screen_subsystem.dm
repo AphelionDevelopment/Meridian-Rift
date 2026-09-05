@@ -199,6 +199,11 @@ SUBSYSTEM_DEF(title)
 		"wordmark" = FALSE,
 	)
 
+/// Bezel choices shared by draft validation, persistence, and lobby payloads.
+/datum/controller/subsystem/title/proc/is_title_bezel(bezel)
+	var/static/list/valid_bezels = list(TITLE_BEZEL_RUSTY, TITLE_BEZEL_RUSTY_DARK, TITLE_BEZEL_CLASSIC, TITLE_BEZEL_NONE)
+	return istext(bezel) && (bezel in valid_bezels)
+
 /**
  * One screen's presentation, filled in from the defaults.
  *
@@ -234,6 +239,8 @@ SUBSYSTEM_DEF(title)
 	for(var/field in settings)
 		if(!isnull(stored[field]))
 			settings[field] = stored[field]
+	if(!is_title_bezel(settings["bezel"]))
+		settings["bezel"] = TITLE_DEFAULT_BEZEL
 	return settings
 
 /datum/controller/subsystem/title/proc/load_title_settings()
@@ -246,7 +253,7 @@ SUBSYSTEM_DEF(title)
 		return
 
 	var/version = settings["_version"]
-	if(version != TITLE_SETTINGS_VERSION && version != TITLE_SETTINGS_VERSION_LEGACY)
+	if(version != TITLE_SETTINGS_VERSION && version != TITLE_SETTINGS_VERSION_BOOLEAN_BEZEL && version != TITLE_SETTINGS_VERSION_LEGACY)
 		return
 
 	selected_title_name = istext(settings["selected"]) ? settings["selected"] : null
@@ -258,6 +265,27 @@ SUBSYSTEM_DEF(title)
 
 	var/list/stored = settings["screens"]
 	title_screen_settings = islist(stored) ? stored.Copy() : list()
+	if(version == TITLE_SETTINGS_VERSION_BOOLEAN_BEZEL)
+		migrate_boolean_title_bezels()
+
+/**
+ * Preserves version 2's appearance while replacing its boolean bezel.
+ *
+ * An absent bezel or record used to default to TRUE, so known screens get an
+ * explicit Classic record too. Screens added after migration use the new
+ * Rusty default. Records for temporarily missing images are retained.
+ */
+/datum/controller/subsystem/title/proc/migrate_boolean_title_bezels()
+	var/list/screen_keys = list(TITLE_DEFAULT_SCREEN_KEY, TITLE_DEFAULT_ALT_SCREEN_KEY)
+	screen_keys |= title_screen_names
+	for(var/key in title_screen_settings)
+		screen_keys |= key
+	for(var/key in screen_keys)
+		var/list/stored = title_screen_settings[key]
+		var/list/record = islist(stored) ? stored.Copy() : list()
+		record["bezel"] = isnull(record["bezel"]) || record["bezel"] ? TITLE_BEZEL_CLASSIC : TITLE_BEZEL_NONE
+		title_screen_settings[key] = record
+	save_title_settings()
 
 /**
  * Fans version 1's four server-wide values out into a record per screen.
@@ -269,12 +297,12 @@ SUBSYSTEM_DEF(title)
  */
 /datum/controller/subsystem/title/proc/migrate_legacy_title_settings(list/settings)
 	var/list/legacy_overlays = islist(settings["overlays"]) ? settings["overlays"] : list()
-	// Preserve v1's historical fallbacks. New v2 records intentionally default
-	// to the fuller bezel/NavaroBL treatment, but merely loading an old file must
+	// Preserve v1's historical fallbacks. New records intentionally default
+	// to the Rusty bezel/NavaroBL treatment, but merely loading an old file must
 	// not retrofit settings its admin never chose.
 	var/list/base = list(
 		"variant" = "convex",
-		"bezel" = FALSE,
+		"bezel" = TITLE_BEZEL_NONE,
 		"texture" = "original",
 		"wordmark" = FALSE,
 	)
@@ -289,7 +317,7 @@ SUBSYSTEM_DEF(title)
 	// v1's convex-bezel welded the rim onto the screen effect. Split it back.
 	if(base["variant"] == "convex-bezel")
 		base["variant"] = "convex"
-		base["bezel"] = TRUE
+		base["bezel"] = TITLE_BEZEL_CLASSIC
 
 	title_screen_settings = list()
 	// The neutral master is its own screen and was never in the overlay map.
@@ -504,7 +532,7 @@ SUBSYSTEM_DEF(title)
 		// The showing screen's own presentation, so the lobby renders what was set up
 		// for the picture it actually landed on rather than a server-wide style.
 		"titleVariant" = showing["variant"],
-		"titleBezel" = !!showing["bezel"],
+		"titleBezel" = showing["bezel"],
 		"titleTexture" = showing["texture"],
 		// Which of the two masters is showing, not a per-screen flag.
 		"titleClassicAlt" = current_title_name == TITLE_DEFAULT_ALT_SCREEN_KEY,
@@ -546,7 +574,7 @@ SUBSYSTEM_DEF(title)
 		"isAlt" = screen_name == TITLE_DEFAULT_ALT_SCREEN_KEY,
 		"url" = get_title_screen_preview_url(screen_name),
 		"variant" = settings["variant"],
-		"bezel" = !!settings["bezel"],
+		"bezel" = settings["bezel"],
 		"texture" = settings["texture"],
 		"wordmark" = !!settings["wordmark"],
 	)
@@ -717,7 +745,7 @@ SUBSYSTEM_DEF(title)
  * * changes - any of variant, bezel, texture, wordmark.
  */
 /datum/controller/subsystem/title/proc/set_screen_settings(screen_name, list/changes)
-	// convex-bezel is gone: the rim is its own switch now.
+	// convex-bezel is gone: the rim is its own choice now.
 	var/static/list/valid_variants = list("flat", "edge", "convex")
 	var/static/list/valid_textures = list("none", "original", "navarobl")
 
@@ -748,8 +776,10 @@ SUBSYSTEM_DEF(title)
 		settings["wordmark"] = !!changes["wordmark"]
 		has_supported_change = TRUE
 	if(!isnull(changes["bezel"]))
-		has_changes ||= !!settings["bezel"] != !!changes["bezel"]
-		settings["bezel"] = !!changes["bezel"]
+		if(!is_title_bezel(changes["bezel"]))
+			return FALSE
+		has_changes ||= settings["bezel"] != changes["bezel"]
+		settings["bezel"] = changes["bezel"]
 		has_supported_change = TRUE
 	if(!has_supported_change)
 		return FALSE
