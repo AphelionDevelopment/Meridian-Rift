@@ -21,6 +21,11 @@
 @include theme(meridian_relay);
 @include theme(meridian_bastion);
 
+.theme-meridian {
+  // Give the diamond frame consistent line weight on all four sides.
+  --console-loader-stroke-secondary: var(--console-loader-stroke);
+}
+
 .theme-meridian_pipboy {
   --console-frame-gap: 4px;
   --console-frame-top-weight: 3px;
@@ -47,6 +52,31 @@
   --console-heading-tracking: 0.12em;
   --console-control-depth: inset 0 -3px 0 var(--console-surface-recessed), inset 0 0 0 1px var(--console-border-control);
   --console-overlay-shadow: 0 0 18px color-mix(in srgb, var(--console-interaction-accent) 18%, transparent);
+}
+
+.theme-meridian,
+.theme-meridian_pipboy,
+.theme-meridian_vector,
+.theme-meridian_foundry,
+.theme-meridian_synapse,
+.theme-meridian_cyberpunk,
+.theme-meridian_augmentation {
+  // Clear the diamond outline without changing the spoke angles.
+  // Its 38% square, rotated 45deg, has tips at 23.13% and 76.87%.
+  // The outer contour retains the crown; the inner one cuts a clear gap.
+  --console-loader-crown-clip: polygon(
+    evenodd,
+    0 0,
+    100% 0,
+    100% 100%,
+    0 100%,
+    0 0,
+    50% calc(23.13% - 2px),
+    calc(76.87% + 2px) 50%,
+    50% calc(76.87% + 2px),
+    calc(23.13% - 2px) 50%,
+    50% calc(23.13% - 2px)
+  );
 }
 
 .theme-meridian_vector {
@@ -279,6 +309,11 @@
   --console-loader-tick-step: 30deg;
   --console-loader-tick-width: 12deg;
   --console-loader-tick-depth: 10%;
+  // Center both sets of marks on the same twelve positions.
+  --console-loader-crown-start: -6deg;
+  --console-loader-node-start: -4deg;
+  // Clear the original square's corners without changing its size.
+  --console-loader-inner-inset: calc(30% - 2px);
   --console-loader-node-step: 30deg;
   --console-loader-node-width: 8deg;
   --console-loader-node-opacity: 0.72;

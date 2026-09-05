@@ -50,10 +50,11 @@
 }
 
 .DiagnosticLoader__tickCrown {
+  clip-path: var(--console-loader-crown-clip, none);
   inset: 0;
   border-radius: 50%;
   background: repeating-conic-gradient(
-    from -90deg,
+    from var(--console-loader-crown-start, -90deg),
     var(--console-loader-crown-color, #4b6b78) 0deg
       var(--console-loader-tick-width, 3deg),
     var(--console-loader-crown-gap, transparent)
@@ -128,7 +129,7 @@
 }
 
 .DiagnosticLoader__innerMarks {
-  inset: 31%;
+  inset: var(--console-loader-inner-inset, 31%);
   border-top: var(--console-loader-stroke-secondary, 1px) solid
     var(--console-border-control, #4b6b78);
   border-right: var(--console-loader-stroke, 2px) solid
@@ -145,7 +146,7 @@
   border-radius: 50%;
   opacity: var(--console-loader-node-opacity, 0);
   background: repeating-conic-gradient(
-    from -90deg,
+    from var(--console-loader-node-start, -90deg),
     var(--console-interaction-selected, #7ae2db) 0deg
       var(--console-loader-node-width, 5deg),
     transparent var(--console-loader-node-width, 5deg)
