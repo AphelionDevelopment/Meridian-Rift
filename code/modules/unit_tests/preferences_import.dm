@@ -123,6 +123,13 @@
 	load_and_save = FALSE
 	path = "preferences_import_memory_only"
 
+/// Mock clients are datums, so their preference backreference must be detached before GC.
+/datum/preferences/preferences_import_test/Destroy()
+	if(parent?.prefs == src)
+		parent.prefs = null
+	parent = null
+	return ..()
+
 /// Failed candidate verification or pending recovery must leave the original file intact.
 /datum/unit_test/preferences_import_replacement
 	var/test_path = "data/preferences_import_unit_test.json"
@@ -322,7 +329,7 @@
 	var/datum/client_interface/mock_client = allocate(/datum/client_interface)
 	var/datum/preferences/preferences = allocate(/datum/preferences/preferences_import_test, mock_client)
 	CONFIG_SET(number/savefile_upload_limit, 1)
-	for(var/invalid_contents in list("{", "[]", "true", "{\"version\":\"52\"}", "{\"version\":0}"))
+	for(var/invalid_contents in list("{", "\[\]", "true", "{\"version\":\"52\"}", "{\"version\":0}"))
 		TEST_ASSERT(write_fixture("", invalid_contents), "Could not write an invalid upload fixture.")
 		var/list/rejected = prefs_import_read_upload(file(test_path), preferences)
 		TEST_ASSERT(rejected["error"], "Shared validation accepted malformed JSON, an invalid root, or an unsupported version.")
