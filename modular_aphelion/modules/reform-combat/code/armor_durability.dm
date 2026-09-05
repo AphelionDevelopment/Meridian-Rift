@@ -12,6 +12,7 @@
 	get_armor()
 
 /obj/item/clothing/get_armor()
+	RETURN_TYPE(/datum/armor)
 	. = ..()
 	update_combat_armor_health(.)
 
