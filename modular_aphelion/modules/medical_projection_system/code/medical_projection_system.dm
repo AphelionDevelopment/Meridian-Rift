@@ -16,10 +16,9 @@
 #define LIFELINE_STASIS_COST 50
 /// Damage removed by one heal-mode use.
 #define LIFELINE_HEAL_AMOUNT 8
-/// Cryogenic recovery progress applied to one random wound. A wound closes at 33 per severity rung,
-/// so the sprayer assists a treatment it cannot finish: 6 sprays for a Moderate injury, 11 for a
-/// Severe one and 17 for a Critical one, against a sprayer that holds 10.
-#define LIFELINE_WOUND_PROGRESS 6
+/// Progress applied to one random wound. Default wounds require 9 Moderate, 17 Severe or
+/// 25 Critical sprays from zero progress, across refills.
+#define LIFELINE_WOUND_PROGRESS 4
 /// Number of non-empty fluid levels in the field sprayer icon.
 #define LIFELINE_FUEL_ICON_LEVELS 4
 /// Duration of the transport-support field.
@@ -268,6 +267,8 @@ GLOBAL_VAR(lifeline_request)
 	var/max_fuel = LIFELINE_PROJECTOR_CAPACITY
 	/// Treatment mode applied by the next use.
 	var/selected_mode = LIFELINE_MODE_HEAL
+	/// Prevents overlapping treatments with this sprayer.
+	var/treatment_in_progress = FALSE
 
 /** A field sprayer supplied with a full reservoir. */
 /obj/item/lifeline_projector/full
@@ -290,6 +291,9 @@ GLOBAL_VAR(lifeline_request)
 	return ..()
 
 /obj/item/lifeline_projector/attack_self_secondary(mob/user)
+	if(treatment_in_progress)
+		balloon_alert(user, "treatment in progress!")
+		return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
 	switch(selected_mode)
 		if(LIFELINE_MODE_HEAL)
 			selected_mode = LIFELINE_MODE_STABILIZE
@@ -314,32 +318,57 @@ GLOBAL_VAR(lifeline_request)
 	return ITEM_INTERACT_SUCCESS
 
 /obj/item/lifeline_projector/proc/use_on_target(mob/living/target, mob/living/user)
+	if(treatment_in_progress)
+		balloon_alert(user, "treatment in progress!")
+		return FALSE
+	treatment_in_progress = TRUE
+	. = perform_treatment(target, user, selected_mode)
+	treatment_in_progress = FALSE
+
+/// Check eligibility before calibration and again before spending medium.
+/obj/item/lifeline_projector/proc/can_treat(mob/living/target, mob/living/user, treatment_mode, fuel_cost)
+	if(QDELETED(target) || QDELETED(user))
+		return FALSE
+	if(fuel < fuel_cost)
+		balloon_alert(user, "insufficient medium!")
+		return FALSE
+	if(treatment_mode != LIFELINE_MODE_STASIS && target.stat == DEAD)
+		balloon_alert(user, "no viable response!")
+		return FALSE
+	if(treatment_mode == LIFELINE_MODE_STASIS && target == user)
+		balloon_alert(user, "requires another operator!")
+		return FALSE
+	if(treatment_mode == LIFELINE_MODE_STABILIZE)
+		if(target.health > target.crit_threshold)
+			balloon_alert(user, "patient is not critical!")
+			return FALSE
+		if(target.has_status_effect(/datum/status_effect/lifeline_stabilized))
+			balloon_alert(user, "already stabilized!")
+			return FALSE
+	return TRUE
+
+/// Capture the mode before yielding so its effect and price always agree.
+/obj/item/lifeline_projector/proc/perform_treatment(mob/living/target, mob/living/user, treatment_mode)
 	var/fuel_cost
-	switch(selected_mode)
+	switch(treatment_mode)
 		if(LIFELINE_MODE_HEAL)
 			fuel_cost = LIFELINE_HEAL_COST
 		if(LIFELINE_MODE_STABILIZE)
 			fuel_cost = LIFELINE_STABILIZE_COST
 		if(LIFELINE_MODE_STASIS)
 			fuel_cost = LIFELINE_STASIS_COST
-	if(fuel < fuel_cost)
-		balloon_alert(user, "insufficient medium!")
-		return FALSE
-	if(selected_mode != LIFELINE_MODE_STASIS && target.stat == DEAD)
-		balloon_alert(user, "no viable response!")
-		return FALSE
-	if(selected_mode == LIFELINE_MODE_STASIS && target == user)
-		balloon_alert(user, "requires another operator!")
-		return FALSE
-	if(selected_mode == LIFELINE_MODE_STABILIZE && target.has_status_effect(/datum/status_effect/lifeline_stabilized))
-		balloon_alert(user, "already stabilized!")
+		else
+			return FALSE
+	if(!can_treat(target, user, treatment_mode, fuel_cost))
 		return FALSE
 
 	user.visible_message(span_notice("[user] aims [src] at [target], tracing a lattice of pale light over [target.p_them()]."), span_notice("You begin calibrating [src] on [target]."))
 	if(!do_after(user, target == user ? 2 SECONDS : 1.5 SECONDS, target = target))
 		return FALSE
+	if(!can_treat(target, user, treatment_mode, fuel_cost))
+		return FALSE
 
-	switch(selected_mode)
+	switch(treatment_mode)
 		if(LIFELINE_MODE_HEAL)
 			if(target.stat == DEAD)
 				balloon_alert(user, "no viable response!")
@@ -354,7 +383,7 @@ GLOBAL_VAR(lifeline_request)
 			if(!target.apply_status_effect(/datum/status_effect/lifeline_stabilized))
 				balloon_alert(user, "already stabilized!")
 				return FALSE
-			target.visible_message(span_notice("A supportive field settles around [target]."), span_notice("Your pain recedes enough for you to move, but the field locks your hands and your injuries remain."))
+			target.visible_message(span_notice("A supportive field settles around [target]."), span_notice("The field suppresses critical collapse, but locks your hands. Injuries and bleeding remain. Click the Field Stabilized alert to end it."))
 		if(LIFELINE_MODE_STASIS)
 			var/obj/structure/closet/body_bag/environmental/stasis/lifeline/recovery_bag = new(get_turf(target))
 			// insert() refuses anchored, buckled, incorporeal and oversized patients.
@@ -365,27 +394,19 @@ GLOBAL_VAR(lifeline_request)
 			recovery_bag.dissolve_when_opened = TRUE
 			recovery_bag.visible_message(span_notice("A translucent recovery cocoon assembles around [target]."))
 
+	log_combat(user, target, "applied Lifeline [treatment_mode] to", src)
 	fuel -= fuel_cost
 	update_appearance()
 	playsound(target, 'sound/effects/spray.ogg', 40, TRUE)
 	return TRUE
 
 /**
- * Applies one inefficient, randomly selected form of healing and progresses one random wound.
- *
- * The damage type is picked from what the patient actually has, so a spray is never spent treating
- * a type they are not carrying. Returns whether there was anything to treat at all.
+ * Heals the greater of brute and burn damage, and progresses one random wound.
+ * Brute wins ties. Returns whether there was anything to treat at all.
  */
 /obj/item/lifeline_projector/proc/apply_healing(mob/living/target)
-	var/list/treatable_types = list()
-	if(target.get_brute_loss())
-		treatable_types += BRUTE
-	if(target.get_fire_loss())
-		treatable_types += BURN
-	if(target.get_tox_loss())
-		treatable_types += TOX
-	if(target.get_oxy_loss())
-		treatable_types += OXY
+	var/brute_damage = target.get_brute_loss()
+	var/burn_damage = target.get_fire_loss()
 
 	var/datum/wound/chosen_wound
 	if(iscarbon(target))
@@ -393,11 +414,11 @@ GLOBAL_VAR(lifeline_request)
 		if(length(carbon_target.all_wounds))
 			chosen_wound = pick(carbon_target.all_wounds)
 
-	if(!length(treatable_types) && isnull(chosen_wound))
+	if(brute_damage <= 0 && burn_damage <= 0 && isnull(chosen_wound))
 		return FALSE
 
-	if(length(treatable_types))
-		target.heal_damage_type(LIFELINE_HEAL_AMOUNT, pick(treatable_types))
+	if(brute_damage > 0 || burn_damage > 0)
+		target.heal_damage_type(LIFELINE_HEAL_AMOUNT, brute_damage >= burn_damage ? BRUTE : BURN)
 	chosen_wound?.on_xadone(LIFELINE_WOUND_PROGRESS)
 
 	target.visible_message(span_notice("[src] mists [target] with flickering reconstructive droplets."), span_notice("Cool light crawls over one of your injuries."))
@@ -428,9 +449,17 @@ GLOBAL_VAR(lifeline_request)
 
 /atom/movable/screen/alert/status_effect/lifeline_stabilized
 	name = "Field Stabilized"
-	desc = "A support field is keeping you on your feet, but it is not healing you and it will not stop anything hurting you. Your hands are immobilized while the field is active. Seek proper treatment."
+	desc = "A support field suppresses critical collapse, but does not heal injuries or stop bleeding. Your hands are immobilized. Click this alert to end the field and regain hand use; critical collapse may return. Seek proper treatment."
 	use_user_hud_icon = USER_HUD_STYLE_INHERIT
 	overlay_state = "stasis"
+	clickable_glow = TRUE
+
+/atom/movable/screen/alert/status_effect/lifeline_stabilized/Click(location, control, params)
+	. = ..()
+	if(!. || owner.stat == DEAD || IS_UNCONSCIOUS(owner))
+		return
+	var/mob/living/patient = owner
+	patient.remove_status_effect(/datum/status_effect/lifeline_stabilized)
 
 /** Temporary projected cocoon with an audible recovery beacon. */
 /obj/structure/closet/body_bag/environmental/stasis/lifeline
@@ -485,6 +514,11 @@ GLOBAL_VAR(lifeline_request)
 	user.visible_message(span_notice("[user] seats [projector] in [src]'s service port."), span_notice("[src] transfers [transferred_fuel] medium units into [projector]."))
 	playsound(src, 'sound/machines/machine_vend.ogg', 40, TRUE)
 	return ITEM_INTERACT_SUCCESS
+
+/datum/loadout_item/pocket_items/lifeline_projector
+	name = "Lifeline Field Sprayer (Full)"
+	item_path = /obj/item/lifeline_projector/full
+	group = "Gear"
 
 /datum/design/lifeline_projector
 	name = "Lifeline Field Sprayer"

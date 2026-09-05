@@ -8,14 +8,17 @@ Adds a station-wide, manually maintained emergency-care network.
 
 - Medical staff fulfill a rotating reagent or organ request at the Lifeline synthesis reservoir.
 - Existing DeForest first aid stations use the shared reservoir to refill Lifeline field sprayers.
-- Sprayers can heal one random damage type and wound at low efficiency.
-- Sprayers can temporarily stabilize a critical patient for transport without healing the patient or allowing hand use.
+- A full sprayer is available in the character loadout under Other, Gear, and spawns in the backpack.
+- Sprayers heal 8 damage from the higher of brute and burn (brute wins ties), and add 4 recovery progress to one random wound. Toxin and oxygen damage are not treated.
+- Sprayers can temporarily stabilize a living critical patient for transport without healing the patient or allowing hand use. Conscious patients can click the status alert to dismiss the field.
+- Calibration locks the sprayer against overlapping treatments and mode changes, and rechecks patient eligibility and fuel before applying treatment.
 - Sprayers can project a temporary stasis cocoon with an audible recovery beacon; the projection dissolves when opened.
 - The reservoir does not support plumbing or unattended reagent transfer.
 
 ### TG Proc/File Changes
 
 - `code/game/machinery/wall_healer.dm`: Extends `/obj/machinery/wall_healer/add_context()` and `/obj/machinery/wall_healer/item_interaction()` with field sprayer refills.
+- `code/modules/unit_tests/_unit_tests.dm`: Includes the module's focused regression tests.
 
 ### Modular Overrides
 
