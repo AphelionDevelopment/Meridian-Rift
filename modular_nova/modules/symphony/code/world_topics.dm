@@ -1,3 +1,14 @@
+/// Default address policy; Symphony topics override this with their configured allowlist.
+/datum/world_topic/proc/AddressAllowed(addr)
+	return TRUE
+
+/// Redact the decoded credential, covering every parameter encoding accepted by authentication.
+/proc/world_topic_log_parameters(list/input)
+	var/list/log_input = input.Copy()
+	if("key" in log_input)
+		log_input["key"] = "***"
+	return list2params(log_input)
+
 /// Addresses that mean "this machine".
 GLOBAL_LIST_INIT(symphony_local_addresses, list("127.0.0.1", "::1", "localhost"))
 
@@ -16,7 +27,7 @@ GLOBAL_LIST_INIT(symphony_local_addresses, list("127.0.0.1", "::1", "localhost")
 			return TRUE
 	return FALSE
 
-/// Subtype this and the address gate comes along for free.
+/// All Symphony topics require the comms key and configured address checks.
 /datum/world_topic/symphony
 	abstract_type = /datum/world_topic/symphony
 	require_comms_key = TRUE
@@ -29,13 +40,13 @@ GLOBAL_LIST_INIT(symphony_local_addresses, list("127.0.0.1", "::1", "localhost")
 
 /datum/world_topic/symphony/TryRun(list/input, addr)
 	. = ..()
-	// Anyone can claim to be the panel, so only a topic that got the comms key right is believed.
+	// Record panel metadata only after successful comms-key authentication.
 	if(key_valid)
 		symphony_note_panel(input, addr)
 
 /// What SSymphony last told us about itself. Empty until it says hello.
 GLOBAL_LIST_EMPTY(symphony_panel)
-/// Same, for a caller the gate turned away. Its own slot so it can't bury the real panel.
+/// Last authenticated caller refused by the address gate, kept separate from accepted callers.
 GLOBAL_LIST_EMPTY(symphony_panel_refused)
 
 /// Remember who called, so the status verb can compare the two halves.
@@ -48,8 +59,7 @@ GLOBAL_LIST_EMPTY(symphony_panel_refused)
 		"addr" = addr,
 		"at" = REALTIMEOFDAY,
 	)
-	// A refused topic never ran, so it doesn't get to be "the panel" - a barred host polling every
-	// few seconds would otherwise erase the real one, right when someone is diagnosing the gate.
+	// Refused callers must not overwrite the accepted panel's diagnostic state.
 	if(!symphony_address_allowed(addr))
 		GLOB.symphony_panel_refused = said
 		return

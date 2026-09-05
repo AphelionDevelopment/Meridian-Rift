@@ -14,13 +14,13 @@ GLOBAL_LIST_INIT(symphony_interval_minutes, list(
 	if(isnull(duration) || duration == "")
 		return 0
 	var/amount = isnum(duration) ? duration : text2num(duration)
-	// Nothing given is permanent. Zero given is not, and 0 is how we say forever.
+	// Only an omitted duration is permanent; invalid or nonpositive input gets one minute.
 	if(isnull(amount) || amount <= 0)
 		return 1
 	var/per = GLOB.symphony_interval_minutes[interval] || 1
 	return max(1, round(amount * per))
 
-/// We're already banned here, this just asks SSymphony to spread it to the rest.
+/// Queue propagation of an existing local ban to the other servers.
 /proc/symphony_request_community_ban(target_ckey, list/roles, reason, duration, interval, admin_ckey)
 	if(!CONFIG_GET(flag/symphony_enabled))
 		return FALSE
@@ -36,8 +36,7 @@ GLOBAL_LIST_INIT(symphony_interval_minutes, list(
 			"duration_mins" = minutes,
 			"admin_ckey" = admin_ckey,
 		))
-	// Backdated - SSymphony matches our ban row by time, and ours lands first.
-	// Without the margin it writes a second row nothing can lift.
+	// Include the earlier local ban in the bridge's time window to avoid a duplicate ban row.
 	var/list/special_columns = list("created_at" = "NOW() - INTERVAL 60 SECOND")
 	if(!SSdbcore.MassInsert(format_table_name("symphony_ban_intents"), rows, warn = TRUE, special_columns = special_columns))
 		return FALSE

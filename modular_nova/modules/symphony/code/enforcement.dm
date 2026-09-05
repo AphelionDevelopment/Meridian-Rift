@@ -1,4 +1,4 @@
-/// Warn them, wait out the grace period, then bin them to the lobby if the role hasn't come back.
+/// Announce a revoke, block pending admission, and schedule enforcement after the grace period.
 /proc/symphony_revoke(target_ckey)
 	// The panel pushes revokes whether we're enforcing or not.
 	if(!CONFIG_GET(flag/symphony_enabled))
@@ -8,7 +8,7 @@
 	var/client/found = GLOB.directory[target_ckey]
 	if(!found)
 		return
-	// Staff exemption, same as gate.dm
+	// Staff retain the same exemption as the admission gate.
 	if(found.holder)
 		return
 	if(isnewplayer(found.mob))
@@ -16,7 +16,7 @@
 		to_chat(found, span_userdanger("Your Discord whitelist role was removed."))
 		// Drop their pending admission immediately, as well as updating the visible gate.
 		lobby.ready = PLAYER_NOT_READY
-		// Before show_title_screen(), which re-inits the menu off this.
+		// Seed the visible state before rebuilding the lobby menu.
 		found.lobby_menu?.set_whitelist_gate(TRUE)
 		lobby.show_title_screen()
 		return
@@ -24,20 +24,8 @@
 	to_chat(found, span_userdanger("Your Discord whitelist role was removed. You will be returned to the lobby in [grace] seconds unless it is restored."))
 	addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(symphony_enforce_kick), target_ckey), grace SECONDS, TIMER_UNIQUE | TIMER_OVERRIDE)
 
-/**
- * Bins a player back to the lobby once their grace period runs out, if the role hasn't come back.
- *
- * Fires off the timer symphony_revoke() sets. Re-checks everything on the way through, because a
- * grace period is long enough for them to have been adminned, re-granted, or to have left.
- *
- * Never ejects on a lookup that failed. Booting someone out of a round they were legitimately
- * playing because the database blinked is a far worse outcome than leaving a genuinely revoked
- * player in for a few more minutes, and SSsymphony's sweep picks the real ones back up as soon
- * as it can query again.
- *
- * Arguments:
- * - target_ckey: The ckey whose grace period just expired.
- */
+/// Recheck a revoke after its grace period, then return the player to the lobby.
+/// A failed query leaves them in the round; the periodic sweep retries when the database recovers.
 /proc/symphony_enforce_kick(target_ckey)
 	if(!CONFIG_GET(flag/symphony_enabled))
 		return
@@ -45,14 +33,14 @@
 	var/client/found = GLOB.directory[target_ckey]
 	if(!found || isnewplayer(found.mob))
 		return
-	// Checked again, they might have been adminned during the grace.
+	// Staff status may have changed during the grace period.
 	if(found.holder)
 		return
 	var/whitelisted = symphony_whitelist_lookup(target_ckey)
 	// The query can sleep through a disconnect, staff promotion, lobby return, or enforcement toggle.
 	if(!CONFIG_GET(flag/symphony_enabled) || !found || GLOB.directory[target_ckey] != found || found.holder || !found.mob || isnewplayer(found.mob))
 		return
-	// Couldn't ask. Never eject someone on a blind check - SSsymphony's sweep re-detects a real revoke once the DB is back, and the join gate is still refusing them in the meantime.
+	// An outage is not a confirmed revoke. The periodic sweep will retry.
 	if(isnull(whitelisted))
 		log_game("Symphony: skipped returning [key_name(found)] to the lobby, the whitelist database was unreachable.")
 		return
@@ -79,7 +67,7 @@
 	var/blocked = lobby.symphony_blocks_play_cached()
 	target.lobby_menu?.set_whitelist_gate(isnull(blocked) || blocked)
 	lobby.show_title_screen()
-	// We leave the body behind on purpose, so say so - it could be a live antag.
+	// Notify staff because the abandoned body may still be relevant to the round.
 	message_admins("Symphony: [key_name_admin(target)] was returned to the lobby by whitelist enforcement. Their body was left in place[old_mob ? " at [AREACOORD(old_mob)]" : ""].")
 
 /// Re-check on connect, the grace timer is one shot so a relog would otherwise dodge it.
@@ -93,7 +81,7 @@
 		return
 	if(holder) // staff exemption, as in gate.dm
 		return
-	// Only revoke if it's an explicit no (FALSE). A DB outage (null) isn't a revoke, and symphony_revoke() would tell them their role was removed when we have no idea whether it was.
+	// Only a confirmed FALSE justifies announcing a revoke; null means a database outage.
 	var/whitelisted = symphony_whitelist_lookup(ckey)
 	if(!src || !CONFIG_GET(flag/symphony_enabled) || holder || !mob || isnewplayer(mob))
 		return
@@ -102,7 +90,7 @@
 	symphony_revoke(ckey)
 
 /proc/symphony_notify_grant(target_ckey)
-	// Same - no announcing a whitelist nothing was enforcing.
+	// Disabled enforcement must not announce or change the lobby gate.
 	if(!CONFIG_GET(flag/symphony_enabled))
 		return
 	symphony_seed_whitelist_cache(target_ckey, TRUE)

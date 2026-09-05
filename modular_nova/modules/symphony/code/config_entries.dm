@@ -1,17 +1,18 @@
-/// Master switch, the whole module sits inert without it.
+/// Enables whitelist enforcement, role perks, and eligible Discord admin sync. Topics remain available.
 /datum/config_entry/flag/symphony_enabled
 
 /// Where the panel lives, e.g. https://symphony.example.com
 /datum/config_entry/string/symphony_url
 
-/// Grace seconds before we boot them to the lobby. Stays under SSsymphony's sweep, or the timer just re-arms forever.
+/// Seconds before returning an unwhitelisted player to the lobby.
+/// Keep the cap below SSsymphony's five-minute sweep so repeated sweeps cannot postpone enforcement indefinitely.
 /datum/config_entry/number/symphony_grace_seconds
 	default = 30
 	integer = TRUE
 	min_val = 0
 	max_val = 240
 
-/// Lets Discord roles hand out in-game admin ranks. Off by default, whoever can assign the role can mint admins.
+/// Allows Discord role mappings to grant in-game admin ranks. Also requires symphony_enabled.
 /datum/config_entry/flag/symphony_discord_admin_sync
 	default = FALSE
 

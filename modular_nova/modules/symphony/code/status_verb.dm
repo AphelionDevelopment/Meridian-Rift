@@ -14,8 +14,7 @@ ADMIN_VERB(symphony_status, R_ADMIN, "Symphony Status", "Version and link state 
 			out += "Panel: <b>version [version]</b>, from [from], last heard [symphony_ago(panel["at"])]."
 			out += symphony_version_verdict(panel["needs"], panel["wants"])
 		else
-			// It got through, it just predates saying so. Reading that as silence sends the admin
-			// after a comms key or a firewall, none of which is the problem.
+			// Older panels can authenticate successfully without supplying version metadata.
 			out += "Panel: in touch from [from], last heard [symphony_ago(panel["at"])], but too old to give a version."
 
 	var/list/barred = GLOB.symphony_panel_refused

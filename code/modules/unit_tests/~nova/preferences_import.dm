@@ -31,6 +31,18 @@
 	clean = prefs_import_clean_loadout(list("/obj/item/cane" = list("name" = list("invalid"), "description" = 999)))
 	TEST_ASSERT_EQUAL(length(clean["/obj/item/cane"]), 0, "Structured or numeric values cannot be used as item names or descriptions.")
 
+	clean = prefs_import_clean_loadout(list("/obj/item/cane", "/obj/item/cane"))
+	TEST_ASSERT_EQUAL(length(clean), 1, "Pass 1 must coalesce duplicate uploaded paths before post-migration cleanup.")
+	clean += null
+	clean[""] = list()
+	var/shared_contents = json_encode(clean)
+	var/list/slot = list("loadout_list" = clean)
+	prefs_import_strip_empty_loadout_keys(slot)
+	TEST_ASSERT_EQUAL(json_encode(clean), shared_contents, "Removing empty loadout keys changed another reference to the original list.")
+	var/list/stripped = slot["loadout_list"]
+	TEST_ASSERT_EQUAL(length(stripped), 1, "Post-migration cleanup did not remove every empty key.")
+	TEST_ASSERT("/obj/item/cane" in stripped, "Post-migration cleanup removed a valid path.")
+
 /datum/unit_test/preferences_import_registry_values/Run()
 	var/list/slot = list("version" = 52, "augments" = list("head" = 999), "augment_limb_styles" = list("head" = list(999)), "languages" = list("/datum/language/common" = 3))
 	prefs_import_pass1(list("version" = 52, "character1" = slot))

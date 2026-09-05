@@ -981,10 +981,6 @@ GLOBAL_LIST_INIT(unrecommended_builds, list(
 		ASSIGN_GAME_VERB(src, /client, self_playtime)
 	if(!CONFIG_GET(flag/forbid_preferences_export))
 		ASSIGN_GAME_VERB(src, /client, export_preferences)
-	// APHELION EDIT ADDITION START - preferences import, re-checks the whitelist when run
-	if(!CONFIG_GET(flag/forbid_preferences_import))
-		ASSIGN_GAME_VERB(src, /client, import_preferences)
-	// APHELION EDIT ADDITION END - preferences import, re-checks the whitelist when run
 
 
 //checks if a client is afk

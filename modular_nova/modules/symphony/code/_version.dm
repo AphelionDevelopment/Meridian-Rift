@@ -7,8 +7,7 @@
 		return span_warning("This module is older than the panel needs ([needs]+). Update it and recompile.")
 	if(wants && SYMPHONY_MODULE_VERSION > wants)
 		return span_warning("The panel is older than this module (built for [wants]). Update SSymphony.")
-	// Above the floor but under what they built against: fine to run, so it's said plainly and not
-	// warned at, but claiming the two match would have an admin stop looking.
+	// Meeting the minimum is compatible, even when the panel targets a newer module.
 	if(wants && SYMPHONY_MODULE_VERSION < wants)
 		return "Behind the [wants] the panel was built for, but new enough for it."
 	return "Both halves match."

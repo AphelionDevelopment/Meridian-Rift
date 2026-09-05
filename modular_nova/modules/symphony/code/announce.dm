@@ -5,10 +5,7 @@
 
 /datum/world_topic/symphony/announce_sounds/Run(list/input)
 	. = list()
-	var/list/keys = list()
-	for(var/key in SSstation.announcer?.event_sounds)
-		keys += key
-	.["sounds"] = keys
+	.["sounds"] = assoc_to_keys(SSstation.announcer?.event_sounds)
 	.["announcer"] = "[SSstation.announcer?.type]"
 
 /// Message from SSymphony to the round.
@@ -29,10 +26,7 @@
 	var/from = input["from"]
 	var/sound_key = input["sound"]
 	var/play_sound = sound_key != "none"
-	// minor_announce wants the file, priority_announce resolves the key itself.
-	var/resolved_sound = (play_sound && sound_key) ? SSstation.announcer?.event_sounds[sound_key] : null
-
-	// Admin-only can't go through the station systems, those hit the whole round.
+	// Station announcements reach the whole round, so admin messages use chat.
 	if(audience == "admins")
 		mode = "chat"
 
@@ -69,6 +63,8 @@
 					continue
 				to_chat(target, out)
 		else
+			// minor_announce takes a sound file; priority_announce resolves its own key.
+			var/resolved_sound = (play_sound && sound_key) ? SSstation.announcer?.event_sounds[sound_key] : null
 			minor_announce(message, title || "Attention:", alert = FALSE, sound_override = resolved_sound, should_play_sound = play_sound)
 
 	log_admin_private("SSymphony announcement ([mode], [audience])[from ? " from [from]" : ""]: [message]")

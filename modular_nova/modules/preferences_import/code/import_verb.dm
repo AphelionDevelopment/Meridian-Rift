@@ -1,3 +1,8 @@
+/client/add_verbs_from_config()
+	. = ..()
+	if(!interviewee && !CONFIG_GET(flag/forbid_preferences_import))
+		ASSIGN_GAME_VERB(src, /client, import_preferences)
+
 // Name must differ from the admin verb, BYOND keys the verb panel on it and they collide.
 GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences", "Upload a character preferences JSON file, replacing your current one.", "OOC")
 	if(preferences_import_in_progress)

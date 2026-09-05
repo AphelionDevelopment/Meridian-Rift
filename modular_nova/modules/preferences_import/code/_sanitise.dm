@@ -9,28 +9,25 @@
 /// Have we already shown them the import notice?
 #define PREFS_IMPORT_NOTICE_KEY "aphelion_import_notice_seen"
 
-/// Depth check. Iterative, because recursing a deep tree is its own overflow.
+/// Check depth iteratively so a deeply nested upload cannot overflow the call stack.
 /proc/prefs_import_tree_too_deep(tree)
 	if(!islist(tree))
 		return FALSE
-	// Parallel stacks, DM has no tuple.
+	// Only lists enter the stack; depths stay aligned with them.
 	var/list/nodes = list(tree)
 	var/list/depths = list(1)
 	while(length(nodes))
-		var/node = nodes[length(nodes)]
+		var/list/node = nodes[length(nodes)]
 		var/depth = depths[length(depths)]
 		nodes.len--
 		depths.len--
 		if(depth > PREFS_IMPORT_MAX_DEPTH)
 			return TRUE
-		if(!islist(node))
-			continue
-		var/list/as_list = node
-		for(var/key in as_list)
+		for(var/key in node)
 			// Assoc values live under the key, plain entries ARE the key.
 			var/value = key
-			if(!isnum(key) && !isnull(as_list[key]))
-				value = as_list[key]
+			if(!isnum(key) && !isnull(node[key]))
+				value = node[key]
 			if(!islist(value))
 				continue
 			nodes += list(value)
@@ -47,7 +44,6 @@
 	// The version defines are #undef'd elsewhere, so use the datum's helper.
 	if(prefs?.check_savedata_version(json_tree) == SAVE_DATA_OBSOLETE)
 		return "savefile version [version] is too old to be migrated"
-	var/slots = 0
 	for(var/key in json_tree)
 		if(!istext(key))
 			return "the savefile root must be a JSON object"
@@ -55,9 +51,6 @@
 			var/slot_number = text2num(copytext(key, 10))
 			if(!isnum(slot_number) || slot_number < 1 || slot_number > PREFS_IMPORT_MAX_SLOTS || key != "character[round(slot_number)]")
 				return "invalid character slot [html_encode(key)]"
-			slots++
-	if(slots > PREFS_IMPORT_MAX_SLOTS)
-		return "too many character slots ([slots])"
 	return null
 
 /// Pass 1. Retains character migration inputs. Player imports may only replace player-owned root fields.
@@ -266,7 +259,7 @@
 		if(written)
 			counts["rebuilt"]++
 
-/// Drops cached values so the next read hits the new slot.
+/// Clear the whole character cache before loading a slot, including defaults that read other preferences.
 /datum/preferences/proc/prefs_import_forget(list/preferences)
 	for(var/datum/preference/preference as anything in preferences)
 		value_cache -= preference.type
@@ -281,18 +274,15 @@
 	for(var/preset in presets)
 		prefs_import_strip_empty_keys(presets, preset)
 
-/// Drops null and empty keys from one loadout list, in place.
+/// Pass 1 and native migrations produce unique path keys; copy only to remove empty keys, preserving shared lists.
 /proc/prefs_import_strip_empty_keys(list/holder, key)
 	var/list/loadout = holder[key]
 	if(!islist(loadout))
 		return
-	var/list/clean = list()
-	for(var/path in loadout)
-		if(isnull(path) || (istext(path) && !length(path)))
-			continue
-		clean[path] = loadout[path]
-	if(length(clean) != length(loadout))
-		holder[key] = clean
+	if((null in loadout) || ("" in loadout))
+		loadout = loadout.Copy()
+		loadout.RemoveAll(null, "")
+		holder[key] = loadout
 
 /// Only out-of-range slots go. load_preferences scans these names, other junk is inert.
 /datum/preferences/proc/prefs_import_prune_unknown()

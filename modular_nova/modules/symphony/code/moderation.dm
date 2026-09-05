@@ -12,7 +12,7 @@
 		return
 	var/client/found = GLOB.directory[target_ckey]
 	if(!found)
-		// Row's written either way, they're just not here.
+		// The ban row already exists; only the connected-client notice is skipped.
 		.["success"] = TRUE
 		.["message"] = "not connected"
 		return
@@ -26,7 +26,7 @@
 	var/where = is_server_ban ? "the server" : " Roles: [html_encode(role)]"
 	var/appeal = CONFIG_GET(string/banappeals) || "No ban appeal url set!"
 
-	// Their cache is from login, so a role ban needs this to bite now.
+	// Refresh cached role bans so the existing session enforces this ban immediately.
 	build_ban_cache(found)
 	to_chat(found, span_boldannounce("You have been banned by [html_encode(admin_name)] from [where].\nReason: [html_encode(reason)]</span><br>[span_danger("This ban is [how_long] The round ID is [GLOB.round_id].")]<br>[span_danger("To appeal this ban go to [appeal]")]"), confidential = TRUE)
 	log_admin("[admin_name] (via Symphony) banned [key_name(found)] from [role]. Reason: [reason]")
@@ -65,7 +65,7 @@
 	keyword = "symphony_bannable_roles"
 	log = FALSE
 
-/// One list, so the topic and the ban's validation can't drift apart.
+/// Shared by the panel's role list and ban validation.
 /proc/symphony_bannable_roles()
 	var/list/roles = list("Server", "OOC", "Deadchat", "Emote", "Appearance", "Urgent Adminhelp")
 	for(var/datum/job/job_datum as anything in SSjob?.all_occupations)
@@ -78,16 +78,16 @@
 	supplied = trim(supplied)
 	if(!supplied)
 		return "Server"
+	supplied = LOWER_TEXT(supplied)
 	for(var/role in symphony_bannable_roles())
-		if(LOWER_TEXT(role) == LOWER_TEXT(supplied))
+		if(LOWER_TEXT(role) == supplied)
 			return role
 	return null
 
 /datum/world_topic/symphony/bannable_roles/Run(list/input)
-	. = list()
-	.["roles"] = symphony_bannable_roles()
+	return list("roles" = symphony_bannable_roles())
 
-/// No usr in a world topic, so create_ban is out - we insert the ban row ourselves.
+/// World topics have no usr, which create_ban() requires, so insert the ban directly.
 /datum/world_topic/symphony/ban
 	keyword = "symphony_ban"
 
@@ -108,7 +108,7 @@
 		.["success"] = FALSE
 		.["message"] = "unknown role - use one of the roles from symphony_bannable_roles"
 		return
-	// applies_to_admins is 0, so a staff ban would be a fake success. Refuse it.
+	// These bans exclude admins, so reject staff targets instead of reporting success.
 	if(GLOB.admin_datums[target_ckey] || GLOB.deadmins[target_ckey])
 		.["success"] = FALSE
 		.["message"] = "target is staff - use the in-game ban panel"
@@ -125,10 +125,11 @@
 	var/player_ip = null
 	var/player_cid = null
 	if(widen)
-		var/datum/db_query/lookup = SSdbcore.NewQuery(
-			"SELECT INET_NTOA(ip), computerid FROM [format_table_name("player")] WHERE ckey = :ckey",
-			list("ckey" = target_ckey),
-		)
+		var/datum/db_query/lookup = SSdbcore.NewQuery({"
+			SELECT INET_NTOA(ip), computerid
+			FROM [format_table_name("player")]
+			WHERE ckey = :ckey
+		"}, list("ckey" = target_ckey))
 		if(lookup.warn_execute() && lookup.NextRow())
 			player_ip = lookup.item[1]
 			player_cid = lookup.item[2]
@@ -139,6 +140,7 @@
 		"ip" = "INET_ATON(?)",
 		"expiration_time" = "IF(? IS NULL, NULL, NOW() + INTERVAL ? MINUTE)", // one row value fills both '?'
 	)
+	var/safe_reason = html_encode(reason)
 	var/list/row = list(
 		"server_ip" = 0,
 		"server_port" = world.port,
@@ -147,11 +149,11 @@
 		"expiration_time" = duration,
 		"applies_to_admins" = 0,
 		// Existing ban browsers render this field as HTML; panel input is plain text.
-		"reason" = html_encode(reason),
+		"reason" = safe_reason,
 		"ckey" = target_ckey,
 		"ip" = player_ip,
 		"computerid" = player_cid,
-		// Never the caller's name, or anyone could stamp a real staff ckey on their bans.
+		// Use a fixed audit identity; the panel supplies a display name, not a staff ckey.
 		"a_ckey" = "symphony",
 		"a_ip" = 0,
 		"a_computerid" = "symphony",
@@ -170,7 +172,6 @@
 	log_admin("[admin_name] (via Symphony) [what] [target_ckey] [dur_txt]. Reason: [reason]")
 	// message_admins renders as HTML, and this is free text from the panel.
 	var/safe_admin = html_encode(admin_name)
-	var/safe_reason = html_encode(reason)
 	var/safe_what = html_encode(what)
 	message_admins("[safe_admin] (via Symphony) [safe_what] [target_ckey] [dur_txt]. Reason: [safe_reason]")
 
@@ -185,19 +186,20 @@
 	.["role"] = role
 	.["permanent"] = isnull(duration)
 
-
-/// create_message() bails without a usr and a world topic has none, so we write the note row ourselves.
+/// World topics have no usr, which create_message() requires, so insert the note directly.
 /proc/symphony_write_ban_note(target_ckey, admin_name, role, reason)
 	if(!SSdbcore.Connect())
 		return FALSE
-	var/datum/db_query/query = SSdbcore.NewQuery(
-		"INSERT INTO [format_table_name("messages")] 		(type, targetckey, adminckey, text, timestamp, server_ip, server_port, round_id, secret, deleted) 		VALUES ('note', :target_ckey, :admin_ckey, :text, Now(), 0, 0, :round_id, 0, 0)",
-		list(
-			"target_ckey" = target_ckey,
-			"admin_ckey" = "symphony",
-			"text" = html_encode("Banned via Symphony by [admin_name] ([role]): [reason]"),
-			"round_id" = GLOB.round_id,
-		),
-	)
+	var/datum/db_query/query = SSdbcore.NewQuery({"
+		INSERT INTO [format_table_name("messages")]
+			(type, targetckey, adminckey, text, timestamp, server_ip, server_port, round_id, secret, deleted)
+		VALUES
+			('note', :target_ckey, :admin_ckey, :text, Now(), 0, 0, :round_id, 0, 0)
+	"}, list(
+		"target_ckey" = target_ckey,
+		"admin_ckey" = "symphony",
+		"text" = html_encode("Banned via Symphony by [admin_name] ([role]): [reason]"),
+		"round_id" = GLOB.round_id,
+	))
 	. = query.warn_execute()
 	qdel(query)
