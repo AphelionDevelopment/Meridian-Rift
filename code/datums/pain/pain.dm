@@ -10,7 +10,7 @@
 	var/temporary_pain = 0
 	/// pain_floor plus temporary_pain, clamped to the pain meter. Painkillers do not touch it.
 	var/total_pain = 0
-	/// total_pain minus dampening. Brackets, shock and recovery all read this.
+	/// Floor plus temporary pain after dampening and clamping. Brackets, shock and recovery read this.
 	var/felt_pain = 0
 	/// Felt pain the strongest active painkiller is hiding. Painkillers do not stack.
 	var/dampening = 0
@@ -451,9 +451,9 @@
 	// The temporary reservoir may exceed the meter so a blackout can drain without erasing the whole
 	// spike, but PAIN and FELT are both 0-100 values as presented to every gameplay gate.
 	total_pain = min(pain_floor + temporary_pain, PAIN_MAXIMUM)
-	var/unclamped_felt = apply_dampening(total_pain, adrenaline_override)
-	dampening = total_pain - unclamped_felt
+	var/unclamped_felt = apply_dampening(pain_floor + temporary_pain, adrenaline_override)
 	felt_pain = clamp(unclamped_felt, 0, PAIN_MAXIMUM)
+	dampening = total_pain - felt_pain
 	update_bracket()
 	update_shock(adrenaline_override)
 

@@ -23,6 +23,8 @@
 	var/slot_flags = ITEM_SLOT_BACK
 	/// Armor shared across the MOD parts.
 	var/datum/armor/armor_type = /datum/armor/mod_theme
+	/// Starting plate for the helmet and chestplate; null leaves their carriers empty.
+	var/initial_armor_plate = null
 	/// Resistance flags shared across the MOD parts.
 	var/resistance_flags = NONE
 	/// Hearing protection level supplied by the modsuit head
@@ -126,6 +128,10 @@
 		part.name = "[name] [part.name]"
 		part.desc = "[part.desc] [desc]"
 		part.set_armor(armor_type)
+		if(isclothing(part) && initial_armor_plate)
+			var/obj/item/clothing/carrier = part
+			if(carrier.accepts_armor_plates)
+				carrier.fitted_plate = new initial_armor_plate(carrier)
 		part.resistance_flags = resistance_flags
 		part.flags_1 |= atom_flags //flags like initialization or admin spawning are here, so we cant set, have to add
 		part.heat_protection = NONE
@@ -191,6 +197,7 @@
 	wound = 5
 
 /datum/mod_theme/civilian
+	initial_armor_plate = null
 	name = "civilian"
 	desc = "A light-weight civilian suit that offers unmatched ease of movement but no protection from the vacuum of space."
 	extended_desc = "An experimental design by Nakamura Engineering, intended to be marketed towards planet-bound customers. \
@@ -416,6 +423,7 @@
 	wound = 10
 
 /datum/mod_theme/advanced
+	initial_armor_plate = /obj/item/armor_plate/ablative/reinforced
 	name = "advanced"
 	desc = "An advanced version of Nakamura Engineering's classic suit, shining with a white, acid and fire resistant polish."
 	extended_desc = "The flagship version of the Nakamura Engineering industrial model, and their latest product. \
@@ -928,6 +936,7 @@
 	wound = 15
 
 /datum/mod_theme/security
+	initial_armor_plate = /obj/item/armor_plate/ballistic/reinforced
 	name = "security"
 	desc = "An Apadyne Technologies security suit, offering quicker speed at the cost of carrying capacity."
 	extended_desc = "An Apadyne Technologies classic, this model of MODsuit has been designed for quick response to \
@@ -995,6 +1004,7 @@
 	wound = 20
 
 /datum/mod_theme/safeguard
+	initial_armor_plate = /obj/item/armor_plate/ballistic/reinforced
 	name = "safeguard"
 	desc = "An Apadyne Technologies advanced security suit, offering greater speed and fire protection than the standard security model."
 	extended_desc = "An Apadyne Technologies advanced security suit, and their latest model. This variant has \
@@ -1062,6 +1072,7 @@
 	wound = 25
 
 /datum/mod_theme/magnate
+	initial_armor_plate = /obj/item/armor_plate/ballistic/composite
 	name = "magnate"
 	desc = "A fancy, very protective suit for Nanotrasen's captains. Shock, fire and acid-proof while also having a large capacity and high speed."
 	extended_desc = "They say it costs four hundred thousand credits to run this MODsuit... for twelve seconds. \
@@ -1202,6 +1213,7 @@
 	wound = 5
 
 /datum/mod_theme/syndicate
+	initial_armor_plate = /obj/item/armor_plate/ballistic/reinforced
 	name = "syndicate"
 	desc = "A suit designed by Gorlex Marauders, offering armor ruled illegal in most of Spinward Stellar."
 	extended_desc = "An advanced combat suit adorned in a sinister crimson red color scheme, produced and manufactured \
@@ -1310,6 +1322,7 @@
 	wound = 25
 
 /datum/mod_theme/elite
+	initial_armor_plate = /obj/item/armor_plate/ballistic/composite
 	name = "elite"
 	desc = "An elite suit upgraded by Cybersun Industries, offering upgraded armor values."
 	extended_desc = "An evolution of the syndicate suit, featuring a bulkier build and a matte black color scheme, \
@@ -2005,6 +2018,7 @@
 	wound = 25
 
 /datum/mod_theme/corporate
+	initial_armor_plate = /obj/item/armor_plate/ballistic/composite
 	name = "corporate"
 	desc = "A fancy, high-tech suit for Nanotrasen's high ranking officers."
 	extended_desc = "An even more costly version of the Magnate model, the corporate suit is a thermally insulated, \

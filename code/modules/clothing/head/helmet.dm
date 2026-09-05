@@ -144,6 +144,7 @@
 	AddComponent(/datum/component/seclite_attachable, light_icon_state = "flight")
 
 /obj/item/clothing/head/helmet/marine
+	initial_armor_plate = /obj/item/armor_plate/ballistic/reinforced
 	name = "tactical combat helmet"
 	desc = "A tactical black helmet, sealed from outside hazards with a plate of glass and not much else."
 	icon_state = "marine_command"
@@ -236,6 +237,7 @@
 		icon_state = base_icon_state
 
 /obj/item/clothing/head/helmet/toggleable/riot
+	initial_armor_plate = /obj/item/armor_plate/ballistic/reinforced
 	name = "riot helmet"
 	desc = "It's a helmet specifically designed to protect against close range attacks."
 	icon_state = "riot"
@@ -339,6 +341,7 @@
 	base_icon_state = "justice2"
 
 /obj/item/clothing/head/helmet/swat
+	initial_armor_plate = /obj/item/armor_plate/ballistic/composite
 	name = "\improper SWAT helmet"
 	desc = "An extremely robust, space-worthy helmet in a nefarious red and black stripe pattern."
 	icon_state = "swatsyndie"

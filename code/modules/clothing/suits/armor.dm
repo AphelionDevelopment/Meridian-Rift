@@ -71,6 +71,7 @@
 		. += emissive_appearance(icon_file, "[icon_state]-emissive", src, alpha = src.alpha, effect_type = EMISSIVE_SPECULAR)
 
 /obj/item/clothing/suit/armor/vest/marine
+	initial_armor_plate = /obj/item/armor_plate/ballistic/reinforced
 	name = "tactical armor vest"
 	desc = "A set of the finest mass produced, stamped plasteel armor plates, containing an environmental protection unit for all-condition door kicking."
 	icon_state = "marine_command"
@@ -288,6 +289,7 @@
 	AddComponent(/datum/component/toggle_icon)
 
 /obj/item/clothing/suit/armor/riot
+	initial_armor_plate = /obj/item/armor_plate/ballistic/reinforced
 	name = "riot suit"
 	desc = "A suit of semi-flexible polycarbonate body armor with heavy padding to protect against melee attacks. Helps the wearer resist shoving in close quarters."
 	icon_state = "riot"
@@ -356,6 +358,7 @@
 
 
 /obj/item/clothing/suit/armor/bulletproof
+	initial_armor_plate = /obj/item/armor_plate/ballistic/composite
 	name = "bulletproof armor"
 	desc = "A Type III heavy bulletproof vest that excels in protecting the wearer against traditional projectile weaponry and explosives to a minor extent."
 	icon_state = "bulletproof"
@@ -376,6 +379,7 @@
 	wound = 20
 
 /obj/item/clothing/suit/armor/laserproof
+	initial_armor_plate = /obj/item/armor_plate/ablative/composite
 	name = "reflector vest"
 	desc = "A vest that excels in protecting the wearer against energy projectiles, as well as occasionally reflecting them."
 	icon_state = "armor_reflec"
@@ -414,6 +418,7 @@
 	allowed = GLOB.detective_vest_allowed
 
 /obj/item/clothing/suit/armor/swat
+	initial_armor_plate = /obj/item/armor_plate/ballistic/composite
 	name = "MK.I SWAT Suit"
 	desc = "A tactical suit first developed in a joint effort by the defunct IS-ERI and Nanotrasen in 2321 for military operations. \
 		It has a minor slowdown, but offers decent protection and helps the wearer resist shoving in close quarters."

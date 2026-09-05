@@ -262,24 +262,26 @@
 
 /obj/item/clothing/suit/mod
 	accepts_armor_plates = TRUE
+	initial_armor_plate = null // Fitted by the MOD theme after its parts are created.
 
 /obj/item/clothing/head/helmet
 	accepts_armor_plates = TRUE
 
 /obj/item/clothing/head/mod
 	accepts_armor_plates = TRUE
+	initial_armor_plate = null
 
 /**
  * Plate carriers do not provide percentage combat armour of their own.
  *
  * Their coverage determines where a fitted plate can answer a hit, while the plate determines what
  * it stops. Environmental and material protections remain on the clothing: bio protection and fire
- * or acid durability are independent of the fitted plate.
+ * or acid durability and blast protection are independent of the fitted plate.
  */
 /obj/item/clothing/get_armor_rating(damage_type)
 	if(accepts_armor_plates)
 		switch(damage_type)
-			if(MELEE, BULLET, LASER, ENERGY, BOMB, WOUND)
+			if(MELEE, BULLET, LASER, ENERGY, WOUND)
 				return 0
 	return ..()
 

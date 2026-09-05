@@ -472,11 +472,11 @@
 	armor_type = /datum/armor/baton_security
 	throwforce = 7
 	force_say_chance = 50
-	stamina_damage = 60
+	stamina_damage = 39
 	armour_type_against_stun = ENERGY
-	knockdown_time = 5 SECONDS
+	knockdown_time = 0
 	clumsy_knockdown_time = 15 SECONDS
-	cooldown = 2.5 SECONDS
+	cooldown = 2 SECONDS
 	on_stun_sound = 'sound/items/weapons/egloves.ogg'
 	on_stun_volume = 50
 	active = FALSE

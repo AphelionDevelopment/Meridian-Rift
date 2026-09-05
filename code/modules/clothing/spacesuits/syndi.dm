@@ -1,5 +1,6 @@
 //Regular syndicate space suit
 /obj/item/clothing/head/helmet/space/syndicate
+	initial_armor_plate = /obj/item/armor_plate/ballistic/reinforced
 	name = "red space helmet"
 	icon_state = "syndicate"
 	inhand_icon_state = "space_syndicate"
@@ -34,6 +35,7 @@ GLOBAL_LIST_INIT(syndicate_space_suits_to_helmets,list(
 ))
 
 /obj/item/clothing/suit/space/syndicate
+	initial_armor_plate = /obj/item/armor_plate/ballistic/reinforced
 	name = "red space suit"
 	icon_state = "syndicate"
 	inhand_icon_state = "space_suit_syndicate"
