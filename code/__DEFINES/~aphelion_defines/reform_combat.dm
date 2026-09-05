@@ -11,7 +11,13 @@
 #define REFORM_COMBAT_STAMINA_CRIT_THRESHOLD 135
 /// Health or stamina damage at which humanoid movement slowdown starts. Original: 40. Higher values delay slowdown.
 #define REFORM_COMBAT_DAMAGE_SLOWDOWN_THRESHOLD 60
-/// Maximum fraction of protection bypassed by 100 AP. Original AP could bypass all protection.
-#define REFORM_COMBAT_AP_MAX_BYPASS 0.5
+/// Rating points represented by one displayed armour pip.
+#define REFORM_COMBAT_ARMOR_RATING_PER_TIER 10
+/// Damage stopped by each armour pip.
+#define REFORM_COMBAT_ARMOR_BLOCK_PER_TIER 5
+/// Maximum durability per tier, using the highest melee, bullet or laser rating.
+#define REFORM_COMBAT_ARMOR_HEALTH_PER_TIER 75
+/// Time needed to apply a generic armour repair kit.
+#define REFORM_COMBAT_ARMOR_REPAIR_TIME (10 SECONDS)
 /// Percentage of failed arm/leg accuracy rolls that miss carbon targets entirely. Original: 0. Range: 0 to 100.
 #define REFORM_COMBAT_LIMB_MISS_CHANCE 100

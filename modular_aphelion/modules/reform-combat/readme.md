@@ -4,9 +4,9 @@ Module ID: REFORM_COMBAT
 
 ### Description
 
-This module combines humanoid health and damage slowdown tuning, bounded projectile
-armor penetration, stamina-based security baton takedowns, and a miss penalty for
-projectiles aimed at arms or legs.
+This module combines humanoid health and damage slowdown tuning, flat armour
+protection and durability, projectile AP transfer, stamina-based security baton
+takedowns, and a miss penalty for projectiles aimed at arms or legs.
 All balance settings live in `code/__DEFINES/~aphelion_defines/reform_combat.dm`.
 Edit the defines and rebuild; no other file needs changing to tune these values.
 
@@ -18,13 +18,16 @@ Edit the defines and rebuild; no other file needs changing to tune these values.
 | `REFORM_COMBAT_MAX_STAMINA`               | 162     | Maximum humanoid stamina damage.                                           |
 | `REFORM_COMBAT_STAMINA_CRIT_THRESHOLD`    | 135     | Stamina damage at incapacitation, before runtime modifiers.                |
 | `REFORM_COMBAT_DAMAGE_SLOWDOWN_THRESHOLD` | 60      | Health or stamina damage at which movement slowdown starts; previously 40. |
-| `REFORM_COMBAT_AP_MAX_BYPASS`             | 0.5     | Maximum fraction of armor protection bypassed by projectile AP.            |
+| `REFORM_COMBAT_ARMOR_RATING_PER_TIER`     | 10      | Rating points per displayed armour pip.                                   |
+| `REFORM_COMBAT_ARMOR_BLOCK_PER_TIER`      | 5       | Flat damage intercepted per pip.                                         |
+| `REFORM_COMBAT_ARMOR_HEALTH_PER_TIER`     | 75      | Maximum armour durability per tier.                                      |
+| `REFORM_COMBAT_ARMOR_REPAIR_TIME`         | 10 s    | Time to apply an armour repair kit.                                       |
 | `REFORM_COMBAT_LIMB_MISS_CHANCE`          | 100     | Percentage of failed arm/leg accuracy rolls that miss carbon targets entirely; previously 0. |
 
 Soft and hard crit are remaining-health values, not damage totals. Lower values
 delay incapacitation. Keep hard crit below soft crit and above the existing death
-threshold of -100. Maximum health and stamina must be positive; AP bypass ranges
-from 0 to 1. These are compile-time settings, applied to humanoids on initialization.
+threshold of -100. Maximum health and stamina must be positive.
+These are compile-time settings, applied to humanoids on initialization.
 Custom humanoid health offsets and existing runtime crit modifiers are preserved.
 
 `REFORM_COMBAT_STAMINA_CRIT_THRESHOLD` is independent of the stamina damage cap.
@@ -47,22 +50,71 @@ contribution applies. The divisor controls the penalty's growth, independently
 of its onset. The threshold is a cutoff, so at 60 damage the penalty starts at
 0.8 rather than growing from zero. Other movement modifiers still apply normally.
 
-Projectile protection is `armor * (1 - clamp(AP, 0, 100) / 100 * maximum bypass)`.
-With the defaults, 40 AP bypasses 20% of protection and 100+ AP bypasses 50%.
+Armour pips are rounded down using the existing protection-class convention.
+Each pip blocks 5 damage. A garment's tier is its highest Melee, Bullet or Laser
+class; each tier grants 75 durability. Bullet V therefore blocks 25 bullet damage
+and provides at least 375 maximum durability. The highest-tier garment covering
+each bodypart is the only protective layer used there. Equal tiers prefer outerwear,
+then headwear. A broken higher-tier piece still occupies that layer until removed.
 
-| Armor rating | 0 AP | 40 AP | 100 AP |
-| ------------ | ---- | ----- | ------ |
-| 30 (III)     | 30%  | 24%   | 15%    |
-| 50 (V)       | 50%  | 40%   | 25%    |
-| 80 (VIII)    | 80%  | 64%   | 40%    |
+Armour intercepts the lesser of incoming damage, its flat block and its remaining
+durability. It loses that intercepted amount, including on fully stopped hits.
+At zero durability it stops protecting against damage and wounds. The garment is
+retained for repair; biological sealing is preserved. Ordinary clothing repairs
+do not replenish armour durability. Rating changes update maximum durability
+while preserving wear and cannot restore broken armour.
 
-Some high armor ratings retain less protection than under the original formula:
-80 armor against 40 AP previously retained approximately 66.7%. Coverage, damage
-category, existing armor sources, and the projectile damage reduction cap still apply.
-Pre-hit AP changes, including hardened armor setting AP to zero, are respected.
-The new calculation also supplies armor protection for projectile status effects.
-Melee armor checks, thrown-attack armor checks, objects, separate secondary damage checks, and mobs with
-their own projectile armor override retain their existing behavior.
+Projectile AP transfers a fraction of the intercepted damage to the wearer:
+
+- Below the rating for the projectile's damage category: 0% transfer.
+- Equal to that rating: 25% transfer.
+- Between one and two times that rating: linear scaling from 25% to 100%.
+- At least twice that rating, or no protection: 100% transfer.
+
+AP comparisons use the underlying rating, so Bullet V with rating 50 has its
+thresholds at 50 and 100 AP. Pre-hit adjustments to AP are respected. The formula
+above the first threshold is `clamp(0.25 + 0.75 * (AP / rating - 1), 0.25, 1)`.
+Overflow always reaches the wearer. AP does not reduce durability wear:
+`wearer damage = incoming - intercepted + intercepted * transfer`.
+
+For a 40-damage bullet against intact Bullet V:
+
+| Projectile AP | Wearer damage | Durability spent |
+| ------------- | ------------- | ---------------- |
+| 0 or 49       | 15            | 25               |
+| 50            | 21.25         | 25               |
+| 75            | 30.625        | 25               |
+| 100 or more   | 40            | 25               |
+
+The resulting blocked percentage also governs projectile effects and the existing
+embedding guard. A completely stopped projectile cannot embed, dismember or leak damage
+through the upstream 90% damage-reduction cap. Armour previews do not spend
+durability; the actual hit spends it once. Shields prevent that wear when they
+intercept the projectile first.
+
+The bulky, single-use `/obj/item/armor_repair_kit` restores a garment to full
+durability after ten seconds. Use it on the garment, on a wearer while targeting
+the relevant bodypart, or on a MOD control unit to repair its chestplate. Cargo
+can order three kits in the Security "Armour Repair Kits" crate. MOD pieces use
+their runtime theme/module ratings and retain their wear through deployment,
+retraction and changes to ratings. Examine shows tier, durability and breakage.
+
+Human physical armour queries carry flat damage points in the existing numeric
+`blocked` argument. `apply_damage` converts these to the equivalent percentage
+once the incoming damage is known, then uses the normal damage and wound pipeline.
+The bodypart damage sink performs the same conversion for armour-checked calls
+which bypass `apply_damage`; ordinary damage passes zero there and is not blocked twice.
+No damage argument or pending-check cache is added to `run_armor_check` or its
+callers. Melee and thrown AP retain their original rating-based penetration
+formula before conversion to flat points. Biological/wound queries and nonhuman
+mobs retain their percentage calculations. Intrinsic armour supplies a fallback
+where there is no tiered garment, without clothing durability.
+
+Projectile checks already know the incoming damage, so they return a percentage.
+A scoped, single-use value on the projectile carries this percentage past the
+upstream cap during the primary damage application. It is restored when effects
+finish, including nested hits, without changing upstream projectile or embedding
+code. The pre-hit garment is held by weak reference until its wear is applied.
 
 Security batons have no fixed knockdown duration. Their delayed collapse callback
 is skipped when that duration is zero, so takedowns depend on accumulated stamina
@@ -106,14 +158,18 @@ penalty. Successful hits retain their original damage and wound behavior.
 - `code/datums/status_effects/debuffs/stamcrit.dm`: stamina recovery uses the shared
   threshold; initial extra stamina damage respects the actual cap.
 - `code/modules/mob/living/living.dm`: the stamina HUD uses the shared threshold.
-- `code/modules/mob/living/living_defense.dm`: `run_armor_check` accepts an optional
-  projectile AP flag; `check_projectile_armor` opts in. Silent and visible checks agree.
+- `code/modules/mob/living/living_defense.dm`: the previous branch-specific AP
+  changes are fully reverted; this file matches the pre-reform version.
 - `tgstation.dme`: includes the defines and module code.
 
 ### Modular Overrides
 
 - `code/baton.dm`: security baton knockdown duration is zero.
 - `code/health.dm`: humanoid `get_stamina_crit_threshold` specializes the new living proc.
+- `code/armor.dm`: human armour queries, damage conversion, projectile AP and shield
+  interception. Existing upstream attack callers remain unchanged.
+- `code/armor_durability.dm`: clothing durability, runtime rating updates, examine
+  information, generic repair supplies and their cargo pack.
 
 ### Modular helpers
 
