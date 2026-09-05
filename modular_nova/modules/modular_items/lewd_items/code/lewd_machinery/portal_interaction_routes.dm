@@ -113,10 +113,6 @@
 		return FALSE
 	return receiver.get_equipped_wearer() == target
 
-/datum/interaction_route/portal_device/participants_accept(mob/living/carbon/human/user, mob/living/carbon/human/target)
-	// validate_interaction() already gates on both participants' portal preferences.
-	return TRUE
-
 /datum/interaction_route/portal_device/allows_same_participant()
 	return TRUE
 
@@ -136,3 +132,20 @@
 		return !QDELETED(validator_device) && validator_device.anonymous
 	var/obj/item/clothing/sextoy/portal_panties/receiver = receiver_ref?.resolve()
 	return !QDELETED(receiver) && receiver.anonymous
+
+/// The relay currently projecting this mob, while the complete session and preferences still permit it.
+/mob/proc/get_portal_output()
+	var/obj/structure/lewd_portal/portal = buckled
+	if(!istype(portal))
+		return null
+	var/obj/effect/lewd_portal_relay/output_relay = portal.relayed_body
+	if(QDELETED(output_relay) || output_relay.owner != src || !output_relay.can_reveal_to(src))
+		return null
+	return output_relay
+
+/// Resolves exactly the output offered before a prompt, never a replacement session.
+/mob/proc/resolve_portal_output(datum/weakref/offered_output_ref)
+	var/obj/effect/lewd_portal_relay/offered_output = offered_output_ref?.resolve()
+	if(QDELETED(offered_output) || get_portal_output() != offered_output)
+		return null
+	return offered_output

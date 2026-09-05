@@ -179,12 +179,13 @@
 			if(interactable_inrange_open_containers.len)
 				buttons += CLIMAX_OPEN_CONTAINER
 
-			// Buckled into a portal? Offer the far side as somewhere to finish.
-			var/obj/structure/lewd_portal/portal = buckled
-			if(istype(portal) \
-				&& portal.is_active_session(src, portal.relayed_body) \
-				&& allows_portal_use())
+			// Keep the offered session's identity across the destination prompt.
+			var/obj/effect/lewd_portal_relay/offered_portal_output = get_portal_output()
+			var/datum/weakref/offered_portal_output_ref
+			if(offered_portal_output)
+				offered_portal_output_ref = WEAKREF(offered_portal_output)
 				buttons += CLIMAX_PORTAL
+			offered_portal_output = null
 
 			// These two locals live until the proc returns, so drop them alongside the datum's own references.
 			penis = null
@@ -240,11 +241,8 @@
 							span_userlove("You shoot string after string of hot cum, hitting the floor!"), pref_to_check = /datum/preference/toggle/erp)
 
 			else if(penis_climax_choice == CLIMAX_PORTAL)
-				portal = buckled
-				if(!istype(portal))
-					return FALSE
-				var/obj/effect/lewd_portal_relay/portal_relay = portal.relayed_body
-				if(!portal.is_active_session(src, portal_relay) || !allows_portal_use())
+				var/obj/effect/lewd_portal_relay/portal_relay = resolve_portal_output(offered_portal_output_ref)
+				if(!portal_relay)
 					return FALSE
 				to_chat(src, span_userlove("You shoot string after string of hot cum, hitting whatever is on the other side!"))
 				portal_relay.visible_message(span_userlove("[portal_relay] shoots its sticky load onto the floor!"), pref_to_check = /datum/preference/toggle/erp)

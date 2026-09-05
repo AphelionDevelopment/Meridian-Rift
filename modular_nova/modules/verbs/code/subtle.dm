@@ -131,7 +131,7 @@
 		var/list/targets = list(SUBTLE_ONE_TILE_TEXT, SUBTLE_SAME_TILE_TEXT)
 		for(var/target_name in target_refs)
 			targets += target_name
-		var/obj/effect/lewd_portal_relay/offered_portal_output = portal_output_for(user)
+		var/obj/effect/lewd_portal_relay/offered_portal_output = user.get_portal_output()
 		if(offered_portal_output)
 			offered_portal_output_ref = WEAKREF(offered_portal_output)
 			targets.Insert(1, PORTAL_ONE_TILE_TEXT, PORTAL_SAME_TILE_TEXT)
@@ -218,7 +218,7 @@
 					target = SUBTLE_ONE_TILE
 				if(PORTAL_SAME_TILE_TEXT)
 					target = SUBTLE_SAME_TILE_DISTANCE
-			output_portal = resolve_portal_output(user, offered_portal_output_ref)
+			output_portal = user.resolve_portal_output(offered_portal_output_ref)
 			if(!output_portal)
 				return FALSE
 			recipients = get_hearers_in_view(target, output_portal)
@@ -302,23 +302,6 @@
 		name_suffix += 1
 		target_name = "[candidate] ([name_suffix])"
 	return target_name
-
-/// The relay a portal is currently projecting `user` through, but only while they're allowed to use it.
-/datum/emote/living/subtler/proc/portal_output_for(mob/user)
-	var/obj/structure/lewd_portal/portal = user?.buckled
-	if(!istype(portal))
-		return null
-	var/obj/effect/lewd_portal_relay/output_relay = portal.relayed_body
-	if(QDELETED(output_relay) || !output_relay.can_reveal_to(user))
-		return null
-	return output_relay
-
-/// Resolves the relay offered before the prompt.
-/datum/emote/living/subtler/proc/resolve_portal_output(mob/user, datum/weakref/offered_output_ref)
-	var/obj/effect/lewd_portal_relay/offered_output = offered_output_ref?.resolve()
-	if(QDELETED(offered_output) || portal_output_for(user) != offered_output)
-		return null
-	return offered_output
 
 /// Delivers one Subtler through a portal relay to whoever is on the far side, anonymously.
 /datum/emote/living/subtler/proc/send_portal_subtler(

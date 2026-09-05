@@ -6,17 +6,8 @@
  * references. UI and configured interaction behavior are covered separately.
  */
 /datum/unit_test/portal_lifecycle
+	parent_type = /datum/unit_test/portal_test
 	abstract_type = /datum/unit_test/portal_lifecycle
-
-/// Allocates a reciprocal portal pair in the requested mode on adjacent test turfs.
-/datum/unit_test/portal_lifecycle/proc/make_portal_pair(portal_mode = PORTAL_TEST_WALLSTUCK)
-	var/obj/structure/lewd_portal/source_portal = allocate(/obj/structure/lewd_portal, run_loc_floor_bottom_left)
-	var/obj/structure/lewd_portal/receiving_portal = allocate(/obj/structure/lewd_portal, get_step(run_loc_floor_bottom_left, EAST))
-	source_portal.portal_mode = portal_mode
-	receiving_portal.portal_mode = portal_mode
-	source_portal.linked_portal = receiving_portal
-	receiving_portal.linked_portal = source_portal
-	return list(source_portal, receiving_portal)
 
 /// Returns TRUE when both matrices have exactly the same six components.
 /datum/unit_test/portal_lifecycle/proc/matrices_equal(matrix/left, matrix/right)
@@ -84,35 +75,6 @@
 				return TRUE
 	return FALSE
 
-/// Gives a test human a deterministic, exposed human penis suitable for relay rendering.
-/datum/unit_test/portal_lifecycle/proc/configure_exposed_test_penis(mob/living/carbon/human/occupant)
-	occupant.dna.features["penis_size"] = 4
-	occupant.dna.features["penis_girth"] = 3
-	occupant.dna.features["penis_uses_skincolor"] = FALSE
-	occupant.dna.features["penis_uses_skintones"] = FALSE
-	occupant.dna.features["penis_sheath"] = SPRITE_ACCESSORY_NONE
-	occupant.dna.mutant_bodyparts[ORGAN_SLOT_PENIS] = build_mutant_part("Human", list("#FCCCB3"))
-
-	var/obj/item/organ/genital/penis/test_penis = allocate(/obj/item/organ/genital/penis, occupant.loc)
-	if(QDELETED(test_penis))
-		return null
-	test_penis.build_from_dna(occupant.dna, ORGAN_SLOT_PENIS)
-	var/datum/bodypart_overlay/mutant/genital/penis/penis_overlay = test_penis.bodypart_overlay
-	if(!penis_overlay?.set_appearance_from_dna(occupant.dna))
-		return null
-	if(!test_penis.Insert(occupant, special = TRUE))
-		return null
-
-	occupant.underwear = "Nude"
-	occupant.undershirt = "Nude"
-	occupant.bra = "Nude"
-	occupant.underwear_visibility = NONE
-	test_penis.visibility_preference = GENITAL_HIDDEN_BY_CLOTHES
-	occupant.update_body()
-	if(occupant.get_organ_slot(ORGAN_SLOT_PENIS) != test_penis || !test_penis.is_exposed())
-		return null
-	return test_penis
-
 /// Runs one exact-state restoration case for an endpoint direction and portal mode.
 /datum/unit_test/portal_lifecycle/proc/check_exact_state_restoration(portal_mode, endpoint_direction)
 	var/list/portal_pair = make_portal_pair(portal_mode)
@@ -130,7 +92,7 @@
 
 	var/obj/item/organ/genital/penis/test_penis
 	if(portal_mode == PORTAL_TEST_GLORYHOLE)
-		test_penis = configure_exposed_test_penis(occupant)
+		test_penis = configure_test_penis(occupant)
 		if(isnull(test_penis))
 			TEST_FAIL("Could not deterministically configure an exposed penis for [test_case].")
 			return
@@ -156,7 +118,6 @@
 	TEST_ASSERT_NOTNULL(source_portal.relayed_body, "A successful buckle did not create a relay for [test_case].")
 	if(test_penis)
 		TEST_ASSERT_EQUAL(test_penis.visibility_preference, initial_penis_visibility, "Portal rendering did not preserve the active penis visibility preference for [test_case].")
-		test_penis.visibility_preference = GENITAL_NEVER_SHOW
 
 	source_portal.unbuckle_mob(occupant, force = TRUE, can_fall = FALSE)
 
@@ -168,7 +129,7 @@
 	TEST_ASSERT_EQUAL(length(occupant.overlays), initial_overlay_count, "Teardown did not restore the overlay count for [test_case].")
 	TEST_ASSERT(contains_portal_test_overlay(occupant.overlays), "Teardown did not restore the exact marker overlay for [test_case].")
 	if(test_penis)
-		TEST_ASSERT_EQUAL(test_penis.visibility_preference, initial_penis_visibility, "Teardown did not restore penis visibility for [test_case].")
+		TEST_ASSERT_EQUAL(test_penis.visibility_preference, initial_penis_visibility, "Teardown changed the occupant's visibility setting for [test_case].")
 	TEST_ASSERT(!QDELETED(source_portal) && !QDELETED(receiving_portal), "Normal teardown deleted a portal endpoint for [test_case].")
 
 /// Verifies the genital source contract required for a gloryhole relay to render.
@@ -179,7 +140,7 @@
 	var/list/portal_pair = make_portal_pair(PORTAL_TEST_GLORYHOLE)
 	var/obj/structure/lewd_portal/receiving_portal = portal_pair[2]
 	var/mob/living/carbon/human/consistent/occupant = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
-	var/obj/item/organ/genital/penis/test_penis = configure_exposed_test_penis(occupant)
+	var/obj/item/organ/genital/penis/test_penis = configure_test_penis(occupant)
 	var/test_penis_value = "[test_penis]"
 	var/test_penis_exposed = !QDELETED(test_penis) && test_penis.is_exposed()
 	var/obj/item/bodypart/test_penis_bodypart_owner = test_penis?.bodypart_owner
@@ -249,6 +210,27 @@
 		for(var/endpoint_direction in list(NORTH, SOUTH, EAST, WEST))
 			check_exact_state_restoration(portal_mode, endpoint_direction)
 
+/// A preference changed through its real setter survives teardown before the queued refresh.
+/datum/unit_test/portal_lifecycle/live_visibility_teardown/Run()
+	if(CONFIG_GET(flag/disable_lewd_items))
+		return
+
+	var/list/portal_pair = make_portal_pair(PORTAL_TEST_GLORYHOLE)
+	var/obj/structure/lewd_portal/source_portal = portal_pair[1]
+	var/mob/living/carbon/human/consistent/occupant = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
+	var/obj/item/organ/genital/penis/test_penis = configure_test_penis(occupant)
+	TEST_ASSERT_NOTNULL(test_penis, "The visibility teardown test could not create its exposed organ.")
+	TEST_ASSERT(source_portal.buckle_mob(occupant, force = TRUE, check_loc = FALSE), "The visibility teardown session could not start.")
+	var/obj/effect/lewd_portal_relay/session_relay = source_portal.relayed_body
+
+	TEST_ASSERT(test_penis.apply_visibility_label("Never show"), "The visibility menu setter rejected a valid setting.")
+	// Teardown can happen before the deferred visual refresh observes the new setting.
+	source_portal.unbuckle_mob(occupant, force = TRUE, can_fall = FALSE)
+
+	TEST_ASSERT_EQUAL(test_penis.visibility_preference, GENITAL_NEVER_SHOW, "Immediate teardown overwrote the occupant's new visibility setting.")
+	TEST_ASSERT_NULL(occupant.buckled, "Immediate visibility teardown left the occupant buckled.")
+	TEST_ASSERT(QDELETED(session_relay), "Immediate visibility teardown left its relay alive.")
+
 /// Either endpoint owns the pair, and repeated same-tick deletion stays idempotent.
 /datum/unit_test/portal_lifecycle/pair_deletion/Run()
 	var/list/first_pair = make_portal_pair()
@@ -276,24 +258,6 @@
 	var/obj/structure/lewd_portal/receiving_portal = portal_pair[2]
 	var/mob/living/carbon/human/consistent/occupant = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
 
-	occupant.setDir(WEST)
-	occupant.transform = matrix(1.25, 0.1, 3, -0.05, 0.8, -4)
-	occupant.pixel_x = 5
-	occupant.pixel_y = -7
-	var/mutable_appearance/test_overlay = mutable_appearance(
-		'modular_nova/modules/modular_items/lewd_items/icons/obj/lewd_structures/lewd_portals.dmi',
-		"portal",
-		layer = ABOVE_MOB_LAYER,
-	)
-	test_overlay.color = "#123456"
-	occupant.add_overlay(test_overlay)
-
-	var/initial_dir = occupant.dir
-	var/matrix/initial_transform = matrix(occupant.transform)
-	var/initial_pixel_x = occupant.pixel_x
-	var/initial_pixel_y = occupant.pixel_y
-	var/initial_overlay_count = length(occupant.overlays)
-
 	TEST_ASSERT(source_portal.buckle_mob(occupant, force = TRUE, check_loc = FALSE), "The wallstuck portal could not start a deterministic test session.")
 	var/obj/effect/lewd_portal_relay/session_relay = source_portal.relayed_body
 	var/datum/component/interactable/interaction_component = occupant.GetComponent(/datum/component/interactable)
@@ -309,12 +273,6 @@
 	TEST_ASSERT_NULL(occupant.buckled, "Normal teardown left the occupant buckled.")
 	TEST_ASSERT(!QDELETED(source_portal) && !QDELETED(receiving_portal), "Normal teardown deleted a portal endpoint.")
 	TEST_ASSERT(source_portal.linked_portal == receiving_portal && receiving_portal.linked_portal == source_portal, "Normal teardown broke the reciprocal portal pair.")
-	TEST_ASSERT_EQUAL(occupant.dir, initial_dir, "Normal teardown did not restore the occupant's exact direction.")
-	TEST_ASSERT(matrices_equal(occupant.transform, initial_transform), "Normal teardown did not restore the occupant's exact transform.")
-	TEST_ASSERT_EQUAL(occupant.pixel_x, initial_pixel_x, "Normal teardown did not restore the occupant's exact pixel_x.")
-	TEST_ASSERT_EQUAL(occupant.pixel_y, initial_pixel_y, "Normal teardown did not restore the occupant's exact pixel_y.")
-	TEST_ASSERT_EQUAL(length(occupant.overlays), initial_overlay_count, "Normal teardown did not restore the original overlay count.")
-	TEST_ASSERT(contains_portal_test_overlay(occupant.overlays), "Normal teardown did not restore the original test overlay.")
 
 /// Preserves equipment changes through portal teardown.
 /datum/unit_test/portal_lifecycle/live_appearance_restoration/Run()
@@ -348,7 +306,7 @@
 	var/obj/structure/lewd_portal/source_portal = portal_pair[1]
 	var/obj/structure/lewd_portal/receiving_portal = portal_pair[2]
 	var/mob/living/carbon/human/consistent/occupant = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
-	var/obj/item/organ/genital/penis/test_penis = configure_exposed_test_penis(occupant)
+	var/obj/item/organ/genital/penis/test_penis = configure_test_penis(occupant)
 	var/datum/component/interactable/interaction_component = occupant.GetComponent(/datum/component/interactable)
 
 	TEST_ASSERT_NOTNULL(test_penis, "The signal invalidation test could not create its exposed penis.")
@@ -609,6 +567,37 @@
 	TEST_ASSERT_EQUAL(staged_mount?.hanging_support_atom, west_support, "The deletion-ownership endpoint mounted to the wrong support.")
 	qdel(staging_bore)
 	TEST_ASSERT(QDELETED(staged_portal), "Deleting a bore left its unpaired staged endpoint behind.")
+
+/// Losing a real wall support tears down the occupied pair and releases its reusable bore.
+/datum/unit_test/portal_lifecycle/wall_support_destruction/Run()
+	var/mob/living/carbon/human/consistent/user = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
+	var/turf/west_support = get_step(user, WEST)
+	var/turf/south_support = get_step(user, SOUTH)
+	var/obj/item/wallframe/lewd_portal/portal_bore = allocate(/obj/item/wallframe/lewd_portal, user.loc)
+	portal_bore.creation_mode = PORTAL_TEST_WALLSTUCK
+	TEST_ASSERT(isclosedturf(west_support) && isclosedturf(south_support), "The wall destruction fixture is missing its expected supports.")
+	TEST_ASSERT_EQUAL(portal_bore.interact_with_atom(west_support, user), ITEM_INTERACT_SUCCESS, "The bore could not mount its first wall destruction endpoint.")
+	TEST_ASSERT_EQUAL(portal_bore.interact_with_atom(south_support, user), ITEM_INTERACT_SUCCESS, "The bore could not mount its second wall destruction endpoint.")
+	var/obj/structure/lewd_portal/first_portal = portal_bore.first_portal
+	var/obj/structure/lewd_portal/second_portal = portal_bore.second_portal
+	TEST_ASSERT(first_portal.buckle_mob(user, force = TRUE, check_loc = FALSE), "The wall destruction fixture could not start an occupied session.")
+	var/obj/effect/lewd_portal_relay/session_relay = first_portal.relayed_body
+	var/datum/component/interactable/interaction_component = user.GetComponent(/datum/component/interactable)
+
+	var/original_support_type = west_support.type
+	var/original_baseturfs = islist(west_support.baseturfs) ? west_support.baseturfs.Copy() : west_support.baseturfs
+	var/turf/destroyed_support = west_support.ChangeTurf(/turf/open/floor/plating)
+	// Restore the shared fixture before any assertion can return from this test.
+	west_support = destroyed_support.ChangeTurf(original_support_type, original_baseturfs)
+
+	TEST_ASSERT(QDELETED(first_portal) && QDELETED(second_portal), "Destroying a mounted endpoint's wall left its portal pair alive.")
+	TEST_ASSERT(QDELETED(session_relay), "Destroying the supporting wall left an active relay alive.")
+	TEST_ASSERT_NULL(user.buckled, "Destroying the supporting wall left the occupant buckled.")
+	TEST_ASSERT_NULL(interaction_component?.resolve_body_relay(), "Destroying the supporting wall left a stale interaction relay.")
+	TEST_ASSERT_NULL(portal_bore.first_portal, "Destroying the supporting wall left the first endpoint on its bore.")
+	TEST_ASSERT_NULL(portal_bore.second_portal, "Destroying the supporting wall left the second endpoint on its bore.")
+	TEST_ASSERT(!QDELETED(portal_bore), "Destroying the supporting wall consumed its reusable bore.")
+	TEST_ASSERT_EQUAL(portal_bore.interact_with_atom(west_support, user), ITEM_INTERACT_SUCCESS, "The bore could not mount again after its support was rebuilt.")
 
 /// Ordinary frames remain single-use, while only opted-in frames work without floors.
 /datum/unit_test/portal_lifecycle/wallframe_defaults

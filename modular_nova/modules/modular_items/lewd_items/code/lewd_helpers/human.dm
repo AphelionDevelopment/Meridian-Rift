@@ -39,6 +39,26 @@
 			return FALSE
 	return TRUE
 
+/// Whether a portal can physically reach the selected organ, mouth, active hand, or leg.
+/mob/living/carbon/human/proc/portal_target_is_accessible(target_part)
+	if(target_part in list(ORGAN_SLOT_PENIS, ORGAN_SLOT_VAGINA, ORGAN_SLOT_ANUS))
+		var/obj/item/organ/genital/genital = get_organ_slot(target_part)
+		if(!genital || genital.covered_by_clothing(src))
+			return FALSE
+		if(target_part == ORGAN_SLOT_PENIS)
+			var/obj/item/organ/genital/penis/penis = genital
+			return !penis.is_sheathed()
+		return TRUE
+	if(target_part == BODY_ZONE_PRECISE_MOUTH)
+		return !!get_bodypart(BODY_ZONE_HEAD) && is_location_accessible(BODY_ZONE_PRECISE_MOUTH)
+	if(target_part in list(BODY_ZONE_R_ARM, BODY_ZONE_L_ARM))
+		var/obj/item/bodypart/active_hand = has_hand_for_held_index(active_hand_index)
+		return active_hand && active_hand.body_zone == target_part
+	if(target_part in list(BODY_ZONE_R_LEG, BODY_ZONE_L_LEG))
+		var/obj/item/bodypart/leg = get_bodypart(target_part)
+		return leg && !leg.bodypart_disabled
+	return FALSE
+
 
 /*
 *	This code needed to determine if the human is naked in that part of body or not

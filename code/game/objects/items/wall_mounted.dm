@@ -14,6 +14,8 @@
 	var/pixel_shift
 	/// Whether the user must stand on a floor turf to mount this frame.
 	var/requires_floor = TRUE // NOVA EDIT ADDITION
+	/// Whether a successful placement consumes this frame.
+	var/consume_after_attach = TRUE // NOVA EDIT ADDITION
 
 /obj/item/wallframe/Initialize(mapload)
 	. = ..()
@@ -74,8 +76,8 @@
 				hanging_object.pixel_x = -pixel_shift
 	hanging_object.find_and_mount_on_atom()
 	after_attach(hanging_object)
-	// NOVA EDIT ADDITION START - Allow frames to persist across related placements.
-	if(!should_consume_after_attach(hanging_object))
+	// NOVA EDIT ADDITION START - Allow reusable wallframes.
+	if(!consume_after_attach)
 		return ITEM_INTERACT_SUCCESS
 	// NOVA EDIT ADDITION END
 	qdel(src)
@@ -115,17 +117,6 @@
 */
 /obj/item/wallframe/proc/after_attach(obj/attached_to)
 	transfer_fingerprints_to(attached_to)
-
-// NOVA EDIT ADDITION START - Allow frames to persist across related placements.
-/**
- * Returns whether this frame should be consumed after mounting [attached_to].
- *
- * Override for frames that persist across related placements. Called after [after_attach], so an override is free
- * to decide based on whatever state that just set up.
- */
-/obj/item/wallframe/proc/should_consume_after_attach(obj/attached_to)
-	return TRUE
-// NOVA EDIT ADDITION END
 
 /obj/item/wallframe/screwdriver_act(mob/living/user, obj/item/tool)
 	return interact_with_atom(get_step(get_turf(user), user.dir), user)

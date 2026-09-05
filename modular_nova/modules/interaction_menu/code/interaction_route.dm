@@ -22,7 +22,7 @@
 /datum/interaction_route/proc/is_still_valid(datum/interaction/interaction, mob/living/carbon/human/user, mob/living/carbon/human/target, ignore_cooldown = FALSE)
 	return FALSE
 
-/// Extra consent this route needs on top of the master ERP preference. Checked at both execution boundaries.
+/// Consent required by this transport, including for ordinary interactions. Checked at both execution boundaries.
 /datum/interaction_route/proc/participants_accept(mob/living/carbon/human/user, mob/living/carbon/human/target)
 	return TRUE
 

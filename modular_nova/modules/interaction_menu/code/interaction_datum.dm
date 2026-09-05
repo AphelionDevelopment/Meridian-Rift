@@ -122,6 +122,8 @@ GLOBAL_LIST_EMPTY_TYPED(interaction_instances, /datum/interaction)
 	mob/living/carbon/human/target,
 	datum/interaction_route/route,
 )
+	if(route && !route.participants_accept(user, target))
+		return FALSE
 	if(!lewd)
 		return TRUE
 	var/datum/client_interface/user_client = GET_CLIENT(user)
@@ -129,29 +131,38 @@ GLOBAL_LIST_EMPTY_TYPED(interaction_instances, /datum/interaction)
 	if(!user_client?.prefs?.read_preference(/datum/preference/toggle/erp) \
 		|| !target_client?.prefs?.read_preference(/datum/preference/toggle/erp))
 		return FALSE
-	return isnull(route) || route.participants_accept(user, target)
+	return TRUE
+
+/// Shared authority checks for the menu, immediate execution, and deferred effects.
+/datum/interaction/proc/can_execute(
+	mob/living/carbon/human/user,
+	mob/living/carbon/human/target,
+	datum/interaction_route/route = null,
+	ignore_cooldown = FALSE,
+)
+	if(!participants_are_actionable(user, target))
+		return FALSE
+	if(!interaction_route_is_valid(route, user, target, ignore_cooldown))
+		return FALSE
+	if(!participants_accept_interaction(user, target, route))
+		return FALSE
+	return allow_act(
+		user,
+		target,
+		allow_same_participant = route?.allows_same_participant(),
+		check_part_exposure = !route?.validates_part_access(),
+	)
 
 /datum/interaction/proc/act(
 	mob/living/carbon/human/user,
 	mob/living/carbon/human/target,
 	use_subtler = TRUE,
 	datum/interaction_route/route = null,
-	user_anonymous = FALSE,
-	target_anonymous = FALSE,
 )
-	if(!participants_are_actionable(user, target))
+	if(!can_execute(user, target, route))
 		return FALSE
-	if(!interaction_route_is_valid(route, user, target))
-		return FALSE
-	if(!participants_accept_interaction(user, target, route))
-		return FALSE
-	if(!allow_act(
-		user,
-		target,
-		allow_same_participant = route?.allows_same_participant(),
-		check_part_exposure = !route?.validates_part_access(),
-	))
-		return FALSE
+	var/user_anonymous = route?.user_is_anonymous()
+	var/target_anonymous = isnull(route) ? !can_see(user, target) : route.target_is_anonymous()
 	if(!message)
 		message_admins("Interaction had a null message list. '[html_encode(name)]'")
 		return FALSE
@@ -286,19 +297,8 @@ GLOBAL_LIST_EMPTY_TYPED(interaction_instances, /datum/interaction)
 )
 	var/mob/living/carbon/human/user = user_ref?.resolve()
 	var/mob/living/carbon/human/target = target_ref?.resolve()
-	if(!participants_are_actionable(user, target))
-		return
-	// The cooldown was already paid by the act() that queued us, so don't let it fail us here.
-	if(!interaction_route_is_valid(route, user, target, ignore_cooldown = TRUE))
-		return
-	if(!participants_accept_interaction(user, target, route))
-		return
-	if(!allow_act(
-		user,
-		target,
-		allow_same_participant = route?.allows_same_participant(),
-		check_part_exposure = !route?.validates_part_access(),
-	))
+	// The successful caller already paid the cooldown for these queued effects.
+	if(!can_execute(user, target, route, ignore_cooldown = TRUE))
 		return
 	if(user_pain)
 		user.adjust_pain(user_pain)

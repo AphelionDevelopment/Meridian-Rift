@@ -104,23 +104,8 @@
 /datum/component/interactable/proc/can_interact(datum/interaction/interaction, mob/living/carbon/human/target)
 	if(QDELETED(interaction) || QDELETED(target) || QDELETED(self))
 		return FALSE
-	if(!interaction.participants_are_actionable(target, self))
-		return FALSE
 	var/datum/interaction_route/route = get_interaction_route(interaction, target)
-	if(!interaction.allow_act(
-		target,
-		self,
-		allow_same_participant = route?.allows_same_participant(),
-		check_part_exposure = !route?.validates_part_access(),
-	))
-		return FALSE
-	if(!interaction.interaction_route_is_valid(route, target, self, ignore_cooldown = TRUE))
-		return FALSE
-	if(!interaction.participants_accept_interaction(target, self, route))
-		return FALSE
-	if(interaction.category == INTERACTION_CAT_HIDE)
-		return FALSE
-	return TRUE
+	return interaction.category != INTERACTION_CAT_HIDE && interaction.can_execute(target, self, route, ignore_cooldown = TRUE)
 
 /// UI Control
 /datum/component/interactable/ui_interact(mob/user, datum/tgui/ui)
@@ -205,12 +190,8 @@
 	data["descriptions"] = descriptions
 	data["colors"] = colors
 
-	data["ref_user"] = REF(user)
-	data["ref_self"] = REF(self)
-	data["self"] = self.name
 	var/atom/movable/resolved_relay = resolve_body_relay()
-	if(resolved_relay && user.Adjacent(resolved_relay) && !can_see(user, self))
-		data["self"] = resolved_relay.name
+	data["self"] = can_see(user, self) ? self.name : (resolved_relay?.name || "Unknown")
 	data["block_interact"] = interact_next >= world.time
 	data["use_subtler"] = use_subtler
 	data["erp_interaction"] = self.client?.prefs?.read_preference(/datum/preference/toggle/erp)
@@ -307,7 +288,6 @@
 		return success
 
 	if(action == "set_underwear_visibility" || action == "set_all_underwear_visibility")
-		var/mob/living/carbon/human/actor = ui.user
 		if(actor != self)
 			return
 		if(IS_UNCONSCIOUS_OR_CRIT(actor))
@@ -343,15 +323,11 @@
 			if(QDELETED(interaction_component) || on_interaction_cooldown(interaction_component))
 				return FALSE
 			var/datum/interaction_route/route = get_interaction_route(interaction, actor)
-			if(!interaction.interaction_route_is_valid(route, actor, target))
-				return FALSE
 			if(!interaction.act(
 				actor,
 				target,
 				use_subtler = use_subtler,
 				route = route,
-				user_anonymous = route?.user_is_anonymous(),
-				target_anonymous = route?.target_is_anonymous(),
 			))
 				return FALSE
 			start_interaction_cooldown(interaction_component)

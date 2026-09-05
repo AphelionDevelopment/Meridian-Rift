@@ -46,10 +46,6 @@ GLOBAL_LIST_INIT(portal_visual_signals, list(
 	var/initial_mob_pixel_y
 	/// Visible overlays outside `overlays_standing`, which the normal update procs cannot rebuild.
 	var/list/initial_mob_overlays
-	/// The penis whose visibility was temporarily overridden, if any.
-	var/datum/weakref/initial_penis
-	/// The original visibility preference of initial_penis.
-	var/initial_genital_visibility
 	/// How far a head is offset while stuck through this portal.
 	var/wallstuck_offset_amount = 12
 
@@ -186,11 +182,6 @@ GLOBAL_LIST_INIT(portal_visual_signals, list(
 		wallstuck_offset_amount = (-24 * transform_scale_height) + 36
 	wallstuck_offset_amount = clamp(round(wallstuck_offset_amount), 0, 18)
 
-	if(portal_mode == GLORYHOLE)
-		var/obj/item/organ/genital/penis/penis = candidate.get_organ_slot(ORGAN_SLOT_PENIS)
-		initial_penis = WEAKREF(penis)
-		initial_genital_visibility = penis.visibility_preference
-
 /// Starts ownership tracking and creates a fully rendered relay.
 /obj/structure/lewd_portal/proc/begin_session(mob/living/carbon/human/candidate)
 	snapshot_current_mob(candidate)
@@ -257,9 +248,6 @@ GLOBAL_LIST_INIT(portal_visual_signals, list(
 	if(refreshing_current_mob || ending_session || QDELETED(current_mob))
 		return FALSE
 	refreshing_current_mob = TRUE
-	var/obj/item/organ/genital/penis/saved_penis = initial_penis?.resolve()
-	if(saved_penis && current_mob.get_organ_slot(ORGAN_SLOT_PENIS) == saved_penis)
-		initial_genital_visibility = saved_penis.visibility_preference
 	if(!can_relay(current_mob))
 		refreshing_current_mob = FALSE
 		end_session()
@@ -374,10 +362,6 @@ GLOBAL_LIST_INIT(portal_visual_signals, list(
 
 /// Restores only the borrowed mob; it never transfers or deletes ownership.
 /obj/structure/lewd_portal/proc/restore_current_mob(mob/living/carbon/human/session_mob)
-	var/obj/item/organ/genital/penis/saved_penis = initial_penis?.resolve()
-	if(!QDELETED(saved_penis))
-		saved_penis.visibility_preference = initial_genital_visibility
-
 	session_mob.cut_overlays()
 	session_mob.regenerate_icons()
 	session_mob.add_overlay(initial_mob_overlays)
@@ -392,8 +376,6 @@ GLOBAL_LIST_INIT(portal_visual_signals, list(
 	initial_mob_pixel_x = null
 	initial_mob_pixel_y = null
 	initial_mob_overlays = null
-	initial_penis = null
-	initial_genital_visibility = null
 	wallstuck_offset_amount = 12
 	refreshing_current_mob = FALSE
 	current_mob_visual_refresh_queued = FALSE
@@ -434,6 +416,7 @@ GLOBAL_LIST_INIT(portal_visual_signals, list(
 	result_path = /obj/structure/lewd_portal
 	pixel_shift = 32
 	requires_floor = FALSE
+	consume_after_attach = FALSE
 	/// The mode portals created by this device will be in.
 	var/creation_mode = GLORYHOLE
 	/// Endpoints owned by this bore. Either endpoint deleting clears the pair.
@@ -475,10 +458,6 @@ GLOBAL_LIST_INIT(portal_visual_signals, list(
 	RegisterSignal(second_portal, COMSIG_QDELETING, PROC_REF(on_portal_qdeleting))
 	portal_result.linked_portal = first_portal
 	first_portal.linked_portal = portal_result
-
-/// The bore remains the controller for every endpoint it creates.
-/obj/item/wallframe/lewd_portal/should_consume_after_attach(obj/attached_to)
-	return FALSE
 
 /obj/item/wallframe/lewd_portal/attack_self(mob/user)
 	if(first_portal || second_portal)
@@ -637,8 +616,7 @@ GLOBAL_LIST_INIT(portal_visual_signals, list(
 
 	var/list/generated_overlays = penis_overlay.get_all_overlays(penis.bodypart_owner)
 	var/list/copied_overlays = list()
-	if(!append_appearance_copies(copied_overlays, generated_overlays))
-		return FALSE
+	append_appearance_copies(copied_overlays, generated_overlays)
 	add_overlay(copied_overlays)
 	return length(copied_overlays) > 0
 
@@ -651,15 +629,13 @@ GLOBAL_LIST_INIT(portal_visual_signals, list(
 		var/list/limb_icons = limb.get_limb_icon()
 		if(limb_zone == BODY_ZONE_CHEST)
 			limb_icons = torso_only(limb_icons)
-		if(!append_appearance_copies(generated_overlays, limb_icons))
-			return FALSE
+		append_appearance_copies(generated_overlays, limb_icons)
 
-	if(owner.shoes && !append_appearance_copies(generated_overlays, owner.overlays_standing[SHOES_LAYER]))
-		return FALSE
-	if(owner.w_uniform && !append_appearance_copies(generated_overlays, owner.overlays_standing[UNIFORM_LAYER], apply_mask = TRUE))
-		return FALSE
-	if(!append_appearance_copies(generated_overlays, owner.overlays_standing[BODY_LAYER], apply_mask = TRUE))
-		return FALSE
+	if(owner.shoes)
+		append_appearance_copies(generated_overlays, owner.overlays_standing[SHOES_LAYER])
+	if(owner.w_uniform)
+		append_appearance_copies(generated_overlays, owner.overlays_standing[UNIFORM_LAYER], apply_mask = TRUE)
+	append_appearance_copies(generated_overlays, owner.overlays_standing[BODY_LAYER], apply_mask = TRUE)
 	if(!length(generated_overlays))
 		return FALSE
 	add_overlay(generated_overlays)
@@ -688,24 +664,22 @@ GLOBAL_LIST_INIT(portal_visual_signals, list(
 		"icon" = upper_body_mask,
 	))
 
-/// Validates and clones each source appearance before filtering; invalid layers are discarded without fallback art.
+/// Clones source appearances before filtering, skipping nonexistent icon states.
 /obj/effect/lewd_portal_relay/proc/append_appearance_copies(list/output, appearance_source, apply_mask = FALSE)
 	if(isnull(appearance_source))
-		return TRUE
+		return
 	if(islist(appearance_source))
 		for(var/image/appearance as anything in appearance_source)
-			if(!append_appearance_copies(output, appearance, apply_mask))
-				return FALSE
-		return TRUE
+			append_appearance_copies(output, appearance, apply_mask)
+		return
 
 	var/image/source_appearance = appearance_source
 	if(source_appearance.icon && !icon_exists(source_appearance.icon, source_appearance.icon_state))
-		return TRUE
+		return
 	var/mutable_appearance/copied_appearance = new(source_appearance.appearance)
 	if(apply_mask)
 		apply_upper_body_mask(copied_appearance)
 	output += copied_appearance
-	return TRUE
 
 /obj/effect/lewd_portal_relay/proc/compare_organ_icon(organ_slot, icon_to_compare)
 	var/obj/item/organ/organ = owner?.get_organ_slot(organ_slot)

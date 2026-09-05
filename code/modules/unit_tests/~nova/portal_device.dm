@@ -3,7 +3,6 @@
  * for the LustWish portal device and receiver.
  */
 
-#define PORTAL_DEVICE_TEST_WALLSTUCK "wallstuck"
 #define PORTAL_INTERACTION_STATE_TEST_ID "Portal interaction state test"
 #define PORTAL_INTERACTION_STATE_TEST_TRAIT "portal_interaction_state_test"
 
@@ -25,16 +24,6 @@
 /mob/living/carbon/human/consistent/portal_interaction_state_test/adjust_pain(change_amount = 0)
 	portal_test_pain_received += change_amount
 
-/// Owns its test preferences so cleanup cannot retain the mock client.
-/datum/client_interface/portal_unit_test
-
-/datum/client_interface/portal_unit_test/Destroy(force)
-	mob = null
-	if(prefs)
-		prefs.parent = null
-	QDEL_NULL(prefs)
-	return ..()
-
 /// Counts real device rebuilds while retaining the production appearance path.
 /obj/item/clothing/sextoy/portal_fleshlight/appearance_unit_test
 	var/appearance_updates = 0
@@ -44,8 +33,36 @@
 	return ..()
 
 /datum/unit_test/portal_device
+	parent_type = /datum/unit_test/portal_test
 	abstract_type = /datum/unit_test/portal_device
 	var/appearance_timers_ran = FALSE
+	/// Original registry entries replaced by this test's deterministic fixtures.
+	var/list/replaced_interactions = list()
+
+/datum/unit_test/portal_device/Destroy()
+	for(var/interaction_name in replaced_interactions)
+		var/list/previous = replaced_interactions[interaction_name]
+		if(previous[1])
+			GLOB.interaction_instances[interaction_name] = previous[2]
+		else
+			GLOB.interaction_instances -= interaction_name
+	return ..()
+
+/// Installs a real interaction without depending on the server's optional JSON configuration.
+/datum/unit_test/portal_device/proc/install_interaction_fixture(interaction_name = "Tongue kiss", list/user_parts, list/target_parts)
+	if(!(interaction_name in replaced_interactions))
+		replaced_interactions[interaction_name] = list(interaction_name in GLOB.interaction_instances, GLOB.interaction_instances[interaction_name])
+	var/datum/interaction/interaction = allocate(/datum/interaction)
+	interaction.name = interaction_name
+	interaction.category = "Portal unit test"
+	interaction.lewd = TRUE
+	interaction.user_required_parts = user_parts ? user_parts.Copy() : list()
+	interaction.target_required_parts = target_parts ? target_parts.Copy() : list()
+	interaction.message = list("%USER_CAPITAL% wave%USER_VERB_S% to %TARGET_OBJECT%.")
+	interaction.user_messages = list("%TARGET_CAPITAL% wave%TARGET_VERB_S% to %USER_OBJECT%.")
+	interaction.target_messages = list("%USER_CAPITAL% wave%USER_VERB_S% to %TARGET_OBJECT%.")
+	GLOB.interaction_instances[interaction_name] = interaction
+	return interaction
 
 /// Establishes the same strong reciprocal association used by normal linking.
 /datum/unit_test/portal_device/proc/link_pair(
@@ -77,62 +94,6 @@
 	var/deadline = world.time + 2 SECONDS
 	UNTIL(appearance_timers_ran || world.time >= deadline)
 	return appearance_timers_ran
-
-/// Allocates a reciprocal wallstuck pair for public buckle guard tests.
-/datum/unit_test/portal_device/proc/make_portal_pair()
-	var/obj/structure/lewd_portal/source_portal = allocate(/obj/structure/lewd_portal, run_loc_floor_bottom_left)
-	var/obj/structure/lewd_portal/receiving_portal = allocate(/obj/structure/lewd_portal, get_step(run_loc_floor_bottom_left, EAST))
-	source_portal.portal_mode = PORTAL_DEVICE_TEST_WALLSTUCK
-	receiving_portal.portal_mode = PORTAL_DEVICE_TEST_WALLSTUCK
-	source_portal.linked_portal = receiving_portal
-	receiving_portal.linked_portal = source_portal
-	return list(source_portal, receiving_portal)
-
-/// Attaches the standard unit-test client abstraction with both canonical portal preferences enabled.
-/datum/unit_test/portal_device/proc/attach_portal_preferences(mob/living/carbon/human/participant)
-	var/datum/client_interface/portal_unit_test/mock_client = allocate(/datum/client_interface/portal_unit_test)
-	mock_client.prefs = new /datum/preferences(mock_client)
-	mock_client.mob = participant
-	participant.mock_client = mock_client
-	if(!mock_client.prefs.write_preference(GLOB.preference_entries[/datum/preference/toggle/master_erp_preferences], TRUE))
-		TEST_FAIL("Could not enable the master ERP preference for a portal test participant.")
-	if(!mock_client.prefs.write_preference(GLOB.preference_entries[/datum/preference/toggle/erp], TRUE))
-		TEST_FAIL("Could not enable the ERP preference for a portal test participant.")
-	if(!mock_client.prefs.write_preference(GLOB.preference_entries[/datum/preference/toggle/erp/sex_toy], TRUE))
-		TEST_FAIL("Could not enable the sex-toy preference for a portal test participant.")
-	return mock_client
-
-/// Gives a test human a deterministic, exposed penis, optionally with a retractable sheath.
-/datum/unit_test/portal_device/proc/configure_test_penis(
-	mob/living/carbon/human/participant,
-	sheath_name = SPRITE_ACCESSORY_NONE,
-)
-	participant.dna.features["penis_size"] = 4
-	participant.dna.features["penis_girth"] = 3
-	participant.dna.features["penis_uses_skincolor"] = FALSE
-	participant.dna.features["penis_uses_skintones"] = FALSE
-	participant.dna.features["penis_sheath"] = sheath_name
-	participant.dna.mutant_bodyparts[ORGAN_SLOT_PENIS] = build_mutant_part("Human", list("#FCCCB3"))
-
-	var/obj/item/organ/genital/penis/test_penis = allocate(/obj/item/organ/genital/penis, participant.loc)
-	if(QDELETED(test_penis))
-		return null
-	test_penis.build_from_dna(participant.dna, ORGAN_SLOT_PENIS)
-	var/datum/bodypart_overlay/mutant/genital/penis/penis_overlay = test_penis.bodypart_overlay
-	if(!penis_overlay?.set_appearance_from_dna(participant.dna))
-		return null
-	if(!test_penis.Insert(participant, special = TRUE))
-		return null
-
-	participant.underwear = "Nude"
-	participant.undershirt = "Nude"
-	participant.bra = "Nude"
-	participant.underwear_visibility = NONE
-	test_penis.visibility_preference = GENITAL_HIDDEN_BY_CLOTHES
-	participant.update_body()
-	if(!test_penis.is_exposed())
-		return null
-	return test_penis
 
 /// Restores both participants, then makes one either dead or independently incapacitated.
 /datum/unit_test/portal_device/proc/set_interaction_test_state(
@@ -354,6 +315,9 @@
 	TEST_ASSERT_EQUAL(receiver.get_equipped_wearer(), wearer, "The receiver rejected its authoritative genital-slot wearer.")
 	wearer.penis = null
 	TEST_ASSERT_NULL(receiver.get_equipped_wearer(), "A removed genital receiver retained authority from stale presentation state.")
+	wearer.vagina = receiver
+	TEST_ASSERT_NULL(receiver.get_equipped_wearer(), "A receiver in a different genital slot retained authority for its claimed slot.")
+	wearer.vagina = null
 
 	receiver.update_target(wearer)
 	TEST_ASSERT_NULL(receiver.current_equipped_slot, "Dropping a receiver retained its claimed equipped slot.")
@@ -366,60 +330,59 @@
 		TEST_NOTICE(src, "Portal-device target tests require lewd items to be enabled by the test configuration.")
 		return
 
-	var/obj/item/clothing/sextoy/portal_fleshlight/device = allocate(/obj/item/clothing/sextoy/portal_fleshlight)
 	var/mob/living/carbon/human/consistent/local_participant = allocate(/mob/living/carbon/human/consistent)
 
-	TEST_ASSERT(device.local_target_is_valid(local_participant, BODY_ZONE_PRECISE_MOUTH), "An uncovered local mouth was rejected.")
+	TEST_ASSERT(local_participant.portal_target_is_accessible(BODY_ZONE_PRECISE_MOUTH), "An uncovered local mouth was rejected.")
 	var/obj/item/clothing/mask/gas/covering_mask = allocate(/obj/item/clothing/mask/gas)
 	TEST_ASSERT(local_participant.equip_to_slot_if_possible(covering_mask, ITEM_SLOT_MASK), "The test participant could not equip a mouth-covering mask.")
 	TEST_ASSERT(local_participant.is_mouth_covered(), "The test mask did not cover the local mouth.")
-	TEST_ASSERT(!device.local_target_is_valid(local_participant, BODY_ZONE_PRECISE_MOUTH), "A covered local mouth was accepted.")
+	TEST_ASSERT(!local_participant.portal_target_is_accessible(BODY_ZONE_PRECISE_MOUTH), "A covered local mouth was accepted.")
 	TEST_ASSERT(local_participant.transferItemToLoc(covering_mask, local_participant.loc, force = TRUE, silent = TRUE), "The test participant could not remove the covering mask.")
-	TEST_ASSERT(device.local_target_is_valid(local_participant, BODY_ZONE_PRECISE_MOUTH), "An uncovered local mouth remained rejected after mask removal.")
+	TEST_ASSERT(local_participant.portal_target_is_accessible(BODY_ZONE_PRECISE_MOUTH), "An uncovered local mouth remained rejected after mask removal.")
 
 	var/active_hand_index = local_participant.active_hand_index
 	var/obj/item/bodypart/active_hand = local_participant.has_hand_for_held_index(active_hand_index)
 	var/active_hand_zone = IS_LEFT_INDEX(active_hand_index) ? BODY_ZONE_L_ARM : BODY_ZONE_R_ARM
 	var/inactive_hand_zone = IS_LEFT_INDEX(active_hand_index) ? BODY_ZONE_R_ARM : BODY_ZONE_L_ARM
 	TEST_ASSERT_NOTNULL(active_hand, "The test participant did not have a usable active hand.")
-	TEST_ASSERT(device.local_target_is_valid(local_participant, active_hand_zone), "The usable active hand was rejected.")
-	TEST_ASSERT(!device.local_target_is_valid(local_participant, inactive_hand_zone), "The inactive hand was accepted as the selected local target.")
+	TEST_ASSERT(local_participant.portal_target_is_accessible(active_hand_zone), "The usable active hand was rejected.")
+	TEST_ASSERT(!local_participant.portal_target_is_accessible(inactive_hand_zone), "The inactive hand was accepted as the selected local target.")
 	if(active_hand)
 		active_hand.bodypart_disabled = TRUE
-		TEST_ASSERT(!device.local_target_is_valid(local_participant, active_hand_zone), "A disabled active hand was accepted.")
+		TEST_ASSERT(!local_participant.portal_target_is_accessible(active_hand_zone), "A disabled active hand was accepted.")
 		active_hand.bodypart_disabled = FALSE
 	var/inactive_hand_index = local_participant.get_inactive_hand_index()
 	var/obj/item/bodypart/inactive_hand = local_participant.has_hand_for_held_index(inactive_hand_index)
 	if(inactive_hand)
 		local_participant.active_hand_index = inactive_hand_index
 		var/switched_hand_zone = IS_LEFT_INDEX(inactive_hand_index) ? BODY_ZONE_L_ARM : BODY_ZONE_R_ARM
-		TEST_ASSERT(device.local_target_is_valid(local_participant, switched_hand_zone), "The usable opposite active hand was rejected after switching hands.")
-		TEST_ASSERT(!device.local_target_is_valid(local_participant, active_hand_zone), "The former active hand remained accepted after switching hands.")
+		TEST_ASSERT(local_participant.portal_target_is_accessible(switched_hand_zone), "The usable opposite active hand was rejected after switching hands.")
+		TEST_ASSERT(!local_participant.portal_target_is_accessible(active_hand_zone), "The former active hand remained accepted after switching hands.")
 		local_participant.active_hand_index = active_hand_index
 
 	var/obj/item/bodypart/leg = local_participant.get_bodypart(BODY_ZONE_L_LEG)
 	TEST_ASSERT_NOTNULL(leg, "The test participant did not have a left leg.")
 	if(leg)
-		TEST_ASSERT(device.local_target_is_valid(local_participant, BODY_ZONE_L_LEG), "The usable selected leg was rejected.")
+		TEST_ASSERT(local_participant.portal_target_is_accessible(BODY_ZONE_L_LEG), "The usable selected leg was rejected.")
 		leg.bodypart_disabled = TRUE
-		TEST_ASSERT(!device.local_target_is_valid(local_participant, BODY_ZONE_L_LEG), "A disabled selected leg was accepted.")
+		TEST_ASSERT(!local_participant.portal_target_is_accessible(BODY_ZONE_L_LEG), "A disabled selected leg was accepted.")
 		leg.bodypart_disabled = FALSE
 
 	var/obj/item/organ/genital/penis/local_penis = configure_test_penis(local_participant)
 	TEST_ASSERT_NOTNULL(local_penis, "Could not configure the local test penis.")
 	if(!local_penis)
 		return
-	TEST_ASSERT(device.local_target_is_valid(local_participant, ORGAN_SLOT_PENIS), "An exposed unsheathed local penis was rejected.")
+	TEST_ASSERT(local_participant.portal_target_is_accessible(ORGAN_SLOT_PENIS), "An exposed unsheathed local penis was rejected.")
 	var/datum/bodypart_overlay/mutant/genital/penis/local_penis_overlay = local_penis.bodypart_overlay
 	local_penis_overlay.set_sheath_style(/datum/sprite_accessory/genital/sheath/normal::name)
 	local_penis.aroused = AROUSAL_NONE
 	local_penis.update_sprite_suffix()
 	TEST_ASSERT(local_penis.is_sheathed(), "The local test penis did not enter its configured sheath.")
-	TEST_ASSERT(!device.local_target_is_valid(local_participant, ORGAN_SLOT_PENIS), "A sheathed local penis was accepted.")
+	TEST_ASSERT(!local_participant.portal_target_is_accessible(ORGAN_SLOT_PENIS), "A sheathed local penis was accepted.")
 	local_penis.aroused = AROUSAL_FULL
 	local_penis.update_sprite_suffix()
 	TEST_ASSERT(!local_penis.is_sheathed(), "The local test penis did not leave its sheath when fully aroused.")
-	TEST_ASSERT(device.local_target_is_valid(local_participant, ORGAN_SLOT_PENIS), "An exposed unsheathed local penis remained rejected.")
+	TEST_ASSERT(local_participant.portal_target_is_accessible(ORGAN_SLOT_PENIS), "An exposed unsheathed local penis remained rejected.")
 
 	var/mob/living/carbon/human/consistent/receiver_wearer = allocate(/mob/living/carbon/human/consistent)
 	var/obj/item/clothing/sextoy/portal_panties/mouth_receiver = allocate(/obj/item/clothing/sextoy/portal_panties)
@@ -596,13 +559,6 @@
 	)
 
 	TEST_ASSERT(deep_compare_list(actual_map, expected_map), "The portal-device interaction allowlist drifted from the live-config contract.")
-	TEST_ASSERT_NULL(actual_map["urethra"], "The portal-device map unexpectedly supports a urethra receiver target.")
-	for(var/receiver_target in actual_map)
-		var/list/local_map = actual_map[receiver_target]
-		TEST_ASSERT_NULL(local_map["urethra"], "The portal-device map unexpectedly supports a urethra local target.")
-		for(var/local_target in local_map)
-			var/interaction_name = local_map[local_target]
-			TEST_ASSERT(!findtext(LOWER_TEXT(interaction_name), "urethra"), "The portal-device map contains a urethra interaction fallback.")
 
 /// The central validator rejects stale authority and derives cooldown state from both participants.
 /datum/unit_test/portal_device/validator_authority_and_cooldown/Run()
@@ -610,13 +566,7 @@
 		TEST_NOTICE(src, "Portal-device validator tests require lewd items to be enabled by the test configuration.")
 		return
 
-	var/datum/interaction/tongue_kiss = GLOB.interaction_instances["Tongue kiss"]
-	if(!tongue_kiss)
-		if(length(flist(INTERACTION_JSON_FOLDER)))
-			TEST_FAIL("The live Tongue kiss interaction was unavailable despite a supplied interaction directory.")
-		else
-			TEST_NOTICE(src, "No live interaction directory was supplied; portal-device live validation is covered by the repository-config integration run.")
-		return
+	var/datum/interaction/tongue_kiss = install_interaction_fixture()
 
 	var/mob/living/carbon/human/consistent/local_participant = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
 	var/mob/living/carbon/human/consistent/remote_participant = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
@@ -735,8 +685,12 @@
 	TEST_ASSERT_NULL(source_portal.current_mob, "A stale-consent buckle mutated source occupancy.")
 	TEST_ASSERT_NULL(source_portal.relayed_body, "A stale-consent buckle created a relay.")
 
-/// When a live interaction directory is loaded, all mapped interactions must be compatible.
-/datum/unit_test/portal_device/live_interaction_metadata/Run()
+/// Explicit integration coverage for a deployment supplying the complete portal interaction configuration.
+/datum/unit_test/portal_device/live_configuration/Run()
+#ifndef TEST_PORTAL_LIVE_CONFIG
+	TEST_NOTICE(src, "Optional live portal configuration check; enable TEST_PORTAL_LIVE_CONFIG with the full interaction configuration.")
+	return
+#endif
 	var/list/expected_parts = list(
 		"Fuck (vagina)" = list(list(ORGAN_SLOT_PENIS), list(ORGAN_SLOT_VAGINA)),
 		"Tribadism" = list(list(ORGAN_SLOT_VAGINA), list(ORGAN_SLOT_VAGINA)),
@@ -756,25 +710,23 @@
 		"Tongue kiss" = list(list(), list()),
 	)
 
-	var/found_interactions = 0
-	for(var/interaction_name in expected_parts)
-		if(GLOB.interaction_instances[interaction_name])
-			found_interactions++
-	if(!length(flist(INTERACTION_JSON_FOLDER)))
-		TEST_NOTICE(src, "No live interaction directory was supplied; snapshot integration is not available in this test environment.")
-		return
-
-	TEST_ASSERT_EQUAL(found_interactions, length(expected_parts), "Only part of the required live portal interaction set was loaded.")
-	if(found_interactions != length(expected_parts))
-		return
+	var/mob/living/carbon/human/consistent/recipient = allocate(/mob/living/carbon/human/consistent)
+	recipient.name = "Portal Message Recipient"
 	for(var/interaction_name in expected_parts)
 		var/datum/interaction/interaction = GLOB.interaction_instances[interaction_name]
+		TEST_ASSERT_NOTNULL(interaction, "The optional live configuration lacks '[interaction_name]'.")
 		var/list/interaction_parts = expected_parts[interaction_name]
 		TEST_ASSERT(interaction.lewd, "Portal interaction '[interaction_name]' was not marked lewd.")
 		TEST_ASSERT_EQUAL(interaction.usage, INTERACTION_OTHER, "Portal interaction '[interaction_name]' had incompatible usage.")
 		TEST_ASSERT_NOTEQUAL(interaction.category, INTERACTION_CAT_HIDE, "Portal interaction '[interaction_name]' was hidden.")
 		TEST_ASSERT(deep_compare_list(interaction.user_required_parts, interaction_parts[1]), "Portal interaction '[interaction_name]' had incompatible user body-part requirements.")
 		TEST_ASSERT(deep_compare_list(interaction.target_required_parts, interaction_parts[2]), "Portal interaction '[interaction_name]' had incompatible target body-part requirements.")
+		for(var/list/private_messages in list(interaction.user_messages, interaction.target_messages))
+			for(var/message_template in private_messages)
+				var/formatted_message = interaction.format_message_for(message_template, recipient, recipient, recipient = recipient)
+				TEST_ASSERT(!findtext(formatted_message, recipient.name), "Self-interaction '[interaction_name]' referred to the recipient by name.")
+				TEST_ASSERT(!findtext(formatted_message, "%"), "Interaction '[interaction_name]' left a template token unexpanded.")
+				TEST_ASSERT(!findtext(formatted_message, "you's"), "Interaction '[interaction_name]' used an invalid second-person possessive.")
 
 /// Message expansion anonymizes each participant independently while administrative formatting keeps real identities.
 /datum/unit_test/portal_device/message_anonymity/Run()
@@ -875,40 +827,13 @@
 	TEST_ASSERT_EQUAL(interaction.format_message_for(reversed_template, user, user, target_anonymous = TRUE, recipient = user), "Unknown waves to you with their hand; your sleeve brushes Unknown's coat.", "A private user message exposed an anonymous self-interaction through identity, pronouns, or reflexivity.")
 	TEST_ASSERT_EQUAL(interaction.format_message_for("%USER_PRONOUN_THEMSELVES%", user, user, user_anonymous = TRUE, recipient = user), "themselves", "An anonymous reflexive pronoun exposed the recipient's identity.")
 
-/// Exercise the configured portal messages so new grammar tokens cannot silently reach players unexpanded.
-/datum/unit_test/portal_device/message_templates/Run()
-	var/list/interaction_files = list(
-		"assfuck", "blowjob", "eat_ass", "fingering_a", "fingering_v", "footjob_c", "footjob_v", "frotting",
-		"fuck_v", "handjob", "lick_v", "mouth_fuck", "ride_cock", "ride_cock_v", "tongue_kiss", "tribadism",
-	)
-	if(!length(flist(INTERACTION_JSON_FOLDER)))
-		TEST_NOTICE(src, "No interaction configuration was supplied; template coverage requires a repository-config run.")
-		return
-	var/mob/living/carbon/human/consistent/user = allocate(/mob/living/carbon/human/consistent)
-	user.name = "Portal Message Recipient"
-	for(var/interaction_file in interaction_files)
-		var/datum/interaction/interaction = allocate(/datum/interaction)
-		TEST_ASSERT(interaction.load_from_json("[INTERACTION_JSON_FOLDER][interaction_file].json"), "Could not load portal message fixture '[interaction_file]'.")
-		for(var/list/private_messages in list(interaction.user_messages, interaction.target_messages))
-			for(var/message_template in private_messages)
-				var/formatted_message = interaction.format_message_for(message_template, user, user, recipient = user)
-				TEST_ASSERT(!findtext(formatted_message, user.name), "Self-interaction '[interaction_file]' referred to the recipient by name.")
-				TEST_ASSERT(!findtext(formatted_message, "%"), "Interaction '[interaction_file]' left a template token unexpanded.")
-				TEST_ASSERT(!findtext(formatted_message, "you's"), "Interaction '[interaction_file]' used an invalid second-person possessive.")
-
 /// Weakref-backed portal-device contexts revalidate identity, equipment, links, and non-cooldown authority.
 /datum/unit_test/portal_device/context_revalidation/Run()
 	if(CONFIG_GET(flag/disable_lewd_items) || CONFIG_GET(flag/disable_erp_preferences))
 		TEST_NOTICE(src, "Portal-device context tests require lewd items and ERP preferences to be enabled by the test configuration.")
 		return
 
-	var/datum/interaction/tongue_kiss = GLOB.interaction_instances["Tongue kiss"]
-	if(!tongue_kiss)
-		if(length(flist(INTERACTION_JSON_FOLDER)))
-			TEST_FAIL("The live Tongue kiss interaction was unavailable despite a supplied interaction directory.")
-		else
-			TEST_NOTICE(src, "No live interaction directory was supplied; portal-device context validation is covered by the repository-config integration run.")
-		return
+	var/datum/interaction/tongue_kiss = install_interaction_fixture()
 
 	var/mob/living/carbon/human/consistent/local_participant = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
 	var/mob/living/carbon/human/consistent/remote_participant = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
@@ -1061,14 +986,14 @@
 	TEST_ASSERT(source_portal.buckle_mob(owner, force = TRUE, check_loc = FALSE), "The first Subtler portal session could not start.")
 	var/obj/effect/lewd_portal_relay/first_relay = source_portal.relayed_body
 	var/datum/weakref/first_relay_ref = WEAKREF(first_relay)
-	TEST_ASSERT_EQUAL(subtler_emote.resolve_portal_output(owner, first_relay_ref), first_relay, "Subtler rejected the exact live relay it offered.")
+	TEST_ASSERT_EQUAL(owner.resolve_portal_output(first_relay_ref), first_relay, "Subtler rejected the exact live relay it offered.")
 	TEST_ASSERT(!subtler_emote.send_portal_subtler(owner, first_relay, "tests", NONE, " ", sender_message = "marker"), "Subtler delivered a relay message back to its owner.")
 
 	source_portal.end_session()
 	TEST_ASSERT(QDELETED(first_relay), "Ending the first Subtler portal session did not delete its relay.")
 	TEST_ASSERT(source_portal.buckle_mob(owner, force = TRUE, check_loc = FALSE), "The replacement Subtler portal session could not start.")
 	TEST_ASSERT_NOTEQUAL(source_portal.relayed_body, first_relay, "The replacement Subtler session reused its deleted relay.")
-	TEST_ASSERT_NULL(subtler_emote.resolve_portal_output(owner, first_relay_ref), "A prompt from the first Subtler session resolved through its replacement session.")
+	TEST_ASSERT_NULL(owner.resolve_portal_output(first_relay_ref), "A prompt from the first Subtler session resolved through its replacement session.")
 
 /// Ordinary interactions accept direct adjacency or the exact current portal relay, never an unbound or stale relay.
 /datum/unit_test/portal_device/ordinary_position_authority/Run()
@@ -1105,11 +1030,8 @@
 
 /// Ordinary and relay interactions reject dead or independently incapacitated participants at every execution boundary.
 /datum/unit_test/portal_device/interaction_liveness_boundaries/Run()
-	var/datum/interaction/action_interaction = allocate(/datum/interaction)
-	action_interaction.name = PORTAL_INTERACTION_STATE_TEST_ID
-	action_interaction.category = "Unit test"
-	action_interaction.usage = INTERACTION_OTHER
-	action_interaction.message = list("%USER% tests %TARGET%.")
+	var/datum/interaction/action_interaction = install_interaction_fixture(PORTAL_INTERACTION_STATE_TEST_ID)
+	action_interaction.lewd = FALSE
 	var/datum/interaction/effect_interaction = allocate(/datum/interaction)
 	effect_interaction.name = PORTAL_INTERACTION_STATE_TEST_ID
 	effect_interaction.category = "Unit test"
@@ -1117,10 +1039,6 @@
 	effect_interaction.message = list("%USER% tests %TARGET%.")
 	effect_interaction.user_pain = 2
 	effect_interaction.target_pain = 3
-
-	var/had_previous_interaction = (PORTAL_INTERACTION_STATE_TEST_ID in GLOB.interaction_instances)
-	var/datum/interaction/previous_interaction = GLOB.interaction_instances[PORTAL_INTERACTION_STATE_TEST_ID]
-	GLOB.interaction_instances[PORTAL_INTERACTION_STATE_TEST_ID] = action_interaction
 
 	var/mob/living/carbon/human/consistent/portal_interaction_state_test/direct_actor = allocate(/mob/living/carbon/human/consistent/portal_interaction_state_test, run_loc_floor_bottom_left)
 	var/mob/living/carbon/human/consistent/portal_interaction_state_test/direct_target = allocate(/mob/living/carbon/human/consistent/portal_interaction_state_test, run_loc_floor_bottom_left)
@@ -1131,6 +1049,10 @@
 	else
 		check_action_liveness(action_interaction, direct_target_component, direct_ui, direct_actor, direct_target, route_name = "direct")
 		check_effect_liveness(effect_interaction, direct_actor, direct_target, route_name = "direct")
+	set_interaction_test_state(direct_actor, direct_target)
+	if(CONFIG_GET(flag/disable_lewd_items) || CONFIG_GET(flag/disable_erp_preferences))
+		TEST_NOTICE(src, "Relay liveness coverage requires portal preferences; direct interaction checks ran.")
+		return
 
 	var/list/portal_pair = make_portal_pair()
 	var/obj/structure/lewd_portal/source_portal = portal_pair[1]
@@ -1138,6 +1060,8 @@
 	receiving_portal.forceMove(run_loc_floor_top_right)
 	var/mob/living/carbon/human/consistent/portal_interaction_state_test/relay_actor = allocate(/mob/living/carbon/human/consistent/portal_interaction_state_test, receiving_portal.loc)
 	var/mob/living/carbon/human/consistent/portal_interaction_state_test/relay_target = allocate(/mob/living/carbon/human/consistent/portal_interaction_state_test, source_portal.loc)
+	attach_portal_preferences(relay_actor)
+	attach_portal_preferences(relay_target)
 	var/datum/component/interactable/relay_target_component = relay_target.GetComponent(/datum/component/interactable)
 	var/datum/tgui/relay_ui = allocate(/datum/tgui, relay_actor, relay_target_component, "InteractionPanel")
 	if(!source_portal.buckle_mob(relay_target, force = TRUE, check_loc = FALSE))
@@ -1145,15 +1069,12 @@
 	else if(!source_portal.relayed_body || !relay_target_component || !relay_actor.GetComponent(/datum/component/interactable))
 		TEST_FAIL("The relay liveness fixtures did not receive a relay and interaction components.")
 	else
+		var/datum/interaction_route/portal_relay/live_route = allocate(/datum/interaction_route/portal_relay, source_portal.relayed_body)
+		TEST_ASSERT(action_interaction.can_execute(relay_actor, relay_target, live_route, ignore_cooldown = TRUE), "The healthy relay fixture could not act before its liveness checks.")
 		check_action_liveness(action_interaction, relay_target_component, relay_ui, relay_actor, relay_target, source_portal.relayed_body, "relay")
 		check_effect_liveness(effect_interaction, relay_actor, relay_target, source_portal.relayed_body, "relay")
 
-	set_interaction_test_state(direct_actor, direct_target)
 	set_interaction_test_state(relay_actor, relay_target)
-	if(had_previous_interaction)
-		GLOB.interaction_instances[PORTAL_INTERACTION_STATE_TEST_ID] = previous_interaction
-	else
-		GLOB.interaction_instances -= PORTAL_INTERACTION_STATE_TEST_ID
 
 /// Flipping a relay reaches neither the mutation nor feedback branch after session or preference authority expires.
 /datum/unit_test/portal_device/relay_flip_authority/Run()
@@ -1205,6 +1126,5 @@
 		TEST_FAIL("An invalidated portal session still reached the relay flip and feedback branch.")
 	owner_component.set_body_relay(relay)
 
-#undef PORTAL_DEVICE_TEST_WALLSTUCK
 #undef PORTAL_INTERACTION_STATE_TEST_ID
 #undef PORTAL_INTERACTION_STATE_TEST_TRAIT

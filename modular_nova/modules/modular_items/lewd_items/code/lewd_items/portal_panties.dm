@@ -47,9 +47,7 @@
 	if(configuration_valid)
 		. += span_notice("The current target is: [current_target]")
 
-	. += span_notice("Use it as underwear to autodetect genitals")
-	. += span_notice("Use as mask to connect to the mouth")
-	. += span_notice("Use in genital slots to connect to specific genitals")
+	. += span_notice("Equip it as a mask to connect to the mouth, or use the interaction panel to equip it in a specific genital slot.")
 
 /obj/item/clothing/sextoy/portal_panties/attackby(obj/item/attacking_item, mob/user, list/modifiers, list/attack_modifiers)
 	. = ..()
@@ -179,23 +177,14 @@
 	if(current_target == BODY_ZONE_PRECISE_MOUTH)
 		if(current_equipped_slot != ITEM_SLOT_MASK || wearer.get_item_by_slot(ITEM_SLOT_MASK) != src)
 			return null
-	else if(current_equipped_slot != current_target || !is_inside_lewd_slot(wearer))
+	else if(current_equipped_slot != current_target || wearer.get_lewd_slot_item(current_equipped_slot) != src)
 		return null
 	return wearer
 
 /// Presentation and authority helper for equipped slot, anatomy, and exposure.
 /obj/item/clothing/sextoy/portal_panties/proc/receiver_configuration_valid()
 	var/mob/living/carbon/human/wearer = get_equipped_wearer()
-	if(!wearer)
-		return FALSE
-	if(current_target == BODY_ZONE_PRECISE_MOUTH)
-		return !!wearer.get_bodypart(BODY_ZONE_HEAD) && wearer.is_location_accessible(BODY_ZONE_PRECISE_MOUTH)
-	if(current_target == ORGAN_SLOT_PENIS)
-		var/obj/item/organ/genital/penis/penis = wearer.get_organ_slot(ORGAN_SLOT_PENIS)
-		return wearer.portal_genital_is_accessible(ORGAN_SLOT_PENIS) && !penis?.is_sheathed()
-	if(current_target in list(ORGAN_SLOT_VAGINA, ORGAN_SLOT_ANUS))
-		return wearer.portal_genital_is_accessible(current_target)
-	return FALSE
+	return wearer && wearer.portal_target_is_accessible(current_target)
 
 /obj/item/clothing/sextoy/portal_panties/proc/has_reciprocal_link()
 	return !QDELETED(linked_fleshlight) && linked_fleshlight.linked_panties == src

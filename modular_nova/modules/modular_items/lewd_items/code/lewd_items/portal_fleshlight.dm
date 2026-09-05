@@ -1,10 +1,5 @@
 #define PORTAL_DEVICE_ICON 'modular_nova/modules/modular_items/lewd_items/icons/obj/lewd_items/portal.dmi'
 
-/// Whether a portal can physically reach this genital.
-/mob/living/carbon/human/proc/portal_genital_is_accessible(slot)
-	var/obj/item/organ/genital/genital = get_organ_slot(slot)
-	return genital && !genital.covered_by_clothing(src)
-
 /obj/item/clothing/sextoy/portal_fleshlight
 	name = "portal device"
 	desc = "A LustWish(TM) portal device, with configurations for fleshlight or dildo, using bluespace tech to allow lovers to hump at a distance. Needs to be paired with the portal receiver before use."
@@ -191,8 +186,6 @@
 		receiver_wearer,
 		use_subtler = TRUE,
 		route = new /datum/interaction_route/portal_device(src, operator, receiver, held_device, local_target),
-		user_anonymous = anonymous,
-		target_anonymous = receiver.anonymous,
 	))
 		return FALSE
 
@@ -241,7 +234,7 @@
 		return null
 	if(!local_participant.allows_portal_use() || !receiver_wearer.allows_portal_use())
 		return null
-	if(!local_target_is_valid(local_participant, local_target))
+	if(!local_participant.portal_target_is_accessible(local_target))
 		return null
 
 	var/interaction_user_part = receiver_is_user ? receiver.current_target : local_target
@@ -269,23 +262,6 @@
 	if(!ignore_cooldown && local_component.on_interaction_cooldown(remote_component))
 		return null
 	return interaction
-
-/// Checks the limb or exposed organ selected on the local participant.
-/obj/item/clothing/sextoy/portal_fleshlight/proc/local_target_is_valid(mob/living/carbon/human/participant, local_target)
-	if(local_target == ORGAN_SLOT_PENIS)
-		var/obj/item/organ/genital/penis/penis = participant.get_organ_slot(ORGAN_SLOT_PENIS)
-		return participant.portal_genital_is_accessible(ORGAN_SLOT_PENIS) && !penis?.is_sheathed()
-	if(local_target in list(ORGAN_SLOT_VAGINA, ORGAN_SLOT_ANUS))
-		return participant.portal_genital_is_accessible(local_target)
-	if(local_target == BODY_ZONE_PRECISE_MOUTH)
-		return !!participant.get_bodypart(BODY_ZONE_HEAD) && participant.is_location_accessible(BODY_ZONE_PRECISE_MOUTH)
-	if(local_target in list(BODY_ZONE_R_ARM, BODY_ZONE_L_ARM))
-		var/obj/item/bodypart/active_hand = participant.has_hand_for_held_index(participant.active_hand_index)
-		return active_hand && active_hand.body_zone == local_target
-	if(local_target in list(BODY_ZONE_R_LEG, BODY_ZONE_L_LEG))
-		var/obj/item/bodypart/leg = participant.get_bodypart(local_target)
-		return leg && !leg.bodypart_disabled
-	return FALSE
 
 /// Puts both participants on the interaction cooldown the menu UI uses.
 /obj/item/clothing/sextoy/portal_fleshlight/proc/apply_interaction_cooldown(mob/living/carbon/human/local_participant, mob/living/carbon/human/receiver_wearer)
