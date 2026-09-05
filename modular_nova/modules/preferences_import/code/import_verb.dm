@@ -62,41 +62,15 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 	var/cooldown = CONFIG_GET(number/seconds_cooldown_for_preferences_import)
 	persistent_client.next_preferences_import = world.time + (cooldown SECONDS)
 
-	if(!findtext("[uploaded_file]", ".json", -5))
-		to_chat(src, span_warning("That is not a .json file."))
-		return
-
-	var/filesize = length(uploaded_file)
-	var/size_limit = CONFIG_GET(number/savefile_upload_limit) * 1024
-	if(filesize > size_limit)
-		to_chat(src, span_warning("That file is too large ([round(filesize / 1024)] KB; the limit is [round(size_limit / 1024)] KB)."))
-		return
-
-	var/raw = file2text(uploaded_file)
-	if(!length(raw))
-		to_chat(src, span_warning("That file was empty or unreadable."))
-		return
-
-	var/list/json_tree
-	try
-		json_tree = json_decode(raw)
-	catch(var/exception/err)
-		to_chat(src, span_warning("That file is not valid JSON."))
-		log_game("Preferences import by [ckey] failed to parse: [err]")
-		return
-
-	// Depth goes on the decoded tree, a text scan first is slower than decoding.
-	if(prefs_import_tree_too_deep(json_tree))
-		to_chat(src, span_warning("That file is nested too deeply to be a preferences file."))
-		log_admin("[key_name(src)] attempted a preferences import with excessive JSON nesting.")
-		return
-
-	var/problem = prefs_import_prevalidate(json_tree, prefs)
+	var/list/upload = prefs_import_read_upload(uploaded_file, import_prefs)
+	var/problem = upload["error"]
 	if(problem)
 		to_chat(src, span_warning("That file was rejected: [problem]."))
+		log_game("Preferences import by [ckey] rejected: [problem]")
 		return
 
-	json_tree = prefs_import_pass1(json_tree, import_prefs.savefile.get_entry())
+	var/filesize = upload["filesize"]
+	var/list/json_tree = prefs_import_pass1(upload["tree"], import_prefs.savefile.get_entry())
 
 	if(!prefs_import_available(import_prefs))
 		return
@@ -116,8 +90,7 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 		log_game("Preferences import for [ckey] was not installed: [install_error]")
 		return
 
-	// Else the still-connected client writes its stale prefs over the import.
-	GLOB.preferences_datums[ckey] = null
+	prefs_import_invalidate_cache(ckey)
 
 	log_admin("[key_name(src)] imported their own preferences ([filesize] bytes).")
 	message_admins("[key_name(src)] imported their own preferences via the whitelisted-player import.")
@@ -139,6 +112,44 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 		to_chat(src, span_warning("Importing is no longer available. It requires the whitelist role and must be enabled on this server."))
 		return FALSE
 	return TRUE
+
+/// Shared upload validation. Policy-specific metadata filtering happens after this succeeds.
+/// Returns an error, or the decoded tree and byte count; never logs uploaded JSON or decoder exceptions.
+/proc/prefs_import_read_upload(uploaded_file, datum/preferences/prefs)
+	if(!isfile(uploaded_file) || !length(uploaded_file))
+		return list("error" = "file is empty or unreadable")
+	if(!findtext("[uploaded_file]", ".json", -5))
+		return list("error" = "filename must end in .json")
+	var/filesize = length(uploaded_file)
+	var/size_limit = CONFIG_GET(number/savefile_upload_limit) * 1024
+	if(filesize > size_limit)
+		return list("error" = "file is too large ([round(filesize / 1024)] KB; the limit is [round(size_limit / 1024)] KB)")
+	var/raw = file2text(uploaded_file)
+	if(!length(raw))
+		return list("error" = "file is empty or unreadable")
+	var/list/json_tree
+	try
+		json_tree = json_decode(raw)
+	catch
+		return list("error" = "file is not valid JSON")
+	if(prefs_import_tree_too_deep(json_tree))
+		return list("error" = "file is nested too deeply")
+	var/problem = prefs_import_prevalidate(json_tree, prefs)
+	if(problem)
+		return list("error" = problem)
+	return list("tree" = json_tree, "filesize" = filesize)
+
+/// After successful replacement, old UI/disconnect callbacks must only write to memory.
+/proc/prefs_import_invalidate_cache(target_ckey)
+	var/client/connected = GLOB.directory[target_ckey]
+	for(var/datum/preferences/old_prefs as anything in list(GLOB.preferences_datums[target_ckey], connected?.prefs))
+		if(!old_prefs)
+			continue
+		old_prefs.load_and_save = FALSE
+		old_prefs.path = null
+		if(old_prefs.savefile)
+			old_prefs.savefile.path = null
+	GLOB.preferences_datums[target_ckey] = null
 
 /// Write and verify the candidate before touching the destination. Returns an error, or null on success.
 /proc/prefs_import_replace(savefile_path, contents)
@@ -186,25 +197,47 @@ GAME_VERB_PROC_DESC(/client, import_preferences, "Import Character Preferences",
 	fdel("[savefile_path].updatebac")
 	return null
 
-/// Stashes a copy of the savefile, oldest one drops off the end.
+/// Player backups rotate independently of retained staff/legacy backups.
 /proc/prefs_import_backup(savefile_path)
 	if(!fexists(savefile_path))
 		return TRUE // nothing to back up, which is fine
 	var/limit = CONFIG_GET(number/preferences_import_backup_limit)
+	var/backup_prefix = "[savefile_path].playerimportbac"
 	var/list/existing = list()
 	for(var/i = 1 to limit)
-		var/candidate = "[savefile_path].importbac-[i]"
+		var/candidate = "[backup_prefix]-[i]"
 		if(fexists(candidate))
 			existing += candidate
 	if(length(existing) >= limit)
-		for(var/i = 2 to limit)
-			var/from_path = "[savefile_path].importbac-[i]"
-			if(!fexists(from_path))
-				continue
-			if(!fcopy(from_path, "[savefile_path].importbac-[i - 1]"))
-				return FALSE
-	var/slot = min(length(existing) + 1, limit)
-	return fcopy(savefile_path, "[savefile_path].importbac-[slot]")
+		existing.Cut(1, 2) // Drop the oldest only when the rotation is full.
+	for(var/i = 1 to length(existing))
+		var/destination = "[backup_prefix]-[i]"
+		if(existing[i] != destination && !fcopy(existing[i], destination))
+			return FALSE
+	// Compaction can leave duplicate files in higher slots when there were gaps.
+	for(var/i = length(existing) + 1 to limit)
+		var/unused = "[backup_prefix]-[i]"
+		if(fexists(unused) && !fdel(unused))
+			return FALSE
+	return fcopy(savefile_path, "[backup_prefix]-[length(existing) + 1]")
+
+/// Staff backups are retained until explicitly removed; never overwrite a numbered backup after a gap.
+/proc/prefs_import_admin_backup(savefile_path)
+	if(!fexists(savefile_path))
+		return null
+	var/limit = CONFIG_GET(number/savefile_backup_limit)
+	if(limit <= 0)
+		return null
+	var/backup_prefix = "[savefile_path].importbac"
+	if(length(flist(backup_prefix)) >= limit)
+		return "too many retained backups; a keyholder must clear old .importbac files before importing"
+	var/destination = backup_prefix
+	var/slot = 2
+	while(fexists(destination))
+		destination = "[backup_prefix]-[slot++]"
+	if(!fcopy(savefile_path, destination))
+		return "could not back up the existing preferences"
+	return null
 
 /client
 	/// Held across every import prompt and query, until cancellation or disconnect.

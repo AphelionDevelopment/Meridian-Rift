@@ -46,10 +46,8 @@
 	return
 
 /datum/db_query/symphony_moderation_test/Destroy()
-	rows = null
-	item = null
 	during_query = null
-	return QDEL_HINT_QUEUE
+	return ..()
 
 /datum/db_query/symphony_moderation_test/warn_execute(async = TRUE)
 	// Reproduce a change at the yielding query boundary without yielding the global fixture.

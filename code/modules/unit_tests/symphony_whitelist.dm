@@ -114,7 +114,7 @@
 
 /datum/db_query/symphony_test/Destroy()
 	during_query = null
-	return QDEL_HINT_QUEUE
+	return ..()
 
 /datum/db_query/symphony_test/warn_execute(async = TRUE)
 	// Reproduce the ordering at the sleeping query boundary without yielding the global test fixture to other subsystems.
