@@ -1,4 +1,5 @@
 #define REQUIRED_CROP_LIST_SIZE 4
+#define TRI_PREFERENCE_CHANNEL_COUNT 3 // Primary, secondary, and tertiary channels.
 
 /datum/preference
 	/// If the selected species has this in its /datum/species/mutant_bodyparts,
@@ -11,14 +12,15 @@
 	var/check_mode = TRICOLOR_CHECK_BOOLEAN
 
 /datum/preference/tri_color/deserialize(input, datum/preferences/preferences)
-	// APHELION EDIT ADDITION - savefile values skip is_valid(), a runtime here locks the ckey out
-	if(!islist(input) || length(input) < 3)
+	// Saved values skip is_valid(); reject malformed channel lists before indexing.
+	if(!islist(input) || length(input) < TRI_PREFERENCE_CHANNEL_COUNT)
 		return create_default_value()
 	var/list/input_colors = input
 	return list(sanitize_hexcolor(input_colors[1]), sanitize_hexcolor(input_colors[2]), sanitize_hexcolor(input_colors[3]))
 
 /datum/preference/tri_color/serialize(input)
-	if(!islist(input) || length(input) < 3) // APHELION EDIT ADDITION - see deserialize()
+	// Serialization also runs when preparing preference UI data.
+	if(!islist(input) || length(input) < TRI_PREFERENCE_CHANNEL_COUNT)
 		return create_default_value()
 	var/list/input_colors = input
 	return list(sanitize_hexcolor(input_colors[1]), sanitize_hexcolor(input_colors[2]), sanitize_hexcolor(input_colors[3]))
@@ -27,7 +29,7 @@
 	return list("#[random_color()]", "#[random_color()]", "#[random_color()]")
 
 /datum/preference/tri_color/is_valid(list/value)
-	return islist(value) && value.len == 3 && (findtext(value[1], GLOB.is_color) && findtext(value[2], GLOB.is_color) && findtext(value[3], GLOB.is_color))
+	return islist(value) && value.len == TRI_PREFERENCE_CHANNEL_COUNT && (findtext(value[1], GLOB.is_color) && findtext(value[2], GLOB.is_color) && findtext(value[3], GLOB.is_color))
 
 /datum/preference/tri_color/is_accessible(datum/preferences/preferences)
 	if (check_mode == TRICOLOR_NO_CHECK || type == abstract_type)
@@ -52,7 +54,8 @@
 	var/check_mode = TRICOLOR_CHECK_BOOLEAN
 
 /datum/preference/tri_bool/deserialize(input, datum/preferences/preferences)
-	if(!islist(input) || length(input) < 3) // APHELION EDIT ADDITION - see tri_color/deserialize()
+	// Each palette channel has a corresponding emissive flag.
+	if(!islist(input) || length(input) < TRI_PREFERENCE_CHANNEL_COUNT)
 		return create_default_value()
 	var/list/input_bools = input
 	return list(sanitize_integer(input_bools[1]), sanitize_integer(input_bools[2]), sanitize_integer(input_bools[3]))
@@ -61,7 +64,7 @@
 	return list(FALSE, FALSE, FALSE)
 
 /datum/preference/tri_bool/is_valid(list/value)
-	return islist(value) && value.len == 3 && isnum(value[1]) && isnum(value[2]) && isnum(value[3])
+	return islist(value) && value.len == TRI_PREFERENCE_CHANNEL_COUNT && isnum(value[1]) && isnum(value[2]) && isnum(value[3])
 
 /datum/preference/tri_bool/is_accessible(datum/preferences/preferences)
 	if(type == abstract_type)
@@ -265,3 +268,4 @@
 		target.dna.mutant_bodyparts[relevant_mutant_bodypart] = new_mutant_bodypart
 
 #undef REQUIRED_CROP_LIST_SIZE
+#undef TRI_PREFERENCE_CHANNEL_COUNT
