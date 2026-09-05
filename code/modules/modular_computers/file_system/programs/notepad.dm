@@ -15,10 +15,6 @@
 	var/opened_file_name = "Untitled"
 	/* // APHELION EDIT REMOVAL START - MERIDIAN_UI
 	var/written_note = "Congratulations on your station upgrading to the new NtOS and Thinktronic based collaboration effort, \
-	*/ // APHELION EDIT REMOVAL END
-	// APHELION EDIT ADDITION START - MERIDIAN_UI
-	var/written_note = "Congratulations on your station upgrading to the new MeridianOS and Thinktronic based collaboration effort, \
-	// APHELION EDIT ADDITION END
 		bringing you the best in electronics and software since 2467!\n\
 		To help with navigation, we have provided the following definitions:\n\
 		Fore - Toward front of ship\n\
@@ -27,6 +23,18 @@
 		Starboard - Right side of ship\n\
 		Quarter - Either sides of Aft\n\
 		Bow - Either sides of Fore"
+	*/ // APHELION EDIT REMOVAL END
+	// APHELION EDIT ADDITION START - MERIDIAN_UI
+	var/written_note = "Congratulations on your station upgrading to the new MeridianOS and Thinktronic based collaboration effort, \
+		bringing you the best in electronics and software since 2467!\n\
+		To help with navigation, we have provided the following definitions:\n\
+		Fore - Toward front of ship\n\
+		Aft - Toward back of ship\n\
+		Port - Left side of ship\n\
+		Starboard - Right side of ship\n\
+		Quarter - Either sides of Aft\n\
+		Bow - Either sides of Fore"
+	// APHELION EDIT ADDITION END
 
 /datum/computer_file/program/notepad/proc/get_target_disk(opened_on_disk)
 	if(opened_on_disk && computer?.inserted_disk)

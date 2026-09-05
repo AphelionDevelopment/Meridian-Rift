@@ -152,6 +152,13 @@
   }
 }
 
+.theme-console .MeridianThemePicker__option[aria-checked='true'] {
+  &,
+  .MeridianThemePicker__label span {
+    color: var(--console-text-on-accent);
+  }
+}
+
 .MeridianThemePicker__floating {
   z-index: 300;
 }

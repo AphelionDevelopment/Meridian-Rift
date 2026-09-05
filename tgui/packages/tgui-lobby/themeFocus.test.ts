@@ -6,7 +6,7 @@ import {
 } from './themeFocus';
 
 describe('lobby display-picker focus integration', () => {
-  it('recognizes both picker triggers and their portaled floating menus', () => {
+  it('recognizes the theme picker trigger and its portaled floating menu', () => {
     const triggerRoot = document.createElement('span');
     triggerRoot.className = 'MeridianThemePicker';
     const trigger = document.createElement('button');
@@ -17,24 +17,9 @@ describe('lobby display-picker focus integration', () => {
     const option = document.createElement('button');
     floatingRoot.appendChild(option);
 
-    const artworkTriggerRoot = document.createElement('span');
-    artworkTriggerRoot.className = 'LobbyArtworkPicker';
-    const artworkTrigger = document.createElement('button');
-    artworkTriggerRoot.appendChild(artworkTrigger);
-
-    const artworkFloatingRoot = document.createElement('div');
-    artworkFloatingRoot.className = 'LobbyArtworkPicker__floating';
-    const presentationOption = document.createElement('button');
-    presentationOption.setAttribute('role', 'menuitemcheckbox');
-    artworkFloatingRoot.appendChild(presentationOption);
-
     expect(isLobbyDisplayControlInteractionTarget(trigger)).toBe(true);
     expect(isLobbyDisplayControlInteractionTarget(option)).toBe(true);
-    expect(isLobbyDisplayControlInteractionTarget(artworkTrigger)).toBe(true);
-    expect(isLobbyDisplayControlInteractionTarget(presentationOption)).toBe(
-      true,
-    );
-    expect(isLobbyKeyboardInteractionTarget(presentationOption)).toBe(true);
+    expect(isLobbyKeyboardInteractionTarget(option)).toBe(true);
     expect(isLobbyDisplayControlInteractionTarget(document.body)).toBe(false);
     expect(isLobbyDisplayControlInteractionTarget(null)).toBe(false);
   });

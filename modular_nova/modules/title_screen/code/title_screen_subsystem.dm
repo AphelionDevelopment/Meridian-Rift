@@ -42,6 +42,8 @@ SUBSYSTEM_DEF(title)
 	 * how it was set up.
 	 */
 	var/list/title_screen_settings = list()
+	/// Persistence location; focused tests redirect this away from server settings.
+	var/title_settings_file = TITLE_SETTINGS_FILE
 	/// Cached asset URL for the neutral wordmark used by overlay mode.
 	var/title_mark_asset_registered = FALSE
 
@@ -235,7 +237,7 @@ SUBSYSTEM_DEF(title)
 	return settings
 
 /datum/controller/subsystem/title/proc/load_title_settings()
-	var/json_file = file(TITLE_SETTINGS_FILE)
+	var/json_file = file(title_settings_file)
 	if(!fexists(json_file))
 		return
 
@@ -293,7 +295,8 @@ SUBSYSTEM_DEF(title)
 	// The neutral master is its own screen and was never in the overlay map.
 	title_screen_settings[TITLE_DEFAULT_SCREEN_KEY] = base.Copy()
 	title_screen_settings[TITLE_DEFAULT_ALT_SCREEN_KEY] = base.Copy()
-	if(legacy_alt)
+	// The old ramp flag was independent of a configured picture selection.
+	if(legacy_alt && is_master_screen(selected_title_name))
 		selected_title_name = TITLE_DEFAULT_ALT_SCREEN_KEY
 
 	for(var/screen_name in title_screen_names)
@@ -314,7 +317,7 @@ SUBSYSTEM_DEF(title)
 
 /// Write the current presentation back out. Called by every setter.
 /datum/controller/subsystem/title/proc/save_title_settings()
-	var/json_file = file(TITLE_SETTINGS_FILE)
+	var/json_file = file(title_settings_file)
 	var/list/settings = list(
 		"_version" = TITLE_SETTINGS_VERSION,
 		"selected" = selected_title_name,
@@ -337,7 +340,9 @@ SUBSYSTEM_DEF(title)
 	selected_title_name = SStitle.selected_title_name
 	rotate_title_screens = SStitle.rotate_title_screens
 	title_screen_settings = SStitle.title_screen_settings
+	title_settings_file = SStitle.title_settings_file
 	title_mark_asset_registered = SStitle.title_mark_asset_registered
+	preview_assets_registered = SStitle.preview_assets_registered
 
 	average_completion_time = SStitle.average_completion_time
 	startup_message_timings = SStitle.startup_message_timings
@@ -380,7 +385,7 @@ SUBSYSTEM_DEF(title)
 	var/list/payload = get_title_payload(asset_name)
 	published_title_screen = screen_to_publish
 	published_title_name = name_to_publish
-	published_title_payload = payload.Copy()
+	published_title_payload = payload
 	// This is also new-client initialization's ready sentinel. Keep it last so
 	// every observer sees either the previous complete publication or this one.
 	current_title_asset_name = asset_name
@@ -393,7 +398,7 @@ SUBSYSTEM_DEF(title)
 			return
 		// Appearance-only changes may publish while asset delivery yields. Send
 		// the latest snapshot for this same image rather than our older local copy.
-		menu.send_update(published_title_payload.Copy())
+		menu.send_update(get_published_title_payload())
 	update_title_managers()
 
 /**
@@ -508,7 +513,13 @@ SUBSYSTEM_DEF(title)
 /// Last complete image-and-presentation state published to lobby clients.
 /datum/controller/subsystem/title/proc/get_published_title_payload()
 	if(islist(published_title_payload))
-		return published_title_payload.Copy()
+		var/list/payload = published_title_payload.Copy()
+		// A CDN toggle or filename-transform change does not change the published
+		// image. Resolve its asset names through the transport in use now while
+		// retaining the presentation belonging to that complete publication.
+		payload["titleImageUrl"] = SSassets.transport.get_asset_url(current_title_asset_name)
+		payload["titleMarkUrl"] = SSassets.transport.get_asset_url(LOBBY_TITLE_MARK_ASSET_NAME)
+		return payload
 	// During first initialization there is no client that can observe this
 	// fallback; it keeps recovery and focused tests safe before first publish.
 	return get_title_payload()
@@ -636,7 +647,7 @@ SUBSYSTEM_DEF(title)
 	var/list/payload = get_title_payload()
 	published_title_screen = current_title_screen
 	published_title_name = current_title_name
-	published_title_payload = payload.Copy()
+	published_title_payload = payload
 	for(var/datum/lobby_menu/menu as anything in GLOB.lobby_menus)
 		if(!menu.client)
 			continue
@@ -719,24 +730,33 @@ SUBSYSTEM_DEF(title)
 
 	var/list/settings = get_screen_settings(screen_name)
 	var/has_supported_change = FALSE
+	var/has_changes = FALSE
 	if(!isnull(changes["variant"]))
 		if(!(changes["variant"] in valid_variants))
 			return FALSE
+		has_changes ||= settings["variant"] != changes["variant"]
 		settings["variant"] = changes["variant"]
 		has_supported_change = TRUE
 	if(!isnull(changes["texture"]))
 		if(!(changes["texture"] in valid_textures))
 			return FALSE
+		has_changes ||= settings["texture"] != changes["texture"]
 		settings["texture"] = changes["texture"]
 		has_supported_change = TRUE
 	if(!isnull(changes["wordmark"]))
+		has_changes ||= !!settings["wordmark"] != !!changes["wordmark"]
 		settings["wordmark"] = !!changes["wordmark"]
 		has_supported_change = TRUE
 	if(!isnull(changes["bezel"]))
+		has_changes ||= !!settings["bezel"] != !!changes["bezel"]
 		settings["bezel"] = !!changes["bezel"]
 		has_supported_change = TRUE
 	if(!has_supported_change)
 		return FALSE
+	// A selection-only draft carries the existing appearance. Accept it without
+	// rewriting persistence or broadcasting an unchanged lobby publication.
+	if(!has_changes)
+		return TRUE
 
 	var/key = isnull(screen_name) ? TITLE_DEFAULT_SCREEN_KEY : screen_name
 	title_screen_settings[key] = settings

@@ -158,8 +158,8 @@
 #define PDA_THEME_BIRD_NAME "Bird"
 
 // APHELION EDIT ADDITION START - MERIDIAN_UI
-// Legacy serialized display names. These remain lookup-only and must not be
-// added to default_pda_themes, where they would become player-facing choices.
+// Legacy serialized display names, normalized when loading PDA preferences.
+// Keep them out of both theme catalogs so they never become duplicate choices.
 #define PDA_THEME_NTOS_LEGACY_NAME "NtOS"
 #define PDA_THEME_DARK_MODE_LEGACY_NAME "NtOS Dark Mode"
 #define PDA_THEME_LIGHT_MODE_LEGACY_NAME "NtOS Light Mode"
@@ -195,12 +195,6 @@ GLOBAL_LIST_INIT(pda_name_to_theme, list(
 	PDA_THEME_ROULETTE_NAME = PDA_THEME_ROULETTE,
 	PDA_THEME_ABDUCTOR_NAME = PDA_THEME_ABDUCTOR,
 	PDA_THEME_BIRD_NAME = PDA_THEME_BIRD,
-	// APHELION EDIT ADDITION START - MERIDIAN_UI
-	// Invisible compatibility aliases for previously saved preference values.
-	PDA_THEME_NTOS_LEGACY_NAME = PDA_THEME_MERIDIAN,
-	PDA_THEME_DARK_MODE_LEGACY_NAME = PDA_THEME_DARK_MODE,
-	PDA_THEME_LIGHT_MODE_LEGACY_NAME = PDA_THEME_LIGHT_MODE,
-	// APHELION EDIT ADDITION END
 ))
 
 ///List of unlockable PDA themes, keyed by their database ID.

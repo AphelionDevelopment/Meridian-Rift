@@ -2,8 +2,6 @@
 const LOBBY_PICKER_SELECTOR = [
   '.MeridianThemePicker',
   '.MeridianThemePicker__floating',
-  '.LobbyArtworkPicker',
-  '.LobbyArtworkPicker__floating',
 ].join(', ');
 const KEYBOARD_INTERACTIVE_SELECTOR = [
   'button:not(:disabled)',

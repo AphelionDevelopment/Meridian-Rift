@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import type { CSSProperties } from 'react';
 import { cleanup, render } from '@testing-library/react';
 import { compileAsync } from 'sass-embedded';
-import { Button, Icon, NoticeBox, Stack, Tabs } from 'tgui-core/components';
+import { Button, Icon, NoticeBox, Tabs } from 'tgui-core/components';
 
 import {
   MERIDIAN_THEME_IDS,

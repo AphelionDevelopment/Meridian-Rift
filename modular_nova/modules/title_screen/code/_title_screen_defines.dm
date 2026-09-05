@@ -1,3 +1,6 @@
+#ifndef MERIDIAN_TITLE_SCREEN_DEFINES
+#define MERIDIAN_TITLE_SCREEN_DEFINES
+
 #define DEFAULT_TITLE_MAP_LOADTIME (150 SECONDS)
 
 #define DEFAULT_TITLE_SCREEN_IMAGE 'modular_nova/modules/title_screen/icons/meridian_rift_title_mask.png'
@@ -51,3 +54,5 @@
 
 /// Rank that may change the title screen, matching ADMIN_VERB(admin_change_title_screen).
 #define TITLE_SCREEN_ADMIN_RIGHTS R_FUN
+
+#endif // MERIDIAN_TITLE_SCREEN_DEFINES

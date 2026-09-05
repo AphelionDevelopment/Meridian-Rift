@@ -255,7 +255,7 @@
 		return
 	var/screen_to_apply = draft_screen
 	var/list/settings_to_apply = draft_settings.Copy()
-	var/list/settings_before_prompt = current_settings_before_prompt.Copy()
+	var/list/settings_before_prompt = current_settings_before_prompt
 	// The live screen may have changed since this window's draft was created.
 	// Applying an appearance draft still means making its screen the live one,
 	// even when no explicit tab click originally had to be staged.

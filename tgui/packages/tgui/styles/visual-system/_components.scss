@@ -207,6 +207,13 @@
       var(--console-control-depth);
   }
 
+  // Filled selections use the bright accent. Restate color so the legacy
+  // JobsAltTitles selected/hover rules cannot restore a light foreground.
+  .Button--selected:not(.Button--color--transparent) {
+    --button-color: var(--console-text-on-accent);
+    color: var(--button-color);
+  }
+
   .Tab:where(.Tab--selected, [aria-selected='true']) {
     color: var(--console-text-primary);
     background-color: var(--console-interaction-pressed);

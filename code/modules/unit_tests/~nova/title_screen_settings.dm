@@ -1,3 +1,76 @@
+// Unit tests are included before this module in tgstation.dme.
+#include "..\..\..\..\modular_nova\modules\title_screen\code\_title_screen_defines.dm"
+
+/// Isolates title tests from the server's persistence, assets, and recipients.
+/// Allocated by each test so /datum/unit_test/Destroy restores state even when
+/// TEST_ASSERT returns from Run early. No test resource enters SSassets.cache.
+/datum/title_screen_test_state
+	var/datum/controller/subsystem/title/title
+	var/list/saved_title_vars = list()
+	var/datum/asset_transport/saved_transport
+	var/datum/asset_transport/title_screen_test/test_transport
+	var/list/saved_lobby_menus
+	var/list/saved_clients
+	var/settings_file
+
+/datum/title_screen_test_state/New()
+	title = SStitle
+	for(var/field in list(
+		"title_screen_names", "title_screens", "selected_title_name", "rotate_title_screens",
+		"title_screen_settings", "title_settings_file", "current_title_screen", "current_title_name",
+		"progress_json", "current_title_asset_name", "published_title_screen", "published_title_name",
+		"published_title_payload", "title_asset_generation", "title_mark_asset_registered", "preview_assets_registered",
+	))
+		saved_title_vars[field] = title.vars[field]
+	saved_transport = SSassets.transport
+	test_transport = new
+	SSassets.transport = test_transport
+	saved_lobby_menus = GLOB.lobby_menus
+	saved_clients = GLOB.clients
+	GLOB.lobby_menus = list()
+	GLOB.clients = list()
+
+	settings_file = "tmp/title_screen_settings_[REF(src)].json"
+	title.title_settings_file = settings_file
+	title.progress_json = null
+	title.title_screen_names = list("alpha.png", "beta.png")
+	title.title_screens = list(DEFAULT_TITLE_LOADING_SCREEN, DEFAULT_TITLE_LOADING_SCREEN)
+	title.title_screen_settings = list()
+	title.selected_title_name = null
+	title.rotate_title_screens = TRUE
+	title.set_showing(DEFAULT_TITLE_SCREEN_IMAGE, null)
+	title.current_title_asset_name = "title_test_initial.png"
+	title.published_title_screen = null
+	title.published_title_name = null
+	title.published_title_payload = null
+	title.title_asset_generation = 0
+	title.title_mark_asset_registered = FALSE
+	title.preview_assets_registered = list()
+
+/datum/title_screen_test_state/Destroy()
+	for(var/field in saved_title_vars)
+		title.vars[field] = saved_title_vars[field]
+	SSassets.transport = saved_transport
+	GLOB.lobby_menus = saved_lobby_menus
+	GLOB.clients = saved_clients
+	fdel(settings_file)
+	QDEL_NULL(test_transport)
+	return ..()
+
+/// Models registration and transport-specific URLs without writing the asset cache.
+/datum/asset_transport/title_screen_test
+	var/url_prefix = "test-original/"
+	var/list/registered_assets = list()
+
+/datum/asset_transport/title_screen_test/register_asset(asset_name, asset, file_hash, dmi_file_path)
+	registered_assets[asset_name] = asset
+
+/datum/asset_transport/title_screen_test/get_asset_url(asset_name, datum/asset_cache_item/asset_cache_item)
+	return "[url_prefix][asset_name]"
+
+/datum/asset_transport/title_screen_test/send_assets(client/client, list/asset_list)
+	return FALSE
+
 /**
  * Covers the server-wide title screen presentation.
  *
@@ -9,26 +82,9 @@
 /datum/unit_test/title_screen_settings
 
 /datum/unit_test/title_screen_settings/Run()
-	// Snapshot, because SStitle is a live subsystem shared with the running round.
-	var/saved_names = SStitle.title_screen_names
-	var/saved_screens = SStitle.title_screens
-	var/saved_selection = SStitle.selected_title_name
-	var/saved_rotate = SStitle.rotate_title_screens
-	var/saved_settings = SStitle.title_screen_settings
-	var/saved_current = SStitle.current_title_screen
-	var/saved_current_name = SStitle.current_title_name
-	var/saved_progress = SStitle.progress_json
-	// change_title_screen() runs check_finish_progress(), which would write the real cache file.
-	SStitle.progress_json = null
-
-	SStitle.title_screen_names = list("alpha.png", "beta.png")
-	// Deliberately NOT DEFAULT_TITLE_SCREEN_IMAGE: get_title_treatment() short-circuits to
-	// the mask treatment for that resource, so stubbing the fakes with it would make every
-	// treatment assertion below pass or fail for the wrong reason.
-	SStitle.title_screens = list(DEFAULT_TITLE_LOADING_SCREEN, DEFAULT_TITLE_LOADING_SCREEN)
-	SStitle.title_screen_settings = list()
-	SStitle.selected_title_name = null
-	SStitle.rotate_title_screens = TRUE
+	allocate(/datum/title_screen_test_state)
+	// The fixture uses a non-master image for both configured screens so their
+	// treatment assertions cannot accidentally take the built-in mask shortcut.
 
 	// Both built-in masters survive the same availability check used while the
 	// subsystem restores its persisted selection during initialization.
@@ -113,7 +169,7 @@
 	// presentation draft.
 	SStitle.selected_title_name = "alpha.png"
 	SStitle.set_showing(SStitle.get_title_screen_icon("beta.png"), "beta.png")
-	var/datum/title_screen_manager/manager = new(null)
+	var/datum/title_screen_manager/manager = allocate(/datum/title_screen_manager)
 	TEST_ASSERT_EQUAL(manager.draft_screen, "beta.png", "The title manager initialized from the stale pinned screen instead of the live screen.")
 	TEST_ASSERT(!manager.draft_selection_changed, "The title manager treated its live initial selection as an admin change.")
 	TEST_ASSERT(!manager.has_pending_changes(), "A newly opened title manager started with a dirty screen draft.")
@@ -182,7 +238,7 @@
 	var/uploaded_selection = SStitle.selected_title_name
 	SStitle.set_title_rotation(FALSE)
 	TEST_ASSERT_EQUAL(SStitle.selected_title_name, uploaded_selection, "Disabling rotation turned an unmanaged upload into the neutral master.")
-	var/datum/title_screen_manager/upload_manager = new(null)
+	var/datum/title_screen_manager/upload_manager = allocate(/datum/title_screen_manager)
 	var/list/upload_manager_data = upload_manager.ui_data(null)
 	TEST_ASSERT(!upload_manager.draft_screen_chosen, "The title manager created an editable draft for an unmanaged upload.")
 	TEST_ASSERT(!upload_manager_data["liveScreenManaged"], "The title manager reported an unmanaged upload as a configured screen.")
@@ -225,18 +281,6 @@
 	SStitle.set_title_selection(null)
 	TEST_ASSERT(!SStitle.get_title_payload()["titleClassicAlt"], "The default master reported the alternate ramp.")
 
-	SStitle.title_screen_names = saved_names
-	SStitle.title_screens = saved_screens
-	SStitle.selected_title_name = saved_selection
-	SStitle.rotate_title_screens = saved_rotate
-	SStitle.title_screen_settings = saved_settings
-	SStitle.current_title_screen = saved_current
-	SStitle.current_title_name = saved_current_name
-	SStitle.progress_json = saved_progress
-	// The setters above wrote the test's own values to the real settings file.
-	// Put the server's back rather than leaving it holding alpha.png.
-	SStitle.save_title_settings()
-
 /**
  * Covers the version 1 -> 2 settings migration.
  *
@@ -247,12 +291,7 @@
 /datum/unit_test/title_screen_settings_migration
 
 /datum/unit_test/title_screen_settings_migration/Run()
-	var/saved_names = SStitle.title_screen_names
-	var/saved_settings = SStitle.title_screen_settings
-	var/saved_selection = SStitle.selected_title_name
-
-	SStitle.title_screen_names = list("alpha.png", "beta.png")
-	SStitle.title_screen_settings = list()
+	allocate(/datum/title_screen_test_state)
 
 	SStitle.migrate_legacy_title_settings(list(
 		"_version" = TITLE_SETTINGS_VERSION_LEGACY,
@@ -303,7 +342,101 @@
 	TEST_ASSERT(!historical_defaults["bezel"], "A legacy title unexpectedly gained the new default bezel.")
 	TEST_ASSERT_EQUAL(historical_defaults["texture"], "original", "A legacy title unexpectedly gained Version 2 scanlines.")
 
-	SStitle.title_screen_names = saved_names
-	SStitle.title_screen_settings = saved_settings
-	SStitle.selected_title_name = saved_selection
-	SStitle.save_title_settings()
+	// A ramp flag must not replace a separately pinned configured picture.
+	fdel(SStitle.title_settings_file)
+	WRITE_FILE(file(SStitle.title_settings_file), json_encode(list(
+		"_version" = TITLE_SETTINGS_VERSION_LEGACY,
+		"selected" = "alpha.png",
+		"rotate" = FALSE,
+		"classicAlt" = TRUE,
+	)))
+	SStitle.load_title_settings()
+	TEST_ASSERT_EQUAL(SStitle.selected_title_name, "alpha.png", "A legacy ramp flag replaced the configured screen selection.")
+	TEST_ASSERT(!SStitle.rotate_title_screens, "Migration changed the legacy rotation setting.")
+	SStitle.resolve_unattended_screen()
+	TEST_ASSERT_EQUAL(SStitle.current_title_name, "alpha.png", "The migrated pin no longer resolves to its configured picture.")
+	var/list/persisted = json_decode(file2text(SStitle.title_settings_file))
+	TEST_ASSERT_EQUAL(persisted["selected"], "alpha.png", "Migration persisted a replacement for the configured pin.")
+
+/// A transport change must update URLs without exposing an unpublished screen.
+/datum/unit_test/title_screen_published_transport
+
+/datum/unit_test/title_screen_published_transport/Run()
+	allocate(/datum/title_screen_test_state)
+	SStitle.set_screen_settings("alpha.png", list("variant" = "flat", "bezel" = FALSE, "texture" = "none"))
+	SStitle.set_title_selection("alpha.png")
+	var/published_asset_name = SStitle.current_title_asset_name
+	var/list/original_payload = SStitle.get_published_title_payload()
+
+	// Stage another picture and appearance without publishing its asset yet.
+	SStitle.set_showing(DEFAULT_TITLE_SCREEN_IMAGE, TITLE_DEFAULT_ALT_SCREEN_KEY)
+	SStitle.broadcast_title_settings()
+	var/datum/asset_transport/title_screen_test/replacement = allocate(/datum/asset_transport/title_screen_test)
+	replacement.url_prefix = "test-fallback/"
+	SSassets.transport = replacement
+	var/list/payload = SStitle.get_published_title_payload()
+	TEST_ASSERT_NOTEQUAL(payload["titleImageUrl"], original_payload["titleImageUrl"], "A transport change retained the old image URL.")
+	TEST_ASSERT_EQUAL(payload["titleImageUrl"], replacement.get_asset_url(published_asset_name), "The new URL does not identify the published image.")
+	TEST_ASSERT_EQUAL(payload["titleMarkUrl"], replacement.get_asset_url(LOBBY_TITLE_MARK_ASSET_NAME), "The wordmark retained its old transport URL.")
+	TEST_ASSERT_EQUAL(payload["titleImageTreatment"], TITLE_TREATMENT_SCREEN, "Initialization exposed the staged master's treatment.")
+	TEST_ASSERT_EQUAL(payload["titleVariant"], "flat", "Initialization mixed staged appearance with the published picture.")
+	TEST_ASSERT(!payload["titleClassicAlt"], "Initialization exposed the staged alternate master.")
+	payload["titleVariant"] = "convex"
+	TEST_ASSERT_EQUAL(SStitle.get_published_title_payload()["titleVariant"], "flat", "Mutating an init payload changed the published snapshot.")
+
+/// Unchanged appearance is valid, but must not rewrite settings or republish.
+/datum/unit_test/title_screen_unchanged_settings
+
+/datum/unit_test/title_screen_unchanged_settings/Run()
+	allocate(/datum/title_screen_test_state)
+	SStitle.set_title_selection("alpha.png")
+	var/list/published = SStitle.published_title_payload
+	var/generation = SStitle.title_asset_generation
+	// Remove only the fixture's temporary file to detect any subsequent write.
+	fdel(SStitle.title_settings_file)
+	TEST_ASSERT(SStitle.set_screen_settings("alpha.png", SStitle.get_screen_settings("alpha.png")), "An unchanged appearance was rejected.")
+	TEST_ASSERT(!fexists(SStitle.title_settings_file), "An unchanged appearance rewrote settings.")
+	TEST_ASSERT_EQUAL(SStitle.published_title_payload, published, "An unchanged appearance was republished.")
+	TEST_ASSERT_EQUAL(SStitle.title_asset_generation, generation, "An unchanged appearance registered another title image.")
+	TEST_ASSERT(!SStitle.title_screen_settings["alpha.png"], "An unchanged default appearance created a redundant persisted record.")
+	TEST_ASSERT(!SStitle.set_screen_settings("alpha.png", list("variant" = "invalid")), "The no-change path accepted an invalid appearance.")
+
+/// Teardown must restore every published-state/cache reference and leave real
+/// persistence unchanged, including when Run exits before its normal end.
+/datum/unit_test/title_screen_test_isolation
+
+/datum/unit_test/title_screen_test_isolation/Run()
+	var/datum/title_screen_test_state/fixture = allocate(/datum/title_screen_test_state)
+	var/list/saved_title_vars = fixture.saved_title_vars.Copy()
+	var/datum/asset_transport/saved_transport = fixture.saved_transport
+	var/list/saved_lobby_menus = fixture.saved_lobby_menus
+	var/list/saved_clients = fixture.saved_clients
+	var/list/saved_cache = SSassets.cache
+	var/list/saved_cache_entries = saved_cache.Copy()
+	var/real_settings_file = saved_title_vars["title_settings_file"]
+	var/real_settings_existed = fexists(real_settings_file)
+	var/real_settings_contents = file2text(real_settings_file)
+	var/test_settings_file = fixture.settings_file
+
+	SStitle.set_screen_settings("alpha.png", list("wordmark" = TRUE))
+	SStitle.set_title_selection("alpha.png")
+	SStitle.set_title_rotation(FALSE)
+	SStitle.get_title_screen_options()
+	TEST_ASSERT(fexists(test_settings_file), "The fixture did not exercise its isolated settings file.")
+	TEST_ASSERT(length(SStitle.preview_assets_registered), "The fixture did not exercise preview registration.")
+	// This is the same Destroy path used by the runner after an early assertion
+	// return; invoking it here lets the remaining assertions inspect restoration.
+	qdel(fixture)
+
+	for(var/field in saved_title_vars)
+		TEST_ASSERT_EQUAL(SStitle.vars[field], saved_title_vars[field], "Title teardown failed to restore [field].")
+	TEST_ASSERT_EQUAL(SSassets.transport, saved_transport, "Title teardown retained its fake asset transport.")
+	TEST_ASSERT_EQUAL(GLOB.lobby_menus, saved_lobby_menus, "Title teardown lost the lobby recipients.")
+	TEST_ASSERT_EQUAL(GLOB.clients, saved_clients, "Title teardown lost the client list.")
+	TEST_ASSERT_EQUAL(SSassets.cache, saved_cache, "Title tests replaced the server asset cache.")
+	TEST_ASSERT_EQUAL(length(SSassets.cache), length(saved_cache_entries), "Title tests added or removed server asset entries.")
+	for(var/asset_name in saved_cache_entries)
+		TEST_ASSERT_EQUAL(SSassets.cache[asset_name], saved_cache_entries[asset_name], "Title tests replaced server asset [asset_name].")
+	TEST_ASSERT(!fexists(test_settings_file), "Title teardown left its temporary settings file behind.")
+	TEST_ASSERT_EQUAL(fexists(real_settings_file), real_settings_existed, "Title tests created or removed the real settings file.")
+	TEST_ASSERT_EQUAL(file2text(real_settings_file), real_settings_contents, "Title tests changed the real settings file.")
