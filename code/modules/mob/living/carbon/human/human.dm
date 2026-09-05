@@ -21,6 +21,9 @@
 	prepare_huds() //Prevents a nasty runtime on human init
 
 	. = ..()
+	// APHELION EDIT ADDITION START - REFORM_COMBAT
+	initialize_combat_reform()
+	// APHELION EDIT ADDITION END
 
 	AddComponent(/datum/component/personal_crafting, ui_human_crafting)
 	AddElement(/datum/element/footstep, FOOTSTEP_MOB_HUMAN, 0.6, -6) // NOVA EDIT CHANGE - AESTHETICS - ORIGINAL: AddElement(/datum/element/footstep, FOOTSTEP_MOB_HUMAN, 1, -6)

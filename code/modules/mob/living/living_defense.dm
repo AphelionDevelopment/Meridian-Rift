@@ -1,5 +1,13 @@
 
-/mob/living/proc/run_armor_check(def_zone = null, attack_flag = MELEE, absorb_text = null, soften_text = null, armour_penetration, penetrated_text, silent=FALSE, weak_against_armour = FALSE)
+// APHELION EDIT ADDITION START - REFORM_COMBAT
+/**
+ * Returns armor protection after penetration and reports the result to the wearer.
+ *
+ * Arguments:
+ * * use_projectile_ap - Use bounded proportional AP instead of the original penetration formula.
+ */
+// APHELION EDIT ADDITION END
+/mob/living/proc/run_armor_check(def_zone = null, attack_flag = MELEE, absorb_text = null, soften_text = null, armour_penetration, penetrated_text, silent=FALSE, weak_against_armour = FALSE, use_projectile_ap = FALSE) // APHELION EDIT CHANGE - REFORM_COMBAT - ORIGINAL: /mob/living/proc/run_armor_check(def_zone = null, attack_flag = MELEE, absorb_text = null, soften_text = null, armour_penetration, penetrated_text, silent=FALSE, weak_against_armour = FALSE)
 	SEND_SIGNAL(src, COMSIG_MOB_RUN_ARMOR) //NOVA EDIT ADDITION
 
 	var/our_armor = getarmor(def_zone, attack_flag)
@@ -8,12 +16,15 @@
 		return our_armor
 	if(weak_against_armour && our_armor >= 0)
 		our_armor *= ARMOR_WEAKENED_MULTIPLIER
+	// APHELION EDIT ADDITION START - REFORM_COMBAT
+	var/penetrated_armor = use_projectile_ap ? get_projectile_armor_after_penetration(our_armor, armour_penetration) : max(0, PENETRATE_ARMOUR(our_armor, armour_penetration))
+	// APHELION EDIT ADDITION END
 	if(silent)
-		return max(0, PENETRATE_ARMOUR(our_armor, armour_penetration))
+		return penetrated_armor // APHELION EDIT CHANGE - REFORM_COMBAT - ORIGINAL: return max(0, PENETRATE_ARMOUR(our_armor, armour_penetration))
 
 	//the if "armor" check is because this is used for everything on /living, including humans
 	if(armour_penetration)
-		our_armor = max(PENETRATE_ARMOUR(our_armor, armour_penetration), 0)
+		our_armor = penetrated_armor // APHELION EDIT CHANGE - REFORM_COMBAT - ORIGINAL: our_armor = max(PENETRATE_ARMOUR(our_armor, armour_penetration), 0)
 		if(penetrated_text)
 			to_chat(src, span_userdanger("[penetrated_text]"))
 		else
@@ -233,7 +244,7 @@
 			do_sparks(spark_amount, FALSE, src)
 
 /mob/living/check_projectile_armor(def_zone, obj/projectile/impacting_projectile, is_silent)
-	return run_armor_check(def_zone, impacting_projectile.armor_flag, "","",impacting_projectile.armour_penetration, "", is_silent, impacting_projectile.weak_against_armour)
+	return run_armor_check(def_zone, impacting_projectile.armor_flag, "","",impacting_projectile.armour_penetration, "", is_silent, impacting_projectile.weak_against_armour, use_projectile_ap = TRUE) // APHELION EDIT CHANGE - REFORM_COMBAT - ORIGINAL: return run_armor_check(def_zone, impacting_projectile.armor_flag, "","",impacting_projectile.armour_penetration, "", is_silent, impacting_projectile.weak_against_armour)
 
 /mob/living/proc/check_projectile_dismemberment(obj/projectile/proj, def_zone)
 	return
