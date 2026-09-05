@@ -4,18 +4,19 @@ Module ID: REFORM_COMBAT
 
 ### Description
 
-This module combines humanoid health tuning and bounded projectile armor penetration.
+This module combines humanoid health and damage slowdown tuning with bounded projectile armor penetration.
 All balance settings live in `code/__DEFINES/~aphelion_defines/reform_combat.dm`.
 Edit the defines and rebuild; no other file needs changing to tune these values.
 
-| Define                                 | Default | Meaning                                                         |
-| -------------------------------------- | ------- | --------------------------------------------------------------- |
-| `REFORM_COMBAT_MAX_HEALTH`             | 150     | Standard humanoid maximum health; previously 135.               |
-| `REFORM_COMBAT_SOFT_CRIT_THRESHOLD`    | 0       | Remaining health at soft crit, before runtime modifiers.        |
-| `REFORM_COMBAT_HARD_CRIT_THRESHOLD`    | -30     | Remaining health at hard crit.                                  |
-| `REFORM_COMBAT_MAX_STAMINA`            | 162     | Maximum humanoid stamina damage.                                |
-| `REFORM_COMBAT_STAMINA_CRIT_THRESHOLD` | 135     | Stamina damage at incapacitation, before runtime modifiers.     |
-| `REFORM_COMBAT_AP_MAX_BYPASS`          | 0.5     | Maximum fraction of armor protection bypassed by projectile AP. |
+| Define                                    | Default | Meaning                                                                    |
+| ----------------------------------------- | ------- | -------------------------------------------------------------------------- |
+| `REFORM_COMBAT_MAX_HEALTH`                | 150     | Standard humanoid maximum health; previously 135.                          |
+| `REFORM_COMBAT_SOFT_CRIT_THRESHOLD`       | 0       | Remaining health at soft crit, before runtime modifiers.                   |
+| `REFORM_COMBAT_HARD_CRIT_THRESHOLD`       | -30     | Remaining health at hard crit.                                             |
+| `REFORM_COMBAT_MAX_STAMINA`               | 162     | Maximum humanoid stamina damage.                                           |
+| `REFORM_COMBAT_STAMINA_CRIT_THRESHOLD`    | 135     | Stamina damage at incapacitation, before runtime modifiers.                |
+| `REFORM_COMBAT_DAMAGE_SLOWDOWN_THRESHOLD` | 60      | Health or stamina damage at which movement slowdown starts; previously 40. |
+| `REFORM_COMBAT_AP_MAX_BYPASS`             | 0.5     | Maximum fraction of armor protection bypassed by projectile AP.            |
 
 Soft and hard crit are remaining-health values, not damage totals. Lower values
 delay incapacitation. Keep hard crit below soft crit and above the existing death
@@ -36,6 +37,13 @@ modifiers. Non-humanoids retain their original health-based threshold calculatio
 The stamina effect's initial extra damage checks the mob's actual cap instead of
 the old hardcoded 162. Stamina regeneration and diminishing returns are unchanged.
 
+Humanoid damage slowdown starts at `REFORM_COMBAT_DAMAGE_SLOWDOWN_THRESHOLD`,
+using the greater of health damage and stamina damage. The default raises its
+onset from 40 to 60 damage. Once active, the original `damage / 75` movement-delay
+contribution applies. The divisor controls the penalty's growth, independently
+of its onset. The threshold is a cutoff, so at 60 damage the penalty starts at
+0.8 rather than growing from zero. Other movement modifiers still apply normally.
+
 Projectile protection is `armor * (1 - clamp(AP, 0, 100) / 100 * maximum bypass)`.
 With the defaults, 40 AP bypasses 20% of protection and 100+ AP bypasses 50%.
 
@@ -53,12 +61,10 @@ The new calculation also supplies armor protection for projectile status effects
 Melee, thrown attacks, objects, separate secondary damage checks, and mobs with
 their own projectile armor override retain their existing behavior.
 
-The module does not change firing speed, ammunition damage, injury slowdown,
-bodypart limits, organ limits, or baton behavior. It has no baton-module dependency.
-
 ### TG Proc/File Changes
 
-- `code/modules/mob/living/carbon/human/human.dm`: `Initialize` applies combat settings.
+- `code/modules/mob/living/carbon/human/human.dm`: `Initialize` applies combat settings;
+  `updatehealth` uses the configured damage slowdown threshold.
 - `code/modules/mob/living/carbon/damage_procs.dm`: stamina entry uses the shared threshold.
 - `code/datums/status_effects/debuffs/stamcrit.dm`: stamina recovery uses the shared
   threshold; initial extra stamina damage respects the actual cap.

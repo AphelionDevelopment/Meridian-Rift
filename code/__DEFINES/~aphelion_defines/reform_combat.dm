@@ -9,5 +9,7 @@
 
 /// Stamina damage at incapacitation before runtime modifiers. Original: 135. Independent of the cap; keep positive and at or below it.
 #define REFORM_COMBAT_STAMINA_CRIT_THRESHOLD 135
+/// Health or stamina damage at which humanoid movement slowdown starts. Original: 40. Higher values delay slowdown.
+#define REFORM_COMBAT_DAMAGE_SLOWDOWN_THRESHOLD 60
 /// Maximum fraction of protection bypassed by 100 AP. Original AP could bypass all protection.
 #define REFORM_COMBAT_AP_MAX_BYPASS 0.5

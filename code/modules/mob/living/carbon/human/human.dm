@@ -1075,10 +1075,13 @@
 		return FALSE
 	return ..()
 
+// APHELION EDIT ADDITION START - REFORM_COMBAT
+/** Updates humanoid health and applies damage slowdown once the configured damage threshold is reached. */
+// APHELION EDIT ADDITION END
 /mob/living/carbon/human/updatehealth()
 	. = ..()
 	var/health_deficiency = max((maxHealth - health), staminaloss)
-	if(health_deficiency >= 40)
+	if(health_deficiency >= REFORM_COMBAT_DAMAGE_SLOWDOWN_THRESHOLD) // APHELION EDIT CHANGE - REFORM_COMBAT - ORIGINAL: if(health_deficiency >= 40)
 		add_or_update_variable_movespeed_modifier(/datum/movespeed_modifier/damage_slowdown, TRUE, multiplicative_slowdown = health_deficiency / 75)
 	else
 		remove_movespeed_modifier(/datum/movespeed_modifier/damage_slowdown)
