@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions DisableDelayedExpansion
 if not "%~1"=="" (
 	>&2 echo [usage_error] RIFT_BUILD.cmd does not accept arguments
 	exit /b 2

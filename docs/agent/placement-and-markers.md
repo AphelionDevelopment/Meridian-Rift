@@ -31,3 +31,5 @@ Multi-line changes use removal plus addition, not a multi-line change marker. A 
 `modular_nova` and `NOVA EDIT` remain inherited Nova ownership. Preserve them and do not convert them to Aphelion. New Nova markers are permitted only during an explicit reviewed Nova synchronization using the checker's maintainer-only `--allow-nova-sync` flag. That flag does not change ownership.
 
 Fixes applicable to tgstation should be prepared upstream. If urgency requires a local patch, document the upstream issue/PR and the condition for removing the delta.
+
+Run `python modular_aphelion/tools/aphelion_marker_check.py --base origin/master` to check marker regressions in tracked changes against the merge base. It compares complete old/new file context so an unchanged pairing endpoint remains visible, and it does not require repairing unchanged legacy errors. The stdin interface requires a full-context unified diff (`git diff --unified=2147483647`); a normal short-context diff cannot establish complete pairing. This is a marker syntax/pairing check, not proof that every core edit has an ownership marker or that untracked files have been reviewed.

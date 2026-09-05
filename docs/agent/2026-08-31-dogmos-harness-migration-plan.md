@@ -1,6 +1,6 @@
 # Dogmos harness migration plan
 
-This is Plan B. Start only after the general RIFT controller is accepted on the target Dogmos checkout and branch.
+This is the historical 2026-08-31 Plan B. It does not report current Dogmos migration status. Inspect the target Dogmos checkout, current controller/profile files, and migration evidence before treating any task below as outstanding. Start remaining work only after the general RIFT controller is accepted on that checkout and branch.
 
 ## Preconditions
 

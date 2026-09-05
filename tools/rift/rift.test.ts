@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, setDefaultTimeout, test } from 'bun:test';
 import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -55,6 +55,9 @@ import {
   validateMapPath,
   waitForReadiness,
 } from './rift';
+
+// Windows ownership queries and verified cleanup can exceed Bun's default test deadline.
+setDefaultTimeout(30_000);
 
 const withTempDirectory = async <T>(
   action: (root: string) => Promise<T>,
@@ -348,6 +351,10 @@ describe('doctor and stored reports', () => {
           const started = Date.now();
           await hooks.onStart(44_001);
           await hooks.onOwnedPids([44_001]);
+          await hooks.onOutput(
+            'stderr',
+            'warning: optional Git config unavailable',
+          );
           await hooks.onOutput(
             'stdout',
             spec.args[0] === 'rev-parse'
@@ -1293,7 +1300,7 @@ describe('Windows launchers', () => {
       'bun-v1.3.5-x64',
     );
     await fs.mkdir(bunRoot, { recursive: true });
-    await fs.link(process.execPath, path.join(bunRoot, 'bun.exe'));
+    await fs.copyFile(process.execPath, path.join(bunRoot, 'bun.exe'));
     await Bun.write(
       path.join(root, 'tools', 'bootstrap', 'javascript.bat'),
       [

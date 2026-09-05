@@ -85,7 +85,7 @@ BYOND resolution checks `DM_EXE`, the optional default entry in `tools/build/dm_
 
 `compile --mode fast` copies `tgstation.dme` to run-specific root scratch names, invokes pinned DreamMaker with `-DCBT` and profile defines, requires explicit zero-error diagnostics and new nonempty artifacts, copies hashes into the run directory, and removes only its exact scratch files. This is compiler evidence, not a full build.
 
-`compile --mode full` validates the protected build contract and invokes the fixed inherited `tools/build/build.bat build` target. `--force` removes only canonical `tgstation.dmb` and `tgstation.rsc` immediately before the build and requires fresh replacements. Without `--force`, artifacts are classified as rebuilt or reused.
+`compile --mode full` validates the protected build contract and invokes the fixed inherited `tools/build/build.bat build` target with the profile defines and qualified compiler. The inherited graph omits `modular_aphelion`, so RIFT additionally fingerprints that tree, dependency pins, compiler identity, and defines. A missing/mismatched fingerprint or changed canonical artifact invalidates the cached pair; this also detects deleted modular inputs. Fingerprinting is conservative and includes documentation and tooling in that tree. `--force` always removes canonical `tgstation.dmb` and `tgstation.rsc` immediately before the build and requires fresh replacements. Otherwise artifacts are classified as rebuilt or reused. Supplemental cache metadata lives in `data/rift-runs/.full-build-cache.json`.
 
 The MCP shim accepts validated `MERIDIAN_RIFT_WALL_TIMEOUT_SECONDS` and `MERIDIAN_RIFT_IDLE_TIMEOUT_SECONDS` environment defaults. Explicit CLI options take precedence. Meridian-MCP sets the inner wall limit below its outer wrapper limit so RIFT retains cleanup/reporting time, and applies idle detection to RIFT's owned build child rather than the normally silent wrapper.
 
@@ -98,6 +98,12 @@ The MCP shim accepts validated `MERIDIAN_RIFT_WALL_TIMEOUT_SECONDS` and `MERIDIA
 Ctrl+C and Ctrl+Break mark the workflow cancelled, terminate only active owned process trees, perform normal collection/cleanup, write the final summary, and return 130.
 
 ## Run records
+
+Log rules monitor every configured file, including a final drain after process shutdown. Continuously required children are checked during bounded runs, tests, and soaks. Artifact rules apply to every server workflow. Test minimums count passes; skips remain visible in reports but do not satisfy the minimum or an explicitly requested focus. Every requested focus must appear as passed.
+
+Wall and idle limits apply to each supervised child, not the entire multi-stage workflow. Lock waiting and readiness have separate deadlines; filesystem deployment/collection and cleanup add time. Windows process inspection helpers have their own bounded calls. Inspection or cleanup errors fail the run; `cleanup.leftovers` includes `owned-processes` when process cleanup could not be verified.
+
+Process discovery polls Windows process information. Cleanup protects verified process instances against PID reuse, but an intermediate process that exits before discovery can hide an unobserved descendant. This is not a Windows Job Object containment boundary. Raw logs and process records should be retained when qualifying new child-process launch patterns.
 
 Runs are stored below `data/rift-runs/<run-id>/`:
 
@@ -114,7 +120,7 @@ workspace/        # only while running or with --keep-workspace
 
 Cleanup distinguishes failures from intentional retention: `cleanup.leftovers` names paths that should have been removed, while `cleanup.retained` names paths kept by request such as `workspace` under `--keep-workspace`.
 
-Evidence labels are `inspection`, `compiler`, `full_build`, `boot`, `focused_test`, `full_test`, and `soak`. These scopes are intentionally distinct.
+Evidence labels are `inspection`, `compiler`, `full_build`, `boot`, `focused_test`, `full_test`, and `soak`. `full_test` means an unfocused invocation for the selected map/configuration. The DM runner still applies `DEBUG_MAP_ONLY` and existing `TEST_FOCUS` selection; RIFT compiles `CIBUILDING` without `RUNNING_LOCAL_TESTS`. Report the selected map and completed test identities/counts. This label does not establish all-map, hosted-CI, or whole-project completion.
 
 `--format result` writes exactly one `RIFT_RESULT ` line followed by compact schema-versioned JSON. Compile results include the run ID, status, evidence class, stable exit code, reuse decision, and compile artifact paths, sizes, SHA-256 hashes, and freshness. This format is the Meridian-MCP compatibility boundary; `human` and `jsonl` remain intended for people and full event consumers.
 
@@ -136,7 +142,7 @@ Native child exits remain in process records and do not replace the stable CLI c
 ## Development verification
 
 ```powershell
-& .\tools\bootstrap\javascript.bat test tools/rift/rift.test.ts
+& .\tools\bootstrap\javascript.bat test tools/rift
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & .\tools\bootstrap\javascript.bat x biome check tools/rift
 exit $LASTEXITCODE

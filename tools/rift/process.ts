@@ -10,6 +10,7 @@ export type ProcessSpec = {
   wallTimeoutMs: number;
   idleTimeoutMs: number;
   activityPaths?: string[];
+  maxOutputBytes?: number;
 };
 
 export type ProcessResult = {
@@ -54,6 +55,22 @@ export type OwnedProcess = {
   snapshot: () => Promise<ProcessSnapshot[]>;
   ownedPids: () => number[];
 };
+
+export class ProcessSupervisionError extends Error {
+  readonly cleanupFailed: boolean;
+
+  constructor(cause: unknown, cleanupError?: unknown) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    super(
+      cleanupError === undefined
+        ? message
+        : `${message}; cleanup verification failed: ${String(cleanupError)}`,
+      { cause },
+    );
+    this.name = 'ProcessSupervisionError';
+    this.cleanupFailed = cleanupError !== undefined;
+  }
+}
 
 type CimProcess = {
   ProcessId: number;
@@ -102,19 +119,27 @@ $ids = @($tokens | ForEach-Object { [int]$_ })
 const STOP_IDENTITIES_PROGRAM = `
 $ErrorActionPreference = 'Stop'
 $expected = $env:RIFT_PROCESS_IDENTITIES | ConvertFrom-Json
-$currentById = @{}
-Get-CimInstance Win32_Process | ForEach-Object { $currentById[[int]$_.ProcessId] = $_ }
 foreach ($identity in @($expected)) {
-  $current = $currentById[[int]$identity.pid]
+  $current = Get-Process -Id $identity.pid -ErrorAction SilentlyContinue
   if ($null -eq $current) { continue }
-  $created = if ($null -eq $current.CreationDate) { '' } else { $current.CreationDate.ToUniversalTime().ToString('O') }
-  if ($current.Name -ine $identity.name -or $created -ne $identity.creationTime) { continue }
-  Stop-Process -Id $identity.pid -Force -ErrorAction SilentlyContinue
+  try {
+    $null = $current.SafeHandle
+    $created = $current.StartTime.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.ffffff')
+  } catch {
+    if ($null -eq (Get-Process -Id $identity.pid -ErrorAction SilentlyContinue)) { continue }
+    throw
+  }
+  $expectedCreated = ([datetimeoffset]::Parse($identity.creationTime)).UtcDateTime.ToString('yyyy-MM-ddTHH:mm:ss.ffffff')
+  if ($current.ProcessName -ine [System.IO.Path]::GetFileNameWithoutExtension($identity.name) -or $created -ne $expectedCreated) { continue }
+  Stop-Process -InputObject $current -Force -ErrorAction SilentlyContinue
 }
+exit 0
 `;
 
 const encodePowerShell = (program: string) =>
   Buffer.from(program, 'utf16le').toString('base64');
+
+const POWERSHELL_TIMEOUT_MS = 15_000;
 
 const readPipe = async (pipe: ReadableStream<Uint8Array> | number | null) => {
   if (!pipe || typeof pipe === 'number') {
@@ -141,12 +166,34 @@ const runEncodedPowerShell = async (
     stderr: 'pipe',
     windowsHide: true,
   });
-  const [stdout, stderr, exitCode] = await Promise.all([
-    readPipe(child.stdout),
-    readPipe(child.stderr),
-    child.exited,
-  ]);
-  return { exitCode, stdout, stderr };
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const [stdout, stderr, exitCode] = await Promise.race([
+      Promise.all([
+        readPipe(child.stdout),
+        readPipe(child.stderr),
+        child.exited,
+      ]),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          let cleanupError: unknown;
+          try {
+            child.kill();
+          } catch (error) {
+            cleanupError = error;
+          }
+          reject(
+            new Error('PowerShell process inspection timed out', {
+              cause: cleanupError,
+            }),
+          );
+        }, POWERSHELL_TIMEOUT_MS);
+      }),
+    ]);
+    return { exitCode, stdout, stderr };
+  } finally {
+    clearTimeout(timer);
+  }
 };
 
 const parseJsonArray = <T>(text: string): T[] => {
@@ -203,6 +250,8 @@ const stopMatchingProcesses = async (identities: ProcessIdentity[]) => {
 export const snapshotDescendants = async (
   rootPid: number,
   rootRole = 'process',
+  ownedIdentities?: ReadonlyMap<number, ProcessIdentity>,
+  rootStartedBeforeMs?: number,
 ): Promise<ProcessSnapshot[]> => {
   if (!Number.isInteger(rootPid) || rootPid <= 0) {
     throw new Error('root PID must be a positive integer');
@@ -217,13 +266,34 @@ export const snapshotDescendants = async (
 
   const selected = new Map<number, CimProcess>();
   const root = table.find((row) => row.ProcessId === rootPid);
-  if (root) {
-    selected.set(rootPid, root);
+  if (ownedIdentities) {
+    for (const entry of table) {
+      const expected = ownedIdentities.get(entry.ProcessId);
+      if (expected && sameProcessInstance(expected, identityFromCim(entry))) {
+        selected.set(entry.ProcessId, entry);
+      }
+    }
   }
-  const pending = [rootPid];
+  if (root && !ownedIdentities?.has(rootPid)) {
+    if (!ownedIdentities) {
+      selected.set(rootPid, root);
+    } else if (rootStartedBeforeMs !== undefined) {
+      if (!(Date.parse(root.CreationTime) <= rootStartedBeforeMs)) {
+        throw new Error('root process identity changed before enrollment');
+      }
+      selected.set(rootPid, root);
+    }
+  }
+  const pending = [...selected.keys()];
   while (pending.length > 0) {
     const parent = pending.shift()!;
     for (const child of rowsByParent.get(parent) ?? []) {
+      if (
+        Date.parse(child.CreationTime) <
+        Date.parse(selected.get(parent)!.CreationTime)
+      ) {
+        continue;
+      }
       if (!selected.has(child.ProcessId)) {
         selected.set(child.ProcessId, child);
         pending.push(child.ProcessId);
@@ -281,16 +351,26 @@ export const stopOwnedProcessTree = async (
   ownedPids: Iterable<number>,
   child?: ReturnType<typeof Bun.spawn>,
   ownedIdentities: Map<number, ProcessIdentity> = new Map(),
+  rootStartedBeforeMs?: number,
 ) => {
   const owned = [...new Set(ownedPids)].filter(
     (pid) => Number.isInteger(pid) && pid > 0,
   );
-  const finalSnapshot = await snapshotDescendants(rootPid).catch(() => []);
+  let snapshotError: unknown;
+  const finalSnapshot = await snapshotDescendants(
+    rootPid,
+    'process',
+    ownedIdentities,
+    rootStartedBeforeMs,
+  ).catch((error) => {
+    snapshotError = error;
+    return [];
+  });
   for (const sample of finalSnapshot) {
     if (!owned.includes(sample.pid)) {
       owned.push(sample.pid);
     }
-    if (sample.creationTime && !ownedIdentities.has(sample.pid)) {
+    if (sample.creationTime) {
       ownedIdentities.set(sample.pid, {
         pid: sample.pid,
         parentPid: sample.parentPid,
@@ -310,6 +390,10 @@ export const stopOwnedProcessTree = async (
     .toReversed();
   await stopMatchingProcesses(identities);
 
+  if (snapshotError) {
+    throw snapshotError;
+  }
+
   const unverifiedPids = owned.filter(
     (pid) => !ownedIdentities.has(pid) && processExists(pid),
   );
@@ -321,7 +405,7 @@ export const stopOwnedProcessTree = async (
 
   const deadline = Date.now() + 5_000;
   for (;;) {
-    const remainingTable = await readProcessTable().catch(() => []);
+    const remainingTable = await readProcessTable();
     const remainingByPid = new Map(
       remainingTable.map((entry) => [entry.ProcessId, identityFromCim(entry)]),
     );
@@ -347,6 +431,7 @@ const consumeOutput = async (
   stream: 'stdout' | 'stderr',
   onBytes: () => void,
   onLine: ProcessHooks['onOutput'],
+  maxOutputBytes?: number,
 ) => {
   if (!pipe || typeof pipe === 'number') {
     return;
@@ -354,12 +439,17 @@ const consumeOutput = async (
   const reader = pipe.getReader();
   const decoder = new TextDecoder();
   let buffered = '';
+  let outputBytes = 0;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) {
       break;
     }
     onBytes();
+    outputBytes += value.byteLength;
+    if (maxOutputBytes !== undefined && outputBytes > maxOutputBytes) {
+      throw new Error(`process ${stream} exceeded ${maxOutputBytes} bytes`);
+    }
     buffered += decoder.decode(value, { stream: true });
     const lines = buffered.split(/\r?\n/);
     buffered = lines.pop() ?? '';
@@ -402,12 +492,45 @@ export const startOwnedProcess = (
   const markActivity = () => {
     lastActivityMs = Date.now();
   };
+  let outputFailure: { error: unknown } | undefined;
   const outputReaders = [
-    consumeOutput(child.stdout, 'stdout', markActivity, hooks.onOutput),
-    consumeOutput(child.stderr, 'stderr', markActivity, hooks.onOutput),
-  ];
+    consumeOutput(
+      child.stdout,
+      'stdout',
+      markActivity,
+      hooks.onOutput,
+      spec.maxOutputBytes,
+    ),
+    consumeOutput(
+      child.stderr,
+      'stderr',
+      markActivity,
+      hooks.onOutput,
+      spec.maxOutputBytes,
+    ),
+  ].map((reader) =>
+    reader.catch((error) => {
+      outputFailure ??= { error };
+    }),
+  );
 
-  const snapshot = async () => snapshotDescendants(rootPid, spec.role);
+  const snapshot = async () =>
+    snapshotDescendants(rootPid, spec.role, ownedIdentities, startedAtMs);
+  const cleanup = async (runningChild?: ReturnType<typeof Bun.spawn>) => {
+    try {
+      await stopOwnedProcessTree(
+        rootPid,
+        owned,
+        runningChild,
+        ownedIdentities,
+        startedAtMs,
+      );
+    } finally {
+      for (const pid of ownedIdentities.keys()) {
+        owned.add(pid);
+      }
+    }
+  };
   const monitor = async () => {
     try {
       await hooks.onStart(rootPid);
@@ -422,9 +545,12 @@ export const startOwnedProcess = (
       let termination: ProcessResult['termination'] = 'natural';
 
       for (;;) {
+        if (outputFailure) {
+          throw outputFailure.error;
+        }
         if (requestedTermination) {
           termination = requestedTermination;
-          await stopOwnedProcessTree(rootPid, owned, child, ownedIdentities);
+          await cleanup(child);
           break;
         }
         if (naturalExited) {
@@ -433,11 +559,11 @@ export const startOwnedProcess = (
 
         const now = Date.now();
         if (now - lastSnapshotMs >= 250) {
-          const samples = await snapshot().catch(() => []);
+          const samples = await snapshot();
           const previousSize = owned.size;
           for (const sample of samples) {
             owned.add(sample.pid);
-            if (sample.creationTime && !ownedIdentities.has(sample.pid)) {
+            if (sample.creationTime) {
               ownedIdentities.set(sample.pid, {
                 pid: sample.pid,
                 parentPid: sample.parentPid,
@@ -470,33 +596,26 @@ export const startOwnedProcess = (
 
         if (Date.now() - startedAtMs >= spec.wallTimeoutMs) {
           termination = 'wall_timeout';
-          await stopOwnedProcessTree(rootPid, owned, child, ownedIdentities);
+          await cleanup(child);
           break;
         }
         if (Date.now() - lastActivityMs >= spec.idleTimeoutMs) {
           termination = 'idle_timeout';
-          await stopOwnedProcessTree(rootPid, owned, child, ownedIdentities);
+          await cleanup(child);
           break;
         }
         await Bun.sleep(25);
       }
 
-      await Promise.all(outputReaders);
       if (termination === 'natural') {
         naturalExitCode = await child.exited;
-        const liveDescendants = [...owned].filter(
-          (pid) => pid !== rootPid && processExists(pid),
-        );
-        if (liveDescendants.length > 0) {
-          await stopOwnedProcessTree(
-            rootPid,
-            owned,
-            undefined,
-            ownedIdentities,
-          );
-        }
+        await cleanup();
       } else {
         naturalExitCode = await child.exited;
+      }
+      await Promise.all(outputReaders);
+      if (outputFailure) {
+        throw outputFailure.error;
       }
       const finishedAtMs = Date.now();
       const processResult: ProcessResult = {
@@ -513,10 +632,11 @@ export const startOwnedProcess = (
       await hooks.onFinish?.(processResult);
       resolveResult(processResult);
     } catch (error) {
-      await stopOwnedProcessTree(rootPid, owned, child, ownedIdentities).catch(
-        () => undefined,
-      );
-      rejectResult(error);
+      let cleanupError: unknown;
+      await cleanup(child).catch((failure) => {
+        cleanupError = failure;
+      });
+      rejectResult(new ProcessSupervisionError(error, cleanupError));
     }
   };
   void monitor();
@@ -550,6 +670,7 @@ export const runProbeProcess = async (
       env: environment,
       wallTimeoutMs: 120_000,
       idleTimeoutMs: 120_000,
+      maxOutputBytes: limit,
     },
     {
       onStart: async () => {},
@@ -557,9 +678,6 @@ export const runProbeProcess = async (
       onSample: async () => {},
       onOutput: async (stream, line) => {
         chunks[stream] += `${line}\n`;
-        if (Buffer.byteLength(chunks[stream]) > limit) {
-          throw new Error(`probe ${stream} exceeded 1 MiB`);
-        }
       },
     },
   );

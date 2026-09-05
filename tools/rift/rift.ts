@@ -8,6 +8,7 @@ import {
   type ProcessHooks,
   type ProcessResult,
   type ProcessSpec,
+  ProcessSupervisionError,
   runProbeProcess,
   startOwnedProcess,
 } from './process';
@@ -162,9 +163,9 @@ const isSafeRelativePath = (value: string) => {
   return (
     value.length > 0 &&
     !path.isAbsolute(value) &&
-    !normalized.startsWith('../') &&
-    !normalized.includes('/../') &&
-    normalized !== '..'
+    !path.win32.isAbsolute(value) &&
+    !normalized.includes(':') &&
+    !normalized.split('/').includes('..')
   );
 };
 
@@ -343,6 +344,15 @@ const validateProfile = (value: unknown): RiftProfile => {
   });
 
   const timeouts = assertRecord(profile.default_timeouts, 'default_timeouts');
+  for (const [label, identities] of [
+    ['fatal log rule', fatalRules.map((rule) => rule.id)],
+    ['artifact rule', artifactRules.map((rule) => rule.id)],
+    ['child role', requiredChildren.map((rule) => rule.role)],
+  ] as const) {
+    if (new Set(identities).size !== identities.length) {
+      throw new Error(`duplicate ${label}`);
+    }
+  }
   assertKnownKeys(
     timeouts,
     new Set(['wall_seconds', 'idle_seconds', 'readiness_seconds']),
@@ -1095,7 +1105,7 @@ export const resolveByond = async (
   ]) {
     const result = await runProbe(
       'reg.exe',
-      ['query', registryKey, '/ve'],
+      ['query', registryKey, '/v', 'installpath'],
       repository.root,
       stringEnvironment(environment),
     ).catch(() => null);
@@ -1604,6 +1614,33 @@ const canonicalArtifactPaths = (repository: RepositoryPaths) => {
   return { dmb, rsc };
 };
 
+const supplementalBuildFingerprint = async (request: CompileRequest) => {
+  const files = await Array.fromAsync(
+    new Bun.Glob('modular_aphelion/**/*').scan({
+      cwd: request.repository.root,
+      onlyFiles: true,
+    }),
+  );
+  const hasher = new Bun.CryptoHasher('sha256');
+  hasher.update(
+    JSON.stringify({
+      dm: request.byond.dm,
+      version: request.byond.version,
+      defines: request.defines,
+      dependencies: await sha256File(request.repository.dependencies),
+    }),
+  );
+  for (const file of files.sort()) {
+    hasher.update(
+      JSON.stringify([
+        file.replaceAll('\\', '/'),
+        await sha256File(path.join(request.repository.root, file)),
+      ]),
+    );
+  }
+  return hasher.digest('hex');
+};
+
 export const compileFull = async (
   request: CompileRequest & { force: boolean },
 ): Promise<CompileOutcome> => {
@@ -1612,8 +1649,22 @@ export const compileFull = async (
     dmb: await externalArtifactMetadata(canonical.dmb),
     rsc: await externalArtifactMetadata(canonical.rsc),
   };
+  // The inherited graph does not track Meridian's modular tree or compiler identity.
+  const fingerprint = await supplementalBuildFingerprint(request);
+  const cachePath = path.join(
+    request.repository.runsRoot,
+    '.full-build-cache.json',
+  );
+  const previousCache = await Bun.file(cachePath)
+    .json()
+    .catch(() => null);
+  const invalidate =
+    request.force ||
+    previousCache?.fingerprint !== fingerprint ||
+    previousCache?.dmb !== before.dmb?.sha256 ||
+    previousCache?.rsc !== before.rsc?.sha256;
   const removalBoundary = Date.now();
-  if (request.force) {
+  if (invalidate) {
     await Promise.all([
       fs.rm(canonical.dmb, { force: true }),
       fs.rm(canonical.rsc, { force: true }),
@@ -1624,10 +1675,10 @@ export const compileFull = async (
   const result = await invokeBuildTarget(
     request.repository,
     'build',
-    [],
+    request.defines.map((value) => `-D${value}`),
     {
       role: 'full_build',
-      env: request.environment,
+      env: { ...request.environment, DM_EXE: request.byond.dm },
       wallTimeoutMs: request.wallTimeoutMs,
       idleTimeoutMs: request.idleTimeoutMs,
     },
@@ -1647,7 +1698,7 @@ export const compileFull = async (
     rsc: await externalArtifactMetadata(canonical.rsc),
   };
   if (
-    request.force &&
+    invalidate &&
     [after.dmb, after.rsc].some(
       (artifact) => !artifact || artifact.mtimeMs < removalBoundary,
     )
@@ -1655,6 +1706,7 @@ export const compileFull = async (
     throw new Error('forced build produced stale artifacts');
   }
   const reused =
+    !invalidate &&
     before.dmb !== null &&
     before.rsc !== null &&
     before.dmb.sha256 === after.dmb?.sha256 &&
@@ -1667,6 +1719,20 @@ export const compileFull = async (
     request,
     reused ? 'reused' : 'rebuilt',
   );
+  if ((await supplementalBuildFingerprint(request)) !== fingerprint) {
+    throw new Error('supplemental build inputs changed during compilation');
+  }
+  await fs.mkdir(request.repository.runsRoot, { recursive: true });
+  const temporaryCache = `${cachePath}.${request.runId}.tmp`;
+  await fs.writeFile(
+    temporaryCache,
+    JSON.stringify({
+      fingerprint,
+      dmb: after.dmb!.sha256,
+      rsc: after.rsc!.sha256,
+    }),
+  );
+  await fs.rename(temporaryCache, cachePath);
   return { evidence: 'full_build', ...collected, reused };
 };
 
@@ -1684,6 +1750,7 @@ export type DeploymentRequest = {
   profile: RiftProfile;
   compile: CompileOutcome;
   selectedMap: string | null;
+  onCreated?: (deployment: Deployment) => void;
 };
 
 export const DEPLOY_TREES = [
@@ -1744,6 +1811,13 @@ export const createDeployment = async (
   await requireFreshArtifact(request.compile.dmb);
   await requireFreshArtifact(request.compile.rsc);
   await fs.mkdir(root, { recursive: false });
+  const dmb = path.join(root, 'tgstation.dmb');
+  const rsc = path.join(root, 'tgstation.rsc');
+  const data = path.join(root, 'data');
+  const gameLogDir = path.join(data, 'logs', 'rift');
+  const deployment = { root, data, gameLogDir, dmb, rsc };
+  // Publish ownership before copying so workflow cleanup also covers partial deployment.
+  request.onCreated?.(deployment);
 
   for (const [sourceRelative, destinationRelative] of DEPLOY_TREES) {
     const source = path.join(request.repository.root, sourceRelative);
@@ -1755,12 +1829,15 @@ export const createDeployment = async (
   }
   await copyDeployGlobs(request.repository.root, root);
 
-  const dmb = path.join(root, 'tgstation.dmb');
-  const rsc = path.join(root, 'tgstation.rsc');
-  await Promise.all([
+  const artifactCopies = await Promise.allSettled([
     fs.copyFile(request.compile.dmb, dmb),
     fs.copyFile(request.compile.rsc, rsc),
   ]);
+  for (const copy of artifactCopies) {
+    if (copy.status === 'rejected') {
+      throw copy.reason;
+    }
+  }
 
   const configRoot = path.join(root, 'config');
   if (request.profile.config_source === 'repository') {
@@ -1778,8 +1855,6 @@ export const createDeployment = async (
     );
   }
 
-  const data = path.join(root, 'data');
-  const gameLogDir = path.join(data, 'logs', 'rift');
   await fs.mkdir(gameLogDir, { recursive: true });
   const selectedMap = request.selectedMap ?? request.profile.default_map;
   if (selectedMap) {
@@ -1790,7 +1865,7 @@ export const createDeployment = async (
     );
   }
 
-  return { root, data, gameLogDir, dmb, rsc };
+  return deployment;
 };
 
 const COLLECTION_GLOBS = [
@@ -1927,6 +2002,7 @@ const readNewLogRecords = async (
   filePath: string,
   state: LogFileState,
   structured: boolean,
+  final = false,
 ): Promise<StructuredLogRecord[]> => {
   const stat = await fs.stat(filePath).catch(() => null);
   if (!stat?.isFile()) {
@@ -1936,7 +2012,7 @@ const readNewLogRecords = async (
     state.offset = 0;
     state.partial = '';
   }
-  if (stat.size === state.offset) {
+  if (stat.size === state.offset && !final) {
     return [];
   }
   const handle = await fs.open(filePath, 'r');
@@ -1951,6 +2027,10 @@ const readNewLogRecords = async (
   const text = state.partial + new TextDecoder().decode(bytes);
   const lines = text.split(/\r?\n/);
   state.partial = lines.pop() ?? '';
+  if (final && state.partial.length > 0) {
+    lines.push(state.partial);
+    state.partial = '';
+  }
   const records: StructuredLogRecord[] = [];
   for (const line of lines) {
     if (!line.trim()) {
@@ -1979,6 +2059,7 @@ export async function* watchGameLogs(options: {
   pollMs?: number;
   startAtEnd?: boolean;
   states?: Map<string, LogFileState>;
+  once?: boolean;
 }): AsyncGenerator<WatchedLogRecord> {
   const structuredRelative = options.profile.readiness_rule.file.replaceAll(
     '\\',
@@ -2005,24 +2086,44 @@ export async function* watchGameLogs(options: {
     const structuredExists = fsSync.existsSync(structuredPath);
     const plainExists = fsSync.existsSync(plainPath);
     const selected = structuredExists
-      ? { path: structuredPath, file: structuredRelative, structured: true }
+      ? {
+          path: structuredPath,
+          file: structuredRelative,
+          structured: structuredRelative.endsWith('.json'),
+        }
       : plainExists && fsSync.existsSync(options.deployment.gameLogDir)
         ? { path: plainPath, file: structuredRelative, structured: false }
         : null;
-    if (selected) {
+    const selectedFiles = selected ? [selected] : [];
+    for (const file of new Set(
+      options.profile.fatal_log_rules.map((rule) =>
+        rule.file.replaceAll('\\', '/'),
+      ),
+    )) {
+      if (file !== structuredRelative) {
+        selectedFiles.push({
+          path: path.join(options.deployment.root, file),
+          file,
+          structured: file.endsWith('.json'),
+        });
+      }
+    }
+    const batch: Array<Omit<WatchedLogRecord, 'batchComplete'>> = [];
+    for (const selected of selectedFiles) {
       const records = await readNewLogRecords(
         selected.path,
         stateFor(selected.path),
         selected.structured,
+        options.once,
       );
-      for (const [index, record] of records.entries()) {
-        yield {
-          file: selected.file,
-          record,
-          batchComplete: index === records.length - 1,
-        };
+      for (const record of records) {
+        batch.push({ file: selected.file, record });
       }
     }
+    for (const [index, item] of batch.entries()) {
+      yield { ...item, batchComplete: index === batch.length - 1 };
+    }
+    if (options.once) break;
     await Bun.sleep(options.pollMs ?? 25);
   }
 }
@@ -2061,6 +2162,27 @@ const childRuleFailure = async (
         message: `${rule.role} count ${count} exceeds ${rule.max_count}`,
       };
     }
+  }
+  return null;
+};
+
+const monitorRequiredChildren = async (options: {
+  profile: RiftProfile;
+  process: OwnedProcess;
+  signal: AbortSignal;
+}): Promise<RiftFailure | null> => {
+  while (!options.signal.aborted) {
+    const failure = await childRuleFailure(
+      options.profile,
+      options.process,
+      true,
+    );
+    if (options.signal.aborted) return null;
+    if (failure) return failure;
+    await sleepUntilAborted(
+      Math.min(options.profile.resource_sample_seconds * 1000, 1000),
+      options.signal,
+    );
   }
   return null;
 };
@@ -2123,7 +2245,10 @@ const observeUntilReady = async (options: {
         }
       }
     }
-    if (matchesLogRule(options.profile.readiness_rule, record)) {
+    if (
+      item.file === options.profile.readiness_rule.file.replaceAll('\\', '/') &&
+      matchesLogRule(options.profile.readiness_rule, record)
+    ) {
       const childFailure = await childRuleFailure(
         options.profile,
         options.process,
@@ -2278,6 +2403,9 @@ export const runServerWorkflow = async (
       profile: context.profile,
       compile,
       selectedMap: command.map,
+      onCreated: (created) => {
+        deployment = created;
+      },
     });
     await context.recorder.emit('stage_finished', 'deploy', {}, 'passed');
     await context.recorder.emit('stage_started', 'server', {
@@ -2358,16 +2486,26 @@ export const runServerWorkflow = async (
       ).then((completed) => ({
         kind: completed ? ('duration' as const) : ('monitor_stopped' as const),
       }));
+      const childMonitor = monitorRequiredChildren({
+        profile: context.profile,
+        process: server,
+        signal: monitorAbort.signal,
+      });
       const bounded = await Promise.race([
         duration,
+        childMonitor.then((failure) => ({
+          kind: 'monitor' as const,
+          failure,
+        })),
         logMonitor.then((failure) => ({
           kind: 'monitor' as const,
           failure,
         })),
         server.result.then((result) => ({ kind: 'exit' as const, result })),
-      ]);
-      monitorAbort.abort();
-      await Promise.allSettled([duration, logMonitor]);
+      ]).finally(async () => {
+        monitorAbort.abort();
+        await Promise.allSettled([duration, logMonitor, childMonitor]);
+      });
       if (bounded.kind === 'monitor') {
         if (bounded.failure) {
           throw new RiftError(
@@ -2389,10 +2527,18 @@ export const runServerWorkflow = async (
         throw new Error('server_monitor_stopped');
       }
     }
+    await server.stop('requested');
+    await drainRuntimeLogs({
+      deployment,
+      profile: context.profile,
+      stage: 'server',
+      signatures: runtimeSignatures,
+      cursor: observationCursors.get(observation),
+    });
     await context.recorder.setRuntimeSignatures([
       ...runtimeSignatures.values(),
     ]);
-    await server.stop('requested');
+    await requireProfileArtifacts(deployment, context.profile);
     await context.recorder.emit(
       'stage_finished',
       'server',
@@ -2447,6 +2593,7 @@ export const runServerWorkflow = async (
       await context.recorder.setCleanup(cleanup).catch(() => undefined);
     }
     const message = error instanceof Error ? error.message : String(error);
+    await recordProcessCleanupFailure(context.recorder, error);
     const failure = classifyWorkflowFailure(
       error,
       'server',
@@ -2477,14 +2624,16 @@ const monitorRuntimeLogs = async (options: {
     { signature: string; count: number; first_seen: string }
   >;
   cursor?: LogMonitorCursor;
+  once?: boolean;
 }): Promise<RiftFailure | null> => {
   const counts = options.cursor?.fatalCounts ?? new Map<string, number>();
   for await (const item of watchGameLogs({
     deployment: options.deployment,
     profile: options.profile,
     signal: options.signal,
-    startAtEnd: options.cursor === undefined,
+    startAtEnd: options.cursor === undefined && !options.once,
     states: options.cursor?.files,
+    once: options.once,
   })) {
     const { record } = item;
     if (typeof record.msg === 'string' && /runtime error:/i.test(record.msg)) {
@@ -2522,6 +2671,23 @@ const monitorRuntimeLogs = async (options: {
     }
   }
   return null;
+};
+
+const drainRuntimeLogs = async (
+  options: Omit<Parameters<typeof monitorRuntimeLogs>[0], 'signal' | 'once'>,
+) => {
+  const abort = new AbortController();
+  try {
+    const failure = await monitorRuntimeLogs({
+      ...options,
+      signal: abort.signal,
+      once: true,
+    });
+    if (failure)
+      throw new RiftError(failure.code, options.stage, failure.message, 5);
+  } finally {
+    abort.abort();
+  }
 };
 
 const captureSoakResources = async (options: {
@@ -2694,6 +2860,9 @@ export const runSoakWorkflow = async (
       profile: context.profile,
       compile,
       selectedMap: command.map,
+      onCreated: (created) => {
+        deployment = created;
+      },
     });
     await applySoakOverlays(
       context.repository.root,
@@ -2806,9 +2975,10 @@ export const runSoakWorkflow = async (
           : { kind: 'monitor_stopped' as const },
       ),
       server.result.then((result) => ({ kind: 'exit' as const, result })),
-    ]);
-    monitorAbort.abort();
-    await Promise.allSettled([duration, logMonitor]);
+    ]).finally(async () => {
+      monitorAbort.abort();
+      await Promise.allSettled([duration, logMonitor]);
+    });
     if (outcome.kind === 'failure') {
       throw new RiftError(
         outcome.failure.code,
@@ -2828,7 +2998,15 @@ export const runSoakWorkflow = async (
     }
 
     await server.stop('requested');
+    await drainRuntimeLogs({
+      deployment,
+      profile: context.profile,
+      stage: 'soak',
+      signatures: runtimeSignatures,
+      cursor: observationCursors.get(readiness),
+    });
     await persistObservations();
+    await requireProfileArtifacts(deployment, context.profile);
     await context.recorder.emit(
       'stage_finished',
       'soak',
@@ -2871,6 +3049,7 @@ export const runSoakWorkflow = async (
       await context.recorder.setCleanup(cleanup).catch(() => undefined);
     }
     const message = error instanceof Error ? error.message : String(error);
+    await recordProcessCleanupFailure(context.recorder, error);
     const failure = classifyWorkflowFailure(
       error,
       'soak',
@@ -2942,8 +3121,14 @@ export const waitForTestCompletion = async (options: {
     signatures,
     cursor: observationCursors.get(options.readiness),
   });
+  const childMonitor = monitorRequiredChildren({
+    profile: options.profile,
+    process: options.process,
+    signal: abort.signal,
+  });
   try {
     const outcome = await Promise.race([
+      childMonitor.then((failure) => ({ kind: 'monitor' as const, failure })),
       monitor.then((failure) => ({ kind: 'monitor' as const, failure })),
       options.process.result.then((result) => ({
         kind: 'exit' as const,
@@ -2961,17 +3146,23 @@ export const waitForTestCompletion = async (options: {
       }
       throw new Error('unit_test_monitor_stopped');
     }
-    const finalObservation = await Promise.race([
-      monitor.then((failure) => ({ failure })),
-      Bun.sleep(50).then(() => ({ failure: null })),
-    ]);
-    if (finalObservation.failure) {
-      throw new RiftError(
-        finalObservation.failure.code,
-        'test',
-        finalObservation.failure.message,
-        5,
-      );
+    abort.abort();
+    const pendingFailure = await monitor;
+    const pendingChildFailure = await childMonitor;
+    const finalFailure =
+      pendingChildFailure ??
+      pendingFailure ??
+      (await monitorRuntimeLogs({
+        deployment: options.deployment,
+        profile: options.profile,
+        stage: 'server',
+        signal: new AbortController().signal,
+        signatures,
+        cursor: observationCursors.get(options.readiness),
+        once: true,
+      }));
+    if (finalFailure) {
+      throw new RiftError(finalFailure.code, 'test', finalFailure.message, 5);
     }
     throwForProcessTermination(outcome.result, 'test');
     return {
@@ -2980,7 +3171,8 @@ export const waitForTestCompletion = async (options: {
     };
   } finally {
     abort.abort();
-    await monitor.catch(() => undefined);
+    await Promise.allSettled([monitor, childMonitor]);
+    await options.recorder.setRuntimeSignatures([...signatures.values()]);
   }
 };
 
@@ -3027,6 +3219,31 @@ export const parseUnitTestResults = (value: unknown): UnitTestSummary => {
     skipped: results.filter((result) => result.status === 2).length,
     failures: results.filter((result) => result.status === 1),
   };
+};
+
+export const validateUnitTestEvidence = (
+  results: UnitTestResult[],
+  focus: string[],
+  minimum: number,
+): void => {
+  const failed = results.find((result) => result.status === 1);
+  if (failed) {
+    throw new Error(`unit_test_failed: ${failed.name}`);
+  }
+  const resultsByName = new Map(results.map((result) => [result.name, result]));
+  for (const name of focus) {
+    const result = resultsByName.get(name);
+    if (!result) {
+      throw new Error(`unit_test_focus_missing: ${name}`);
+    }
+    if (result.status === 2) {
+      throw new Error(`unit_test_focus_skipped: ${name}`);
+    }
+  }
+  const passed = results.filter((result) => result.status === 0).length;
+  if (passed < minimum) {
+    throw new Error(`unit_test_count_below_minimum: ${passed} < ${minimum}`);
+  }
 };
 
 const invokeTestBuildPrerequisites = async (request: CompileRequest) => {
@@ -3240,6 +3457,9 @@ export const runTestWorkflow = async (
       profile: context.profile,
       compile,
       selectedMap: command.map,
+      onCreated: (created) => {
+        deployment = created;
+      },
     });
     await context.recorder.emit('stage_finished', 'deploy', {}, 'passed');
     await context.recorder.emit('stage_started', 'test', {
@@ -3300,6 +3520,9 @@ export const runTestWorkflow = async (
       readiness: observation,
     });
     await context.recorder.setRuntimeSignatures(completion.runtimeSignatures);
+    if (completion.runtimeSignatures.length > 0) {
+      throw new Error('runtime_error: unit tests produced runtime errors');
+    }
     const processResult = completion.processResult;
     if (processResult.termination !== 'natural') {
       throw new Error(
@@ -3324,16 +3547,11 @@ export const runTestWorkflow = async (
       (command.focus.length > 0
         ? command.focus.length
         : context.profile.minimum_tests);
-    if (tests.recorded < minimum) {
-      throw new Error(
-        `unit_test_count_below_minimum: ${tests.recorded} < ${minimum}`,
-      );
-    }
-    if (tests.failed > 0) {
-      throw new Error(
-        `unit_test_failed: ${tests.failures[0]?.name ?? 'unknown test'}`,
-      );
-    }
+    validateUnitTestEvidence(
+      Object.values(rawResults) as UnitTestResult[],
+      command.focus,
+      minimum,
+    );
     await requireProfileArtifacts(deployment, context.profile);
     await context.recorder.emit(
       'stage_finished',
@@ -3376,6 +3594,7 @@ export const runTestWorkflow = async (
       await context.recorder.setCleanup(cleanup).catch(() => undefined);
     }
     const message = error instanceof Error ? error.message : String(error);
+    await recordProcessCleanupFailure(context.recorder, error);
     const failure = classifyWorkflowFailure(
       error,
       'test',
@@ -3580,6 +3799,7 @@ export const acquireRunLock = async (
   runId: string,
   waitSeconds: number,
   processExists: (pid: number) => boolean = defaultProcessExists,
+  wasCancelled: () => boolean = () => false,
 ): Promise<RunLock> => {
   await fs.mkdir(runsRoot, { recursive: true });
   const lockPath = path.join(runsRoot, '.active.lock');
@@ -3587,6 +3807,8 @@ export const acquireRunLock = async (
   const deadline = Date.now() + waitSeconds * 1000;
 
   for (;;) {
+    if (wasCancelled())
+      throw new RiftError('cancelled', 'lock', 'lock waiting cancelled', 130);
     if (fsSync.existsSync(guardPath)) {
       if (await clearAbandonedReapGuard(guardPath, processExists)) {
         continue;
@@ -3605,14 +3827,16 @@ export const acquireRunLock = async (
       run_id: runId,
       started_at: new Date().toISOString(),
     };
+    const candidatePath = `${lockPath}.${record.token}.tmp`;
     try {
-      const handle = await fs.open(lockPath, 'wx');
+      const handle = await fs.open(candidatePath, 'wx');
       try {
         await handle.writeFile(`${JSON.stringify(record)}\n`, 'utf8');
         await handle.sync();
       } finally {
         await handle.close();
       }
+      await fs.link(candidatePath, lockPath);
       if (fsSync.existsSync(guardPath)) {
         const current = await readLockRecord(lockPath).catch(() => null);
         if (current?.token === record.token) {
@@ -3650,6 +3874,8 @@ export const acquireRunLock = async (
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
         throw error;
       }
+    } finally {
+      await fs.rm(candidatePath, { force: true });
     }
 
     const snapshot = await tryReadLockSnapshot(lockPath);
@@ -3768,7 +3994,7 @@ const runDoctorGit = async (
         });
       },
       onOutput: async (stream, line) => {
-        output.push(line);
+        if (stream === 'stdout') output.push(line);
         await context.recorder.appendOutput('doctor', role, stream, line);
       },
       onOwnedPids: async (pids) => {
@@ -4010,12 +4236,35 @@ const rethrowAsRiftError = (
   if (error instanceof RiftError) {
     throw error;
   }
-  throw new RiftError(
+  const wrapped = new RiftError(
     code,
     stage,
     error instanceof Error ? error.message : String(error),
     exitCode,
   );
+  wrapped.cause = error;
+  throw wrapped;
+};
+
+const processSupervisionFailure = (
+  error: unknown,
+): ProcessSupervisionError | null => {
+  const seen = new Set<unknown>();
+  while (error instanceof Error && !seen.has(error)) {
+    seen.add(error);
+    if (error instanceof ProcessSupervisionError) return error;
+    error = error.cause;
+  }
+  return null;
+};
+
+const recordProcessCleanupFailure = async (
+  recorder: RunRecorder,
+  error: unknown,
+) => {
+  if (processSupervisionFailure(error)?.cleanupFailed) {
+    await recorder.addCleanupLeftover('owned-processes');
+  }
 };
 
 const evidenceForCommand = (command: RiftCommand): EvidenceClass => {
@@ -4038,6 +4287,13 @@ const evidenceForCommand = (command: RiftCommand): EvidenceClass => {
 export const classifyFailure = (
   error: unknown,
 ): { code: string; stage: string; exitCode: 2 | 3 | 4 | 5 | 6 | 7 | 130 } => {
+  if (processSupervisionFailure(error)) {
+    return {
+      code: 'process_supervision_failed',
+      stage: 'cleanup',
+      exitCode: 5,
+    };
+  }
   if (error instanceof RiftError) {
     return {
       code: error.code,
@@ -4057,7 +4313,7 @@ const classifyWorkflowFailure = (
   if (cancelled) {
     return { code: 'cancelled', stage, exitCode: 130 };
   }
-  if (error instanceof RiftError) {
+  if (error instanceof RiftError || processSupervisionFailure(error)) {
     return classifyFailure(error);
   }
   return { code: fallbackCode, stage, exitCode: 5 };
@@ -4292,10 +4548,14 @@ export const runMain = async (
         command.command,
         runId,
         command.waitForLockSeconds,
+        defaultProcessExists,
+        cancellation.wasCancelled,
       );
     } catch (error) {
       rethrowAsRiftError(error, 'lock_busy', 'lock', 7);
     }
+    if (cancellation.wasCancelled())
+      throw new RiftError('cancelled', 'run', 'cancelled', 130);
     const context: WorkflowContext = {
       repository,
       pins,
@@ -4378,6 +4638,7 @@ export const runMain = async (
     const failure = classifyFailure(error);
     const message = error instanceof Error ? error.message : String(error);
     if (recorder && repository) {
+      await recordProcessCleanupFailure(recorder, error);
       await recorder.addFailure({
         code: failure.code,
         stage: failure.stage,
@@ -4388,6 +4649,7 @@ export const runMain = async (
         ? await finishRunWithLock(recorder, lock, status, failure.exitCode)
         : await recorder.finish(status, failure.exitCode);
       await printStoredResult(repository, summary, command?.format ?? 'human');
+      return summary.exit_code;
     } else {
       console.error(`[${failure.code}] ${message}`);
       if (environment.RIFT_DEBUG === '1' && error instanceof Error) {

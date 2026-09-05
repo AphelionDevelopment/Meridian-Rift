@@ -2,6 +2,8 @@
 
 Plan date: 2026-08-31. Implementation branch: `codex/rift-controller`. Base revision: `a249749d13486ac5c58d5270bf50bec794d6f44c`.
 
+Historical implementation record: checked boxes, run IDs, test counts, and acceptance claims below belong to the recorded session. They are not fresh evidence for the current branch. Revalidate affected gates after later code changes and report unavailable historical artifacts explicitly.
+
 This plan implements [the approved design](build-harness-design.md) without modifying protected `BUILD.cmd`, `RUN_SERVER.cmd`, the inherited build graph, bootstrap implementation, CI, release, or deployment entry points.
 
 ## Phase 1: contracts and pure foundations

@@ -1,6 +1,6 @@
 # RIFT build-controller design
 
-Status: implemented Plan A design, 2026-08-31. Plan B Dogmos migration remains separate.
+Status: historical Plan A design recorded as implemented on 2026-08-31. Acceptance statements describe that implementation session, not fresh qualification of later revisions. Use the [controller reference](../../tools/rift/README.md) and current source for operational behavior. Plan B Dogmos migration belongs to the target Dogmos checkout.
 
 ## Goals
 

@@ -1,23 +1,25 @@
 # Native subsystem offload
 
-This guide records source ownership and verified subsystem boundaries for work that moves expensive DreamMaker processing into Rust. It is an investigation aid, not approval of a particular architecture or implementation plan.
+This guide records investigation context and source ownership for work that moves expensive DreamMaker processing into Rust. The original Dogmos observations below are historical; verify the selected checkout and artifact pair before treating them as current implementation facts. This is an investigation aid, not approval of a particular architecture or implementation plan.
 
 ## Source authority
 
 - DreamMaker integration is owned by the `dogmos` branch of `AphelionDevelopment/Meridian-Rift`.
 - Rust implementation is owned by the `dogmos` branch of `AphelionDevelopment/aphelion-dogmos`.
-- The Meridian-Rift `aphelion-agents` branch owns agent documentation only. Do not infer runtime behavior from its game code.
+- The Meridian-Rift `aphelion-agents` branch contains agent guidance and the RIFT controller. Its game code is not evidence of the active Dogmos implementation.
 - Generated `code/__DEFINES/dogmos_bindings.dm` is an artifact of the Rust exports. Change the Rust binding declaration and regenerate it instead of hand-editing the generated wrapper.
 - Reverify the active branches, revisions, generated DLL, generated bindings, and BYOND version together before debugging cross-repository behavior.
 
-## Existing Dogmos boundary
+## Historical Dogmos boundary and current source routing
 
-Dogmos is an in-process, 32-bit ByondAPI DLL. It can use Rust worker threads, but its allocations still occupy DreamDaemon's address space. It demonstrates two execution models:
+The original investigation examined an in-process, 32-bit ByondAPI DLL whose allocations occupied DreamDaemon's address space. It recorded two execution models:
 
 - The main gas pass enters Rust synchronously and uses Rayon internally before returning to DreamMaker.
 - TurfHeat uses a persistent asynchronous worker and queues operations that require BYOND access for main-thread execution.
 
-Reusable patterns include a Rust-owned mirrored graph, stable numeric turf references, registration generations that reject stale callbacks, explicit callback draining, per-fire time budgets, telemetry, and idempotent shutdown. The current callback queue is unbounded and atmos-specific; do not treat it as a generic applet runtime without a backpressure design.
+Reusable patterns from that investigation include a Rust-owned mirrored graph, stable numeric turf references, registration generations that reject stale callbacks, explicit callback draining, per-fire time budgets, telemetry, and idempotent shutdown. The queue inspected then was unbounded and atmos-specific; recheck the current queue contract before reuse.
+
+At local `origin/dogmos` revision `39e05dec05938972148414074b68386eea83ff3e`, inspected on 2026-09-05, `modular_aphelion/modules/dogmos/code/service_backend.dm` starts `dogmosd` through `dogmos_service_start()` and requires its health check. The generated bindings expose service lifecycle and telemetry calls. This is source evidence for a service-backed integration, not a fresh native build or live runtime qualification. Read that branch's integration, service-lifecycle, and native-artifact guides with its paired Rust revision; do not assume all simulation state still resides in DreamDaemon.
 
 Never retain or dereference ordinary BYOND references from arbitrary worker threads. Copy required scalar state into Rust-owned structures. Re-enter BYOND only through the supported main-thread mechanism, and validate the object's generation before applying delayed work.
 
@@ -57,7 +59,7 @@ Keep the domain implementation independent of the transport so both models can b
 
 - In-process DLL: lowest boundary overhead and simplest reuse of ByondAPI, but it remains inside the 32-bit address space and a fatal native fault can terminate DreamDaemon.
 - Separate 64-bit worker: removes the worker's state from DreamDaemon and improves fault isolation, but requires an explicit protocol, lifecycle supervision, bounded queues, resynchronization, stale-result rejection, and latency measurements.
-- Hybrid bridge: a small 32-bit ByondAPI DLL owns BYOND interaction while a supervised 64-bit process owns computation and large mirrored state. This is a candidate, not a recorded project decision.
+- Hybrid bridge: a small 32-bit ByondAPI DLL owns BYOND interaction while a supervised 64-bit process owns computation and large mirrored state. This was a candidate in the original investigation; the Dogmos service integration now needs to be evaluated from its own current source and artifacts.
 
 For an out-of-process design, use fixed-width values and offsets rather than pointers across the 32/64-bit boundary. Batch topology and source events. A control channel can carry handshake, health, shutdown, and resync messages while a bounded shared-memory data path carries high-volume work. Use per-world and per-object generations, monotonically increasing input epochs, explicit deadlines, latest-state coalescing, and observable backpressure. Define what happens when the worker is absent, late, restarted, or incompatible before enabling it in production.
 

@@ -16,3 +16,5 @@
 | tg/Nova merge review | [Upstream drift](upstream-drift.md) |
 
 The root [AGENTS.md](../../AGENTS.md) is the concise mandatory entry point. These guides add local decisions without replacing inherited tgstation or Nova documentation.
+
+The [2026-09-05 branch audit](2026-09-05-branch-audit.md) records harness/guidance repairs, verification evidence, and remaining process-containment limits.

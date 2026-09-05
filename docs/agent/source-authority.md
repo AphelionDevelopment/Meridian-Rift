@@ -1,5 +1,7 @@
 # Source authority and lineage
 
+The following revisions record the historical 2026-08-23 guidance review. They are not a claim that the current checkout or external projects were revalidated at those revisions. Record fresh source evidence for the area being changed.
+
 Reviewed local revision: `c34175cab324ce34c768e698a0c7c6c488691f89`
 
 Reviewed Nova revision: `c4846461cc82bce6a87e6efe6ea0c08e440838c6`
@@ -27,6 +29,6 @@ Agents support the project through code, infrastructure, tooling, validation, in
 
 When art, sound, or another external asset is needed, an agent may search online for suitable candidates that are freely licensed for the intended use and can be attributed properly. Availability is not permission: record the source URL, author, license, and required attribution, present candidates for human selection, and do not import an asset without explicit user approval.
 
-Build, bootstrap, release, deployment, and CI entry points and their authoritative configuration are protected review surfaces. Before changing one, an agent must name the exact file and behavioral effect, explain why a separate Meridian-owned wrapper or supported extension point cannot satisfy the requirement, and receive explicit user confirmation. A broad approval to add tooling or complete a feature is not approval to alter this infrastructure.
+Build, bootstrap, release, deployment, and CI entry points and their authoritative configuration are protected review surfaces. Before changing one, an agent must name the exact file and behavioral effect, explain why a separate Meridian-owned wrapper or supported extension point cannot satisfy the requirement, and receive explicit user confirmation unless that change is already authorized in the session. A broad approval to add tooling or complete a feature alone is not approval to alter this infrastructure. Do not ask again for authorization the user has already provided.
 
 Prefer a separate Meridian-owned wrapper that delegates to the human-authored workflow. Keep the human entry point authoritative, add drift detection where the wrapper depends on its contract, and document any difference in behavior.

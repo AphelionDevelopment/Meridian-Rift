@@ -60,6 +60,61 @@ class MarkerCheckTests(unittest.TestCase):
 		errors = validate_diff(diff("// APHELION EDIT ADDITION START - bad-id"))
 		self.assertEqual({error.code for error in errors}, {"invalid_module_id", "unclosed_marker"})
 
+	def test_rejects_malformed_marker_prefixes(self) -> None:
+		for marker in ("ADDITION START", "REMOVAL START -", "ADDITION STOP"):
+			with self.subTest(marker=marker):
+				self.assertTrue(validate_diff(diff(f"// APHELION EDIT {marker}")))
+
+	def test_context_advances_reported_line_numbers(self) -> None:
+		errors = validate_diff("+++ b/code/example.dm\n@@ -10 +10,2 @@\n unchanged()\n+// NOVA EDIT ADDITION START - NEW")
+		self.assertEqual(errors[0].line, 11)
+
+	def test_changed_start_uses_unchanged_end(self) -> None:
+		self.assertEqual(validate_diff("\n".join((
+			"+++ b/code/example.dm", "@@ -1,3 +1,3 @@",
+			"-// APHELION EDIT ADDITION START - OLD",
+			"+// APHELION EDIT ADDITION START - NEW",
+			" code()", " // APHELION EDIT ADDITION END",
+		))), [])
+
+	def test_deleted_end_is_reported(self) -> None:
+		errors = validate_diff("\n".join((
+			"+++ b/code/example.dm", "@@ -1,3 +1,2 @@",
+			" // APHELION EDIT ADDITION START - OLD", " code()",
+			"-// APHELION EDIT ADDITION END",
+		)))
+		self.assertEqual([error.code for error in errors], ["unclosed_marker"])
+
+	def test_unchanged_legacy_marker_errors_are_not_reported(self) -> None:
+		self.assertEqual(validate_diff("\n".join((
+			"+++ b/code/example.dm", "@@ -1,2 +1,2 @@",
+			" // APHELION EDIT ADDITION START", "-old_code()", "+new_code()",
+		))), [])
+
+	def test_modified_malformed_marker_is_not_hidden_by_legacy_error(self) -> None:
+		errors = validate_diff("\n".join((
+			"+++ b/code/example.dm", "@@ -1 +1 @@",
+			"-// APHELION EDIT ADDITION START", "+// APHELION EDIT REMOVAL STOP",
+		)))
+		self.assertEqual([error.code for error in errors], ["invalid_marker"])
+
+	def test_cli_validates_modified_existing_pairs(self) -> None:
+		with tempfile.TemporaryDirectory() as temporary_directory:
+			repository = Path(temporary_directory)
+			inherited_file = self.initialize_diverged_repository(repository)
+			original = "// APHELION EDIT ADDITION START - OLD\ncode()\n// APHELION EDIT ADDITION END\n"
+			inherited_file.write_text(original, encoding="utf-8")
+			self.run_git(repository, "add", ".")
+			self.run_git(repository, "commit", "-m", "Add canonical pair")
+			self.run_git(repository, "branch", "-f", "main", "HEAD")
+			inherited_file.write_text(original.replace("OLD", "NEW"), encoding="utf-8")
+			completed = self.run_checker(repository)
+			self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+			inherited_file.write_text(original.rsplit("//", 1)[0], encoding="utf-8")
+			completed = self.run_checker(repository)
+			self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
+			self.assertIn("unclosed_marker", completed.stdout)
+
 	def test_rejects_new_nova_marker_outside_nova(self) -> None:
 		self.assertEqual(validate_diff(diff("// NOVA EDIT ADDITION START - NEW_FEATURE"))[0].code, "new_nova_marker")
 

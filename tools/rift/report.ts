@@ -104,8 +104,8 @@ const pathEscapes = (relativePath: string) =>
 
 const redactUserPaths = (value: string) =>
   value
-    .replaceAll(/([A-Za-z]:\\Users\\)[^\\\r\n]+/g, '$1<profile>')
-    .replaceAll(/(\/Users\/)[^/\r\n]+/g, '$1<profile>');
+    .replaceAll(/([A-Za-z]:\\Users\\)[^\\\r\n]+/gi, '$1<profile>')
+    .replaceAll(/(\/(?:Users|home)\/)[^/\r\n]+/gi, '$1<profile>');
 
 const redactStructuredValue = (value: unknown): unknown => {
   if (typeof value === 'string') {
@@ -435,6 +435,7 @@ export class RunRecorder {
     this.#summary.exit_code = exitCode;
     this.#summary.finished_at = new Date(finishedAtMs).toISOString();
     this.#summary.duration_ms = finishedAtMs - this.#startedAtMs;
+    this.#summary = redactStructuredValue(this.#summary) as RiftSummary;
     const temporaryPath = `${this.#summaryPath}.${crypto.randomUUID()}.tmp`;
     await fs.writeFile(
       temporaryPath,

@@ -13,6 +13,7 @@ REQUIRED_GUIDES = (
 	"docs/agent/placement-and-markers.md",
 	"docs/agent/verification.md",
 	"docs/agent/meridian-mcp.md",
+	"docs/agent/native-subsystem-offload.md",
 	"docs/agent/generated-content.md",
 	"docs/agent/upstream-drift.md",
 )
@@ -27,14 +28,20 @@ def check_repository(root: Path) -> list[str]:
 		agent_text = ""
 	else:
 		agent_text = agents.read_text(encoding="utf-8")
+	agent_links = {target.split("#", 1)[0] for target in LINK.findall(agent_text)}
 	for relative in REQUIRED_GUIDES:
 		path = root / relative
 		if not path.is_file():
 			errors.append(f"missing {relative}")
-		if relative not in agent_text:
+		if relative not in agent_links:
 			errors.append(f"AGENTS.md must link {relative}")
 
-	checked = [agents, *(root / relative for relative in REQUIRED_GUIDES)]
+	checked = [
+		agents,
+		*sorted((root / "docs/agent").glob("*.md")),
+		root / "tools/rift/README.md",
+		root / "modular_aphelion/module_template.md",
+	]
 	for source in checked:
 		if not source.is_file():
 			continue
