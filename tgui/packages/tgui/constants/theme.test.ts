@@ -71,7 +71,7 @@ describe('MeridianOS theme catalog', () => {
     expect(MERIDIAN_BASE_THEME_OPTIONS.slice(0, 3)).toEqual([
       expect.objectContaining({ id: 'meridian', name: 'Standard' }),
       expect.objectContaining({ id: 'meridian_classic', name: 'Classic NT' }),
-      expect.objectContaining({ id: 'meridian_pipboy', name: 'Pip-Boy' }),
+      expect.objectContaining({ id: 'meridian_pipboy', name: 'Wastelander' }),
     ]);
     expect(MERIDIAN_THEMES.every(({ production }) => production)).toBe(true);
   });

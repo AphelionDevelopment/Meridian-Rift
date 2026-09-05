@@ -51,13 +51,15 @@
   --console-loader-core-shape: inset(0);
   --console-heading-tracking: 0.12em;
   --console-control-depth: inset 0 -3px 0 var(--console-surface-recessed), inset 0 0 0 1px var(--console-border-control);
-  --console-overlay-shadow: 0 0 18px color-mix(in srgb, var(--console-interaction-accent) 18%, transparent);
+  --console-motif-opacity: 0.42;
+  --console-overlay-shadow: 0 4px 10px rgb(0 0 0 / 52%);
 }
 
 .theme-meridian,
 .theme-meridian_pipboy,
 .theme-meridian_vector,
 .theme-meridian_foundry,
+.theme-meridian_highline,
 .theme-meridian_synapse,
 .theme-meridian_cyberpunk,
 .theme-meridian_augmentation {

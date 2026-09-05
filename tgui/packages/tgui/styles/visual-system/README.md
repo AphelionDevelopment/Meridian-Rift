@@ -32,7 +32,7 @@ request `meridian`.
 ## Skin catalog
 
 The title-bar gear exposes one account-wide base-theme preference in this
-order: **Standard**, **Classic NT**, **Pip-Boy**, Vector, Foundry, Diagnostic,
+order: **Standard**, **Classic NT**, **Wastelander**, Vector, Foundry, Diagnostic,
 Highline, Synapse, Cyberpunk, Augmentation, Afterlight, Relay, and Bastion.
 Standard is the default. Classic selects the original `theme-nanotrasen`
 component styling without the MeridianOS console layer. Authored specialty
@@ -41,8 +41,9 @@ theme used elsewhere.
 
 The twelve palette-bearing MeridianOS skins are:
 
-- Pip-Boy — monochrome phosphor hardware, keyed title blocks, and CRT
-  calibration rails.
+- Wastelander — muted phosphor, weathered olive casing, inset label plates,
+  and CRT calibration rails. The stored `meridian_pipboy` ID is retained so
+  existing player preferences continue selecting the renamed theme.
 - Vector — paired notches, calibration ticks, and measurement rails.
 - Foundry — recessed machinery, fasteners, and warning-only hatching.
 - Diagnostic — square brackets, alignment ticks, and acquisition nodes.
@@ -76,6 +77,16 @@ The Preferences character preview relies on the geometry-ready lifecycle in
 and the BYOND 516 stress matrix still required on a runtime host.
 
 ## Research translation
+
+Wastelander draws on Bethesda's [vintage CRT reference](https://fallout.bethesda.net/en-US/news/fallout-pip-boy-3000-replica)
+and [weathered casing and monochrome screen reference](https://gear.bethesda.net/products/fallout-series-pip-boy-die-cast-replica).
+Its muted olive palette is an interpretation, not an official Fallout palette.
+Static edge wear, recessed label plates, and a shadow instead of green bloom
+suggest worn equipment while keeping reading surfaces clear. The lobby artwork
+uses the same semantic colors instead of a separate pure-lime override.
+[W3C text contrast](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html)
+and [non-text contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html)
+guide the retained reading contrast, control boundaries, and distinct focus state.
 
 The primary visual references are the supplied cyberpunk/FUI links, the
 existing Augments and Microfusion interfaces, and the resource ledger in

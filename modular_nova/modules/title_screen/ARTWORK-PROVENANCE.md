@@ -72,5 +72,5 @@ Pip-Boy, or other franchise branding is embedded.
 
 The original CSS scanline treatment remains a separate comparison option and
 contains no third-party texture pixels. The source-derived option is selected
-automatically for the Meridian Pip-Boy theme and can be explicitly selected by
+automatically for the Meridian Wastelander theme and can be explicitly selected by
 the controlled artwork preview.

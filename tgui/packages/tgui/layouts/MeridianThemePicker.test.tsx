@@ -29,7 +29,7 @@ describe('MeridianThemePicker', () => {
     expect(options).toHaveLength(MERIDIAN_BASE_THEME_OPTIONS.length);
     expect(options[0].textContent).toContain('Standard');
     expect(options[1].textContent).toContain('Classic NT');
-    expect(options[2].textContent).toContain('Pip-Boy');
+    expect(options[2].textContent).toContain('Wastelander');
     expect(options[0].getAttribute('aria-checked')).toBe('true');
     expect(options[1].getAttribute('aria-checked')).toBe('false');
     expect(options[2].getAttribute('aria-checked')).toBe('false');

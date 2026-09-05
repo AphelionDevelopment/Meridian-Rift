@@ -329,10 +329,18 @@
 
 
 .theme-meridian_pipboy .lobby-title-art {
-  --lobby-title-phosphor: lime;
-  --lobby-title-phosphor-secondary: green;
-  --lobby-title-screen: black;
-  --lobby-title-edge: rgb(0 255 0 / 14%);
+  --lobby-title-phosphor: var(--console-interaction-accent);
+  --lobby-title-phosphor-secondary: var(--console-border-control);
+  --lobby-title-screen: var(--console-surface-recessed);
+  --lobby-title-edge: color-mix(in srgb, var(--console-interaction-accent) 10%, transparent);
+
+  .lobby-title-art__mark {
+    filter: none;
+  }
+
+  .lobby-title-art__scanlines {
+    opacity: 0.1;
+  }
 }
 
 @media (prefers-contrast: more) {

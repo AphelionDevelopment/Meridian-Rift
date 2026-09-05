@@ -77,7 +77,7 @@ describe('TitleArtwork', () => {
     expect(resolveLobbyTitleTexture('unknown', false)).toBe('original');
   });
 
-  it('selects the licensed scanlines for the Pip-Boy theme', () => {
+  it('selects the licensed scanlines for the Wastelander theme', () => {
     document.documentElement.classList.add('theme-meridian_pipboy');
     const { container } = render(
       <TitleArtwork
@@ -92,7 +92,7 @@ describe('TitleArtwork', () => {
     ).toBe('navarobl');
   });
 
-  it('lets an explicit Original choice override Pip-Boy auto selection', () => {
+  it('lets an explicit Original choice override Wastelander auto selection', () => {
     document.documentElement.classList.add('theme-meridian_pipboy');
     const { container } = render(
       <TitleArtwork

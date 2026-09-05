@@ -134,11 +134,11 @@ describe('Layout theme class management', () => {
     );
   });
 
-  it('applies Pip-Boy through the Meridian console layer', () => {
+  it('applies Wastelander through the Meridian console layer', () => {
     store.set(meridianThemeAtom, 'meridian_pipboy');
     render(
       <Provider store={store}>
-        <Layout>Pip-Boy</Layout>
+        <Layout>Wastelander</Layout>
       </Provider>,
     );
 
