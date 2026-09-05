@@ -15,6 +15,7 @@
 @include meta.load-css('./aphelion.scss');
 @include meta.load-css('~tgui/styles/visual-system/title-art.scss');
 @include meta.load-css('./title-art.scss');
+@include meta.load-css('./wastelander.scss');
 // APHELION EDIT ADDITION END
 
 .Tooltip {

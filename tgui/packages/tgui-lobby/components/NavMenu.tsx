@@ -15,6 +15,18 @@ export function NavMenu({
 }) {
   return (
     <div className="container_nav">
+      {serverState.meridianTheme === 'meridian_pipboy' && (
+        <div className="lobby-terminal-heading">
+          <span>PERSONNEL TERMINAL</span>
+          <span className="lobby-terminal-phase">
+            {serverState.gamePhase === 'pregame'
+              ? 'PRE-ROUND'
+              : serverState.gamePhase === 'playing'
+                ? 'ROUND ACTIVE'
+                : 'STANDBY'}
+          </span>
+        </div>
+      )}
       {!!serverState.canReady && (
         <MenuButton onClick={() => sendAction('ready_toggle')}>
           {serverState.isReady ? (

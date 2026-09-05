@@ -279,6 +279,33 @@
 }
 
 .theme-console.theme-meridian_highline {
+  .TitleBar {
+    color: var(--console-surface-canvas);
+    background: var(--highline-ceramic);
+    border-bottom-color: var(--console-surface-recessed);
+  }
+
+  .TitleBar__title,
+  .TitleBar__statusIcon {
+    color: var(--console-surface-canvas);
+  }
+
+  .TitleBar__close {
+    color: var(--console-surface-canvas);
+    opacity: 1;
+
+    &:hover {
+      color: var(--console-text-primary);
+      background-color: var(--console-surface-raised);
+    }
+  }
+
+  // Focus on the pale plate needs a dark edge; content keeps its blue focus.
+  .TitleBar :is(.TitleBar__close, .TitleBar__utilityButton, .MeridianThemePicker__trigger):focus-visible {
+    outline-color: var(--console-surface-canvas);
+    box-shadow: 0 0 0 1px var(--highline-ceramic);
+  }
+
   .Window::before {
     border-color: var(--console-border-strong);
   }
@@ -291,7 +318,7 @@
   .Section > .Section__title::after {
     left: 0;
     width: 100%;
-    background: var(--console-border-strong);
+    background: var(--console-border-separator);
   }
 
   .TitleBar::after {
@@ -299,7 +326,7 @@
     width: calc(
       100% - var(--console-chrome-safe-left) - var(--console-chrome-safe-right)
     );
-    background: var(--console-border-strong);
+    background: var(--console-interaction-selected);
   }
 
   .Button--selected,

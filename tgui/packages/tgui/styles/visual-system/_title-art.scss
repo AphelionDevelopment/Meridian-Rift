@@ -328,6 +328,17 @@
 }
 
 
+.theme-meridian_highline .lobby-title-art {
+  --lobby-title-phosphor: var(--console-interaction-accent);
+  --lobby-title-phosphor-secondary: var(--console-border-control);
+  --lobby-title-screen: var(--console-surface-recessed);
+  --lobby-title-edge: color-mix(in srgb, var(--console-interaction-selected) 8%, transparent);
+
+  .lobby-title-art__mark {
+    filter: none;
+  }
+}
+
 .theme-meridian_pipboy .lobby-title-art {
   --lobby-title-phosphor: var(--console-interaction-accent);
   --lobby-title-phosphor-secondary: var(--console-border-control);

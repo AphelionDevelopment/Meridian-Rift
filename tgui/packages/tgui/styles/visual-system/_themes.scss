@@ -151,8 +151,11 @@
   --console-frame-left-weight: 2px;
   --console-frame-right-weight: 2px;
   --console-frame-bottom-weight: 2px;
-  --console-border-subtle: var(--console-border-control);
-  --console-border-separator: var(--console-border-control);
+  // Pale structural edges, quiet panel seams, and an unlit ceramic title plate.
+  --console-border-strong: var(--console-border-control);
+  --console-border-subtle: color-mix(in srgb, var(--console-border-control) 48%, var(--console-surface-base));
+  --console-border-separator: color-mix(in srgb, var(--console-border-control) 60%, var(--console-surface-base));
+  --highline-ceramic: color-mix(in srgb, var(--console-text-primary) 75%, var(--console-border-control));
   --console-text-disabled: var(--console-text-secondary);
   --console-corner-cut: 0;
   --console-frame-layer: 2px;
@@ -160,6 +163,8 @@
   --console-title-rail: 100%;
   --console-motif-opacity: 0;
   --console-selected-rail: 4px;
+  --console-loader-crown-color: #d9dedb;
+  --console-loader-progress-core: #d5bd68;
   --console-loader-ticks: 4;
   --console-loader-tick-step: 90deg;
   --console-loader-tick-width: 36deg;
@@ -170,13 +175,13 @@
   --console-loader-track-width: 5px;
   --console-loader-cage-pattern: conic-gradient(
     from -68deg,
-    var(--console-text-primary) 0deg 66deg,
+    #e2e5df 0deg 66deg,
     var(--console-surface-canvas) 66deg 112deg,
-    var(--console-text-primary) 112deg 178deg,
+    #e2e5df 112deg 178deg,
     var(--console-surface-canvas) 178deg 224deg,
-    var(--console-text-primary) 224deg 290deg,
+    #e2e5df 224deg 290deg,
     var(--console-surface-canvas) 290deg 336deg,
-    var(--console-text-primary) 336deg
+    #e2e5df 336deg
   );
   --console-loader-core-size: 30%;
   --console-loader-core-shape: inset(0);
@@ -184,6 +189,14 @@
   --console-overlay-shadow: none;
   --augmentation-glow: var(--augmentation-frame);
   --tab-background: var(--console-surface-recessed);
+
+  // Retain Highline's white-and-yellow instrument without brightening controls.
+  .DiagnosticLoader__instrument {
+    --console-border-control: #d9dedb;
+    --console-interaction-accent: #d5bd68;
+    --console-interaction-selected: #dfcf87;
+    --console-interaction-focus: #d5bd68;
+  }
 }
 
 .theme-meridian_synapse {
