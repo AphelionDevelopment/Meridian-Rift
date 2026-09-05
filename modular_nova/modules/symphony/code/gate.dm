@@ -96,7 +96,7 @@ GLOBAL_LIST_INIT(symphony_gate_free_actions, list("server_swap"))
 
 /// May sleep. Display and signal handlers must continue to use the cache-only gate.
 /proc/symphony_validate_ready_players()
-	for(var/mob/dead/new_player/player as anything in GLOB.new_player_list.Copy())
+	for(var/mob/dead/new_player/player as anything in GLOB.new_player_list)
 		if(!QDELETED(player))
 			player.symphony_validate_ready()
 

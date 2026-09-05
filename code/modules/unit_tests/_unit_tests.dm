@@ -285,7 +285,6 @@
 #include "plantgrowth_tests.dm"
 #include "preference_species.dm"
 #include "preferences.dm"
-#include "preferences_import.dm"
 #include "projectiles.dm"
 #include "punpun.dm"
 #include "quirks.dm"
@@ -354,8 +353,6 @@
 #include "suit_sensor.dm"
 #include "suit_storage_icons.dm"
 #include "surgeries.dm"
-#include "symphony_moderation.dm"
-#include "symphony_whitelist.dm"
 #include "syringe_gun.dm"
 #include "tail_wag.dm"
 #include "teleporters.dm"
@@ -378,7 +375,6 @@
 #include "washing.dm"
 #include "weird_food.dm"
 #include "wizard_loadout.dm"
-#include "world_topic_log_redaction.dm"
 // NOVA EDIT START
 #include "~nova\accessory_layers.dm"
 #include "~nova\augment_items.dm"
@@ -388,7 +384,11 @@
 #include "~nova\liver_nova.dm"
 #include "~nova\neuroware_chips.dm"
 #include "~nova\opposing_force.dm"
+#include "~nova\preferences_import.dm"
 #include "~nova\shuttle.dm"
+#include "~nova\symphony_moderation.dm"
+#include "~nova\symphony_whitelist.dm"
+#include "~nova\world_topic_log_redaction.dm"
 // NOVA EDIT END
 // END_INCLUDE
 #ifdef REFERENCE_TRACKING_DEBUG //Don't try and parse this file if ref tracking isn't turned on. IE: don't parse ref tracking please mr linter

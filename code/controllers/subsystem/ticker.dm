@@ -37,8 +37,8 @@ SUBSYSTEM_DEF(ticker)
 
 	/// Time left until the round starts after all subsystems initialize
 	var/timeLeft = 120 SECONDS
-	/// value used to initialize `timeLeft` when the master subsystem finishes initializing.
-	/// We do this to allow for the timer to be set manually before all subsystems initialize,
+	/// value used to initialize `timeLeft` when the master subsystem finishes initializing. 
+	/// We do this to allow for the timer to be set manually before all subsystems initialize, 
 	/// while also making sure that when the timer does start, it does so at the value we have set.
 	/// This is set to the config value when SSticker initializes, so setting this only makes sense after that point.
 	var/start_at = 120 SECONDS
@@ -485,7 +485,7 @@ SUBSYSTEM_DEF(ticker)
 		if(QDELETED(player))
 			continue
 		// APHELION EDIT ADDITION END
-		if(ready_to_create && player.mind) // APHELION EDIT CHANGE - Revalidate admission after setup yields. - ORIGINAL: if(player.ready == PLAYER_READY_TO_PLAY && player.mind)
+		if(ready_to_create && player.mind) // APHELION EDIT CHANGE - Revalidate admission after setup yields.
 			GLOB.joined_player_list += player.ckey
 			var/atom/destination = player.mind.assigned_role.get_roundstart_spawn_point()
 			if(!destination) // Failed to fetch a proper roundstart location, won't be going anywhere.
@@ -616,7 +616,7 @@ SUBSYSTEM_DEF(ticker)
 
 /datum/controller/subsystem/ticker/proc/transfer_characters()
 	var/list/livings = list()
-	for(var/mob/dead/new_player/player as anything in GLOB.new_player_list.Copy()) // APHELION EDIT CHANGE - Rejected admission creates a replacement lobby.
+	for(var/mob/dead/new_player/player as anything in GLOB.new_player_list)
 		// APHELION EDIT ADDITION START - Close the admission gap while characters were being equipped.
 		if(QDELETED(player) || !player.symphony_validate_roundstart_transfer() || QDELETED(player))
 			continue

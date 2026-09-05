@@ -16,9 +16,11 @@ GAME_VERB(/client, ooc, VERB_OOC, null)
 		to_chat(usr, span_warning("Failed to send your OOC message. You attempted to send the following message:\n[span_big(msg)]"))
 		return
 
-	if(!holder && isnewplayer(mob) && CONFIG_GET(flag/symphony_enabled) && !is_symphony_whitelisted(ckey)) // APHELION EDIT - discord whitelist gate
+	// APHELION EDIT ADDITION START - DISCORD WHITELIST GATE
+	if(!holder && isnewplayer(mob) && CONFIG_GET(flag/symphony_enabled) && !is_symphony_whitelisted(ckey))
 		to_chat(src, span_danger("You must be whitelisted to use OOC. Ahelp if you need help getting whitelisted."))
 		return
+	// APHELION EDIT ADDITION END
 
 	if(isnull(holder))
 		if(!GLOB.ooc_allowed)
