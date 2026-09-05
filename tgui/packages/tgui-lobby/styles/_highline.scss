@@ -1,6 +1,10 @@
 // THIS IS AN APHELION UI FILE
-// Wastelander controls sit beneath the same glass as the title artwork.
-.theme-meridian_pipboy .lobby {
+// Ceramic plates and graphite insets carry Highline into the lobby menu.
+.theme-meridian_highline .lobby {
+  --highline-menu-inset: clamp(12px, 1.5vmin, 20px);
+  --highline-menu-gutter: clamp(22px, 2.4vmin, 32px);
+  --highline-menu-font: 'Bahnschrift', 'Segoe UI', Arial, sans-serif;
+
   .container_nav {
     top: auto;
     bottom: clamp(28px, 9vmin, 124px);
@@ -8,7 +12,7 @@
     max-height: min(60vmin, calc(100% - 28vmin));
     min-height: 0;
     transform: translateX(-50%);
-    padding: clamp(14px, 1.6vmin, 22px);
+    padding: var(--highline-menu-inset);
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: thin;
@@ -17,24 +21,21 @@
     border-radius: 0;
     opacity: 1;
     color: var(--lobby-text);
-    background:
-      linear-gradient(var(--lobby-boundary), var(--lobby-boundary))
-        top 3px left 4px / 42px 1px no-repeat,
-      linear-gradient(var(--lobby-boundary), var(--lobby-boundary))
-        bottom 3px right 4px / 28px 1px no-repeat,
-      linear-gradient(110deg, transparent 36%, var(--lobby-boundary) 37% 39%, transparent 40%)
-        right 20px top / 92px 2px no-repeat,
-      linear-gradient(180deg, var(--lobby-panel), var(--lobby-recessed));
+    background: linear-gradient(
+      180deg,
+      var(--lobby-panel),
+      var(--lobby-recessed)
+    );
     box-shadow:
       0 0 0 3px var(--lobby-recessed),
-      0 0 0 4px color-mix(in srgb, var(--lobby-boundary) 34%, transparent),
-      inset 0 0 0 4px color-mix(in srgb, var(--lobby-boundary) 12%, transparent),
-      0 8px 18px rgb(0 0 0 / 26%);
+      0 0 0 4px color-mix(in srgb, var(--lobby-boundary) 42%, transparent),
+      inset 3px 0 var(--console-surface-raised),
+      0 8px 18px rgb(0 0 0 / 24%);
 
     hr {
       height: 1px;
-      margin: clamp(6px, 0.8vmin, 11px) 0;
-      background: color-mix(in srgb, var(--lobby-boundary) 55%, transparent);
+      margin: clamp(7px, 0.85vmin, 12px) 0;
+      background: var(--console-border-separator);
       box-shadow: none;
     }
   }
@@ -44,57 +45,64 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 0 4px 12px;
-    margin-bottom: 8px;
-    border-bottom: 1px solid var(--lobby-boundary);
-    color: var(--lobby-text-muted);
-    font-family: var(--lobby-font);
-    font-size: clamp(12px, 1.25vmin, 16px);
-    letter-spacing: 0.12em;
+    margin: calc(-1 * var(--highline-menu-inset));
+    margin-bottom: var(--highline-menu-inset);
+    padding: clamp(12px, 1.3vmin, 18px) var(--highline-menu-inset);
+    border-bottom: 3px solid var(--lobby-accent-secondary);
+    color: var(--lobby-canvas);
+    background: var(--highline-ceramic);
+    font-family: var(--highline-menu-font);
+    font-size: clamp(13px, 1.4vmin, 19px);
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    line-height: 1.4;
     text-align: left;
   }
 
   .lobby-terminal-phase {
     flex-shrink: 0;
-    padding: 3px 6px;
-    border: 1px solid color-mix(in srgb, var(--lobby-boundary) 65%, transparent);
-    color: var(--lobby-accent);
-    font-size: 0.9em;
-    letter-spacing: 0.06em;
+    border-left: 1px solid var(--lobby-boundary);
+    padding-left: 14px;
+    font-size: 0.8em;
+    font-weight: 500;
+    letter-spacing: 0.09em;
   }
 
   .menu_button {
     position: relative;
-    min-height: clamp(30px, 3.6vmin, 42px);
+    min-height: clamp(32px, 3.4vmin, 46px);
     height: auto;
-    padding: 4px 10px 4px clamp(24px, 2.4vmin, 32px);
-    border-left: 2px solid transparent;
+    padding: 6px 12px 6px var(--highline-menu-gutter);
+    border-left: 3px solid transparent;
     color: var(--lobby-text);
-    font-size: clamp(16px, 2.4vmin, 28px);
+    font-family: var(--highline-menu-font);
+    font-size: clamp(16px, 2vmin, 27px);
     font-weight: 400;
-    letter-spacing: 0.025em;
-    line-height: 1.3;
+    letter-spacing: 0.07em;
+    line-height: 1.35;
     text-shadow: none;
     white-space: normal;
     overflow-wrap: anywhere;
     overflow: visible;
 
     &:first-of-type {
+      border-left-color: var(--lobby-accent-secondary);
       color: var(--lobby-accent-secondary);
+      background: color-mix(in srgb, var(--lobby-accent-secondary) 7%, var(--lobby-recessed));
     }
 
     &:hover:not(:disabled),
     &:focus-visible {
-      padding-left: clamp(24px, 2.4vmin, 32px);
-      color: var(--lobby-focus);
+      padding-left: var(--highline-menu-gutter);
       border-left-color: var(--lobby-focus);
-      background: color-mix(in srgb, var(--lobby-accent) 10%, var(--lobby-recessed));
+      color: var(--lobby-focus);
+      background: color-mix(in srgb, var(--lobby-accent-secondary) 14%, var(--lobby-recessed));
     }
 
     &:hover:not(:disabled)::before,
     &:focus-visible::before {
       position: absolute;
-      left: 6px;
+      left: 7px;
       top: 50%;
       width: auto;
       transform: translateY(-50%);
@@ -108,8 +116,8 @@
     }
 
     &:active:not(:disabled) {
+      padding-left: var(--highline-menu-gutter);
       transform: none;
-      padding-left: clamp(24px, 2.4vmin, 32px);
       background: var(--console-interaction-pressed);
     }
 
@@ -133,12 +141,14 @@
   }
 
   .trait_list {
-    padding-left: clamp(24px, 2.4vmin, 32px);
+    padding-left: var(--highline-menu-gutter);
   }
 
   .trait_button {
-    min-height: 30px;
-    font-size: clamp(16px, 2.1vmin, 25px);
+    min-height: 32px;
+    font-family: var(--highline-menu-font);
+    font-size: clamp(16px, 1.8vmin, 24px);
+    letter-spacing: 0.04em;
     text-align: left;
     text-shadow: none;
   }
@@ -148,10 +158,17 @@
     overflow-wrap: anywhere;
   }
 
+  .trait_feedback {
+    font-family: var(--highline-menu-font);
+    color: var(--lobby-text-muted);
+    text-shadow: none;
+  }
+
   .menu_newpoll {
     animation: none;
-    border-left-color: var(--lobby-focus);
-    color: var(--lobby-focus);
+    padding-left: var(--highline-menu-gutter);
+    border-left-color: var(--lobby-accent-secondary);
+    color: var(--lobby-accent-secondary);
 
     &::before,
     &::after {
@@ -161,8 +178,9 @@
 }
 
 @media (forced-colors: active) {
-  .theme-meridian_pipboy .lobby {
-    .container_nav {
+  .theme-meridian_highline .lobby {
+    .container_nav,
+    .lobby-terminal-heading {
       color: CanvasText;
       background: Canvas;
       border-color: CanvasText;
@@ -170,7 +188,7 @@
     }
 
     .menu_button,
-    .lobby-terminal-heading,
+    .menu_button:first-of-type,
     .lobby-terminal-phase,
     .checked,
     .unchecked,

@@ -225,7 +225,7 @@ describe('TitleArtwork', () => {
       <TitleArtwork treatment="mask" src="asset://mark.png" />,
     );
     for (const variant of ['flat', 'edge', 'convex'] as const) {
-      for (const bezel of ['rusty', 'rusty-dark', 'classic', 'none'] as const) {
+      for (const bezel of ['rusty', 'rusty-dark', 'aphelion', 'classic', 'none'] as const) {
         rerender(
           <TitleArtwork
             bezel={bezel}

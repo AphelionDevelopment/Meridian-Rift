@@ -134,7 +134,8 @@
   // Restated because upstream zeroes these at the same specificity we just
   // matched. Zero is symmetric, so these stay aligned with everything else.
   .Stack > .Button,
-  .Stack__item > .Button {
+  .Stack__item > .Button,
+  .Dropdown > .Button {
     margin-top: 0;
     margin-bottom: 0;
   }

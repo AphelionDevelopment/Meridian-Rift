@@ -35,9 +35,9 @@ function contrast(first: string, second: string): number {
 }
 
 describe('MeridianOS theme catalog', () => {
-  it('contains twelve palette skins and thirteen ordered player themes', () => {
-    expect(new Set(MERIDIAN_THEME_IDS).size).toBe(12);
-    expect(new Set(MERIDIAN_BASE_THEME_IDS).size).toBe(13);
+  it('contains thirteen palette skins and fourteen ordered player themes', () => {
+    expect(new Set(MERIDIAN_THEME_IDS).size).toBe(13);
+    expect(new Set(MERIDIAN_BASE_THEME_IDS).size).toBe(14);
     expect(DEFAULT_MERIDIAN_BASE_THEME).toBe('meridian');
     expect(MERIDIAN_THEME_IDS).toEqual([
       'meridian',
@@ -52,6 +52,7 @@ describe('MeridianOS theme catalog', () => {
       'meridian_afterlight',
       'meridian_relay',
       'meridian_bastion',
+      'meridian_aphelion',
     ]);
     expect(MERIDIAN_BASE_THEME_IDS).toEqual([
       'meridian',
@@ -67,6 +68,7 @@ describe('MeridianOS theme catalog', () => {
       'meridian_afterlight',
       'meridian_relay',
       'meridian_bastion',
+      'meridian_aphelion',
     ]);
     expect(MERIDIAN_BASE_THEME_OPTIONS.slice(0, 3)).toEqual([
       expect.objectContaining({ id: 'meridian', name: 'Standard' }),
@@ -137,6 +139,25 @@ describe('MeridianOS theme resolution', () => {
     );
     expect(normalizeMeridianTheme('meridian_pipboy')).toBe('meridian_pipboy');
     expect(normalizeMeridianBaseTheme('unregistered-theme')).toBe('meridian');
+  });
+
+  it('resolves Aphelion as a requested or saved console theme', () => {
+    expect(normalizeMeridianBaseTheme('meridian_aphelion')).toBe(
+      'meridian_aphelion',
+    );
+    expect(normalizeMeridianTheme('meridian_aphelion')).toBe(
+      'meridian_aphelion',
+    );
+    for (const options of [
+      { requested: 'meridian_aphelion' },
+      { requested: 'meridian', preferred: 'meridian_aphelion' as const },
+    ]) {
+      expect(resolveMeridianTheme(options)).toEqual({
+        base: 'meridian_aphelion',
+        classes: ['theme-meridian_aphelion', 'theme-console'],
+        isConsole: true,
+      });
+    }
   });
 
   it('falls unknown requested themes back to Standard', () => {

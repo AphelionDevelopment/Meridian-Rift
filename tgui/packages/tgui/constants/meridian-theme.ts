@@ -239,6 +239,25 @@ export const MERIDIAN_THEMES = [
       focus: '#FFE6A3',
     },
   },
+  {
+    id: 'meridian_aphelion',
+    name: 'Aphelion',
+    construction:
+      'Warm instrument housings, cream labels, and spectrum calibration rules',
+    production: true,
+    palette: {
+      canvas: '#131110',
+      panel: '#1A1714',
+      raised: '#211D19',
+      recessed: '#0E0C0B',
+      boundary: '#8F887C',
+      text: '#ECE5D8',
+      mutedText: '#A89F90',
+      accent: '#56D4DC',
+      secondaryAccent: '#56D4DC',
+      focus: '#56D4DC',
+    },
+  },
 ] as const satisfies ReadonlyArray<{
   id: string;
   name: string;

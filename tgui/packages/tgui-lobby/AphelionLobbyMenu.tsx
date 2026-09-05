@@ -18,6 +18,7 @@ import {
   TitleArtwork,
 } from 'tgui/interfaces/common/TitleArtwork';
 import type { ServerState } from './LobbyMenu';
+import { getLobbyMenuHeading } from './menuTheme';
 
 export function AphelionLobbyMenu({
   meridianTheme,
@@ -37,7 +38,7 @@ export function AphelionLobbyMenu({
 
   const scanlineOverlay = (() => {
     if (
-      meridianTheme !== 'meridian_pipboy' ||
+      !getLobbyMenuHeading(meridianTheme) ||
       serverState.gamePhase === 'startup' ||
       serverState.transparent ||
       !serverState.titleImageUrl

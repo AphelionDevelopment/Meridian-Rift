@@ -140,6 +140,7 @@
 		"bezels" = list(
 			list("id" = TITLE_BEZEL_RUSTY, "name" = "Rusty", "desc" = "Weathered red-brown steel with worn brass details"),
 			list("id" = TITLE_BEZEL_RUSTY_DARK, "name" = "Dark Brown", "desc" = "Dark brown weathered steel"),
+			list("id" = TITLE_BEZEL_APHELION, "name" = "Aphelion", "desc" = "Warm brown housing with a fine-grain finish"),
 			list("id" = TITLE_BEZEL_CLASSIC, "name" = "Classic", "desc" = "Original dark monitor rim"),
 			list("id" = TITLE_BEZEL_NONE, "name" = "None", "desc" = "No monitor rim"),
 		),

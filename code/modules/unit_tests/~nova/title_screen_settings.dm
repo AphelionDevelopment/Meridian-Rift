@@ -146,7 +146,7 @@
 	// Every bezel choice is independent of scanlines and the screen effect.
 	TEST_ASSERT(SStitle.set_screen_settings("alpha.png", list("texture" = "none")), "Turning scanlines off was rejected.")
 	SStitle.set_title_selection("alpha.png")
-	for(var/bezel in list(TITLE_BEZEL_NONE, TITLE_BEZEL_CLASSIC, TITLE_BEZEL_RUSTY, TITLE_BEZEL_RUSTY_DARK))
+	for(var/bezel in list(TITLE_BEZEL_NONE, TITLE_BEZEL_CLASSIC, TITLE_BEZEL_RUSTY, TITLE_BEZEL_RUSTY_DARK, TITLE_BEZEL_APHELION))
 		TEST_ASSERT(SStitle.set_screen_settings("alpha.png", list("bezel" = bezel)), "The [bezel] bezel choice was rejected.")
 		TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["bezel"], bezel, "The [bezel] bezel choice was not stored.")
 		TEST_ASSERT_EQUAL(SStitle.get_title_screen_option("alpha.png")["bezel"], bezel, "The screen option lost the [bezel] choice.")
@@ -180,6 +180,12 @@
 	SStitle.selected_title_name = "alpha.png"
 	SStitle.set_showing(SStitle.get_title_screen_icon("beta.png"), "beta.png")
 	var/datum/title_screen_manager/manager = allocate(/datum/title_screen_manager)
+	var/list/manager_static = manager.ui_static_data(null)
+	var/aphelion_choice_found = FALSE
+	for(var/list/bezel_choice in manager_static["bezels"])
+		if(bezel_choice["id"] == TITLE_BEZEL_APHELION)
+			aphelion_choice_found = TRUE
+	TEST_ASSERT(aphelion_choice_found, "The title manager omitted the selectable Aphelion bezel.")
 	TEST_ASSERT_EQUAL(manager.draft_screen, "beta.png", "The title manager initialized from the stale pinned screen instead of the live screen.")
 	TEST_ASSERT(!manager.draft_selection_changed, "The title manager treated its live initial selection as an admin change.")
 	TEST_ASSERT(!manager.has_pending_changes(), "A newly opened title manager started with a dirty screen draft.")
@@ -192,6 +198,10 @@
 	TEST_ASSERT(manager.has_pending_changes(), "Choosing another bezel did not dirty the draft.")
 	TEST_ASSERT_EQUAL(manager.ui_data(null)["draftBezel"], TITLE_BEZEL_RUSTY_DARK, "The manager preview lost its staged bezel choice.")
 	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("beta.png")["bezel"], TITLE_BEZEL_RUSTY, "A bezel draft changed the saved presentation before Apply.")
+	manager.draft_settings["bezel"] = TITLE_BEZEL_APHELION
+	TEST_ASSERT(manager.has_pending_changes(), "Choosing the Aphelion bezel did not dirty the draft.")
+	TEST_ASSERT_EQUAL(manager.ui_data(null)["draftBezel"], TITLE_BEZEL_APHELION, "The manager preview lost its staged Aphelion bezel.")
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("beta.png")["bezel"], TITLE_BEZEL_RUSTY, "The Aphelion draft changed the saved presentation before Apply.")
 	manager.reset_draft()
 	TEST_ASSERT_EQUAL(manager.draft_settings["bezel"], TITLE_BEZEL_RUSTY, "Reverting did not restore the live bezel choice.")
 	TEST_ASSERT(!manager.has_pending_changes(), "Reverting a bezel choice left the draft dirty.")
@@ -421,6 +431,10 @@
 	SStitle.title_screen_settings = list()
 	SStitle.load_title_settings()
 	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["bezel"], TITLE_BEZEL_RUSTY_DARK, "The Dark Brown choice did not survive a save and reload.")
+	TEST_ASSERT(SStitle.set_screen_settings("alpha.png", list("bezel" = TITLE_BEZEL_APHELION)), "The Aphelion choice was rejected after migration.")
+	SStitle.title_screen_settings = list()
+	SStitle.load_title_settings()
+	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("alpha.png")["bezel"], TITLE_BEZEL_APHELION, "The Aphelion choice did not survive a save and reload.")
 	TEST_ASSERT_EQUAL(SStitle.get_screen_settings("beta.png")["bezel"], TITLE_BEZEL_CLASSIC, "Saving another screen changed the migrated Classic bezel.")
 
 /// A transport change must update URLs without exposing an unpublished screen.

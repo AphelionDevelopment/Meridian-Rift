@@ -115,6 +115,7 @@
 		"meridian_afterlight",
 		"meridian_relay",
 		"meridian_bastion",
+		"meridian_aphelion",
 	)
 
 /datum/preference/choiced/meridian_theme/create_default_value()

@@ -17,6 +17,7 @@ export type LobbyTitleArtVariant = (typeof LOBBY_TITLE_ART_VARIANTS)[number];
 export const LOBBY_TITLE_BEZELS = [
   'rusty',
   'rusty-dark',
+  'aphelion',
   'classic',
   'none',
 ] as const;

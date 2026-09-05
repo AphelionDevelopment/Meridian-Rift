@@ -11,7 +11,7 @@ hackerman, retro-95, or other specialty themes.
 3. `_tokens.scss` defines runtime semantic variables and maps them to the
    public tgui-core component variables.
 4. `_themes.scss` supplies palette and construction profiles for Standard and
-   eleven additional MeridianOS skins.
+   twelve additional MeridianOS skins.
 5. `_components.scss` applies shared component states using semantic variables
    only.
 6. `_loader.scss` provides the fixed diagnostic-instrument layer set shared by
@@ -21,6 +21,8 @@ hackerman, retro-95, or other specialty themes.
    motifs.
 8. `_motion.scss` owns the small interaction transitions, reduced-motion
    behavior, and forced-colors fallback.
+9. `_aphelion-fonts.scss` shares the website fonts and grain with both bundles;
+   `_aphelion.scss` adds the scoped Aphelion window and control treatment.
 
 `Layout` resolves the window-local development override first, then an authored
 specialty theme, the saved player base theme, an ordinary requested/device
@@ -33,13 +35,13 @@ request `meridian`.
 
 The title-bar gear exposes one account-wide base-theme preference in this
 order: **Standard**, **Classic NT**, **Wastelander**, Vector, Foundry, Diagnostic,
-Highline, Synapse, Cyberpunk, Augmentation, Afterlight, Relay, and Bastion.
+Highline, Synapse, Cyberpunk, Augmentation, Afterlight, Relay, Bastion, and Aphelion.
 Standard is the default. Classic selects the original `theme-nanotrasen`
 component styling without the MeridianOS console layer. Authored specialty
 interfaces remain specialized while their gear still updates the saved base
 theme used elsewhere.
 
-The twelve palette-bearing MeridianOS skins are:
+Alongside Standard, the other twelve palette-bearing MeridianOS skins are:
 
 - Wastelander — muted phosphor, weathered olive casing, inset label plates,
   and CRT calibration rails. The stored `meridian_pipboy` ID is retained so
@@ -55,6 +57,12 @@ The twelve palette-bearing MeridianOS skins are:
 - Afterlight — retrofit/noir bezel slabs and substantial keycaps.
 - Relay — manufactured-spacecraft equipment bays, labels, and lamp blocks.
 - Bastion — monumental slab rails, portal corners, and large negative fields.
+- Aphelion — warm brown instrument housings, cream labels, cyan controls, and
+  restrained spectrum calibration rules drawn from the Meridian website.
+
+The Lobby Title Screen manager also offers **Aphelion** as an independent
+bezel choice. Its brown casing works with every interface theme; selecting a
+player theme does not change the saved per-screen bezel.
 
 Cyberpunk uses original, two-color nine-slice SVG chassis artwork for its outer
 window and first-level panels. Its previous fixed-percentage title dashes are
@@ -77,6 +85,13 @@ The Preferences character preview relies on the geometry-ready lifecycle in
 and the BYOND 516 stress matrix still required on a runtime host.
 
 ## Research translation
+
+Aphelion reproduces the warm surfaces, cream typography, cyan controls, and
+spectrum motif of the [Meridian website](https://meridian.a13.info/about/).
+The exact website fonts and grain texture, source URLs, hashes, and licenses
+are documented in [the asset ledger](../assets/aphelion/README.md). Rspack
+inlines these assets into both bundles so the theme requires no additional
+font or texture requests from the BYOND browser.
 
 Wastelander draws on Bethesda's [vintage CRT reference](https://fallout.bethesda.net/en-US/news/fallout-pip-boy-3000-replica)
 and [weathered casing and monochrome screen reference](https://gear.bethesda.net/products/fallout-series-pip-boy-die-cast-replica).

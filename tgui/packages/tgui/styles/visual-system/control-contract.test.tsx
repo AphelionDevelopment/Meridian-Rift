@@ -5,7 +5,14 @@ import { join } from 'node:path';
 import type { CSSProperties } from 'react';
 import { cleanup, render } from '@testing-library/react';
 import { compileAsync } from 'sass-embedded';
-import { Button, Icon, NoticeBox, Tabs } from 'tgui-core/components';
+import {
+  Button,
+  Dropdown,
+  Icon,
+  NoticeBox,
+  Stack,
+  Tabs,
+} from 'tgui-core/components';
 
 import {
   MERIDIAN_THEME_IDS,
@@ -94,6 +101,45 @@ afterEach(cleanup);
 afterAll(() => productionStyle.remove());
 
 describe('MeridianOS shared control geometry', () => {
+  it('keeps dropdown arrows on the Stack control row', () => {
+    for (const theme of MERIDIAN_THEME_IDS) {
+      const view = render(
+        <div className={`theme-console theme-${theme}`}>
+          <Stack>
+            <Stack.Item>
+              <Button aria-label="Direct action" fontSize="22px" icon="undo" />
+            </Stack.Item>
+            <Stack.Item>
+              <Dropdown
+                buttons
+                onSelected={() => undefined}
+                options={['First', 'Second']}
+                selected="First"
+              />
+            </Stack.Item>
+          </Stack>
+        </div>,
+      );
+
+      const arrows = view.container.querySelectorAll('.Dropdown > .Button');
+      expect(arrows).toHaveLength(2);
+      for (const control of [
+        view.getByLabelText('Direct action'),
+        ...arrows,
+      ]) {
+        const style = getComputedStyle(control);
+        expect(style.marginTop, `${theme}: grouped control top margin`).toBe(
+          '0px',
+        );
+        expect(
+          style.marginBottom,
+          `${theme}: grouped control bottom margin`,
+        ).toBe('0px');
+      }
+      cleanup();
+    }
+  });
+
   it('uses one theme-console contract for every MeridianOS skin', () => {
     expect(COMPONENT_SOURCE).toMatch(
       /^(?:\/\/[^\n]*\n)*\.theme-console \{/,

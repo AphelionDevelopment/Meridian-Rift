@@ -246,7 +246,7 @@ describe('LobbyMenu MeridianOS integration', () => {
     render(<LobbyMenu />);
     emit('init', makeServerState({ gamePhase: 'pregame' }));
 
-    for (const titleBezel of ['classic', 'none', 'rusty-dark', 'rusty'] as const) {
+    for (const titleBezel of ['classic', 'none', 'rusty-dark', 'aphelion', 'rusty'] as const) {
       emit('state', { titleBezel });
 
       const artwork = document.querySelector('.lobby-title-art');
@@ -262,7 +262,11 @@ describe('LobbyMenu MeridianOS integration', () => {
     }
   });
 
-  for (const meridianTheme of ['meridian_pipboy'] as const) {
+  for (const meridianTheme of [
+    'meridian_pipboy',
+    'meridian_highline',
+    'meridian_aphelion',
+  ] as const) {
     it(`keeps ${meridianTheme} menu scanlines aligned with each bezel choice`, () => {
       render(<LobbyMenu />);
       emit('init', makeServerState({ gamePhase: 'pregame', meridianTheme }));
@@ -270,6 +274,7 @@ describe('LobbyMenu MeridianOS integration', () => {
       const choices = [
         { incoming: 'rusty', expected: 'rusty' },
         { incoming: 'rusty-dark', expected: 'rusty-dark' },
+        { incoming: 'aphelion', expected: 'aphelion' },
         { incoming: 'classic', expected: 'classic' },
         { incoming: 'none', expected: 'none' },
         { incoming: true, expected: 'classic' },

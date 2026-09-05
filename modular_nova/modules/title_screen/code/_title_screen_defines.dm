@@ -57,6 +57,7 @@
 #define TITLE_BEZEL_CLASSIC "classic"
 #define TITLE_BEZEL_RUSTY "rusty"
 #define TITLE_BEZEL_RUSTY_DARK "rusty-dark"
+#define TITLE_BEZEL_APHELION "aphelion"
 #define TITLE_DEFAULT_BEZEL TITLE_BEZEL_RUSTY
 
 /// Rank that may change the title screen, matching ADMIN_VERB(admin_change_title_screen).

@@ -2,6 +2,7 @@
 import type { MouseEvent } from 'react';
 import { sendAction } from '../actions';
 import type { ServerState } from '../LobbyMenu';
+import { getLobbyMenuHeading } from '../menuTheme';
 import { MenuButton } from './MenuButton';
 import { StationTraitList } from './StationTraitList';
 
@@ -13,11 +14,13 @@ export function NavMenu({
   serverState: ServerState;
   assetMap: Record<string, string>;
 }) {
+  const heading = getLobbyMenuHeading(serverState.meridianTheme);
+
   return (
     <div className="container_nav">
-      {serverState.meridianTheme === 'meridian_pipboy' && (
+      {heading && (
         <div className="lobby-terminal-heading">
-          <span>PERSONNEL TERMINAL</span>
+          <span>{heading}</span>
           <span className="lobby-terminal-phase">
             {serverState.gamePhase === 'pregame'
               ? 'PRE-ROUND'

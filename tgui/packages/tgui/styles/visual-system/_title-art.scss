@@ -321,6 +321,25 @@
     inset 0 0 8cqmin rgb(0 0 0 / 92%);
 }
 
+// A warm, finely textured housing that can be selected with any interface theme.
+.lobby-title-art--bezel-aphelion .lobby-title-art__bezel::before {
+  border-color: #453f36;
+  // The opaque brown coat leaves the original grain at the site's 2% strength.
+  background:
+    linear-gradient(145deg, rgb(41 37 32 / 98%), rgb(26 23 20 / 98%) 46%, rgb(33 29 25 / 98%) 74%, rgb(14 12 11 / 98%)),
+    url('~tgui/styles/assets/aphelion/aphelion-grain-blue-noise-512.png') repeat;
+  background-size: auto, 512px 512px;
+  box-shadow: inset 0 0 0 0.65cqmin rgb(0 0 0 / 32%), inset 0.15cqmin 0.15cqmin 0.2cqmin rgb(236 229 216 / 6%);
+}
+
+.lobby-title-art--bezel-aphelion .lobby-title-art__screen {
+  box-shadow:
+    0 0 0 0.55cqmin #0e0c0b,
+    0 0 0 0.78cqmin #453f36,
+    inset 0 0 2.2cqmin rgb(236 229 216 / 5%),
+    inset 0 0 8cqmin rgb(0 0 0 / 92%);
+}
+
 .theme-nanotrasen .lobby-title-art {
   --lobby-title-phosphor: #cde;
   --lobby-title-phosphor-secondary: #8fb7ff;
@@ -379,6 +398,24 @@
   .lobby-title-art__scanlines {
     opacity: 0.1;
   }
+}
+
+.theme-meridian_aphelion .lobby-title-art {
+  --lobby-title-phosphor: #ece5d8;
+  --lobby-title-phosphor-secondary: #a89f90;
+  --lobby-title-screen: #131110;
+  --lobby-title-edge: rgb(236 229 216 / 4%);
+  --lobby-title-mark-background: linear-gradient(to bottom, #ece5d8, #a89f90);
+
+  .lobby-title-art__mark {
+    filter: none;
+  }
+
+  .lobby-title-art__scanlines,
+  .lobby-title-art__screen::after {
+    opacity: 0.016;
+  }
+
 }
 
 @media (prefers-contrast: more) {

@@ -32,6 +32,7 @@ beforeEach(() => {
     bezels: [
       { id: 'rusty', name: 'Rusty', desc: 'Weathered industrial metal' },
       { id: 'rusty-dark', name: 'Dark Brown', desc: 'Dark weathered metal' },
+      { id: 'aphelion', name: 'Aphelion', desc: 'Warm brown fine-grain housing' },
       { id: 'classic', name: 'Classic', desc: 'The original monitor rim' },
       { id: 'none', name: 'None', desc: 'No monitor rim' },
     ],
@@ -60,19 +61,21 @@ describe('TitleScreenManager bezel choices', () => {
     for (const [name, bezel] of [
       ['Rusty', 'rusty'],
       ['Dark Brown', 'rusty-dark'],
+      ['Aphelion', 'aphelion'],
       ['Classic', 'classic'],
       ['None', 'none'],
     ]) {
       fireEvent.click(screen.getByRole('button', { name }));
       expect(sendAct).toHaveBeenLastCalledWith('set', { bezel });
     }
-    expect(sendAct).toHaveBeenCalledTimes(4);
+    expect(sendAct).toHaveBeenCalledTimes(5);
   });
 
   for (const { value, expected, name } of [
     { value: undefined, expected: 'rusty', name: 'Rusty' },
     { value: 'rusty', expected: 'rusty', name: 'Rusty' },
     { value: 'rusty-dark', expected: 'rusty-dark', name: 'Dark Brown' },
+    { value: 'aphelion', expected: 'aphelion', name: 'Aphelion' },
     { value: 'classic', expected: 'classic', name: 'Classic' },
     { value: 'none', expected: 'none', name: 'None' },
     { value: 1, expected: 'classic', name: 'Classic' },

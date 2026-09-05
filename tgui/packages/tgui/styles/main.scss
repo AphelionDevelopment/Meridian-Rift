@@ -18,12 +18,14 @@
 // APHELION EDIT ADDITION START - MERIDIAN_UI
 // MeridianOS visual system: primitives -> runtime tokens -> shared treatment.
 @include meta.load-css('./visual-system/display-font.scss');
+@include meta.load-css('./visual-system/aphelion-fonts.scss');
 @include meta.load-css('./visual-system/tokens.scss');
 @include meta.load-css('./visual-system/themes.scss');
 @include meta.load-css('./visual-system/components.scss');
 @include meta.load-css('./visual-system/theme-picker.scss');
 @include meta.load-css('./visual-system/loader.scss');
 @include meta.load-css('./visual-system/decoration.scss');
+@include meta.load-css('./visual-system/aphelion.scss');
 @include meta.load-css('./visual-system/title-art.scss');
 @include meta.load-css('./visual-system/motion.scss');
 // Styles for the shared TimeoutBar, kept out of the upstream AlertModal sheet.

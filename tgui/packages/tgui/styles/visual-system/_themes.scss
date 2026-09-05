@@ -20,6 +20,7 @@
 @include theme(meridian_afterlight);
 @include theme(meridian_relay);
 @include theme(meridian_bastion);
+@include theme(meridian_aphelion);
 
 .theme-meridian {
   // Give the diamond frame consistent line weight on all four sides.
@@ -55,6 +56,8 @@
   --console-overlay-shadow: 0 4px 10px rgb(0 0 0 / 52%);
 }
 
+.theme-meridian_aphelion,
+.theme-meridian_classic,
 .theme-meridian,
 .theme-meridian_pipboy,
 .theme-meridian_vector,
@@ -366,4 +369,63 @@
     0 18%
   );
   --console-control-depth: inset 0 3px 0 var(--console-surface-recessed);
+}
+
+// The Meridian website's field-instrument palette and restrained calibration marks.
+.theme-meridian_aphelion {
+  --aphelion-line: #2e2a25;
+  --aphelion-line-strong: #453f36;
+  --aphelion-surface-selected: #292520;
+  --aphelion-spectrum: linear-gradient(90deg, #56d4dc 0%, #7bc86f 20%, #e5c25b 40%, #e0863f 60%, #d95f4c 80%, #c06bb4 100%);
+  --console-border-subtle: var(--aphelion-line);
+  --console-border-strong: var(--aphelion-line-strong);
+  --console-border-separator: var(--aphelion-line);
+  --console-text-disabled: #8f887c;
+  --color-label: var(--console-text-secondary);
+  --font-family: var(--aphelion-font-sans);
+  --font-family-mono: var(--aphelion-font-mono);
+  --console-font-display: var(--aphelion-font-display);
+  --console-heading-case: none;
+  --console-heading-tracking: 0.025em;
+  --console-corner-cut: 0px;
+  --console-frame-gap: 2px;
+  --console-corner-layer: 7px;
+  --console-title-rail: 180px;
+  --console-motif-opacity: 0.22;
+  --console-control-depth: inset 0 1px 1px rgb(0 0 0 / 16%);
+  --console-interaction-hover: color-mix(in srgb, #56d4dc 7%, #211d19);
+  --console-interaction-pressed: var(--aphelion-surface-selected);
+  --console-overlay-shadow: 0 2px 8px rgb(0 0 0 / 32%);
+  --console-loader-ticks: 24;
+  --console-loader-tick-step: 15deg;
+  --console-loader-crown-start: -0.5deg;
+  --console-loader-tick-width: 1deg;
+  --console-loader-tick-depth: 4%;
+  --console-loader-stroke: 1px;
+  --console-loader-stroke-secondary: 1px;
+  --console-loader-cage-width: 3px;
+  --console-loader-track-width: 2px;
+  --console-loader-core-size: 22%;
+  --console-loader-origin-width: 1px;
+  --console-loader-origin-height: 6px;
+  --console-loader-turn-duration: 9s;
+  --console-loader-cage-pattern: conic-gradient(
+    from -90deg,
+    #56d4dc 0deg 40deg, transparent 40deg 44deg,
+    #7bc86f 44deg 84deg, transparent 84deg 88deg,
+    #e5c25b 88deg 128deg, transparent 128deg 132deg,
+    #e0863f 132deg 172deg, transparent 172deg 176deg,
+    #d95f4c 176deg 216deg, transparent 216deg 220deg,
+    #c06bb4 220deg 260deg, transparent 260deg
+  );
+
+  // Instrument-local tokens also win over the lobby's boot palette bridge.
+  .DiagnosticLoader__instrument {
+    --console-loader-crown-color: #a89f90;
+    --console-loader-progress-core: #e5c25b;
+    --console-border-control: #8f887c;
+    --console-interaction-accent: #ece5d8;
+    --console-interaction-selected: #ece5d8;
+    --console-interaction-focus: #e5c25b;
+  }
 }

@@ -75,6 +75,8 @@ export default defineConfig({
       },
       {
         test: /\.(png|jpg)$/,
+        // APHELION EDIT ADDITION - This CSS texture ships inside the cached bundle.
+        exclude: /aphelion-grain-blue-noise-512\.png$/,
         type: 'asset/resource',
         generator: {
           filename: '[name][ext]',
@@ -82,9 +84,9 @@ export default defineConfig({
       },
       // APHELION EDIT ADDITION START - MERIDIAN_UI
       {
-        // MeridianOS display font is small enough to inline. This keeps font
-        // loading self-contained in BYOND's asset-cached stylesheet.
-        test: /\.woff2$/,
+        // Fonts and the small Aphelion grain tile stay self-contained in
+        // BYOND's asset-cached stylesheet, with no extra resource requests.
+        test: /(?:\.woff2|aphelion-grain-blue-noise-512\.png)$/,
         type: 'asset/inline',
       },
       // APHELION EDIT ADDITION END

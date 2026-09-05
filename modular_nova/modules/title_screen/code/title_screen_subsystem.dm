@@ -201,7 +201,7 @@ SUBSYSTEM_DEF(title)
 
 /// Bezel choices shared by draft validation, persistence, and lobby payloads.
 /datum/controller/subsystem/title/proc/is_title_bezel(bezel)
-	var/static/list/valid_bezels = list(TITLE_BEZEL_RUSTY, TITLE_BEZEL_RUSTY_DARK, TITLE_BEZEL_CLASSIC, TITLE_BEZEL_NONE)
+	var/static/list/valid_bezels = list(TITLE_BEZEL_RUSTY, TITLE_BEZEL_RUSTY_DARK, TITLE_BEZEL_APHELION, TITLE_BEZEL_CLASSIC, TITLE_BEZEL_NONE)
 	return istext(bezel) && (bezel in valid_bezels)
 
 /**

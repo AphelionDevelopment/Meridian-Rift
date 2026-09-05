@@ -131,6 +131,7 @@
 		"meridian_afterlight",
 		"meridian_relay",
 		"meridian_bastion",
+		"meridian_aphelion",
 	)
 	var/list/actual_ids = preference.get_choices()
 
@@ -187,6 +188,15 @@
 	TEST_ASSERT_EQUAL(test_preferences.save_call_count, 1, "Reselecting the canonical value persisted redundantly.")
 	TEST_ASSERT_EQUAL(first_ui.config_update_count, 1, "Reselecting the canonical value broadcast redundantly.")
 	TEST_ASSERT_EQUAL(test_lobby.update_count, 1, "Reselecting the canonical value broadcast to the lobby redundantly.")
+
+	TEST_ASSERT(test_client.set_meridian_theme("meridian_aphelion"), "The Aphelion theme selection was rejected.")
+	TEST_ASSERT_EQUAL(test_preferences.read_preference(preference.type), "meridian_aphelion", "The Aphelion selection was not applied.")
+	TEST_ASSERT_EQUAL(preference.deserialize(preference.serialize("meridian_aphelion"), null), "meridian_aphelion", "The saved Aphelion selection did not round-trip.")
+	TEST_ASSERT_EQUAL(test_preferences.save_call_count, 2, "The Aphelion selection was not persisted exactly once.")
+	TEST_ASSERT_EQUAL(first_ui.config_update_count, 2, "The first open TGUI did not receive the Aphelion update.")
+	TEST_ASSERT_EQUAL(second_ui.config_update_count, 2, "The second open TGUI did not receive the Aphelion update.")
+	TEST_ASSERT_EQUAL(test_lobby.update_count, 2, "The open lobby did not receive the Aphelion update.")
+	TEST_ASSERT_EQUAL(test_lobby.captured_theme, "meridian_aphelion", "The lobby received the wrong Aphelion preference ID.")
 
 	TEST_ASSERT_EQUAL(other_preferences.read_preference(preference.type), "meridian", "One client's selection mutated another preference owner.")
 	TEST_ASSERT_EQUAL(other_preferences.save_call_count, 0, "One client's selection persisted another preference owner.")
