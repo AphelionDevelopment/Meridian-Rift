@@ -5,7 +5,8 @@ Module ID: REFORM_COMBAT
 ### Description
 
 This module combines humanoid health and damage slowdown tuning, bounded projectile
-armor penetration, and stamina-based security baton takedowns.
+armor penetration, stamina-based security baton takedowns, and a miss penalty for
+projectiles aimed at arms or legs.
 All balance settings live in `code/__DEFINES/~aphelion_defines/reform_combat.dm`.
 Edit the defines and rebuild; no other file needs changing to tune these values.
 
@@ -18,6 +19,7 @@ Edit the defines and rebuild; no other file needs changing to tune these values.
 | `REFORM_COMBAT_STAMINA_CRIT_THRESHOLD`    | 135     | Stamina damage at incapacitation, before runtime modifiers.                |
 | `REFORM_COMBAT_DAMAGE_SLOWDOWN_THRESHOLD` | 60      | Health or stamina damage at which movement slowdown starts; previously 40. |
 | `REFORM_COMBAT_AP_MAX_BYPASS`             | 0.5     | Maximum fraction of armor protection bypassed by projectile AP.            |
+| `REFORM_COMBAT_LIMB_MISS_CHANCE`          | 100     | Percentage of failed arm/leg accuracy rolls that miss carbon targets entirely; previously 0. |
 
 Soft and hard crit are remaining-health values, not damage totals. Lower values
 delay incapacitation. Keep hard crit below soft crit and above the existing death
@@ -70,8 +72,32 @@ full-strength hits, taking at least five seconds from the first hit. Armor,
 resistance, and runtime threshold modifiers can change this. Other baton types
 retain their existing behavior.
 
+Projectile arm and leg targeting uses the existing accuracy roll, including range,
+projectile accuracy, and designated-target modifiers. At the default setting,
+failure passes through carbon targets without damage, wounds, embedding, or hit
+effects. The projectile continues and can hit other targets or obstacles. Each
+target is recorded in the existing impact list, so a missed target cannot trigger
+repeated rolls from the same passing projectile. Unsuppressed misses produce a
+combat message.
+
+With the standard accuracy values of 100 minus 7 per tile, arm/leg shots miss 14%
+of the time at two tiles, 35% at five tiles, and 49% at seven tiles. These are
+accuracy-roll probabilities, conditional on the projectile reaching a carbon
+target; physical spread and obstructions still apply. Accuracy retains its
+existing clamp of 5% to 100%. There is no new point-blank exemption.
+
+`REFORM_COMBAT_LIMB_MISS_CHANCE` ranges from 0 to 100 and applies only after a
+failed accuracy roll. At 50, half of those failures miss and half use the old
+weighted random body-zone fallback. At 0, the original targeting probabilities
+apply. Hands and feet count as their corresponding arms and legs. Chest, head,
+and groin aim, non-carbon targets, and melee attacks retain their existing
+targeting behavior. A random limb hit from chest/head aim does not incur this
+penalty. Successful hits retain their original damage and wound behavior.
+
 ### TG Proc/File Changes
 
+- `code/modules/projectiles/projectile.dm`: `impact` resolves the zone through the
+  module; `process_hit_loop` passes missed carbon targets before pre-hit effects.
 - `code/game/objects/items/weaponry/melee/baton.dm`: security baton delayed collapse
   is scheduled only when its knockdown duration is positive.
 - `code/modules/mob/living/carbon/human/human.dm`: `Initialize` applies combat settings;
@@ -88,6 +114,11 @@ retain their existing behavior.
 
 - `code/baton.dm`: security baton knockdown duration is zero.
 - `code/health.dm`: humanoid `get_stamina_crit_threshold` specializes the new living proc.
+
+### Modular helpers
+
+- `code/projectile_targeting.dm`: resolves limb accuracy failures and miss feedback,
+  using the projectile's existing phasing and impact bookkeeping.
 
 ### Defines
 

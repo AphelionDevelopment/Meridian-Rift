@@ -13,3 +13,5 @@
 #define REFORM_COMBAT_DAMAGE_SLOWDOWN_THRESHOLD 60
 /// Maximum fraction of protection bypassed by 100 AP. Original AP could bypass all protection.
 #define REFORM_COMBAT_AP_MAX_BYPASS 0.5
+/// Percentage of failed arm/leg accuracy rolls that miss carbon targets entirely. Original: 0. Range: 0 to 100.
+#define REFORM_COMBAT_LIMB_MISS_CHANCE 100

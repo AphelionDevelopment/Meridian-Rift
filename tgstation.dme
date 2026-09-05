@@ -7342,6 +7342,7 @@
 #include "modular_aphelion\modules\reform-combat\code\armor.dm"
 #include "modular_aphelion\modules\reform-combat\code\baton.dm"
 #include "modular_aphelion\modules\reform-combat\code\health.dm"
+#include "modular_aphelion\modules\reform-combat\code\projectile_targeting.dm"
 #include "modular_aphelion\modules\storage_navigation\code\storage_exit.dm"
 #include "modular_nova\master_files\code\_globalvars\configuration.dm"
 #include "modular_nova\master_files\code\_globalvars\regexes.dm"
