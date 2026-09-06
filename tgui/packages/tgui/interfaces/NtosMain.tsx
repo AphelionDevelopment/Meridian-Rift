@@ -75,7 +75,7 @@ export const NtosMain = (props) => {
                   }
                   backgroundColor={
                     alert_style === alert_relevancies.ALERT_RELEVANCY_SAFE
-                      ? '#0000000'
+                      ? '#00000000'
                       : alert_color
                   }
                   tooltip="The current alert level. Indicator becomes more intense when there is a threat, moreso if your department is responsible for handling it."

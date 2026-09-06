@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { clamp } from 'tgui-core/math';
 import { classes } from 'tgui-core/react';
+import { DiagnosticAcquisition } from './DiagnosticAcquisition';
 
 export type DiagnosticLoaderProps = {
   label?: ReactNode;
@@ -29,8 +30,8 @@ const isFiniteNumber = (value: number | undefined): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
 /**
- * Shared MeridianOS loading instrument. Theme styles alter the geometry of its
- * fixed layer set; component markup and accessibility semantics stay stable.
+ * Shared MeridianOS loading instrument. Theme styles alter the fixed layer set
+ * or opt into decorative linework; the parent retains progress semantics.
  */
 export function DiagnosticLoader(props: DiagnosticLoaderProps) {
   const {
@@ -100,6 +101,7 @@ export function DiagnosticLoader(props: DiagnosticLoaderProps) {
         role="progressbar"
         style={style}
       >
+        <DiagnosticAcquisition />
         <span aria-hidden className="DiagnosticLoader__light">
           <span className="DiagnosticLoader__outerCage" />
           <span className="DiagnosticLoader__innerMarks" />

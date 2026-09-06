@@ -14,7 +14,7 @@ beforeEach(() => setDocumentHidden(false));
 afterEach(() => setDocumentHidden(false));
 
 describe('DiagnosticLoader', () => {
-  it('renders an indeterminate instrument with a stable eight-layer DOM', () => {
+  it('preserves the base layers and a single progressbar with decorative linework', () => {
     const view = render(<DiagnosticLoader />);
     const progressbar = view.getByRole('progressbar');
 
@@ -29,9 +29,17 @@ describe('DiagnosticLoader', () => {
     const light = progressbar.querySelector('.DiagnosticLoader__light');
     expect(light?.getAttribute('aria-hidden')).toBe('true');
     expect(light?.querySelector('[role], [id], [tabindex]')).toBeNull();
+    const acquisition = progressbar.querySelector(
+      '.DiagnosticLoader__acquisition',
+    );
+    expect(acquisition?.getAttribute('aria-hidden')).toBe('true');
+    expect(acquisition?.getAttribute('focusable')).toBe('false');
+    expect(
+      acquisition?.querySelector('[role], [id], [tabindex], text'),
+    ).toBeNull();
     expect(view.getAllByRole('progressbar')).toHaveLength(1);
     const layers = Array.from(progressbar.children).filter(
-      (layer) => layer !== light,
+      (layer) => layer !== light && layer !== acquisition,
     );
     expect(layers).toHaveLength(8);
     expect(layers.map((layer) => layer.className)).toEqual([
