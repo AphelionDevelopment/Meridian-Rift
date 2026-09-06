@@ -23,9 +23,10 @@ export function KnownLanguage(props: { language: Language }) {
         }
       >
         <BlockQuote>{props.language.description}</BlockQuote>
-        <Stack className="LanguagesMenu__actions" wrap>
+        <Stack className="LanguagesMenu__actions" vertical inlineFlex>
           <Stack.Item>
             <Button
+              fluid
               color="bad"
               icon="brain"
               tooltip="Forgetting how to understand the language will also prevent you from speaking it."
@@ -40,6 +41,7 @@ export function KnownLanguage(props: { language: Language }) {
           </Stack.Item>
           <Stack.Item>
             <Button
+              fluid
               color={props.language.speaking ? 'good' : 'default'}
               icon={props.language.speaking ? 'comment' : 'comment-slash'}
               tooltip={
@@ -86,9 +88,10 @@ export function UnknownLanguage(props: { language: Language }) {
         }
       >
         <BlockQuote>{props.language.description}</BlockQuote>
-        <Stack className="LanguagesMenu__actions" wrap>
+        <Stack className="LanguagesMenu__actions" vertical inlineFlex>
           <Stack.Item>
             <Button
+              fluid
               color={!noPoints ? 'good' : 'grey'}
               icon="comment"
               tooltip="Learn to speak and understand the language."
@@ -101,6 +104,7 @@ export function UnknownLanguage(props: { language: Language }) {
           </Stack.Item>
           <Stack.Item>
             <Button
+              fluid
               color={!!noPoints && 'grey'}
               icon="brain"
               tooltip="Learn to understand the language but not speak it."
@@ -138,8 +142,8 @@ export function LanguagesPage() {
         It does not cost points to toggle speech of a language—it only costs
         points to add an entirely new language.
       </Section>
-      <Stack>
-        <Stack.Item minWidth="50%">
+      <Stack wrap>
+        <Stack.Item grow basis="24em" minWidth={0}>
           <Section
             title={
               <Box fontSize="150%">
@@ -154,7 +158,7 @@ export function LanguagesPage() {
             </Stack>
           </Section>
         </Stack.Item>
-        <Stack.Item minWidth="50%">
+        <Stack.Item grow basis="24em" minWidth={0}>
           <Section
             title={
               <Box fontSize="150%">

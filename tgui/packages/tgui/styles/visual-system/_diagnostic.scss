@@ -1,0 +1,157 @@
+// THIS IS AN APHELION UI FILE
+@use '../base';
+@use './diagnostic-display';
+
+// Center the dots between the adjacent 24px utility and 45px close control.
+// Their rem-based widths keep the midpoint stable when the UI font scales.
+.theme-meridian_diagnostic .Window:has(.TitleBar__close)::after {
+  right: calc(
+    var(--console-chrome-safe-right) +
+    (3 * #{base.rem(45px)} + var(--console-titlebar-control)) / 4 +
+    (var(--console-window-pin-lane) - var(--console-window-pin-width)) / 2
+  );
+}
+
+// Keep Diagnostic's green palette and control geometry. Fine face hatching,
+// broad shading and restrained colored spill give its instruments depth.
+@media (forced-colors: none) and (prefers-contrast: no-preference) {
+  .theme-meridian_diagnostic {
+    --diagnostic-face-grain: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--console-interaction-accent) 7%, transparent) 0 1px,
+      transparent 1px 4px
+    );
+    --diagnostic-panel-grain: repeating-linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--console-interaction-selected) 2%, transparent) 0 1px,
+      transparent 1px 4px
+    );
+
+    .Window {
+      background-image:
+        radial-gradient(ellipse at 20% 0%,
+          color-mix(in srgb, var(--console-interaction-accent) 5%, transparent),
+          transparent 58%),
+        linear-gradient(165deg, var(--console-surface-base),
+          var(--console-surface-canvas) 72%);
+    }
+
+    .Window::before {
+      filter: drop-shadow(0 0 3px
+        color-mix(in srgb, var(--console-interaction-accent) 18%, transparent));
+    }
+
+    .TitleBar {
+      background-image: var(--diagnostic-panel-grain),
+        linear-gradient(180deg, var(--console-surface-raised),
+          var(--console-surface-base));
+    }
+
+    .TitleBar::after,
+    .Section > .Section__title::after,
+    .Section::before {
+      filter: drop-shadow(0 0 3px
+        color-mix(in srgb, var(--console-interaction-accent) 28%, transparent));
+    }
+
+    .Section {
+      background-image: var(--diagnostic-panel-grain),
+        linear-gradient(150deg,
+          color-mix(in srgb, var(--console-interaction-accent) 3%, transparent),
+          transparent 65%);
+      box-shadow: inset 0 1px 0
+          color-mix(in srgb, var(--console-interaction-accent) 8%, transparent),
+        0 3px 7px rgb(0 0 0 / 24%);
+    }
+
+    .Section > .Section__title {
+      background: var(--section-title-background,
+        linear-gradient(180deg, var(--console-surface-raised),
+          var(--console-surface-base)));
+    }
+
+    // Status-colored, transparent and disabled controls keep their own faces.
+    .Button--color--default:not(.Button--disabled):not([aria-disabled='true']):not(:disabled) {
+      background-image: var(--diagnostic-face-grain),
+        linear-gradient(180deg,
+          color-mix(in srgb, var(--console-interaction-accent) 9%, var(--console-surface-raised)),
+          var(--console-surface-raised) 38%, var(--console-surface-recessed));
+      border-color: var(--console-border-control);
+      box-shadow: inset 0 1px 2px
+          color-mix(in srgb, var(--console-interaction-accent) 12%, transparent),
+        inset 0 -2px 3px rgb(0 0 0 / 30%), 0 2px 4px rgb(0 0 0 / 22%);
+
+      &:hover,
+      &:focus-visible {
+        border-color: var(--console-interaction-accent);
+        background-image: var(--diagnostic-face-grain),
+          linear-gradient(180deg,
+            color-mix(in srgb, var(--console-interaction-accent) 18%, var(--console-surface-raised)),
+            var(--console-surface-raised) 45%, var(--console-surface-recessed));
+        box-shadow: inset 0 0 5px
+            color-mix(in srgb, var(--console-interaction-accent) 12%, transparent),
+          0 0 7px color-mix(in srgb, var(--console-interaction-accent) 18%, transparent),
+          0 2px 4px rgb(0 0 0 / 24%);
+      }
+
+      &:is(.Button--selected, [aria-pressed='true'], [aria-checked='true']) {
+        --button-color: var(--console-text-on-accent);
+        color: var(--button-color);
+        background-color: var(--console-interaction-selected);
+        background-image: var(--diagnostic-face-grain),
+          linear-gradient(180deg,
+            color-mix(in srgb, var(--console-interaction-selected) 88%, black),
+            var(--console-interaction-selected) 38%,
+            color-mix(in srgb, var(--console-interaction-selected) 83%, black));
+        border-color: var(--console-interaction-selected);
+        text-shadow: none;
+        box-shadow: inset 0 -2px 4px rgb(5 13 9 / 18%),
+          0 0 5px color-mix(in srgb, var(--console-interaction-accent) 22%, transparent),
+          0 0 12px color-mix(in srgb, var(--console-interaction-accent) 10%, transparent);
+      }
+
+      &:active {
+        box-shadow: inset 0 2px 5px rgb(5 13 9 / 36%),
+          0 0 4px color-mix(in srgb, var(--console-interaction-accent) 16%, transparent);
+      }
+    }
+
+    .Tab:not(.Tab--disabled):is(.Tab--selected, [aria-selected='true']) {
+      background-image: var(--diagnostic-face-grain),
+        linear-gradient(180deg, var(--console-surface-raised),
+          var(--console-interaction-pressed));
+      box-shadow: inset 0 calc(-1 * var(--console-selected-rail)) 0
+          var(--console-interaction-selected),
+        0 0 6px color-mix(in srgb, var(--console-interaction-accent) 12%, transparent);
+    }
+
+    :is(.Input, .TextArea, .NumberInput):not([class*='--disabled']):not([aria-disabled='true']):not(:disabled),
+    .Dropdown:not(.Dropdown--disabled):not([aria-disabled='true']) > .Dropdown__control {
+      background-image: linear-gradient(180deg,
+        var(--console-surface-recessed), var(--console-surface-base));
+      box-shadow: inset 0 2px 4px rgb(0 0 0 / 24%);
+
+      &:focus-within {
+        box-shadow: inset 0 2px 4px rgb(0 0 0 / 24%),
+          0 0 6px color-mix(in srgb, var(--console-interaction-accent) 16%, transparent);
+      }
+    }
+
+    .ProgressBar--color--default:not(.Slider--disabled) > .ProgressBar__fill {
+      // A dark green face leaves the existing light numeric label readable.
+      background-image: var(--diagnostic-face-grain),
+        linear-gradient(180deg,
+          color-mix(in srgb, var(--console-interaction-accent) 42%, black),
+          color-mix(in srgb, var(--console-interaction-accent) 30%, black) 45%,
+          color-mix(in srgb, var(--console-interaction-accent) 38%, black));
+      box-shadow: inset 0 0 4px
+          color-mix(in srgb, var(--console-interaction-accent) 18%, transparent),
+        0 0 5px color-mix(in srgb, var(--console-interaction-accent) 15%, transparent);
+    }
+
+    .Slider:not(.Slider--disabled) .Slider__cursor {
+      filter: drop-shadow(0 0 2px
+        color-mix(in srgb, var(--console-interaction-selected) 28%, transparent));
+    }
+  }
+}

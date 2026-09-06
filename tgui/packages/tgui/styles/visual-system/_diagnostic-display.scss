@@ -1,0 +1,193 @@
+// THIS IS AN APHELION UI FILE
+// Diagnostic uses a dim phosphor display, with light behind the original
+// instrument and lettering. Keep the green surfaces free of white rim lights.
+@keyframes meridian-diagnostic-loader-turn {
+  to { transform: rotate(1turn); }
+}
+
+@media (forced-colors: none) and (prefers-contrast: no-preference) {
+  .theme-meridian_diagnostic {
+    --diagnostic-display-grain: repeating-linear-gradient(
+      0deg,
+      rgb(74 216 121 / 2.5%) 0 1px,
+      transparent 1px 4px
+    );
+
+    .lobby {
+      --menu-panel:
+        var(--diagnostic-display-grain),
+        radial-gradient(ellipse at 50% 0, rgb(74 216 121 / 6%), transparent 72%),
+        linear-gradient(180deg, #091611, #06100b 78%);
+      --menu-shadow:
+        inset 0 0 0 3px var(--lobby-canvas),
+        inset 0 0 18px rgb(74 216 121 / 4%),
+        0 4px 14px rgb(0 0 0 / 38%),
+        0 0 12px rgb(74 216 121 / 7%);
+
+      .container_nav::before {
+        filter: drop-shadow(0 0 3px rgb(74 216 121 / 40%));
+      }
+
+      .lobby-terminal-phase {
+        text-shadow: 0 0 5px rgb(74 216 121 / 22%);
+      }
+
+      // Inset edges preserve the original menu's spacing and hit targets.
+      .menu_button:not(:disabled):not(.info_display):not(.menu_readout) {
+        background:
+          var(--diagnostic-display-grain),
+          linear-gradient(180deg, rgb(74 216 121 / 7%), rgb(5 13 9 / 18%) 70%);
+        box-shadow:
+          inset 0 0 0 1px rgb(74 216 121 / 13%),
+          inset 0 -4px 8px rgb(0 0 0 / 20%),
+          0 2px 3px rgb(0 0 0 / 20%);
+
+        &:first-of-type {
+          text-shadow: 0 0 5px rgb(74 216 121 / 27%);
+        }
+
+        &:hover,
+        &:focus-visible {
+          background:
+            var(--diagnostic-display-grain),
+            linear-gradient(180deg, rgb(74 216 121 / 14%), rgb(74 216 121 / 4%)),
+            var(--lobby-recessed);
+          box-shadow:
+            inset 0 0 0 1px rgb(74 216 121 / 30%),
+            inset 0 0 12px rgb(74 216 121 / 5%),
+            0 0 8px rgb(74 216 121 / 11%);
+          text-shadow: 0 0 5px rgb(74 216 121 / 22%);
+        }
+
+        &:active {
+          background:
+            var(--diagnostic-display-grain),
+            linear-gradient(180deg, rgb(0 0 0 / 22%), rgb(74 216 121 / 7%)),
+            var(--lobby-recessed);
+          box-shadow:
+            inset 0 0 0 1px rgb(74 216 121 / 30%),
+            inset 0 2px 5px rgb(0 0 0 / 42%);
+        }
+      }
+
+      .trait_button:hover {
+        text-shadow: 0 0 5px rgb(74 216 121 / 24%);
+      }
+    }
+
+    .boot_terminal::before {
+      background-image:
+        radial-gradient(
+          circle at 50% var(--boot-instrument-anchor),
+          rgb(74 216 121 / 9%),
+          transparent var(--boot-glow-extent)
+        ),
+        var(--diagnostic-display-grain);
+    }
+
+    // Transparent boot mode continues to leave the selected picture unobscured.
+    .lobby--transparent .boot_terminal::before {
+      background-image: none;
+    }
+
+    .container_terminal {
+      background:
+        var(--diagnostic-display-grain),
+        linear-gradient(135deg, rgb(9 22 17 / 68%), rgb(5 13 9 / 35%));
+      box-shadow: inset 0 0 18px rgb(74 216 121 / 3%);
+    }
+
+    .container_terminal::before {
+      background: linear-gradient(180deg, #79e79a, #4ad879);
+      box-shadow: 0 0 6px rgb(74 216 121 / 28%);
+    }
+
+    .container_terminal__header,
+    .boot_terminal__statusChannel {
+      text-shadow: 0 0 4px rgb(74 216 121 / 22%);
+    }
+
+    .container_terminal__lamp,
+    .boot_terminal__cursor {
+      box-shadow: 0 0 5px rgb(74 216 121 / 35%);
+    }
+
+    .boot_terminal .DiagnosticLoader__label {
+      background: linear-gradient(90deg, transparent, rgb(74 216 121 / 5%), transparent);
+      text-shadow: 0 0 5px rgb(74 216 121 / 22%);
+    }
+
+    .DiagnosticLoader__instrument {
+      contain: layout style;
+      overflow: visible;
+    }
+
+    .DiagnosticLoader__core {
+      background:
+        var(--diagnostic-display-grain),
+        radial-gradient(ellipse at 42% 38%, #79e79a, #4ad879 58%, #309c52);
+    }
+
+    // Blur the already masked duplicates, so the light extends outside each
+    // thin segment without drawing shiny streaks across its face.
+    .DiagnosticLoader__light {
+      display: block;
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.65;
+      filter:
+        blur(0.8px)
+        drop-shadow(0 0 3px rgb(74 216 121 / 48%))
+        drop-shadow(0 0 7px rgb(74 216 121 / 20%));
+    }
+
+    // Entering this theme restarts the cage and its light copy together.
+    .DiagnosticLoader--indeterminate[data-motion='running']:not(.DiagnosticLoader--motion-reduced)
+      .DiagnosticLoader__outerCage {
+      animation-name: meridian-diagnostic-loader-turn;
+    }
+
+    .lobby-title-art {
+      // Retain the existing palette, with a subtle colored center and shaded
+      // shoulders. The alpha master still sets every stroke and internal gap.
+      --lobby-title-mark-background: linear-gradient(
+        180deg,
+        #4ad879 0%,
+        #79e79a 44%,
+        #65df8b 64%,
+        #40b969 100%
+      );
+
+      .lobby-title-art__mark {
+        filter: none;
+      }
+
+      .lobby-title-art__bloom-source {
+        background-image: var(--lobby-title-mark-background);
+      }
+
+      .lobby-title-art__bloom--near {
+        filter: blur(clamp(1px, 0.2cqmin, 2px));
+        opacity: 0.42;
+      }
+
+      .lobby-title-art__bloom--far {
+        filter: blur(clamp(3px, 0.65cqmin, 6px));
+        opacity: 0.29;
+      }
+
+      &.lobby-title-art--overlay .lobby-title-art__bloom {
+        mix-blend-mode: screen;
+      }
+    }
+  }
+
+  @supports ((mask-image: url('')) or (-webkit-mask-image: url(''))) {
+    .theme-meridian_diagnostic .lobby-title-art:not(.lobby-title-art--screen)
+      .lobby-title-art__bloom {
+      display: block;
+    }
+  }
+}

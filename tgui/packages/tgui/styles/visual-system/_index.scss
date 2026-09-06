@@ -15,5 +15,6 @@
 @include meta.load-css('./augmentation-neon.scss');
 @include meta.load-css('./neon-title.scss');
 @include meta.load-css('./aphelion-neon-title.scss');
+@include meta.load-css('./diagnostic.scss');
 @include meta.load-css('./motion.scss');
 @include meta.load-css('../interfaces/TimeoutBar.scss');
