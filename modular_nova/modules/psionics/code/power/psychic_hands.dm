@@ -220,10 +220,6 @@
 	/// Each hand owns its render target, so items never overwrite another hand's display.
 	var/obj/effect/abstract/held_tk_effect/held_effect
 
-/obj/item/bodypart/arm/psychic/get_limb_icon(dropped)
-	..()
-	return list()
-
 /obj/item/bodypart/arm/psychic/Destroy()
 	QDEL_NULL(held_effect)
 	return ..()
