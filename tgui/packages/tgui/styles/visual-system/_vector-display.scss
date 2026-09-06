@@ -1,6 +1,6 @@
 // THIS IS AN APHELION UI FILE
-// Blue phosphor behind crisp original strokes. Large displays use a range plot;
-// small loading indicators retain Vector's circular instrument.
+// Blue phosphor behind crisp original strokes. The circular Blue Phosphor
+// loading instrument sits alongside the darker Rangefinder menu treatment.
 @keyframes meridian-vector-loader-turn {
   to { transform: rotate(1turn); }
 }
@@ -11,8 +11,7 @@
     --vector-display-core: #abd9ff;
 
     .lobby-title-art {
-      // The selected Blue Phosphor logo uses its own color and bloom intensity,
-      // independent of the stronger Rangefinder instrument treatment.
+      // The selected Blue Phosphor logo keeps its own color and bloom intensity.
       --lobby-title-mark-background: linear-gradient(
         180deg, #54a9ff 0%, #7fc0ff 45%, #64b2ff 70%, #4384c3 100%
       );
@@ -44,6 +43,17 @@
       }
     }
 
+    .boot_terminal,
+    .DiagnosticLoader {
+      // Keep the selected loading screen's light separate from the menu rails.
+      --vector-display-blue: #398aff;
+      --vector-display-core: #9dccff;
+    }
+
+    .boot_terminal {
+      --boot-boundary: #35669f;
+    }
+
     .DiagnosticLoader__instrument {
       --console-loader-crown-color: #3974b7;
       --console-loader-progress-core: var(--vector-display-core);
@@ -52,6 +62,17 @@
       --console-interaction-accent: var(--vector-display-core);
       --console-interaction-selected: #549bff;
       --console-interaction-focus: #a3d9ff;
+      // The original cage colors resolved on the Blue Phosphor theme root.
+      // Restate its pattern here so the Rangefinder control border cannot tint it.
+      --console-loader-cage-pattern: conic-gradient(
+        from -90deg,
+        #559fff 0deg 118deg,
+        transparent 118deg 128deg,
+        #35669f 128deg 260deg,
+        transparent 260deg 274deg,
+        #94c7ff 274deg 344deg,
+        transparent 344deg
+      );
       contain: layout style;
       overflow: visible;
     }
@@ -65,7 +86,7 @@
       inset: 0;
       z-index: -1;
       pointer-events: none;
-      opacity: 0.86;
+      opacity: 0.78;
       filter: blur(0.8px)
         drop-shadow(0 0 3px var(--vector-display-blue))
         drop-shadow(0 0 6px color-mix(in srgb, var(--vector-display-blue) 44%, transparent));
@@ -104,10 +125,8 @@
       --menu-border-bottom: 1px;
       --menu-border-left: 1px;
 
+      // Resting rows share the housing surface; only interaction adds a face.
       .menu_button:not(:disabled):not(.info_display):not(.menu_readout) {
-        background: linear-gradient(180deg, rgb(71 144 232 / 5%), transparent 75%);
-        box-shadow: inset 0 -1px 0 rgb(60 110 172 / 8%);
-
         &:is(:hover, :focus-visible) {
           background: linear-gradient(90deg, rgb(44 121 239 / 15%), rgb(44 121 239 / 4%));
           box-shadow: inset 2px 0 0 var(--vector-display-core),
@@ -156,56 +175,6 @@
       background: none;
     }
 
-    // The plot is decorative; the existing instrument retains its progressbar
-    // role, name and value. Its rail uses the component's actual completion.
-    .DiagnosticLoader--large .DiagnosticLoader__instrument {
-      width: min(360px, 74vw);
-      max-width: 100%;
-      height: var(--diagnostic-loader-size);
-
-      > span { display: none; }
-
-      &::before {
-        position: absolute;
-        inset: 0 0 9px;
-        content: '';
-        background: url('~tgui/styles/assets/vector-rangefinder.svg') center / 100% 100% no-repeat;
-        pointer-events: none;
-      }
-
-      &::after {
-        position: absolute;
-        bottom: 2px;
-        left: 7%;
-        width: 86%;
-        height: 2px;
-        content: '';
-        background: #99ceff;
-        box-shadow: 0 0 3px #367fff, 0 0 8px rgb(34 105 255 / 60%);
-        transform: scaleX(var(--diagnostic-loader-progress));
-        transform-origin: left center;
-        pointer-events: none;
-      }
-    }
-
-    .DiagnosticLoader--large.DiagnosticLoader--indeterminate[data-motion]
-      .DiagnosticLoader__outerCage {
-      animation: none;
-      will-change: auto;
-    }
-
-    // The startup display is centered on the viewport. Its plot can be wider
-    // than the text anchor, while ordinary embedded loaders fit their parent.
-    .boot_terminal .DiagnosticLoader--large .DiagnosticLoader__instrument {
-      max-width: none;
-    }
-
-    .DiagnosticLoader--large.DiagnosticLoader--indeterminate .DiagnosticLoader__instrument::after {
-      // Calibration marks do not imply a completion value when none is known.
-      background: repeating-linear-gradient(90deg, #477fc9 0 1px, transparent 1px 9px);
-      box-shadow: none;
-      transform: none;
-    }
   }
 
   @supports ((mask-image: url('')) or (-webkit-mask-image: url(''))) {
