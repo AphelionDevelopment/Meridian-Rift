@@ -80,6 +80,12 @@
     --menu-frame: #a8638f;
   }
 
+  .theme-meridian_synapse_xxxo .lobby-title-art {
+    --lobby-title-mark-background: linear-gradient(
+      90deg, #ff74de 10%, #ff57d5 48%, #ff477d 74%, #ff405b 92%
+    );
+  }
+
   .theme-meridian_synapse_xxxo .lobby .container_nav::before {
     top: -3px;
     height: 20px;
