@@ -1629,6 +1629,48 @@
 	if(SSdogmos.dogmos_mixture_cache_misses != reads_misses_before)
 		return Fail("Getters after prefetch caused [SSdogmos.dogmos_mixture_cache_misses - reads_misses_before] cache misses; expected zero.", __FILE__, __LINE__)
 
+/** Verifies a prefetch spans the 381-record wire boundary without losing or duplicating snapshots. */
+/datum/unit_test/dogmos_service_prefetch_chunking
+
+/datum/unit_test/dogmos_service_prefetch_chunking/Run()
+	var/list/datum/gas_mixture/mixtures = list()
+	var/list/buckets = list()
+	// Free mixture slots need not be contiguous. Select distinct direct-cache buckets
+	// so this test measures batching rather than legitimate cache collisions.
+	for(var/attempt in 1 to 4096)
+		var/datum/gas_mixture/mixture = allocate(/datum/gas_mixture, CELL_VOLUME)
+		var/bucket_key = "[SSdogmos.mixture_snapshot_cache_bucket(mixture.dogmos_slot)]"
+		if(buckets[bucket_key])
+			continue
+		buckets[bucket_key] = TRUE
+		mixtures += mixture
+		mixture.set_moles(/datum/gas/oxygen, length(mixtures))
+		if(length(mixtures) == 382)
+			break
+	TEST_ASSERT_EQUAL(length(mixtures), 382, "Could not construct 382 non-colliding snapshot handles.")
+
+	for(var/count in list(381, 382))
+		var/list/request = list()
+		for(var/index in 1 to count)
+			// Duplicate producer references must not consume reply capacity or hide
+			// the final unique handle behind the prefetch limit.
+			request += mixtures[index]
+			request += mixtures[index]
+			request += mixtures[index]
+		SSdogmos.reset_mixture_snapshot_cache()
+		TEST_ASSERT_EQUAL(SSdogmos.prefetch_mixture_snapshots(request), count, "Prefetch did not cache each unique requested handle exactly once.")
+		for(var/index in 1 to count)
+			var/datum/gas_mixture/mixture = mixtures[index]
+			var/list/snapshot = SSdogmos.lookup_mixture_snapshot_cache(mixture.dogmos_slot, mixture.dogmos_generation)
+			TEST_ASSERT_EQUAL(length(snapshot), 42, "Prefetch omitted or truncated snapshot [index] at the batch boundary.")
+			// Field 7 is total moles, independent of the production field macro.
+			TEST_ASSERT_EQUAL(snapshot[7], index, "Prefetch associated snapshot [index] with the wrong gas state.")
+		TEST_ASSERT_EQUAL(SSdogmos.dogmos_mixture_cache_misses, 0, "Prefetch used singular snapshot reads.")
+
+/datum/unit_test/dogmos_service_prefetch_chunking/Destroy()
+	SSdogmos.reset_mixture_snapshot_cache()
+	return ..()
+
 /datum/unit_test/dogmos_service_machinery_prefetch/Destroy()
 	test_components.Cut()
 	test_mixtures.Cut()
