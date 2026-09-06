@@ -3,10 +3,10 @@
 These assets implement the approved second Bastion mockup, with rusted olive
 metal surrounding cream-on-dark reading surfaces.
 
-| Asset                | Origin                                                                                                     | Use                                                                       |
-| -------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `bastion-rust.jpg`   | Generated with OpenAI image generation on 2026-09-06; encoded as JPEG at quality 82 from the generated PNG | Repeated casing material, displayed at 384 CSS pixels per tile            |
-| `bastion-plates.svg` | Original SVG authored for this implementation                                                              | Edge-anchored patched plates and recessed fasteners on title/profile bars |
+| Asset                | Origin                                                                                                     | Use                                                               |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `bastion-rust.jpg`   | Generated with OpenAI image generation on 2026-09-06; encoded as JPEG at quality 82 from the generated PNG | Repeated casing material, displayed at 384 CSS pixels per tile    |
+| `bastion-plates.svg` | Original SVG authored for this implementation                                                              | Edge-anchored patched plates and recessed fasteners on title bars |
 
 The generation prompt requested a flat, evenly lit dark olive steel material
 with irregular muted iron-rust patches, pitting, granular paint wear, and fine

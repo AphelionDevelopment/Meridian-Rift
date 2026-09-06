@@ -52,9 +52,6 @@ function fixture(theme = 'meridian_bastion', fitted = false) {
         <Tabs.Tab selected>Character</Tabs.Tab>
         <Tabs.Tab>Settings</Tabs.Tab>
       </Tabs>
-      <div className="PreferencesMenu__profiles">
-        <Button>Profile</Button>
-      </div>
       <div className="PreferencesMenu__settings">
         <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
           Settings data
@@ -132,12 +129,7 @@ describe('Bastion casing and reading surfaces', () => {
 
   it('textures the casing while keeping data panels and inputs clear', () => {
     const { container } = fixture();
-    for (const selector of [
-      '.Window',
-      '.TitleBar',
-      '.Tabs',
-      '.PreferencesMenu__profiles',
-    ]) {
+    for (const selector of ['.Window', '.TitleBar', '.Tabs']) {
       expect(
         getComputedStyle(container.querySelector(selector)!).backgroundImage,
         `${selector} material`,
