@@ -181,6 +181,7 @@
 	return "[distance_text], [dir2text(direction)]"
 
 /mob/living/proc/get_psionic_profile()
+	RETURN_TYPE(/datum/component/psionic_profile)
 	return GetComponent(/datum/component/psionic_profile)
 
 /mob/living/proc/awaken_psionics(points = PSIONIC_DEFAULT_POINTS, list/starting_powers, source = PSIONIC_TRAIT_SOURCE)

@@ -70,7 +70,6 @@
 	return FALSE
 
 /datum/action/cooldown/psionic/pointed/telekinetic_connection/update_status_on_signal()
-	SIGNAL_HANDLER
 	. = ..()
 	validate_connection()
 
