@@ -1,14 +1,16 @@
 // THIS IS AN APHELION UI FILE
-// Shared neon glass material; callers retain their palette and loader geometry.
+@use './glowstick';
+
+// Shared neon finish; callers retain their palette and loader geometry.
 @keyframes meridian-neon-loader-turn {
   to { transform: rotate(1turn); }
 }
 
-@mixin finish($tube, $cyan, $selection-mid: 78%) {
+@mixin finish($tube, $cyan) {
   --glass-accent: var(--console-interaction-accent);
   --glass-secondary: var(--console-interaction-selected);
-  --glass-hot: color-mix(in srgb, var(--glass-accent) 28%, white);
-  --glass-selected-hot: color-mix(in srgb, var(--glass-secondary) 28%, white);
+  --glass-hot: color-mix(in srgb, var(--glass-accent) 74%, white);
+  --glass-selected-hot: color-mix(in srgb, var(--glass-secondary) 74%, white);
   --glass-loader-core: var(--console-loader-progress-core);
   --glass-cyan: #{$cyan};
   --glass-tube: url(#{$tube});
@@ -46,30 +48,15 @@
   }
 
   .Section > .Section__title::after {
-    background-image: linear-gradient(180deg, #ffffff91, #ffffff00 70%),
-      repeating-linear-gradient(90deg, var(--glass-accent) 0 calc(var(--console-segment-pattern) - 2px), transparent calc(var(--console-segment-pattern) - 2px) var(--console-segment-pattern));
-    background-blend-mode: soft-light;
-    box-shadow: 0 0 5px color-mix(in srgb, var(--glass-accent) 28%, transparent);
+    @include glowstick.surface(var(--glass-accent));
+    // Preserve the dark gaps between the original illuminated segments.
+    -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 calc(var(--console-segment-pattern) - 2px), transparent calc(var(--console-segment-pattern) - 2px) var(--console-segment-pattern));
+    mask-image: repeating-linear-gradient(90deg, #000 0 calc(var(--console-segment-pattern) - 2px), transparent calc(var(--console-segment-pattern) - 2px) var(--console-segment-pattern));
+    @include glowstick.halo(var(--glass-accent));
   }
 
   .Button--color--default:is(.Button--selected, [aria-pressed='true'], [aria-checked='true']):not(.Button--disabled):not([aria-disabled='true']):not(:disabled) {
-    --button-color: var(--console-text-on-accent);
-    color: var(--button-color);
-    background-color: var(--glass-secondary);
-    // Let the luminous face reach the edge without a separate pale bevel.
-    // Keep the border's dimensions so selected controls never shift the layout.
-    background-image:
-      linear-gradient(106deg, #ffffff00 5%, #ffffff38 17%, #ffffff09 32%, #ffffff00 45%, #ffffff2b 65%, #ffffff00 82%),
-      repeating-linear-gradient(0deg, #ffffff0a 0 1px, #ffffff00 1px 3px),
-      linear-gradient(180deg, color-mix(in srgb, var(--glass-secondary) 88%, black), var(--glass-secondary) 15%, color-mix(in srgb, var(--glass-secondary) 72%, white) 32%, color-mix(in srgb, var(--glass-secondary) 94%, white) 44%, color-mix(in srgb, var(--glass-secondary) #{$selection-mid}, black) 66%, var(--glass-secondary) 84%, color-mix(in srgb, var(--glass-secondary) 86%, black));
-    background-clip: border-box;
-    border-color: transparent;
-    text-shadow: none;
-    // A tight light core and wider colored falloff add depth without a rim.
-    box-shadow: inset 0 0 7px color-mix(in srgb, var(--glass-secondary) 55%, transparent),
-      0 0 3px color-mix(in srgb, var(--glass-secondary) 75%, transparent),
-      0 0 10px color-mix(in srgb, var(--glass-secondary) 40%, transparent),
-      0 0 22px color-mix(in srgb, var(--glass-secondary) 16%, transparent);
+    @include glowstick.control(var(--glass-secondary));
   }
 
   .Button--color--default:not(.Button--selected):not([aria-pressed='true']):not([aria-checked='true']):not(.Button--disabled):not([aria-disabled='true']):not(:disabled) {
@@ -78,45 +65,42 @@
   }
 
   :is(.Tab--selected, .Tab[aria-selected='true']) {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--glass-secondary) 24%, var(--console-surface-base)), var(--console-surface-base) 85%);
-    border-color: var(--glass-secondary);
-    color: var(--console-text-primary);
-    box-shadow: inset 0 -1px 0 var(--glass-secondary),
-      0 0 6px color-mix(in srgb, var(--glass-secondary) 35%, transparent),
-      0 2px 14px color-mix(in srgb, var(--glass-secondary) 16%, transparent);
+    @include glowstick.tab(var(--glass-secondary));
   }
 
   .DiagnosticLoader__instrument {   contain: layout style; overflow: visible;
     --console-loader-progress-core: var(--glass-loader-core);
   }
 
+  .DiagnosticLoader__outerCage {
+    @include glowstick.ring(var(--glass-cyan-cage), var(--console-loader-cage-width, 3px));
+  }
+
   .DiagnosticLoader__progressFill {
-    background: conic-gradient(from -90deg, var(--console-loader-progress-core),
-      color-mix(in srgb, var(--console-loader-progress-core) 40%, white) calc(var(--diagnostic-loader-angle) / 6),
-      var(--console-loader-progress-core) calc(var(--diagnostic-loader-angle) * 0.393519),
-      color-mix(in srgb, var(--console-loader-progress-core) 74%, black) calc(var(--diagnostic-loader-angle) * 0.740741),
-      var(--console-loader-progress-core) var(--diagnostic-loader-angle), transparent var(--diagnostic-loader-angle));
+    background: conic-gradient(from -90deg,
+      var(--console-loader-progress-core) 0deg var(--diagnostic-loader-angle),
+      transparent var(--diagnostic-loader-angle));
+    @include glowstick.progress;
   }
 
   .DiagnosticLoader__core {
-    background: linear-gradient(138deg, #ffffff00 22%, #ffffff80 25%, #ffffff20 31%, #ffffff00 36%),
-      radial-gradient(ellipse at 33% 24%, color-mix(in srgb, var(--console-loader-progress-core) 34%, white), var(--console-loader-progress-core) 35%, color-mix(in srgb, var(--console-loader-progress-core) 78%, black) 68%, color-mix(in srgb, var(--console-loader-progress-core) 40%, black));
+    @include glowstick.core(var(--console-loader-progress-core));
   }
 
   .DiagnosticLoader__nodes {
     background: repeating-conic-gradient(from var(--console-loader-node-start, -90deg),
-      var(--glass-selected-hot) 0deg 2deg, var(--glass-secondary) 2deg var(--console-loader-node-width), transparent var(--console-loader-node-width) var(--console-loader-node-step));
+      var(--glass-secondary) 0deg var(--console-loader-node-width), transparent var(--console-loader-node-width) var(--console-loader-node-step));
   }
 
   .DiagnosticLoader__innerMarks {
     border-top-color: var(--console-border-control);
-    border-right-color: var(--glass-selected-hot);
+    border-right-color: var(--glass-secondary);
     border-bottom-color: var(--console-border-control);
-    border-left-color: var(--glass-hot);
+    border-left-color: var(--glass-accent);
   }
 
   .DiagnosticLoader__origin {
-    background: linear-gradient(90deg, var(--console-interaction-focus), #f5fffd 48%, var(--console-interaction-focus));
+    @include glowstick.surface(var(--console-interaction-focus));
   }
 
   .lobby .container_nav {
@@ -140,9 +124,10 @@
     inset: 0;
     pointer-events: none;
     z-index: -1;
-    filter: blur(0.5px)
-      drop-shadow(0 0 3px color-mix(in srgb, var(--glass-cyan) 63%, transparent))
-      drop-shadow(0 0 8px color-mix(in srgb, var(--glass-cyan) 24%, transparent));
+    filter: blur(0.65px)
+      drop-shadow(0 0 2px color-mix(in srgb, var(--glass-cyan) 70%, transparent))
+      drop-shadow(0 0 6px color-mix(in srgb, var(--glass-cyan) 38%, transparent))
+      drop-shadow(0 0 12px color-mix(in srgb, var(--glass-cyan) 16%, transparent));
 
     .DiagnosticLoader__outerCage { background: var(--glass-cyan-cage); }
     .DiagnosticLoader__innerMarks { border-color: transparent; }
@@ -161,12 +146,7 @@
   }
 
   .ProgressBar--color--default:not(.Slider--disabled) > .ProgressBar__fill {
-    background-image: linear-gradient(180deg, var(--glass-hot),
-      color-mix(in srgb, var(--glass-accent) 38%, black) 12%,
-      color-mix(in srgb, var(--glass-accent) 24%, black) 45%,
-      color-mix(in srgb, var(--glass-accent) 36%, black) 78%,
-      color-mix(in srgb, var(--glass-accent) 65%, black));
-    box-shadow: inset 0 1px 0 #ffffff66, inset 0 -1px 0 #0006;
+    @include glowstick.progress-face(var(--glass-accent));
   }
 
   .container_terminal::before {
@@ -176,16 +156,5 @@
     background: var(--glass-tube) center / 100% 100% no-repeat;
   }
 
-  .container_terminal__lamp,
-  .boot_terminal__cursor {
-    background: linear-gradient(90deg, var(--glass-accent), var(--glass-hot), var(--glass-accent));
-    box-shadow: 0 0 5px color-mix(in srgb, var(--glass-accent) 38%, transparent);
-  }
-
-  .container_progress .progress_bar {
-    background: linear-gradient(180deg, var(--glass-hot), var(--glass-accent) 28%,
-      var(--glass-accent) 62%, color-mix(in srgb, var(--glass-accent) 70%, black));
-    box-shadow: 0 0 4px var(--glass-accent),
-      0 0 12px color-mix(in srgb, var(--glass-accent) 27%, transparent);
-  }
+  @include glowstick.boot(var(--glass-accent));
 }

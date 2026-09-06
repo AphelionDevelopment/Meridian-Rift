@@ -1,5 +1,7 @@
 // THIS IS AN APHELION UI FILE
-// Synapse XXXO: approved neon glass. Synapse owns the shared geometry.
+@use './glowstick';
+
+// Synapse XXXO: glowstick neon. Synapse owns the shared geometry.
 // Native forced colors and the shared loader motion rules remain authoritative.
 @media (forced-colors: none) {
   .theme-meridian_synapse_xxxo {
@@ -15,9 +17,8 @@
     --console-loader-cage-width: 4px;
     --console-loader-track-width: 3px;
     --console-loader-cage-pattern: conic-gradient(from -54deg,
-      #ff3a52 0deg, #ff5268 34deg, #ffd7d7 56deg, #ff5870 76deg,
-      #ff304b 164deg, transparent 164deg 224deg,
-      #ff59ce 224deg, #ffc8f0 255deg, #ed31b2 318deg, transparent 318deg);
+      #ff405b 0deg 164deg, transparent 164deg 224deg,
+      #ff67d3 224deg 318deg, transparent 318deg);
   }
 
   .theme-meridian_synapse_xxxo .Window {
@@ -62,29 +63,13 @@
   }
 
   .theme-meridian_synapse_xxxo .Button--color--default:is(.Button--selected, [aria-pressed='true'], [aria-checked='true']):not(.Button--disabled):not([aria-disabled='true']):not(:disabled) {
-    --button-color: var(--console-text-on-accent);
-    color: var(--button-color);
-    background-color: #f15bc6;
-    background-image: linear-gradient(106deg, #fff7ff00 5%, #fff7ff38 17%, #fff7ff09 32%, #fff7ff00 45%, #fff7ff2b 65%, #fff7ff00 82%),
-      repeating-linear-gradient(0deg, #fff4fa0a 0 1px, #fff4fa00 1px 3px),
-      linear-gradient(180deg, #e44bbb, #ff67d3 15%, #fface8 32%, #ff79d8 44%, #e94eba 66%, #ff68d1 84%, #df48b4);
-    background-clip: border-box;
-    border-color: transparent;
-    text-shadow: none;
-    box-shadow: inset 0 0 7px #ff57d58c, 0 0 3px #ff5ccebf,
-      0 0 10px #ff42c166, 0 0 22px #ff42c129;
+    @include glowstick.control(#ff67d3);
   }
 
   .theme-meridian_synapse_xxxo .lobby {
     --menu-rule: linear-gradient(90deg, #ff70dc 0 64%, transparent 64% 70%, #ff405b 70% 100%);
     --menu-shadow: 3px 3px 0 #ff405b47, 0 0 14px #ff405b0a;
     --menu-frame: #a8638f;
-  }
-
-  .theme-meridian_synapse_xxxo .lobby-title-art {
-    --lobby-title-mark-background: linear-gradient(
-      90deg, #ff74de 10%, #ff57d5 48%, #ff477d 74%, #ff405b 92%
-    );
   }
 
   .theme-meridian_synapse_xxxo .lobby .container_nav::before {
@@ -111,10 +96,12 @@
     box-shadow: inset 0 1px 0 #d69bb416, 0 2px 5px #03000580;
   }
 
-  .theme-meridian_synapse_xxxo .Section__title::after {
+  .theme-meridian_synapse_xxxo .Section > .Section__title::after {
     height: 2px;
-    background: linear-gradient(90deg, #ffcedc, #ff405b 20% 48%, #561524 48% 54%, #ff7add 54%, #ffd0f2 85%, #ff6bd8);
-    box-shadow: 0 0 4px #ff405b80, 0 0 11px #ff3b591c;
+    @include glowstick.surface(#ff67d3);
+    background-image: var(--glowstick-texture),
+      linear-gradient(90deg, #ff7185, #ff405b 20% 48%, #561524 48% 54%, #ff7add 54%, #ff98e3 85%, #ff6bd8);
+    @include glowstick.halo(var(--xxxo-red));
   }
 
   .theme-meridian_synapse_xxxo .Button--color--default:not(.Button--selected):not([aria-pressed='true']):not([aria-checked='true']):not(.Button--disabled):not([aria-disabled='true']):not(:disabled) {
@@ -123,10 +110,7 @@
   }
 
   .theme-meridian_synapse_xxxo :is(.Tab--selected, .Tab[aria-selected='true']) {
-    background: linear-gradient(180deg, #652243, #271027 80%);
-    border-color: #ff5b88;
-    color: #ffe8f4;
-    box-shadow: inset 0 -1px 0 #ff5b88, 0 0 6px #ff3e6559, 0 2px 14px #ff3e6529;
+    @include glowstick.tab(#ff5b88);
   }
 
   .theme-meridian_synapse_xxxo .DiagnosticLoader__instrument {
@@ -135,7 +119,8 @@
     --console-interaction-selected: #ff6b7c;
     contain: layout style;
     overflow: visible;
-    filter: drop-shadow(0 0 1px #ff81969e) drop-shadow(0 0 5px #ff284958);
+    filter: drop-shadow(0 0 2px #ff405ba6)
+      drop-shadow(0 0 6px #ff284961) drop-shadow(0 0 12px #ff284929);
   }
 
   .theme-meridian_synapse_xxxo .DiagnosticLoader__instrument::before {
@@ -149,8 +134,12 @@
 
   .theme-meridian_synapse_xxxo .DiagnosticLoader__tickCrown {
     background-image: repeating-conic-gradient(from var(--console-loader-crown-start, -90deg),
-      #ffa3ac 0deg 1deg, #ff405b 1deg var(--console-loader-tick-width),
+      #ff536c 0deg var(--console-loader-tick-width),
       transparent var(--console-loader-tick-width) var(--console-loader-tick-step));
+  }
+
+  .theme-meridian_synapse_xxxo .DiagnosticLoader__outerCage {
+    @include glowstick.ring(var(--console-loader-cage-pattern), var(--console-loader-cage-width));
   }
 
   // Relative stops preserve an empty arc at 0% and a full arc at 100%.
@@ -158,29 +147,28 @@
     background: conic-gradient(
       from -90deg,
       #ff75d9 0deg,
-      #ffe5f7 calc(var(--diagnostic-loader-angle) * 0.166667),
-      #ff58c9 calc(var(--diagnostic-loader-angle) * 0.347222),
-      #fb469e calc(var(--diagnostic-loader-angle) * 0.694444),
+      #ff67d3 calc(var(--diagnostic-loader-angle) * 0.347222),
+      #ff528e calc(var(--diagnostic-loader-angle) * 0.694444),
       #ff5674 var(--diagnostic-loader-angle),
       transparent var(--diagnostic-loader-angle)
       );
+    @include glowstick.progress;
   }
 
   .theme-meridian_synapse_xxxo .DiagnosticLoader__innerMarks {
     border-top-color: #ff3f5b;
-    border-right-color: #ffc1c9;
+    border-right-color: #ff7185;
     border-bottom-color: #822647;
     border-left-color: #ff72d5;
     box-shadow: 1px 0 2px #ff405b55, -1px 0 2px #ff57d544;
   }
 
   .theme-meridian_synapse_xxxo .DiagnosticLoader__origin {
-    background: linear-gradient(90deg, #ff4a68, #ffd5dd 48%, #ff3757);
+    @include glowstick.surface(#ff4a68);
   }
 
   .theme-meridian_synapse_xxxo .DiagnosticLoader__core {
-    background: linear-gradient(138deg, #fff1f100 22%, #fff1f17a 25%, #fff1f11c 31%, #fff1f100 36%),
-      radial-gradient(ellipse at 33% 24%, #ffc4cf, #ff6b7c 35%, #f62b52 66%, #ad0f36);
+    @include glowstick.core(var(--console-loader-progress-core));
   }
 
   .theme-meridian_synapse_xxxo .lobby .container_nav {
@@ -197,14 +185,13 @@
   }
 
   .theme-meridian_synapse_xxxo .Slider:not(.Slider--disabled) .Slider__cursor {
-    border-left-color: #ffc5ee;
+    border-left-color: #ff87dd;
     filter: drop-shadow(0 0 2px #ff57d580);
   }
 
   // Keep labelled progress faces dark enough for their foreground text.
   .theme-meridian_synapse_xxxo .ProgressBar--color--default:not(.Slider--disabled) > .ProgressBar__fill {
-    background-image: linear-gradient(180deg, #f6b4df 0%, #a52577 12%, #691748 45%, #9b2168 78%, #d4569b 100%);
-    box-shadow: inset 0 1px 0 #ffcfeb8c, inset 0 -1px 0 #401029;
+    @include glowstick.progress-face(#ff67d3);
   }
 
   .theme-meridian_synapse_xxxo .boot_terminal {
@@ -225,14 +212,7 @@
     background: url('tgui/styles/assets/synapse-xxxo-neon-tube.svg') center / 100% 100% no-repeat;
   }
 
-  .theme-meridian_synapse_xxxo .container_terminal__lamp,
-  .theme-meridian_synapse_xxxo .boot_terminal__cursor {
-    background: linear-gradient(90deg, #ff5268, #ffd5e2, #ff5268);
-    box-shadow: 0 0 5px #ff405b60;
-  }
-
-  .theme-meridian_synapse_xxxo .container_progress .progress_bar {
-    background: linear-gradient(180deg, #ffc5cd, #ff5268 28%, #fe3c53 62%, #cc173f);
-    box-shadow: 0 0 4px #ff405b, 0 0 12px #ff405b47;
+  .theme-meridian_synapse_xxxo {
+    @include glowstick.boot(var(--xxxo-red));
   }
 }

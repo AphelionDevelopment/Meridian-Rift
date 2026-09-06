@@ -76,7 +76,7 @@ export default defineConfig({
       {
         test: /\.(png|jpg)$/,
         // APHELION EDIT ADDITION - CSS textures ship inside the cached bundle.
-        exclude: /(?:aphelion-grain-blue-noise-512\.png|bastion-rust\.jpg)$/,
+        exclude: /(?:aphelion-grain-blue-noise-512\.png|glowstick-liquid\.png|bastion-rust\.jpg)$/,
         type: 'asset/resource',
         generator: {
           filename: '[name][ext]',
@@ -86,7 +86,7 @@ export default defineConfig({
       {
         // Fonts and the theme material tiles stay self-contained in
         // BYOND's asset-cached stylesheet, with no extra resource requests.
-        test: /(?:\.woff2|aphelion-grain-blue-noise-512\.png|bastion-rust\.jpg)$/,
+        test: /(?:\.woff2|aphelion-grain-blue-noise-512\.png|glowstick-liquid\.png|bastion-rust\.jpg)$/,
         type: 'asset/inline',
       },
       // APHELION EDIT ADDITION END
