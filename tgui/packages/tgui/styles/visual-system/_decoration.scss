@@ -132,8 +132,19 @@
         var(--console-corner-layer) no-repeat;
   }
 
+  // Keep construction marks above the panel paint, but below its foreground.
+  // The title children are already flex items and the rest is positioned, so
+  // these layers need no geometry changes. Leave the title background below
+  // the marks; lifting it too would hide ornament even outside the controls.
+  .Section > .Section__title > .Section__titleText,
+  .Section > .Section__title > .Section__buttons,
+  .Section > .Section__rest {
+    z-index: 2;
+  }
+
   .Section > .Section__title::after {
     position: absolute;
+    z-index: 1;
     left: var(--console-space-3);
     bottom: -1px;
     width: min(var(--console-title-rail), calc(100% - 24px));
