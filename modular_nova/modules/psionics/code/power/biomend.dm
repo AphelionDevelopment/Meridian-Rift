@@ -10,7 +10,7 @@
 	cooldown_time = 8 SECONDS
 	cast_range = 6
 	strain_gain = 0
-	active_strain_gain_per_second = 6
+	active_strain_gain_per_second = 4
 	block_charge_cost = 1
 	block_message = "mending blocked!"
 
@@ -31,9 +31,9 @@
 		/datum/psionic_rank_variant/biomend,
 	)
 	/// Brute damage mended each second while the channel is active.
-	var/brute_healing_per_second = 3
+	var/brute_healing_per_second = 5
 	/// Burn damage mended each second while the channel is active.
-	var/burn_healing_per_second = 3
+	var/burn_healing_per_second = 5
 	/// Current target of the maintained channel.
 	var/mob/living/carbon/biomend_target
 	/// Beam drawn from the psion to the patient.
@@ -42,6 +42,10 @@
 	var/biomend_filter_name
 	/// TRUE while this action is intentionally tearing down its beam.
 	var/clearing_biomend = FALSE
+
+/// Restorative concentration remains possible while injured; other interruptions still apply.
+/datum/action/cooldown/psionic/pointed/living_target/biomend/is_concentration_painful(mob/living/living_owner)
+	return FALSE
 
 /datum/action/cooldown/psionic/pointed/living_target/biomend/is_valid_target(atom/target)
 	. = ..()

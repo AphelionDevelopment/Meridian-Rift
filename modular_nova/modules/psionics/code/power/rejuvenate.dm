@@ -9,7 +9,7 @@
 	description = "A strenuous attempt to restart a recently dead organic body."
 	cooldown_time = 2 MINUTES
 	cast_range = 3
-	strain_gain = 80
+	strain_gain = 60
 	block_charge_cost = 0
 
 /datum/action/cooldown/psionic/pointed/living_target/rejuvenate
@@ -39,7 +39,7 @@
 	if(HAS_TRAIT(carbon_target, TRAIT_DNR))
 		owner.balloon_alert(owner, "cannot revive!")
 		return FALSE
-	if(!carbon_target.can_be_revived())
+	if(!has_revivable_anatomy(carbon_target))
 		owner.balloon_alert(owner, "body unsuitable!")
 		return FALSE
 	return TRUE
@@ -51,13 +51,13 @@
 		span_notice("Soft light gathers between [caster] and [carbon_target]."),
 		span_purple("You begin drawing [carbon_target]'s body back into rhythm."),
 	)
-	if(!do_after(caster, 12 SECONDS, target = carbon_target, timed_action_flags = IGNORE_HELD_ITEM, interaction_key = REF(src)))
+	if(!do_after(caster, 8 SECONDS, target = carbon_target, timed_action_flags = IGNORE_HELD_ITEM, interaction_key = REF(src)))
 		caster.balloon_alert(caster, "focus broken!")
 		return FALSE
 	var/datum/component/psionic_profile/profile = caster.get_psionic_profile()
 	if(!can_finish_concentration(caster, profile, feedback = TRUE))
 		return FALSE
-	if(QDELETED(carbon_target) || carbon_target.stat != DEAD || !carbon_target.can_be_revived() || HAS_TRAIT(carbon_target, TRAIT_DNR))
+	if(QDELETED(carbon_target) || carbon_target.stat != DEAD || !has_revivable_anatomy(carbon_target) || HAS_TRAIT(carbon_target, TRAIT_DNR))
 		caster.balloon_alert(caster, "revival failed!")
 		return FALSE
 
@@ -74,4 +74,12 @@
 		span_notice("[carbon_target]'s body draws a shuddering breath."),
 		span_purple("Your thoughts snap back into your body."),
 	)
+	return TRUE
+
+/// Check carbon revival anatomy before treatment, leaving the health check to revive() after healing.
+/datum/action/cooldown/psionic/pointed/living_target/rejuvenate/proc/has_revivable_anatomy(mob/living/carbon/carbon_target)
+	if(HAS_TRAIT_NOT_FROM(carbon_target, TRAIT_HUSK, /datum/status_effect/zombie::id))
+		return FALSE
+	if(!HAS_TRAIT(carbon_target, TRAIT_BRAINLESS_CARBON) && !carbon_target.get_organ_by_type(/obj/item/organ/brain))
+		return FALSE
 	return TRUE
