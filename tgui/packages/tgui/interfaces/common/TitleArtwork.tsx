@@ -212,6 +212,16 @@ export function TitleArtwork({
       <div className="lobby-title-art__bezel">
         <div className="lobby-title-art__screen" style={imageStyle}>
           <img className="lobby-title-art__fallback" src={src} alt="" />
+          {/* CSS enables these decorative copies only for Aphelion. */}
+          {treatment !== 'screen' &&
+            ['far', 'near'].map((layer) => (
+              <div
+                key={layer}
+                className={`lobby-title-art__bloom lobby-title-art__bloom--${layer}`}
+              >
+                <div className="lobby-title-art__bloom-source" />
+              </div>
+            ))}
           <div className="lobby-title-art__mark" style={imageStyle} />
           <div className="lobby-title-art__scanlines" style={textureStyle} />
         </div>

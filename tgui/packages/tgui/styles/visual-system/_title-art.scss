@@ -54,7 +54,8 @@
 // existing 90cqmin scale. This preserves the wordmark's proportions without
 // bringing back an opaque square around it on widescreen clients.
 .lobby-title-art__fallback,
-.lobby-title-art__mark {
+.lobby-title-art__mark,
+.lobby-title-art__bloom-source {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -137,7 +138,8 @@
     display: none;
   }
 
-  .lobby-title-art__mark {
+  .lobby-title-art__mark,
+  .lobby-title-art__bloom-source {
     display: block;
     -webkit-mask: var(--lobby-title-art-image) center / contain no-repeat;
     mask: var(--lobby-title-art-image) center / contain no-repeat;
@@ -551,7 +553,8 @@
   );
 }
 
-.lobby-title-art--classic-alt .lobby-title-art__mark {
+.lobby-title-art--classic-alt .lobby-title-art__mark,
+.lobby-title-art--classic-alt .lobby-title-art__bloom-source {
   // The alpha master occupies y=12-20%; confine the whole ramp to that band so
   // every stop is actually visible on the title rather than off the glass.
   background-position: center 13%;

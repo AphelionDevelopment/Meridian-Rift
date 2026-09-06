@@ -1,4 +1,6 @@
 // THIS IS AN APHELION UI FILE
+@use './aphelion-neon' as neon;
+
 // Website styling stays on neutral chrome; caller-colored content keeps its colors.
 .theme-meridian_aphelion {
   font-family: var(--aphelion-font-sans);
@@ -18,10 +20,8 @@
   }
 
   .TitleBar::after {
-    height: 2px;
-    max-width: calc(100% - 100px);
-    background: var(--aphelion-spectrum);
-    opacity: 0.55;
+    @include neon.rail;
+    bottom: -32px;
   }
 
   .Section {

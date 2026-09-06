@@ -6,9 +6,10 @@
     @include glass.finish('tgui/styles/assets/cyberpunk-neon-tube.svg', #00e5d4);
     --glass-cyan-cage: conic-gradient(from -74deg,
       transparent 0deg 214deg, #00e5d4 214deg 292deg, transparent 292deg);
+    // Red cage sectors stay uniform; the textured glow belongs to cyan.
     --console-loader-cage-pattern: conic-gradient(from -74deg,
-      #c0152a 0deg, #ed6477 24deg, #c0152a 48deg 72deg, transparent 72deg 86deg,
-      #c0152a 86deg, #f78996 117deg, #c0152a 145deg 178deg, transparent 178deg 214deg,
+      #c0152a 0deg 72deg, transparent 72deg 86deg,
+      #c0152a 86deg 178deg, transparent 178deg 214deg,
       #00e5d4 214deg 292deg, transparent 292deg);
 
     // The ten red ticks retain their original treatment; cyan belongs to the

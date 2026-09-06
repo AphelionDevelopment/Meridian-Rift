@@ -279,4 +279,68 @@ describe('TitleArtwork', () => {
       'asset://operator-title.png',
     );
   });
+
+  it('uses the same wordmark for decorative glow in both presentations', () => {
+    const { container, rerender } = render(
+      <TitleArtwork treatment="mask" src="asset://mark.png" />,
+    );
+
+    for (const presentation of ['classic', 'classic-alt'] as const) {
+      for (const treatment of ['mask', 'overlay'] as const) {
+        rerender(
+          <TitleArtwork
+            presentation={presentation}
+            treatment={treatment}
+            src="asset://screen.png"
+            markSrc="asset://wordmark.png"
+          />,
+        );
+        const artwork = container.querySelector('.lobby-title-art');
+        const screen = container.querySelector(
+          '.lobby-title-art__screen',
+        ) as HTMLElement;
+        const foreground = container.querySelector(
+          '.lobby-title-art__mark',
+        ) as HTMLElement;
+        const sources = container.querySelectorAll(
+          '.lobby-title-art__bloom-source',
+        );
+        const expectedMaster =
+          treatment === 'overlay' ? 'wordmark.png' : 'screen.png';
+
+        expect(artwork?.getAttribute('data-presentation')).toBe(presentation);
+        expect(artwork?.getAttribute('aria-hidden')).toBe('true');
+        expect(
+          container.querySelectorAll('.lobby-title-art__mark'),
+        ).toHaveLength(1);
+        expect(sources).toHaveLength(2);
+        expect(screen.style.getPropertyValue('--lobby-title-art-image')).toBe(
+          foreground.style.getPropertyValue('--lobby-title-art-image'),
+        );
+        expect(
+          screen.style.getPropertyValue('--lobby-title-art-image'),
+        ).toContain(expectedMaster);
+        for (const source of sources) {
+          // Both copies inherit the screen's current master without keeping
+          // stale URLs when a manager preview switches pictures or treatments.
+          expect(source.parentElement?.parentElement).toBe(screen);
+          expect(source.getAttribute('style')).toBeNull();
+        }
+      }
+    }
+  });
+
+  it('does not introduce glow wordmarks into an unbranded screen', () => {
+    const { container, rerender } = render(
+      <TitleArtwork
+        treatment="overlay"
+        src="asset://screen.png"
+        markSrc="asset://mark.png"
+      />,
+    );
+    expect(container.querySelectorAll('.lobby-title-art__bloom')).toHaveLength(2);
+
+    rerender(<TitleArtwork treatment="screen" src="asset://screen.png" />);
+    expect(container.querySelector('.lobby-title-art__bloom')).toBeNull();
+  });
 });
