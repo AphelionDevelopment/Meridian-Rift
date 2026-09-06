@@ -13,7 +13,7 @@
 	SSair.recent_reactions_of_interest = list()
 	T.kennel_last_reaction_results = null
 
-	var/fake_reaction = /datum/gas_reaction/plasmafire
+	var/fake_reaction = /datum/gas_reaction/standard/plasmafire
 
 	// Below threshold: never recorded, but the cache still learns the value (so a later increase past
 	// threshold is correctly seen as "changed", not swallowed).

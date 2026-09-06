@@ -23,8 +23,8 @@
 		"Temperature did not increase after plasmafire ([plasma_temp_before] -> [plasma_air.return_temperature()]) - energy release is missing.")
 	TEST_ASSERT(plasma_air.get_moles(/datum/gas/carbon_dioxide) > 0 && plasma_air.get_moles(/datum/gas/water_vapor) > 0, \
 		"Non-supersaturated plasmafire should produce both CO2 and water_vapor - got CO2=[plasma_air.get_moles(/datum/gas/carbon_dioxide)], water_vapor=[plasma_air.get_moles(/datum/gas/water_vapor)]. Missing water_vapor is exactly the divergence citadel_reactions' formula has from this codebase's.")
-	TEST_ASSERT(plasma_air.reaction_results[/datum/gas_reaction/plasmafire], \
-		"reaction_results wasn't populated for /datum/gas_reaction/plasmafire - dogmos_aphelion_plasmafire_finish() isn't writing the typepath-keyed entry SSair.hotspot_reactions-driven fire growth (LINDA_fire.dm) depends on.")
+	TEST_ASSERT(plasma_air.reaction_results[/datum/gas_reaction/standard/plasmafire], \
+		"reaction_results wasn't populated for /datum/gas_reaction/standard/plasmafire - dogmos_aphelion_plasmafire_finish() isn't writing the typepath-keyed entry SSair.hotspot_reactions-driven fire growth (LINDA_fire.dm) depends on.")
 
 	qdel(plasma_air)
 
@@ -48,8 +48,8 @@
 		"Temperature did not increase after tritfire ([trit_temp_before] -> [trit_air.return_temperature()]).")
 	TEST_ASSERT(trit_air.get_moles(/datum/gas/water_vapor) > 0, \
 		"tritfire should produce water_vapor (this codebase's measured fuel/oxidizer model) - zero here would mean the Rust port fell back to citadel_reactions' water-less 'trit bomb' formula instead.")
-	TEST_ASSERT(trit_air.reaction_results[/datum/gas_reaction/tritfire], \
-		"reaction_results wasn't populated for /datum/gas_reaction/tritfire.")
+	TEST_ASSERT(trit_air.reaction_results[/datum/gas_reaction/standard/tritfire], \
+		"reaction_results wasn't populated for /datum/gas_reaction/standard/tritfire.")
 
 	qdel(trit_air)
 
@@ -73,8 +73,8 @@
 		"Temperature did not increase after h2fire ([h2_temp_before] -> [h2_air.return_temperature()]).")
 	TEST_ASSERT(h2_air.get_moles(/datum/gas/water_vapor) > 0, \
 		"h2fire should produce water_vapor - got 0.")
-	TEST_ASSERT(h2_air.reaction_results[/datum/gas_reaction/h2fire], \
-		"reaction_results wasn't populated for /datum/gas_reaction/h2fire.")
+	TEST_ASSERT(h2_air.reaction_results[/datum/gas_reaction/standard/h2fire], \
+		"reaction_results wasn't populated for /datum/gas_reaction/standard/h2fire.")
 
 	qdel(h2_air)
 
@@ -101,7 +101,7 @@
 		"Temperature did not decrease after freonfire ([freon_temp_before] -> [freon_air.return_temperature()]) - freonfire is endothermic, unlike the other three fire reactions.")
 	TEST_ASSERT(freon_air.get_moles(/datum/gas/carbon_dioxide) > 0, \
 		"freonfire should produce CO2 - got 0.")
-	TEST_ASSERT(freon_air.reaction_results[/datum/gas_reaction/freonfire], \
-		"reaction_results wasn't populated for /datum/gas_reaction/freonfire.")
+	TEST_ASSERT(freon_air.reaction_results[/datum/gas_reaction/standard/freonfire], \
+		"reaction_results wasn't populated for /datum/gas_reaction/standard/freonfire.")
 
 	qdel(freon_air)

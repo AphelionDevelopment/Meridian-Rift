@@ -582,6 +582,7 @@
 		/obj/item/melee/baton/security/boomerang/loaded = 1
 	)
 	job_flags = STATION_JOB_FLAGS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_SHIELD_HEART
 
 /datum/outfit/job/science_guard
 	name = "Science Guard"
@@ -594,7 +595,7 @@
 	head =  /obj/item/clothing/head/helmet/blueshirt/nova
 	suit = /obj/item/clothing/suit/armor/vest/blueshirt/nova
 	r_pocket = /obj/item/flashlight
-	l_pocket = /obj/item/modular_computer/pda/science
+	l_pocket = /obj/item/modular_computer/pda/crew/science
 
 	backpack = /obj/item/storage/backpack/science
 	satchel = /obj/item/storage/backpack/satchel/science
@@ -684,6 +685,7 @@
 	)
 
 	job_flags = STATION_JOB_FLAGS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_SHIELD_HEART
 
 /datum/outfit/job/orderly
 	name = "Orderly"
@@ -696,7 +698,7 @@
 	head =  /obj/item/clothing/head/helmet/blueshirt/nova/guard
 	suit = /obj/item/clothing/suit/armor/vest/blueshirt/nova/orderly
 	r_pocket = /obj/item/flashlight
-	l_pocket = /obj/item/modular_computer/pda/medical
+	l_pocket = /obj/item/modular_computer/pda/crew/medical
 
 	backpack = /obj/item/storage/backpack/medic
 	satchel = /obj/item/storage/backpack/satchel/med
@@ -780,6 +782,7 @@
 		/obj/item/melee/baton/security/boomerang/loaded = 1
 	)
 	job_flags = STATION_JOB_FLAGS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_SHIELD_HEART
 
 /datum/outfit/job/engineering_guard
 	name = "Engineering Guard"
@@ -792,7 +795,7 @@
 	head =  /obj/item/clothing/head/helmet/blueshirt/nova/guard
 	suit = /obj/item/clothing/suit/armor/vest/blueshirt/nova/engineering_guard
 	r_pocket = /obj/item/flashlight
-	l_pocket = /obj/item/modular_computer/pda/engineering
+	l_pocket = /obj/item/modular_computer/pda/crew/engineering
 
 	backpack = /obj/item/storage/backpack/industrial
 	satchel = /obj/item/storage/backpack/satchel/eng
@@ -882,6 +885,7 @@
 		/obj/item/melee/baton/security/boomerang/loaded = 1
 	)
 	job_flags = STATION_JOB_FLAGS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_SHIELD_HEART
 
 /datum/outfit/job/customs_agent
 	name = "Customs Agent"
@@ -895,7 +899,7 @@
 	suit = /obj/item/clothing/suit/armor/vest/blueshirt/nova/customs_agent
 	glasses = /obj/item/clothing/glasses/hud/gun_permit
 	r_pocket = /obj/item/flashlight
-	l_pocket = /obj/item/modular_computer/pda/cargo
+	l_pocket = /obj/item/modular_computer/pda/crew/cargo
 
 	backpack = /obj/item/storage/backpack
 	satchel = /obj/item/storage/backpack/satchel
@@ -976,6 +980,7 @@
 		/obj/item/melee/baton/security/boomerang/loaded = 1
 	)
 	job_flags = STATION_JOB_FLAGS | JOB_ANTAG_PROTECTED
+	tgui_icon = FA_ICON_SHIELD_HEART
 
 /datum/outfit/job/bouncer
 	name = "Bouncer"
@@ -987,7 +992,7 @@
 	shoes = /obj/item/clothing/shoes/sneakers/black
 	head =  /obj/item/clothing/head/helmet/blueshirt/nova/guard
 	suit = /obj/item/clothing/suit/armor/vest/blueshirt/nova/guard
-	l_pocket = /obj/item/modular_computer/pda/bar
+	l_pocket = /obj/item/modular_computer/pda/crew/bar
 	r_pocket = /obj/item/flashlight
 	glasses = /obj/item/clothing/glasses/sunglasses
 

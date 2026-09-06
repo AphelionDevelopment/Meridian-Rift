@@ -62,6 +62,12 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
 /datum/gas_mixture/proc/set_moles(gas_id, amt_val)
 	return __set_moles(gas_string_id(gas_id), amt_val)
 
+// APHELION EDIT ADDITION START - DOGMOS
+/// Preserves upstream's setter API while keeping gas storage owned by Dogmos.
+/datum/gas_mixture/proc/set_gas(gas_specie, amount)
+	set_moles(gas_specie, amount)
+// APHELION EDIT ADDITION END
+
 /// Adjusts a gas amount; accepts a typepath or Dogmos string id.
 /datum/gas_mixture/proc/adjust_moles(id_val, num_val)
 	return __adjust_moles(gas_string_id(id_val), num_val)
@@ -516,7 +522,7 @@ GLOBAL_LIST_INIT(meta_gas_info, meta_gas_list()) //see ATMOSPHERICS/gas_types.dm
  */
 /datum/gas_mixture/proc/electrolyze(working_power = 0, electrolyzer_args = list())
 	for(var/reaction in GLOB.electrolyzer_reactions)
-		var/datum/electrolyzer_reaction/current_reaction = GLOB.electrolyzer_reactions[reaction]
+		var/datum/gas_reaction/electrolyzer/current_reaction = GLOB.electrolyzer_reactions[reaction]
 
 		if(!current_reaction.reaction_check(air_mixture = src, electrolyzer_args = electrolyzer_args))
 			continue

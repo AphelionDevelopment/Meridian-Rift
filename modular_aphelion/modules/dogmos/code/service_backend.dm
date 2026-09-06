@@ -876,14 +876,14 @@
 	var/aux = join_u32_words(batch[offset + DOGMOS_CALLBACK_AUX_FIELD], batch[offset + DOGMOS_CALLBACK_AUX_FIELD + 1])
 
 	if(kind == DOGMOS_CALLBACK_REACTION_PROFILED)
-		var/datum/gas_reaction/profiled_reaction = dogmos_reaction_ids[aux + 1]
+		var/datum/gas_reaction/standard/profiled_reaction = dogmos_reaction_ids[aux + 1]
 		if(!istype(profiled_reaction))
 			CRASH("Dogmos profiled unknown reaction id [aux].")
 		SSair.kennel_record_reaction_cost(profiled_reaction.id, holder, value_one)
 		return TRUE
 
 	if(kind == DOGMOS_CALLBACK_RUN_DM_REACTION)
-		var/datum/gas_reaction/reaction = dogmos_reaction_ids[aux + 1]
+		var/datum/gas_reaction/standard/reaction = dogmos_reaction_ids[aux + 1]
 		if(!istype(reaction))
 			CRASH("Dogmos requested unknown DM reaction id [aux].")
 		var/reaction_result = reaction.react(mixture, holder)
@@ -992,7 +992,7 @@
 			var/value_four = batch[offset + DOGMOS_CALLBACK_VALUES_FIELD + 3]
 			var/aux = join_u32_words(batch[offset + DOGMOS_CALLBACK_AUX_FIELD], batch[offset + DOGMOS_CALLBACK_AUX_FIELD + 1])
 			if(kind == DOGMOS_CALLBACK_REACTION_PROFILED)
-				var/datum/gas_reaction/profiled_reaction = dogmos_reaction_ids[aux + 1]
+				var/datum/gas_reaction/standard/profiled_reaction = dogmos_reaction_ids[aux + 1]
 				if(!istype(profiled_reaction))
 					CRASH("Dogmos profiled unknown reaction id [aux].")
 				SSair.kennel_record_reaction_cost(profiled_reaction.id, holder, value_one)
@@ -1012,7 +1012,7 @@
 						CRASH("Dogmos returned unknown native reaction kind [aux].")
 				continue
 
-			var/datum/gas_reaction/reaction = dogmos_reaction_ids[aux + 1]
+			var/datum/gas_reaction/standard/reaction = dogmos_reaction_ids[aux + 1]
 			if(!istype(reaction))
 				CRASH("Dogmos requested unknown DM reaction id [aux].")
 			var/reaction_started = isnull(reaction_profile_threshold_ms) ? null : TICK_USAGE_REAL
@@ -1115,16 +1115,16 @@
 	var/list/requirement_records = list()
 	SSdogmos.dogmos_reaction_ids = SSair.dogmos_reactions.Copy()
 	for(var/reaction_id in 1 to length(SSair.dogmos_reactions))
-		var/datum/gas_reaction/reaction = SSair.dogmos_reactions[reaction_id]
+		var/datum/gas_reaction/standard/reaction = SSair.dogmos_reactions[reaction_id]
 		var/execution = 0
 		switch(reaction.type)
-			if(/datum/gas_reaction/plasmafire)
+			if(/datum/gas_reaction/standard/plasmafire)
 				execution = DOGMOS_REACTION_PLASMA
-			if(/datum/gas_reaction/h2fire)
+			if(/datum/gas_reaction/standard/h2fire)
 				execution = DOGMOS_REACTION_HYDROGEN
-			if(/datum/gas_reaction/tritfire)
+			if(/datum/gas_reaction/standard/tritfire)
 				execution = DOGMOS_REACTION_TRITIUM
-			if(/datum/gas_reaction/freonfire)
+			if(/datum/gas_reaction/standard/freonfire)
 				execution = DOGMOS_REACTION_FREON
 
 		var/minimum_temperature = reaction.min_requirements["TEMP"]

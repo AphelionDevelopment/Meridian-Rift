@@ -50,6 +50,13 @@
 	probe.set_volume(CELL_VOLUME)
 	probe.set_temperature(T20C)
 
+	// Upstream admin tanks use set_gas; it must replace native moles, not add to them.
+	probe.set_gas(/datum/gas/oxygen, 2)
+	probe.set_gas(/datum/gas/oxygen, 3)
+	TEST_ASSERT_EQUAL(probe.get_moles(/datum/gas/oxygen), 3, "set_gas must replace Dogmos-owned moles.")
+	probe.set_gas(/datum/gas/oxygen, 0)
+	TEST_ASSERT_EQUAL(probe.get_moles(/datum/gas/oxygen), 0, "set_gas must clear Dogmos-owned moles.")
+
 	for(var/gas_path in GLOB.gas_data.datums)
 		var/datum/gas/gas = GLOB.gas_data.datums[gas_path]
 		probe.set_moles(gas_path, 1)
