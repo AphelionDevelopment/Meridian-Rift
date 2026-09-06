@@ -87,7 +87,9 @@
 
 	return catalog
 
+/** Returns the shared school datum for a valid school type, or null for an invalid type. */
 /proc/get_psionic_school(school_type)
+	RETURN_TYPE(/datum/psionic_school) // NOVA EDIT ADDITION - PSIONICS
 	if(!ispath(school_type, /datum/psionic_school))
 		return null
 
