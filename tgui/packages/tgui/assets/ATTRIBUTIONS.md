@@ -51,3 +51,6 @@ modifications in the first table. Never derive “exact” paths from a web prev
 `styles/assets/synapse-xxxo-neon-tube.svg` is an original Meridian-authored SVG
 with seeded glass grain, tinted light cores and electrode collars. It contains
 no external image or font resources.
+
+`styles/assets/synapse-neon-tube.svg` is the original violet/cyan glass variant
+for Synapse, retaining the seeded grain, light cores and electrode collars.

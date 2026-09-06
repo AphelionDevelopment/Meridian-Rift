@@ -35,6 +35,11 @@
   isolation: isolate;
 }
 
+// Decorative light copies are opt-in for material themes and hidden in forced colors.
+.DiagnosticLoader__light {
+  display: none;
+}
+
 :is(
   .DiagnosticLoader__tickCrown,
   .DiagnosticLoader__outerCage,

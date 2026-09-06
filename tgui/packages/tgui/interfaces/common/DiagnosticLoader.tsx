@@ -100,6 +100,11 @@ export function DiagnosticLoader(props: DiagnosticLoaderProps) {
         role="progressbar"
         style={style}
       >
+        <span aria-hidden className="DiagnosticLoader__light">
+          <span className="DiagnosticLoader__outerCage" />
+          <span className="DiagnosticLoader__innerMarks" />
+          <span className="DiagnosticLoader__nodes" />
+        </span>
         <span aria-hidden className="DiagnosticLoader__tickCrown" />
         <span aria-hidden className="DiagnosticLoader__outerCage" />
         <span aria-hidden className="DiagnosticLoader__progressTrack" />

@@ -1,0 +1,183 @@
+// THIS IS AN APHELION UI FILE
+// Shared neon glass material; callers retain their palette and loader geometry.
+@keyframes meridian-neon-loader-turn {
+  to { transform: rotate(1turn); }
+}
+
+@mixin finish($tube, $cyan) {
+  --glass-accent: var(--console-interaction-accent);
+  --glass-secondary: var(--console-interaction-selected);
+  --glass-hot: color-mix(in srgb, var(--glass-accent) 28%, white);
+  --glass-selected-hot: color-mix(in srgb, var(--glass-secondary) 28%, white);
+  --glass-loader-core: var(--console-loader-progress-core);
+  --glass-cyan: #{$cyan};
+  --glass-tube: url(#{$tube});
+
+  .Window {
+    background-image:
+      radial-gradient(ellipse at 85% 20%, color-mix(in srgb, var(--glass-secondary) 7%, transparent), transparent 55%),
+      radial-gradient(ellipse at 5% 10%, color-mix(in srgb, var(--glass-accent) 9%, transparent), transparent 55%),
+      linear-gradient(145deg, var(--console-surface-base), var(--console-surface-canvas) 62%, var(--console-surface-base));
+    box-shadow: inset 0 0 0 1px var(--console-border-control), 3px 3px 0 color-mix(in srgb, var(--glass-secondary) 17%, transparent), 0 0 24px #0005;
+  }
+
+  .TitleBar {
+    background-color: color-mix(in srgb, var(--glass-accent) 8%, var(--console-surface-raised));
+    box-shadow: inset 0 1px 0 #ffffff20, inset 0 -2px 3px #0008;
+    border-top-color: color-mix(in srgb, var(--glass-accent) 72%, white);
+  }
+
+  .TitleBar::after {
+    width: calc(var(--console-title-rail) * 1.9);
+    height: 16px;
+    bottom: -8px;
+    background: var(--glass-tube) center / 100% 100% no-repeat;
+  }
+
+  .Section {
+    background-image: linear-gradient(125deg, #ffffff05, transparent 46%, color-mix(in srgb, var(--glass-secondary) 3%, transparent)),
+      repeating-linear-gradient(91deg, #ffffff03 0 1px, transparent 1px 5px);
+    box-shadow: inset 0 1px 0 #ffffff0d, 0 2px 5px #0008;
+  }
+
+  .Section > .Section__title {
+    background: var(--section-title-background, linear-gradient(180deg, #ffffff0b, transparent 16%, #0003),
+      linear-gradient(105deg, color-mix(in srgb, var(--glass-accent) 9%, var(--console-surface-raised)), var(--console-surface-base) 72%));
+  }
+
+  .Section > .Section__title::after {
+    background-image: linear-gradient(180deg, #ffffff91, #ffffff00 70%),
+      repeating-linear-gradient(90deg, var(--glass-accent) 0 calc(var(--console-segment-pattern) - 2px), transparent calc(var(--console-segment-pattern) - 2px) var(--console-segment-pattern));
+    background-blend-mode: soft-light;
+    box-shadow: 0 0 5px color-mix(in srgb, var(--glass-accent) 28%, transparent);
+  }
+
+  .Button--color--default:is(.Button--selected, [aria-pressed='true'], [aria-checked='true']):not(.Button--disabled):not([aria-disabled='true']):not(:disabled) {
+    --button-color: var(--console-text-on-accent);
+    color: var(--button-color);
+    background-color: var(--glass-secondary);
+    background-image:
+      linear-gradient(106deg, #ffffff00 5%, #ffffff50 13%, #ffffff08 24%, #ffffff00 45%, #ffffff34 64%, #ffffff00 77%),
+      repeating-linear-gradient(0deg, #ffffff10 0 1px, #ffffff00 1px 3px),
+      linear-gradient(180deg, var(--glass-selected-hot) 0%, color-mix(in srgb, var(--glass-secondary) 65%, white) 9%, var(--glass-secondary) 27%, color-mix(in srgb, var(--glass-secondary) 78%, black) 48%, var(--glass-secondary) 56%, color-mix(in srgb, var(--glass-secondary) 67%, white) 93%, color-mix(in srgb, var(--glass-secondary) 66%, black) 100%);
+    border-color: var(--glass-selected-hot);
+    text-shadow: 0 1px 0 #ffffff30;
+    box-shadow: inset 0 1px 0 #f4fffd, inset 0 -2px 0 #0004, inset 1px 0 3px #ffffff88,
+      0 0 3px color-mix(in srgb, var(--glass-secondary) 50%, transparent), 0 0 12px color-mix(in srgb, var(--glass-secondary) 17%, transparent);
+  }
+
+  .Button--color--default:not(.Button--selected):not([aria-pressed='true']):not([aria-checked='true']):not(.Button--disabled):not([aria-disabled='true']):not(:disabled) {
+    background-image: linear-gradient(165deg, #ffffff09, transparent 45%, #00000024);
+    box-shadow: inset 0 1px 0 #ffffff10, inset 0 -1px 0 #0009;
+  }
+
+  :is(.Tab--selected, .Tab[aria-selected='true']) {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--glass-secondary) 24%, var(--console-surface-base)), var(--console-surface-base) 85%);
+    border-color: color-mix(in srgb, var(--glass-secondary) 70%, white);
+    color: var(--console-text-primary);
+    box-shadow: inset 0 -2px 0 var(--glass-selected-hot), 0 2px 4px color-mix(in srgb, var(--glass-secondary) 22%, transparent);
+  }
+
+  .DiagnosticLoader__instrument {   contain: layout style; overflow: visible;
+    --console-loader-progress-core: var(--glass-loader-core);
+  }
+
+  .DiagnosticLoader__progressFill {
+    background: conic-gradient(from -90deg, var(--console-loader-progress-core),
+      color-mix(in srgb, var(--console-loader-progress-core) 40%, white) calc(var(--diagnostic-loader-angle) / 6),
+      var(--console-loader-progress-core) calc(var(--diagnostic-loader-angle) * 0.393519),
+      color-mix(in srgb, var(--console-loader-progress-core) 74%, black) calc(var(--diagnostic-loader-angle) * 0.740741),
+      var(--console-loader-progress-core) var(--diagnostic-loader-angle), transparent var(--diagnostic-loader-angle));
+  }
+
+  .DiagnosticLoader__core {
+    background: linear-gradient(138deg, #ffffff00 22%, #ffffff80 25%, #ffffff20 31%, #ffffff00 36%),
+      radial-gradient(ellipse at 33% 24%, color-mix(in srgb, var(--console-loader-progress-core) 34%, white), var(--console-loader-progress-core) 35%, color-mix(in srgb, var(--console-loader-progress-core) 78%, black) 68%, color-mix(in srgb, var(--console-loader-progress-core) 40%, black));
+  }
+
+  .DiagnosticLoader__nodes {
+    background: repeating-conic-gradient(from var(--console-loader-node-start, -90deg),
+      var(--glass-selected-hot) 0deg 2deg, var(--glass-secondary) 2deg var(--console-loader-node-width), transparent var(--console-loader-node-width) var(--console-loader-node-step));
+  }
+
+  .DiagnosticLoader__innerMarks {
+    border-top-color: var(--console-border-control);
+    border-right-color: var(--glass-selected-hot);
+    border-bottom-color: var(--console-border-control);
+    border-left-color: var(--glass-hot);
+  }
+
+  .DiagnosticLoader__origin {
+    background: linear-gradient(90deg, var(--console-interaction-focus), #f5fffd 48%, var(--console-interaction-focus));
+  }
+
+  .lobby .container_nav {
+    background-image: radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--glass-secondary) 8%, transparent), transparent 65%), repeating-linear-gradient(91deg, #ffffff03 0 1px, transparent 1px 5px);
+  }
+
+  .lobby .container_nav::before {   top: -3px; height: 20px; width: 82%; background: var(--glass-tube) center / 100% 100% no-repeat;
+  }
+
+  .lobby .menu_button:first-of-type:not(:disabled) {
+    color: var(--glass-selected-hot);
+    text-shadow: 0 0 3px color-mix(in srgb, var(--glass-secondary) 70%, transparent), 0 0 9px color-mix(in srgb, var(--glass-secondary) 25%, transparent);
+    background-image: linear-gradient(90deg, color-mix(in srgb, var(--glass-secondary) 10%, transparent), transparent 80%);
+    border-left-color: var(--glass-secondary);
+    box-shadow: inset 1px 0 0 var(--glass-selected-hot), -2px 0 4px color-mix(in srgb, var(--glass-secondary) 17%, transparent);
+  }
+
+  .DiagnosticLoader__light {
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    filter: blur(0.5px)
+      drop-shadow(0 0 3px color-mix(in srgb, var(--glass-cyan) 63%, transparent))
+      drop-shadow(0 0 8px color-mix(in srgb, var(--glass-cyan) 24%, transparent));
+
+    .DiagnosticLoader__outerCage { background: var(--glass-cyan-cage); }
+    .DiagnosticLoader__innerMarks { border-color: transparent; }
+  }
+
+  // Theme switching restarts both cages together; visibility and reduced motion
+  // still use the shared loader's existing pause rules.
+  .DiagnosticLoader--indeterminate[data-motion='running']:not(.DiagnosticLoader--motion-reduced)
+    .DiagnosticLoader__outerCage {
+    animation-name: meridian-neon-loader-turn;
+  }
+
+  .Slider:not(.Slider--disabled) .Slider__cursor {
+    border-left-color: var(--glass-hot);
+    filter: drop-shadow(0 0 2px color-mix(in srgb, var(--glass-accent) 50%, transparent));
+  }
+
+  .ProgressBar--color--default:not(.Slider--disabled) > .ProgressBar__fill {
+    background-image: linear-gradient(180deg, var(--glass-hot),
+      color-mix(in srgb, var(--glass-accent) 38%, black) 12%,
+      color-mix(in srgb, var(--glass-accent) 24%, black) 45%,
+      color-mix(in srgb, var(--glass-accent) 36%, black) 78%,
+      color-mix(in srgb, var(--glass-accent) 65%, black));
+    box-shadow: inset 0 1px 0 #ffffff66, inset 0 -1px 0 #0006;
+  }
+
+  .container_terminal::before {
+    height: 10px;
+    top: -4px;
+    width: min(240px, 70%);
+    background: var(--glass-tube) center / 100% 100% no-repeat;
+  }
+
+  .container_terminal__lamp,
+  .boot_terminal__cursor {
+    background: linear-gradient(90deg, var(--glass-accent), var(--glass-hot), var(--glass-accent));
+    box-shadow: 0 0 5px color-mix(in srgb, var(--glass-accent) 38%, transparent);
+  }
+
+  .container_progress .progress_bar {
+    background: linear-gradient(180deg, var(--glass-hot), var(--glass-accent) 28%,
+      var(--glass-accent) 62%, color-mix(in srgb, var(--glass-accent) 70%, black));
+    box-shadow: 0 0 4px var(--glass-accent),
+      0 0 12px color-mix(in srgb, var(--glass-accent) 27%, transparent);
+  }
+}

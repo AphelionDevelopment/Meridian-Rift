@@ -16,7 +16,8 @@ hackerman, retro-95, or other specialty themes.
    only.
 6. `_loader.scss` provides the fixed diagnostic-instrument layer set shared by
    the ordinary TGUI and lobby bundles. Theme variables reshape it without
-   cloning component markup.
+   cloning component markup per theme. An optional aria-hidden light layer reuses
+   the same geometry for local neon glow and stays hidden in forced colors.
 7. `_decoration.scss` owns pointer-transparent shell, title-rail, and corner
    motifs.
 8. `_motion.scss` owns the small interaction transitions, reduced-motion
@@ -53,7 +54,8 @@ Alongside Standard, the other thirteen palette-bearing MeridianOS skins are:
 - Foundry — recessed machinery, fasteners, and warning-only hatching.
 - Diagnostic — square brackets, alignment ticks, and acquisition nodes.
 - Highline — accessibility-first square boundaries and inverse selection.
-- Synapse — aubergine surfaces, asymmetric cuts, and teal status pins.
+- Synapse — aubergine glass, asymmetric cuts, reflective cyan controls, and
+  cyan light confined to its original inset loader accents.
 - Synapse XXXO — dark plum surfaces, reflective pink controls, neon glass
   trim, and red loader accents.
 - Cyberpunk — hot-red broken rails and cyan inner registration marks.

@@ -26,7 +26,13 @@ describe('DiagnosticLoader', () => {
       'DiagnosticLoader--indeterminate',
     );
 
-    const layers = Array.from(progressbar.children);
+    const light = progressbar.querySelector('.DiagnosticLoader__light');
+    expect(light?.getAttribute('aria-hidden')).toBe('true');
+    expect(light?.querySelector('[role], [id], [tabindex]')).toBeNull();
+    expect(view.getAllByRole('progressbar')).toHaveLength(1);
+    const layers = Array.from(progressbar.children).filter(
+      (layer) => layer !== light,
+    );
     expect(layers).toHaveLength(8);
     expect(layers.map((layer) => layer.className)).toEqual([
       'DiagnosticLoader__tickCrown',
@@ -56,9 +62,7 @@ describe('DiagnosticLoader', () => {
       progressbar.style.getPropertyValue('--diagnostic-loader-angle'),
     ).toBe('360deg');
 
-    view.rerender(
-      <DiagnosticLoader value={-25} minValue={0} maxValue={100} />,
-    );
+    view.rerender(<DiagnosticLoader value={-25} minValue={0} maxValue={100} />);
     expect(progressbar.getAttribute('aria-valuenow')).toBe('0');
     expect(
       progressbar.style.getPropertyValue('--diagnostic-loader-progress'),
