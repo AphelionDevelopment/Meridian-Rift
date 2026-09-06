@@ -9737,6 +9737,7 @@
 #include "modular_nova\modules\psionics\code\power\riftwalk.dm"
 #include "modular_nova\modules\psionics\code\power\sense_health.dm"
 #include "modular_nova\modules\psionics\code\power\sensual_touch.dm"
+#include "modular_nova\modules\psionics\code\power\sinew_surge.dm"
 #include "modular_nova\modules\psionics\code\power\spatial_slip.dm"
 #include "modular_nova\modules\psionics\code\power\spit_image.dm"
 #include "modular_nova\modules\psionics\code\power\sunder.dm"
