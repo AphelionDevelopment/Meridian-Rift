@@ -58,6 +58,9 @@
 // direct-mapped, so anything past that is guaranteed to evict something the same prefetch just
 // stored. Capped here rather than at the service, which will happily return far more.
 #define DOGMOS_MIXTURE_PREFETCH_LIMIT DOGMOS_MIXTURE_CACHE_BUCKETS
+// The production IPC reply window is 64 KiB: 4 count bytes plus 172 bytes
+// per compact snapshot. floor((65536 - 4) / 172) = 381 records per call.
+#define DOGMOS_MIXTURE_SNAPSHOT_BATCH_LIMIT 381
 // Mirrors dogmos-core's DEFAULT_MIXTURE_VOLUME_LITERS. A freshly registered mixture already has
 // this volume on the service side.
 #define DOGMOS_DEFAULT_MIXTURE_VOLUME 2500
@@ -1247,10 +1250,10 @@
 		SSdogmos.store_mixture_snapshot_cache(slot, generation, snapshot)
 
 /**
- * Warms the snapshot cache for a working set of mixtures with one service round trip.
+ * Warms the snapshot cache for a working set of mixtures with bounded service batches.
  *
  * mixture_snapshot() costs a round trip per cache miss, so reading N cold mixtures costs N round
- * trips. Naming them up front collapses that into one, which is worth doing whenever the caller
+ * trips. Naming them up front batches those reads, which is worth doing whenever the caller
  * already knows what it is about to read - a subsystem's turf frontier, a pipenet, an atmos
  * machine's connected mixtures.
  *
@@ -1268,21 +1271,32 @@
 		return 0
 
 	var/list/request_fields = list()
-	var/requested = 0
+	var/list/seen = list()
+	var/inspected = 0
+	var/cached = 0
 	for(var/datum/gas_mixture/gas_mixture as anything in gas_mixture_list)
+		if(inspected >= DOGMOS_MIXTURE_PREFETCH_LIMIT)
+			break
+		inspected++
+		if(!gas_mixture || seen[gas_mixture])
+			continue
+		seen[gas_mixture] = TRUE
 		var/slot = gas_mixture.dogmos_slot
 		var/generation = gas_mixture.dogmos_generation
 		if(!slot || isnull(generation))
 			continue
 		request_fields += slot
 		request_fields += generation
-		requested++
-		if(requested >= DOGMOS_MIXTURE_PREFETCH_LIMIT)
-			break
+		if(length(request_fields) == DOGMOS_MIXTURE_SNAPSHOT_BATCH_LIMIT * 2)
+			cached += prefetch_mixture_snapshot_chunk(request_fields)
+			request_fields.Cut()
+	if(length(request_fields))
+		cached += prefetch_mixture_snapshot_chunk(request_fields)
+	return cached
 
-	if(!requested)
-		return 0
-
+/** Fetches and validates one compact snapshot reply that fits the production IPC window. */
+/datum/controller/subsystem/dogmos/proc/prefetch_mixture_snapshot_chunk(list/request_fields)
+	var/requested = length(request_fields) / 2
 	var/list/response_fields = dogmos_mixture_snapshot_batch(request_fields)
 	if(!islist(response_fields))
 		CRASH("dogmosd returned a malformed mixture snapshot batch: not a list.")
@@ -2226,6 +2240,7 @@
 #undef DOGMOS_MIXTURE_SNAPSHOT_GASES_START
 #undef DOGMOS_DEFAULT_MIXTURE_VOLUME
 #undef DOGMOS_MIXTURE_PREFETCH_LIMIT
+#undef DOGMOS_MIXTURE_SNAPSHOT_BATCH_LIMIT
 #undef DOGMOS_PIPENET_RECONCILE_RECORD_FIELDS
 #undef DOGMOS_LIFECYCLE_REGISTER
 #undef DOGMOS_LIFECYCLE_UNREGISTER

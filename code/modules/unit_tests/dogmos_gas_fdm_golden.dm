@@ -1,42 +1,46 @@
-/** Verifies gas conservation and directional flow across one real FDM step. */
+#define DOGMOS_FDM_TEST_STAGE 4
+
+/** Verifies directional flow, no overshoot and bounded conservation in one native FDM stage. */
 /datum/unit_test/dogmos_gas_fdm_golden
 
 /datum/unit_test/dogmos_gas_fdm_golden/Run()
+	TEST_ASSERT(dogmos_wait_for_stage_boundary(), "Dogmos did not reach a safe boundary before diffusion.")
 	var/list/pair = allocate_turf_pair()
+	TEST_ASSERT_EQUAL(length(pair), 2, "The diffusion fixture needs two gas-adjacent turfs.")
 	var/turf/open/turf_a = pair[1]
 	var/turf/open/turf_b = pair[2]
-
 	var/datum/gas_mixture/air_a = turf_a.air
 	var/datum/gas_mixture/air_b = turf_b.air
-	var/original_a_o2 = air_a.get_moles(/datum/gas/oxygen)
-
-	// Deliberately asymmetric: triple turf_a's oxygen relative to its actual starting value.
-	air_a.set_moles(/datum/gas/oxygen, original_a_o2 * 3)
-
+	air_a.set_moles(/datum/gas/oxygen, air_a.get_moles(/datum/gas/oxygen) * 3)
 	var/a_before = air_a.get_moles(/datum/gas/oxygen)
 	var/b_before = air_b.get_moles(/datum/gas/oxygen)
-	TEST_ASSERT(a_before > b_before, \
-		"Seeding turf_a with 3x turf_b's oxygen did not actually produce an asymmetric pair ([a_before] vs [b_before]) - test setup is broken, not the thing under test.")
+	TEST_ASSERT(a_before > b_before, "The diffusion fixture did not produce asymmetric oxygen amounts.")
 
-	// APHELION EDIT ADDITION START - DOGMOS
-	SSair.remove_from_active(turf_a)
-	SSair.remove_from_active(turf_b)
-	SSair.add_to_active(turf_a)
-	SSair.add_to_active(turf_b)
+	var/list/room_turfs = get_area_turfs(turf_a.loc)
+	var/oxygen_before = 0
+	var/open_count = 0
+	for(var/turf/open/room_turf in room_turfs)
+		open_count++
+		oxygen_before += room_turf.air.get_moles(/datum/gas/oxygen)
+		for(var/turf/open/neighbor as anything in room_turf.atmos_adjacent_turfs)
+			TEST_ASSERT(neighbor in room_turfs, "The conservation fixture must be closed to external gas flow.")
 
-	var/a_after = a_before
-	var/b_after = b_before
-	for(var/attempt in 1 to 20)
-		sleep(SSair.wait)
-		a_after = air_a.get_moles(/datum/gas/oxygen)
-		b_after = air_b.get_moles(/datum/gas/oxygen)
-		if(a_after != a_before)
-			break
-	// APHELION EDIT ADDITION END
+	// Invoke one stage directly: process_turfs_auxtools may perform several configured
+	// FDM passes, and waiting for SSair could also run equalization or excited groups.
+	TEST_ASSERT(dogmos_run_fixture_stage(DOGMOS_FDM_TEST_STAGE, pair), "Native diffusion did not complete and restore its frontier within the fixture bound.")
+	var/a_after = air_a.get_moles(/datum/gas/oxygen)
+	var/b_after = air_b.get_moles(/datum/gas/oxygen)
+	TEST_ASSERT(a_after < a_before, "Diffusion did not move oxygen out of the fuller turf.")
+	TEST_ASSERT(b_after > b_before, "Diffusion did not move oxygen into the emptier turf.")
+	TEST_ASSERT(a_after > b_after, "One diffusion stage overshot equilibrium.")
+	var/oxygen_after = 0
+	for(var/turf/open/room_turf in room_turfs)
+		oxygen_after += room_turf.air.get_moles(/datum/gas/oxygen)
+	// The documented trace sink is less than 0.01 mole per gas per committed mixture.
+	TEST_ASSERT(abs(oxygen_after - oxygen_before) < 0.01 * open_count, "Diffusion changed closed-room oxygen beyond its trace-sink bound ([oxygen_before] -> [oxygen_after]).")
 
-	TEST_ASSERT(a_after < a_before, \
-		"turf_a's oxygen ([a_before] -> [a_after]) did not decrease after sharing with lower-oxygen turf_b - gas is not flowing out of the fuller turf.")
-	TEST_ASSERT(b_after > b_before, \
-		"turf_b's oxygen ([b_before] -> [b_after]) did not increase after sharing with higher-oxygen turf_a - gas is not flowing into the emptier turf.")
-	TEST_ASSERT(a_after > b_after, \
-		"turf_a's oxygen ([a_after]) dropped to or below turf_b's ([b_after]) after a single share step - a single GAS_DIFFUSION_CONSTANT-weighted step should not overshoot past equilibrium.")
+/datum/unit_test/dogmos_gas_fdm_golden/Destroy()
+	restore_atmos()
+	return ..()
+
+#undef DOGMOS_FDM_TEST_STAGE

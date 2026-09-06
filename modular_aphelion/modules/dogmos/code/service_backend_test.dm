@@ -1647,7 +1647,8 @@
 		mixture.set_moles(/datum/gas/oxygen, length(mixtures))
 		if(length(mixtures) == 382)
 			break
-	TEST_ASSERT_EQUAL(length(mixtures), 382, "Could not construct 382 non-colliding snapshot handles.")
+	if(length(mixtures) != 382)
+		return Fail("Could not construct 382 non-colliding snapshot handles.", __FILE__, __LINE__)
 
 	for(var/count in list(381, 382))
 		var/list/request = list()
@@ -1658,14 +1659,18 @@
 			request += mixtures[index]
 			request += mixtures[index]
 		SSdogmos.reset_mixture_snapshot_cache()
-		TEST_ASSERT_EQUAL(SSdogmos.prefetch_mixture_snapshots(request), count, "Prefetch did not cache each unique requested handle exactly once.")
+		if(SSdogmos.prefetch_mixture_snapshots(request) != count)
+			return Fail("Prefetch did not cache each unique requested handle exactly once.", __FILE__, __LINE__)
 		for(var/index in 1 to count)
 			var/datum/gas_mixture/mixture = mixtures[index]
 			var/list/snapshot = SSdogmos.lookup_mixture_snapshot_cache(mixture.dogmos_slot, mixture.dogmos_generation)
-			TEST_ASSERT_EQUAL(length(snapshot), 42, "Prefetch omitted or truncated snapshot [index] at the batch boundary.")
+			if(!islist(snapshot) || length(snapshot) != 42)
+				return Fail("Prefetch omitted or truncated snapshot [index] at the batch boundary.", __FILE__, __LINE__)
 			// Field 7 is total moles, independent of the production field macro.
-			TEST_ASSERT_EQUAL(snapshot[7], index, "Prefetch associated snapshot [index] with the wrong gas state.")
-		TEST_ASSERT_EQUAL(SSdogmos.dogmos_mixture_cache_misses, 0, "Prefetch used singular snapshot reads.")
+			if(snapshot[7] != index)
+				return Fail("Prefetch associated snapshot [index] with the wrong gas state.", __FILE__, __LINE__)
+		if(SSdogmos.dogmos_mixture_cache_misses != 0)
+			return Fail("Prefetch used singular snapshot reads.", __FILE__, __LINE__)
 
 /datum/unit_test/dogmos_service_prefetch_chunking/Destroy()
 	SSdogmos.reset_mixture_snapshot_cache()

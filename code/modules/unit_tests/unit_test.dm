@@ -142,9 +142,45 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 	var/turf/open/turf_b = get_step(turf_a, direction)
 	TEST_ASSERT(istype(turf_a), "run_loc_floor_bottom_left is not an open turf - this test needs one.")
 	TEST_ASSERT(istype(turf_b), "The turf [direction] of run_loc_floor_bottom_left is not an open turf - this test needs two real, adjacent turfs.")
+	// Previous tests may have replaced a turf with deferred adjacency recalculation.
+	// Establish this fixture's topology before asserting its preconditions.
+	turf_a.immediate_calculate_adjacent_turfs()
+	turf_b.immediate_calculate_adjacent_turfs()
 	TEST_ASSERT(turf_a in turf_b.atmos_adjacent_turfs, \
 		"turf_a and turf_b are not gas-adjacent (atmos_adjacent_turfs) - this test needs two turfs Dogmos will actually share gas between.")
 	return list(turf_a, turf_b)
+
+/** Waits a bounded number of subsystem fires before beginning an isolated native-stage fixture. */
+/datum/unit_test/proc/dogmos_wait_for_stage_boundary()
+	for(var/attempt in 1 to 100)
+		if(!SSdogmos.service_ready)
+			return FALSE
+		if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
+			return TRUE
+		sleep(SSair.wait)
+	return FALSE
+
+/** Runs only the requested stage from fixture turfs, then restores the normal frontier.
+ * There are no sleeps between publication, stage calls and restoration: another SSair
+ * stage cannot move gas during the measured before/after interval.
+ */
+/datum/unit_test/proc/dogmos_run_fixture_stage(stage, list/turfs)
+	if(!isnull(SSair.dogmos_pending_stage) || SSair.dogmos_pending_frontier_epoch)
+		return FALSE
+	var/list/original_active = SSair.active_turfs
+	SSair.active_turfs = turfs.Copy()
+	var/pending = TRUE
+	for(var/chunk in 1 to 4096)
+		pending = SSair.dogmos_run_stage(stage, 100)
+		if(!pending)
+			break
+	SSair.active_turfs = original_active
+	if(pending)
+		return FALSE
+	SSair.dogmos_pending_frontier_epoch = null
+	var/restored = SSair.sync_dogmos_frontier()
+	SSair.dogmos_pending_frontier_epoch = null
+	return restored
 
 /** Re-registers a turf and rebuilds its Dogmos heat-graph adjacency. */
 /datum/unit_test/proc/resync_turf_for_dogmos(turf/open/target)

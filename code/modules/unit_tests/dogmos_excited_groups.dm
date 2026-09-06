@@ -1,58 +1,26 @@
-/// Maximum service chunks a stage may consume before this test reports stalled progress.
-#define DOGMOS_EXCITED_GROUPS_STAGE_CHUNK_LIMIT 4096
-/// Maximum subsystem fires this test waits for an existing service cycle to finish.
-#define DOGMOS_EXCITED_GROUPS_BOUNDARY_ATTEMPTS 20
+#define DOGMOS_EXCITED_TEST_STAGE 1
 
-/** Verifies that the excited-group path consumes a low-pressure FDM result. */
+/** Verifies one native excited-group stage redistributes a low-pressure fixture. */
 /datum/unit_test/dogmos_excited_groups
 
 /datum/unit_test/dogmos_excited_groups/Run()
-	// NOVA EDIT ADDITION START - DOGMOS
-	var/reached_stage_boundary = FALSE
-	for(var/attempt in 1 to DOGMOS_EXCITED_GROUPS_BOUNDARY_ATTEMPTS)
-		if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
-			reached_stage_boundary = TRUE
-			break
-		sleep(SSair.wait)
-	TEST_ASSERT(reached_stage_boundary, "Dogmos did not reach a safe stage boundary before the excited-groups test.")
-	// NOVA EDIT ADDITION END
-
+	TEST_ASSERT(dogmos_wait_for_stage_boundary(), "Dogmos did not reach a safe boundary before excited-group processing.")
 	var/list/pair = allocate_turf_pair()
+	TEST_ASSERT_EQUAL(length(pair), 2, "The excited-group fixture needs two gas-adjacent turfs.")
 	var/turf/open/turf_a = pair[1]
-	var/turf/open/turf_b = pair[2]
-
 	var/datum/gas_mixture/air_a = turf_a.air
-	var/original_a_o2 = air_a.get_moles(/datum/gas/oxygen)
-	air_a.set_moles(/datum/gas/oxygen, original_a_o2 * 1.05)
+	var/original_o2 = air_a.get_moles(/datum/gas/oxygen)
+	TEST_ASSERT(original_o2 > 0, "The excited-group fixture requires nonzero oxygen.")
+	air_a.set_moles(/datum/gas/oxygen, original_o2 * 1.05)
+	var/a_before = air_a.get_moles(/datum/gas/oxygen)
+	var/processed_before = SSair.num_group_turfs_processed
+	TEST_ASSERT(dogmos_run_fixture_stage(DOGMOS_EXCITED_TEST_STAGE, pair), "Native excited-group processing did not complete and restore its frontier within the fixture bound.")
+	var/a_after = air_a.get_moles(/datum/gas/oxygen)
+	TEST_ASSERT(SSair.num_group_turfs_processed > processed_before, "Native excited-group processing did not report a processed component.")
+	TEST_ASSERT(a_after < a_before, "Excited-group processing did not redistribute the seeded oxygen ([a_before] -> [a_after]).")
 
-	SSair.active_turfs |= turf_a
-	SSair.active_turfs |= turf_b
-	// NOVA EDIT ADDITION START - DOGMOS
-	var/turf_stage_pending = TRUE
-	var/turf_stage_chunks = 0
-	while(turf_stage_pending && turf_stage_chunks < DOGMOS_EXCITED_GROUPS_STAGE_CHUNK_LIMIT)
-		turf_stage_pending = SSair.process_turfs_auxtools(100)
-		turf_stage_chunks++
-	TEST_ASSERT(!turf_stage_pending, "Dogmos turf processing did not complete within [DOGMOS_EXCITED_GROUPS_STAGE_CHUNK_LIMIT] chunks.")
-	// NOVA EDIT ADDITION END
-	SSair.finish_turf_processing_auxtools(100)
+/datum/unit_test/dogmos_excited_groups/Destroy()
+	restore_atmos()
+	return ..()
 
-	var/before = SSair.num_group_turfs_processed
-	/* // NOVA EDIT REMOVAL START - DOGMOS
-	SSair.process_excited_groups_auxtools(100)
-	*/ // NOVA EDIT REMOVAL END
-	// NOVA EDIT ADDITION START - DOGMOS
-	var/stage_pending = TRUE
-	var/stage_chunks = 0
-	while(stage_pending && stage_chunks < DOGMOS_EXCITED_GROUPS_STAGE_CHUNK_LIMIT)
-		stage_pending = SSair.process_excited_groups_auxtools(100)
-		stage_chunks++
-	TEST_ASSERT(!stage_pending, "Dogmos excited-groups processing did not complete within [DOGMOS_EXCITED_GROUPS_STAGE_CHUNK_LIMIT] chunks.")
-	// NOVA EDIT ADDITION END
-	var/after = SSair.num_group_turfs_processed
-
-	TEST_ASSERT(after > 0, \
-		"num_group_turfs_processed ([before] -> [after]) is not positive after seeding a low-pressure turf pair and running the equalizer - the FFI call did not process anything real.")
-
-#undef DOGMOS_EXCITED_GROUPS_STAGE_CHUNK_LIMIT
-#undef DOGMOS_EXCITED_GROUPS_BOUNDARY_ATTEMPTS
+#undef DOGMOS_EXCITED_TEST_STAGE
