@@ -17,10 +17,9 @@
  */
 /obj/structure/psionic_anchor
 	name = "miniature reality anchor"
-	desc = "A chiseled slab of dead monolith, cradled in brass and cut through with a single \
-		resonant crystal. Switched on, it insists loudly and continuously that nothing unusual \
+	desc = "A compact field generator with a steel chassis and a shielded cyan resonator. \
+		Switched on, it insists loudly and continuously that nothing unusual \
 		is happening anywhere near it."
-	// Sprite ported from DopplerShift.
 	icon = 'modular_nova/modules/psionics/icons/reality_anchor.dmi'
 	icon_state = "reality_anchor"
 	density = TRUE
@@ -75,7 +74,7 @@
 /obj/structure/psionic_anchor/proc/toggle()
 	active = !active
 	set_anchored(active)
-	// The sprite has no lit variant, so the crystal glow and the ripple are the "running" tell.
+	// The resonator's area light and the ripple indicate that the anchor is running.
 	set_light_on(active)
 
 	if(!active)

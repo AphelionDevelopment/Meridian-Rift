@@ -90,4 +90,4 @@ New backlashes subtype `/datum/psionic_backlash/mild`, `/severe`, or `/catastrop
 
 ### Credits:
 
-`icons/reality_anchor.dmi` is by TheOneAndOnlyCreeperJoe, ported from DopplerShift (`modular_doppler/modular_powers/icons/items/reality_anchor.dmi`, DopplerShift13/DopplerShift#958). CC-BY-SA-3.0, as with all /tg/station downstream assets.
+N/A
