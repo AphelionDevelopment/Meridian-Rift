@@ -61,6 +61,8 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 	var/static/datum/space_level/reservation
 	/// If this unit test requires a normal turf to run.
 	var/normal_floor_required = FALSE
+	/// Stop the suite if an isolated native fixture cannot release its authoritative stage.
+	var/dogmos_fixture_aborted = FALSE
 
 /proc/cmp_unit_test_priority(datum/unit_test/a, datum/unit_test/b)
 	return initial(a.priority) - initial(b.priority)
@@ -152,34 +154,81 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 
 /** Waits a bounded number of subsystem fires before beginning an isolated native-stage fixture. */
 /datum/unit_test/proc/dogmos_wait_for_stage_boundary()
-	for(var/attempt in 1 to 100)
+	var/failure = "Dogmos did not establish a healthy fixture boundary within its bound."
+	try
+		for(var/attempt in 1 to 100)
+			if(!SSdogmos.service_ready)
+				break
+			if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
+				if(dogmos_drain_fixture_callbacks())
+					return TRUE
+				break
+			sleep(SSair.wait)
+	catch(var/exception/error)
+		failure = "Dogmos fixture boundary raised [error.name]."
+	return dogmos_abort_fixture(failure)
+
+/// Record an unrecoverable fixture failure and suppress unsafe restoration and later tests.
+/datum/unit_test/proc/dogmos_abort_fixture(reason)
+	dogmos_fixture_aborted = TRUE
+	SSair.dogmos_fail_closed_stage("unit test fixture", schedule_reboot = FALSE)
+	Fail(reason, __FILE__, __LINE__)
+	return FALSE
+
+/// Drain through the maintained sequence-checking path without running another gas stage.
+/datum/unit_test/proc/dogmos_drain_fixture_callbacks()
+	for(var/batch in 1 to 4096)
 		if(!SSdogmos.service_ready)
 			return FALSE
-		if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
+		// Dispatching a reaction can enqueue new service events after the batch's
+		// remaining-count snapshot. Require an observed empty batch before returning.
+		if(!SSair.finish_turf_processing_auxtools(100) && !SSdogmos.dogmos_pending_callback_count)
 			return TRUE
-		sleep(SSair.wait)
 	return FALSE
 
 /** Runs only the requested stage from fixture turfs, then restores the normal frontier.
  * There are no sleeps between publication, stage calls and restoration: another SSair
  * stage cannot move gas during the measured before/after interval.
  */
-/datum/unit_test/proc/dogmos_run_fixture_stage(stage, list/turfs)
+/datum/unit_test/proc/dogmos_run_fixture_stage(stage, list/turfs, use_fdm_cadence = FALSE)
 	if(!isnull(SSair.dogmos_pending_stage) || SSair.dogmos_pending_frontier_epoch)
 		return FALSE
 	var/list/original_active = SSair.active_turfs
-	SSair.active_turfs = turfs.Copy()
+	var/list/original_pressure_queue = SSair.high_pressure_delta.Copy()
+	var/list/original_pressure = list()
+	for(var/turf/open/fixture_turf as anything in turfs)
+		original_pressure[fixture_turf] = list(fixture_turf.pressure_difference, fixture_turf.pressure_direction)
 	var/pending = TRUE
-	for(var/chunk in 1 to 4096)
-		pending = SSair.dogmos_run_stage(stage, 100)
-		if(!pending)
-			break
+	var/restored = FALSE
+	var/failure = "Native fixture stage [stage] exceeded its completion bound."
+	try
+		SSair.active_turfs = turfs.Copy()
+		for(var/chunk in 1 to 4096)
+			pending = use_fdm_cadence ? SSair.process_turfs_auxtools(100) : SSair.dogmos_run_stage(stage, 100)
+			if(!pending || !SSdogmos.service_ready)
+				break
+		if(!pending && SSdogmos.service_ready)
+			// Equalization publishes pressure events. Consume them before gas restoration,
+			// then remove only this fixture's effects on the DM pressure queue and fields.
+			pending = !dogmos_drain_fixture_callbacks()
+		SSair.active_turfs = original_active
+		if(!pending && SSdogmos.service_ready)
+			SSair.dogmos_pending_frontier_epoch = null
+			restored = SSair.sync_dogmos_frontier()
+			SSair.dogmos_pending_frontier_epoch = null
+	catch(var/exception/error)
+		failure = "Native fixture stage [stage] raised [error.name]."
+	// Restore local state even when an IPC call runtimes. An incomplete native cursor
+	// has no safe DM cancellation API: freeze atmos and end the suite after recording failure.
 	SSair.active_turfs = original_active
-	if(pending)
-		return FALSE
-	SSair.dogmos_pending_frontier_epoch = null
-	var/restored = SSair.sync_dogmos_frontier()
-	SSair.dogmos_pending_frontier_epoch = null
+	SSair.high_pressure_delta.Cut()
+	SSair.high_pressure_delta += original_pressure_queue
+	for(var/turf/open/fixture_turf as anything in turfs)
+		var/list/pressure = original_pressure[fixture_turf]
+		fixture_turf.pressure_difference = pressure[1]
+		fixture_turf.pressure_direction = pressure[2]
+	if(!restored)
+		return dogmos_abort_fixture(failure)
 	return restored
 
 /** Re-registers a turf and rebuilds its Dogmos heat-graph adjacency. */
@@ -215,6 +264,8 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 
 /// Resets the air of our testing room to its default
 /datum/unit_test/proc/restore_atmos()
+	if(dogmos_fixture_aborted)
+		return
 	var/area/working_area = run_loc_floor_bottom_left.loc
 	var/list/turf/to_restore = working_area.get_turfs_from_all_zlevels()
 	for(var/turf/open/restore in to_restore)
@@ -359,7 +410,9 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 	// Record elapsed duration for timing checks; skipped tests report zero.
 	test_results[test_path] = list("status" = final_status, "message" = message, "name" = test_path, "runtimes" = runtimes_during, "duration" = skip_test ? 0 : duration)
 
+	var/abort_suite = test.dogmos_fixture_aborted
 	qdel(test)
+	return abort_suite
 
 /// Builds (and returns) a list of atoms that we shouldn't initialize in generic testing, like Create and Destroy.
 /// It is appreciated to add the reason why the atom shouldn't be initialized if you add it to this list.
@@ -532,11 +585,16 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 
 	//Hell code, we're bound to end the round somehow so let's stop if from ending while we work
 	SSticker.delay_end = TRUE
+	var/abort_suite = FALSE
 	for(var/datum/unit_test/unit_path as anything in tests_to_run)
 		var/loop_count = unit_path::times_to_run
 		for(var/i in 1 to loop_count)
 			CHECK_TICK //We check tick first because the unit test we run last may be so expensive that checking tick will lock up this loop forever
-			RunUnitTest(unit_path, test_results)
+			if(RunUnitTest(unit_path, test_results))
+				abort_suite = TRUE
+				break
+		if(abort_suite)
+			break
 	SSticker.delay_end = FALSE
 
 	log_world("::group::Expensive Unit Test Times")

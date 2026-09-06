@@ -392,6 +392,7 @@ SUBSYSTEM_DEF(air)
 			SStgui.update_uis(GLOB.dogmos_kennel)
 
 /datum/controller/subsystem/air/Recover()
+	initialized = SSair.initialized
 	excited_groups = SSair.excited_groups
 	active_turfs = SSair.active_turfs
 	hotspots = SSair.hotspots

@@ -59,7 +59,7 @@ The checked-in profiles are:
 - `default`: repository configuration, suitable for normal boot/soak work.
 - `ci`: `tools/ci/ci_config.txt`, `-close`, required clean-run and unit-test artifacts, and `_maps/metastation.json` by default.
 - `dogmos`: repository configuration, full RuntimeStation, Dogmos fatal rules, and exactly one continuous `dogmosd.exe` child.
-- `dogmos-ci`: CI configuration, MetaStation, focused-test compile defines, Dogmos fatal rules, and exactly one continuous `dogmosd.exe` child.
+- `dogmos-ci`: CI configuration, MetaStation with full CentCom, skipped Lavaland/space levels, Dogmos fatal rules, and exactly one continuous `dogmosd.exe` child. `MINIMAL_CENTCOM` is incompatible with this representative-map profile.
 
 `test` selects `ci` when `--profile` is omitted; other commands select `default`. A test profile is rejected unless it uses the CI config, requests natural `-close` shutdown, and requires nonempty unit-test and clean-run artifacts.
 

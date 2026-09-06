@@ -4,10 +4,10 @@
 #define DOGMOS_TEST_STAGE_EXCITED_GROUPS 1
 #define DOGMOS_TEST_STAGE_EQUALIZE 2
 #define DOGMOS_TEST_STAGE_TURF_HEAT 3
+#define DOGMOS_TEST_STAGE_TURFS 4
 #define DOGMOS_TEST_STAGE_REACTIONS 5
 #define DOGMOS_TEST_STAGE_BOUNDARY_ATTEMPTS 100
 #define DOGMOS_TEST_STAGE_RESPONSE_FIELDS 13
-#define DOGMOS_TEST_STAGE_CHUNK_LIMIT 4096
 #define DOGMOS_PIPELINE_TEST_EPSILON 0.001
 #define DOGMOS_TEST_OVERSIZED_PIPELINE_MIXTURES 228
 #define DOGMOS_TEST_IDLE_MC_SETTLE_TIME 30 SECONDS
@@ -195,17 +195,18 @@
 	var/list/fake_snapshot = new/list(42)
 	SSdogmos.store_mixture_snapshot_cache(1, 7, fake_snapshot)
 	var/collisions_before = SSdogmos.dogmos_mixture_cache_collisions
-	SSdogmos.store_mixture_snapshot_cache(513, 9, fake_snapshot)
+	// The current 2048-bucket cache maps these distinct slots to the same bucket.
+	SSdogmos.store_mixture_snapshot_cache(2049, 9, fake_snapshot)
 	if(SSdogmos.dogmos_mixture_cache_collisions != collisions_before + 1)
 		return Fail("Direct-mapped cache collisions were not counted.", __FILE__, __LINE__)
 	if(!isnull(SSdogmos.lookup_mixture_snapshot_cache(1, 7)))
 		return Fail("A colliding slot retained the displaced cache entry.", __FILE__, __LINE__)
-	if(SSdogmos.lookup_mixture_snapshot_cache(513, 8))
+	if(SSdogmos.lookup_mixture_snapshot_cache(2049, 8))
 		return Fail("The mixture snapshot cache accepted a mismatched generation.", __FILE__, __LINE__)
 
 	var/invalidations_before = SSdogmos.dogmos_mixture_cache_epoch_invalidations
 	SSdogmos.invalidate_mixture_snapshot_epoch()
-	if(SSdogmos.dogmos_mixture_cache_epoch_invalidations != invalidations_before + 1 || SSdogmos.lookup_mixture_snapshot_cache(513, 9))
+	if(SSdogmos.dogmos_mixture_cache_epoch_invalidations != invalidations_before + 1 || SSdogmos.lookup_mixture_snapshot_cache(2049, 9))
 		return Fail("Stage-wide epoch invalidation retained an old snapshot.", __FILE__, __LINE__)
 	SSdogmos.dogmos_mixture_cache_epoch = 16777216
 	SSdogmos.store_mixture_snapshot_cache(1, 1, fake_snapshot)
@@ -1108,42 +1109,34 @@
 /datum/unit_test/dogmos_service_fdm_linda_cadence
 
 /datum/unit_test/dogmos_service_fdm_linda_cadence/Run()
-	var/reached_stage_boundary = FALSE
-	for(var/attempt in 1 to DOGMOS_TEST_STAGE_BOUNDARY_ATTEMPTS)
-		if(isnull(SSair.dogmos_pending_stage) && !SSair.dogmos_pending_frontier_epoch && SSdogmos.flush_turf_registration_batch())
-			reached_stage_boundary = TRUE
-			break
-		sleep(SSair.wait)
-	if(!reached_stage_boundary)
-		return Fail("Dogmos did not reach a safe stage boundary before the FDM cadence test.", __FILE__, __LINE__)
+	if(!dogmos_wait_for_stage_boundary())
+		return
+	var/list/pair = allocate_turf_pair()
+	if(length(pair) != 2)
+		return Fail("The FDM cadence fixture needs two adjacent turfs.", __FILE__, __LINE__)
+	var/turf/open/turf_a = pair[1]
+	var/turf/open/turf_b = pair[2]
+	turf_a.air.set_moles(/datum/gas/oxygen, turf_a.air.get_moles(/datum/gas/oxygen) * 3)
+	var/a_before = turf_a.air.get_moles(/datum/gas/oxygen)
+	var/b_before = turf_b.air.get_moles(/datum/gas/oxygen)
 	var/expected_steps = max(1, round(SSair.share_max_steps))
+	var/list/expected_stage_epoch = SSair.dogmos_stage_epoch.Copy()
+	for(var/step in 1 to expected_steps)
+		expected_stage_epoch = SSdogmos.increment_u64_words(expected_stage_epoch)
 	var/original_fdm_steps_completed = SSair.dogmos_fdm_steps_completed
 	SSair.dogmos_fdm_steps_completed = 0
-	var/pending = TRUE
-	var/chunks = 0
-	while(pending && chunks < DOGMOS_TEST_STAGE_CHUNK_LIMIT)
-		pending = SSair.process_turfs_auxtools(100)
-		chunks++
+	var/completed = dogmos_run_fixture_stage(DOGMOS_TEST_STAGE_TURFS, pair, use_fdm_cadence = TRUE)
 	var/completed_steps = SSair.dogmos_fdm_steps_completed
-
-	if(!pending)
-		for(var/stage in list(DOGMOS_TEST_STAGE_REACTIONS, DOGMOS_TEST_STAGE_EXCITED_GROUPS, DOGMOS_TEST_STAGE_EQUALIZE, DOGMOS_TEST_STAGE_TURF_HEAT))
-			var/stage_pending = TRUE
-			var/stage_chunks = 0
-			while(stage_pending && stage_chunks < DOGMOS_TEST_STAGE_CHUNK_LIMIT)
-				stage_pending = SSair.dogmos_run_stage(stage, 100)
-				stage_chunks++
-			if(stage_pending)
-				pending = TRUE
-				break
-	SSair.dogmos_pending_frontier_epoch = null
-
 	SSair.dogmos_fdm_steps_completed = original_fdm_steps_completed
-
-	if(pending)
-		return Fail("Dogmos did not complete the configured FDM test cycle within its chunk limit.", __FILE__, __LINE__)
+	if(!completed)
+		return
 	if(completed_steps != expected_steps)
 		return Fail("Dogmos completed [completed_steps] FDM passes instead of the configured [expected_steps].", __FILE__, __LINE__)
+	for(var/word_index in 1 to 4)
+		if(SSair.dogmos_stage_epoch[word_index] != expected_stage_epoch[word_index])
+			return Fail("The reported FDM pass count did not match the number of native stage epochs.", __FILE__, __LINE__)
+	if(turf_a.air.get_moles(/datum/gas/oxygen) >= a_before || turf_b.air.get_moles(/datum/gas/oxygen) <= b_before)
+		return Fail("The configured FDM passes did not actually redistribute the seeded oxygen.", __FILE__, __LINE__)
 
 /** Verifies malformed stage responses are rejected before SSair reads their fields. */
 /datum/unit_test/dogmos_service_stage_response_failure
@@ -1690,7 +1683,7 @@
 #undef DOGMOS_TEST_OVERSIZED_PIPELINE_MIXTURES
 #undef DOGMOS_TEST_STAGE_BOUNDARY_ATTEMPTS
 #undef DOGMOS_TEST_STAGE_RESPONSE_FIELDS
-#undef DOGMOS_TEST_STAGE_CHUNK_LIMIT
+#undef DOGMOS_TEST_STAGE_TURFS
 #undef DOGMOS_PIPELINE_TEST_EPSILON
 #undef DOGMOS_TEST_IDLE_MC_SETTLE_TIME
 #undef DOGMOS_TEST_RESPONSE_APPLIED

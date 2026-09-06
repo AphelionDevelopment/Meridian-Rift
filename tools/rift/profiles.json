@@ -161,11 +161,7 @@
 		"dogmos-ci": {
 			"config_source": "ci",
 			"default_map": "_maps/metastation.json",
-			"compile_defines": [
-				"MINIMAL_CENTCOM",
-				"SKIP_LAVALAND",
-				"SKIP_SPACE_LEVELS"
-			],
+			"compile_defines": ["SKIP_LAVALAND", "SKIP_SPACE_LEVELS"],
 			"dreamdaemon_flags": ["-close", "-trusted", "-verbose"],
 			"readiness_rule": {
 				"id": "initialization_complete",

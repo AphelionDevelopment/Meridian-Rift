@@ -17,10 +17,25 @@
 
 	var/a_before = air_a.get_moles(/datum/gas/oxygen)
 	var/processed_before = SSair.num_equalize_processed
+	var/list/active_before = SSair.active_turfs
+	var/list/pressure_queue_before = SSair.high_pressure_delta.Copy()
+	var/list/pressure_before = list()
+	for(var/turf/open/fixture_turf as anything in pair)
+		pressure_before[fixture_turf] = list(fixture_turf.pressure_difference, fixture_turf.pressure_direction)
 	TEST_ASSERT(dogmos_run_fixture_stage(DOGMOS_EQUALIZE_TEST_STAGE, pair), "Native equalization did not complete and restore its frontier within the fixture bound.")
 	var/a_after = air_a.get_moles(/datum/gas/oxygen)
 	TEST_ASSERT(SSair.num_equalize_processed > processed_before, "Native equalization did not report a processed component.")
 	TEST_ASSERT(a_after < a_before, "Equalization left the high-pressure turf unchanged ([a_before] -> [a_after]); no diffusion stage ran in this interval.")
+	// A delayed callback must not modify these same generations after fixture cleanup.
+	TEST_ASSERT(!SSair.finish_turf_processing_auxtools(100), "Fixture callbacks remained pending after equalization cleanup.")
+	TEST_ASSERT(SSair.active_turfs == active_before, "The fixture replaced the normal active-turf list.")
+	TEST_ASSERT_EQUAL(length(SSair.high_pressure_delta), length(pressure_queue_before), "The fixture changed pressure-queue membership.")
+	for(var/index in 1 to length(pressure_queue_before))
+		TEST_ASSERT(SSair.high_pressure_delta[index] == pressure_queue_before[index], "The fixture changed pressure-queue order.")
+	for(var/turf/open/fixture_turf as anything in pair)
+		var/list/pressure = pressure_before[fixture_turf]
+		TEST_ASSERT_EQUAL(fixture_turf.pressure_difference, pressure[1], "Fixture pressure escaped cleanup.")
+		TEST_ASSERT_EQUAL(fixture_turf.pressure_direction, pressure[2], "Fixture pressure direction escaped cleanup.")
 
 /datum/unit_test/dogmos_highpressure_equalize/Destroy()
 	restore_atmos()

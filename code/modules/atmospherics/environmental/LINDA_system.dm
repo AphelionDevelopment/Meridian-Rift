@@ -195,10 +195,11 @@
 
 		for (var/check_direction in GLOB.cardinals_multiz)
 			var/turf/secondary_turf = get_step(checked_turf, check_direction)
-			if(!checked_turf.atmos_adjacent_turfs || !checked_turf.atmos_adjacent_turfs[secondary_turf])
+			if(!(secondary_turf in checked_turf.atmos_adjacent_turfs))
 				continue
 
-			if (adjacent_turfs[secondary_turf])
+			// Count original cardinal routes, not diagonals already added to the result.
+			if (secondary_turf in atmos_adjacent_turfs)
 				matching_directions++
 
 			if (matching_directions >= 2)

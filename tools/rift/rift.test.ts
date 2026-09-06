@@ -267,6 +267,11 @@ describe('profile document', () => {
       config_source: 'ci',
       default_map: '_maps/metastation.json',
     });
+    // The minimal base is only compatible with runtimestation_minimal. It clips
+    // MetaStation during centering and omits the Mafia arena used by the suite.
+    expect(profiles.get('dogmos-ci')?.compile_defines).not.toContain(
+      'MINIMAL_CENTCOM',
+    );
     expect(
       profiles
         .get('dogmos')
@@ -1449,6 +1454,9 @@ describe('Windows launchers', () => {
       root,
       {
         ...processSpec(path.join(root, 'unused.ts')).env,
+        // Launcher tests own their cache; an inherited development cache must
+        // not make the deliberately missing-Bun case find the real executable.
+        TG_BOOTSTRAP_CACHE: path.join(root, 'tools', 'bootstrap', '.cache'),
         ...environment,
       },
     );

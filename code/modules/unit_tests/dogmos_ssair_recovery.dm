@@ -1,21 +1,36 @@
 /** Verifies SSair recovery preserves DM state without replacing service-owned atmosphere state. */
 /datum/unit_test/dogmos_ssair_recovery
+	/// Synthetic recovery fields must never be used by subsequent live IPC or test teardown.
+	var/list/recovery_air_state
+	var/list/recovery_dogmos_state
+	var/datum/controller/subsystem/air/recovery_test_copy/recovered_air
+	var/datum/controller/subsystem/dogmos/recovery_test_copy/recovered_dogmos
 
 /datum/unit_test/dogmos_ssair_recovery/Run()
 	if(!SSdogmos.service_ready || !dogmos_service_health())
 		return Fail("dogmosd was not healthy before the SSair recovery test.", __FILE__, __LINE__)
+	TEST_ASSERT(dogmos_wait_for_stage_boundary(), "Recovery fixture could not reach a healthy stage boundary.")
+	var/datum/controller/subsystem/air/original_air = SSair
+	var/original_air_initialized = SSair.initialized
+	var/list/original_adjacent_rebuild = SSair.adjacent_rebuild
+	var/list/air_recovery_fields = list(
+		"equalize_enabled", "kennel_slow_mode", "kennel_high_cost_ms_threshold",
+		"kennel_push_cursor", "active_turfs_walk_cursor", "recent_breaches", "active_turfs",
+		"kennel_jump_targets", "kennel_jump_target_counts", "can_fire",
+		"dogmos_frontier_epoch", "dogmos_stage_epoch", "dogmos_pending_stage",
+		"dogmos_pending_frontier_epoch", "dogmos_committed_frontier",
+		"dogmos_stage_remaining_estimate", "dogmos_stage_work_limit",
+		"dogmos_active_turf_stages_complete", "dogmos_fdm_steps_completed",
+	)
+	recovery_air_state = list()
+	for(var/field_name in air_recovery_fields)
+		recovery_air_state[field_name] = SSair.vars[field_name]
+	SSair.can_fire = FALSE
 
 	var/datum/controller/subsystem/dogmos/original_dogmos = SSdogmos
 	var/original_service_pid = dogmos_service_pid()
 	var/list/original_world_generation = dogmos_service_world_generation()
-	var/original_equalize_enabled = SSair.equalize_enabled
-	var/original_kennel_slow_mode = SSair.kennel_slow_mode
-	var/original_threshold = SSair.kennel_high_cost_ms_threshold
-	var/original_stage_work_limit = SSair.dogmos_stage_work_limit
-	var/list/original_breaches = SSair.recent_breaches
 	var/list/original_active_turfs = SSair.active_turfs
-	var/list/original_jump_targets = SSair.kennel_jump_targets
-	var/list/original_jump_target_counts = SSair.kennel_jump_target_counts
 	var/turf/jump_target = run_loc_floor_bottom_left
 	var/jump_key = REF(jump_target)
 
@@ -48,7 +63,11 @@
 	var/sentinel_slot = sentinel.dogmos_slot
 	var/sentinel_generation = sentinel.dogmos_generation
 
-	Master.subsystems += new /datum/controller/subsystem/air
+	// Exercise the production Recover payload without deleting the instance held
+	// by the running Master's cached scheduler lists.
+	recovered_air = new
+	recovered_air.Recover()
+	TEST_ASSERT_EQUAL(recovered_air.initialized, original_air_initialized, "SSair recovery lost its completed initialization state.")
 
 	TEST_ASSERT_EQUAL(SSdogmos, original_dogmos, \
 		"SSair recovery replaced the authoritative Dogmos subsystem datum.")
@@ -70,34 +89,34 @@
 	TEST_ASSERT_EQUAL(sentinel.get_moles(/datum/gas/oxygen), 7.25, \
 		"SSair recovery changed the service-owned sentinel oxygen amount.")
 
-	TEST_ASSERT_EQUAL(SSair.equalize_enabled, FALSE, \
+	TEST_ASSERT_EQUAL(recovered_air.equalize_enabled, FALSE, \
 		"SSair recovery did not retain the equalization setting.")
-	TEST_ASSERT_EQUAL(SSair.kennel_slow_mode, FALSE, \
+	TEST_ASSERT_EQUAL(recovered_air.kennel_slow_mode, FALSE, \
 		"SSair recovery did not retain the Kennel slow-mode setting.")
-	TEST_ASSERT_EQUAL(SSair.kennel_high_cost_ms_threshold, 7.5, \
+	TEST_ASSERT_EQUAL(recovered_air.kennel_high_cost_ms_threshold, 7.5, \
 		"SSair recovery did not retain the Kennel threshold.")
-	TEST_ASSERT_EQUAL(SSair.recent_breaches, recovery_breaches, \
+	TEST_ASSERT_EQUAL(recovered_air.recent_breaches, recovery_breaches, \
 		"SSair recovery did not retain the bounded breach history.")
-	TEST_ASSERT_EQUAL(SSair.active_turfs, original_active_turfs, \
+	TEST_ASSERT_EQUAL(recovered_air.active_turfs, original_active_turfs, \
 		"SSair recovery did not retain the active-turf runtime queue.")
-	TEST_ASSERT_EQUAL(SSair.kennel_push_cursor, 0, \
+	TEST_ASSERT_EQUAL(recovered_air.kennel_push_cursor, 0, \
 		"SSair recovery retained the old Kennel update cursor.")
-	TEST_ASSERT_EQUAL(SSair.active_turfs_walk_cursor, 0, \
+	TEST_ASSERT_EQUAL(recovered_air.active_turfs_walk_cursor, 0, \
 		"SSair recovery retained the old active-turf walk cursor.")
 	for(var/word_index in 1 to 4)
-		TEST_ASSERT_EQUAL(SSair.dogmos_frontier_epoch[word_index], word_index, \
+		TEST_ASSERT_EQUAL(recovered_air.dogmos_frontier_epoch[word_index], word_index, \
 			"SSair recovery changed frontier epoch word [word_index].")
-		TEST_ASSERT_EQUAL(SSair.dogmos_stage_epoch[word_index], word_index + 4, \
+		TEST_ASSERT_EQUAL(recovered_air.dogmos_stage_epoch[word_index], word_index + 4, \
 			"SSair recovery changed stage epoch word [word_index].")
-		TEST_ASSERT_EQUAL(SSair.dogmos_pending_frontier_epoch[word_index], word_index, \
+		TEST_ASSERT_EQUAL(recovered_air.dogmos_pending_frontier_epoch[word_index], word_index, \
 			"SSair recovery changed pending frontier epoch word [word_index].")
-	TEST_ASSERT_EQUAL(SSair.dogmos_pending_stage, 4, \
+	TEST_ASSERT_EQUAL(recovered_air.dogmos_pending_stage, 4, \
 		"SSair recovery restarted instead of retaining the pending Dogmos stage.")
-	TEST_ASSERT_EQUAL(SSair.dogmos_stage_remaining_estimate, 17, \
+	TEST_ASSERT_EQUAL(recovered_air.dogmos_stage_remaining_estimate, 17, \
 		"SSair recovery did not retain the pending Dogmos work estimate.")
-	TEST_ASSERT_EQUAL(SSair.dogmos_stage_work_limit, 128, \
+	TEST_ASSERT_EQUAL(recovered_air.dogmos_stage_work_limit, 128, \
 		"SSair recovery did not retain the Dogmos stage work limit.")
-	TEST_ASSERT_EQUAL(SSair.resolve_kennel_jump_target(jump_key), jump_target, \
+	TEST_ASSERT_EQUAL(recovered_air.resolve_kennel_jump_target(jump_key), jump_target, \
 		"SSair recovery did not rebuild the bounded Kennel jump-target index.")
 
 	var/list/dogmos_recovery_fields = list(
@@ -142,6 +161,7 @@
 	var/list/original_dogmos_state = list()
 	for(var/field_name in dogmos_recovery_fields)
 		original_dogmos_state[field_name] = SSdogmos.vars[field_name]
+	recovery_dogmos_state = original_dogmos_state
 
 	SSdogmos.dogmos_pending_callback_batch = list("recovery callback")
 	SSdogmos.dogmos_pending_callback_index = 1
@@ -170,16 +190,21 @@
 	for(var/field_name in dogmos_recovery_fields)
 		expected_dogmos_state[field_name] = SSdogmos.vars[field_name]
 
-	Master.subsystems += new /datum/controller/subsystem/dogmos
+	recovered_dogmos = new
+	// Boot-discovered copies need SS_NO_INIT, but this local copy must prove that
+	// Recover itself sets the flag rather than inheriting a passing precondition.
+	recovered_dogmos.ss_flags &= ~SS_NO_INIT
+	recovered_dogmos.Recover()
 
-	TEST_ASSERT_NOTEQUAL(SSdogmos, original_dogmos, \
-		"Dogmos recovery did not install the replacement subsystem datum.")
-	TEST_ASSERT(SSdogmos.ss_flags & SS_NO_INIT, \
+	TEST_ASSERT_NOTEQUAL(recovered_dogmos, original_dogmos, \
+		"Dogmos recovery needs an independent destination datum.")
+	TEST_ASSERT(SSdogmos == original_dogmos, "The recovery copy replaced the authoritative Dogmos subsystem.")
+	TEST_ASSERT(recovered_dogmos.ss_flags & SS_NO_INIT, \
 		"Dogmos recovery did not suppress cold service initialization.")
-	TEST_ASSERT(SSdogmos.initialized, \
+	TEST_ASSERT(recovered_dogmos.initialized, \
 		"Dogmos recovery did not retain initialized state.")
 	for(var/field_name in dogmos_recovery_fields)
-		TEST_ASSERT_EQUAL(SSdogmos.vars[field_name], expected_dogmos_state[field_name], \
+		TEST_ASSERT_EQUAL(recovered_dogmos.vars[field_name], expected_dogmos_state[field_name], \
 			"Dogmos recovery did not retain [field_name].")
 	TEST_ASSERT_EQUAL(dogmos_service_pid(), original_service_pid, \
 		"Dogmos recovery replaced the healthy dogmosd process.")
@@ -197,12 +222,55 @@
 	TEST_ASSERT_EQUAL(sentinel.get_moles(/datum/gas/oxygen), 7.25, \
 		"Dogmos recovery invalidated the sentinel mixture oxygen amount.")
 
-	SSair.equalize_enabled = original_equalize_enabled
-	SSair.kennel_slow_mode = original_kennel_slow_mode
-	SSair.kennel_high_cost_ms_threshold = original_threshold
-	SSair.recent_breaches = original_breaches
-	SSair.kennel_jump_targets = original_jump_targets
-	SSair.kennel_jump_target_counts = original_jump_target_counts
-	SSair.dogmos_pending_stage = null
-	SSair.dogmos_pending_frontier_epoch = null
-	SSair.dogmos_stage_work_limit = original_stage_work_limit
+	restore_recovery_state()
+	TEST_ASSERT_EQUAL(SSair, original_air, "The recovery fixture replaced the scheduled Atmospherics subsystem.")
+	TEST_ASSERT_EQUAL(SSair.initialized, original_air_initialized, "The recovery fixture changed Atmospherics initialization state.")
+	TEST_ASSERT(SSair in Master.subsystems, "The original Atmospherics subsystem was removed from the Master.")
+	TEST_ASSERT_EQUAL(SSair.adjacent_rebuild, original_adjacent_rebuild, "Recovery detached the pending adjacency queue.")
+	// A healthy process alone cannot detect leaked synthetic epochs. Exercise a real
+	// publication and stage after restoration so the native contract validates them.
+	TEST_ASSERT(dogmos_run_fixture_stage(4, list(jump_target)), "Recovered atmosphere state could not execute a real native stage after fixture cleanup.")
+	// Direct native calls bypass the Master scheduler. A natural completed cycle
+	// additionally proves the fixture has not detached the live subsystem.
+	var/times_fired_before = SSair.times_fired
+	var/deadline = world.time + 60 SECONDS
+	while(SSair.times_fired == times_fired_before && world.time < deadline)
+		sleep(SSair.wait)
+	TEST_ASSERT(SSair.times_fired > times_fired_before, "Atmospherics did not complete a naturally scheduled cycle after the recovery fixture.")
+
+/datum/unit_test/dogmos_ssair_recovery/proc/restore_recovery_state()
+	QDEL_NULL(recovered_air)
+	QDEL_NULL(recovered_dogmos)
+	for(var/field_name in recovery_dogmos_state)
+		SSdogmos.vars[field_name] = recovery_dogmos_state[field_name]
+	recovery_dogmos_state = null
+	for(var/field_name in recovery_air_state)
+		SSair.vars[field_name] = recovery_air_state[field_name]
+	recovery_air_state = null
+
+/datum/unit_test/dogmos_ssair_recovery/restore_atmos()
+	// RunUnitTest restores gas before Destroy(), including after an assertion aborts Run().
+	restore_recovery_state()
+	return ..()
+
+/datum/unit_test/dogmos_ssair_recovery/Destroy()
+	restore_recovery_state()
+	return ..()
+
+// Master enumerates all subsystem subtypes. These copies are inert both when
+// discovered at boot and when allocated locally; inherited New would swap globals.
+/datum/controller/subsystem/air/recovery_test_copy
+	name = "Atmos recovery test copy"
+	ss_flags = SS_NO_INIT | SS_NO_FIRE
+	can_fire = FALSE
+
+/datum/controller/subsystem/air/recovery_test_copy/New()
+	return
+
+/datum/controller/subsystem/dogmos/recovery_test_copy
+	name = "Dogmos recovery test copy"
+	ss_flags = SS_NO_INIT | SS_NO_FIRE
+	can_fire = FALSE
+
+/datum/controller/subsystem/dogmos/recovery_test_copy/New()
+	return
