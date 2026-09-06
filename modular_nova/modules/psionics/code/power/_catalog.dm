@@ -66,6 +66,16 @@
 	ui_icon_state = "flux"
 	ui_color = "#ffe36b"
 
+/** Illusions and altered perception, resonating with hallucination anomalies. */
+/datum/psionic_school/hallucination
+	name = "Illusionism"
+	desc = "False images, hallucinations, and deceptive perception."
+	anomaly_path = /obj/effect/anomaly/hallucination
+	anomaly_core_path = /obj/item/assembly/signaler/anomaly/hallucination
+	ui_key = "hallucination"
+	ui_icon_state = "hallucination"
+	ui_color = "#ff4b55"
+
 /proc/get_psionic_school_catalog()
 	var/static/list/catalog
 	if(catalog)

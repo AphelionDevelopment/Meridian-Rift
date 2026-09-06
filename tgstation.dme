@@ -9726,6 +9726,7 @@
 #include "modular_nova\modules\psionics\code\power\lumen.dm"
 #include "modular_nova\modules\psionics\code\power\manipulate.dm"
 #include "modular_nova\modules\psionics\code\power\mind_read.dm"
+#include "modular_nova\modules\psionics\code\power\mirage.dm"
 #include "modular_nova\modules\psionics\code\power\psiblade.dm"
 #include "modular_nova\modules\psionics\code\power\psionic_barrier.dm"
 #include "modular_nova\modules\psionics\code\power\psionic_bubble.dm"

@@ -48,6 +48,7 @@
 #define PSIONIC_SCHOOL_GRAVITY /datum/psionic_school/gravity
 #define PSIONIC_SCHOOL_BLUESPACE /datum/psionic_school/bluespace
 #define PSIONIC_SCHOOL_FLUX /datum/psionic_school/flux
+#define PSIONIC_SCHOOL_HALLUCINATION /datum/psionic_school/hallucination
 
 #define COMSIG_MOB_RECEIVE_PSIONICS "mob_receive_psionics"
 #define COMSIG_MOB_RESTRICT_PSIONICS "mob_restrict_psionics"

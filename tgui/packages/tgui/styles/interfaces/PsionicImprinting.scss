@@ -63,6 +63,12 @@
     --psionic-symbol: url('../assets/psionic-flux.svg');
   }
 
+  &--hallucination {
+    --psionic-accent: #ff4b55;
+    --psionic-glow: rgba(255, 75, 85, 0.2);
+    --psionic-symbol: url('../assets/psionic-hallucination.svg');
+  }
+
   &__title {
     font-size: 20px;
     font-weight: bold;
