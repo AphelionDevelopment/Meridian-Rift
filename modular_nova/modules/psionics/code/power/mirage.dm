@@ -304,7 +304,6 @@
 	return !!mirage?.is_revealed_to(viewer)
 
 /datum/atom_hud/alternate_appearance/basic/psionic_mirage/check_hud(mob/source)
-	SIGNAL_HANDLER
 	. = ..()
 	if(!source.client || !image)
 		return
