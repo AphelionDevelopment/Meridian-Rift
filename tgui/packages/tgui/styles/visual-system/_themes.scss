@@ -332,15 +332,22 @@
 }
 
 .theme-meridian_bastion {
-  --console-frame-gap: 4px;
-  --console-frame-top-weight: 5px;
-  --console-frame-left-weight: 5px;
-  --console-frame-right-weight: 2px;
-  --console-frame-bottom-weight: 3px;
-  --console-corner-cut: 3px;
-  --console-frame-layer: 3px;
-  --console-corner-layer: 34px;
-  --console-title-rail: 144px;
+  --bastion-texture: url('tgui/styles/assets/bastion-rust.jpg');
+  --bastion-plates: url('tgui/styles/assets/bastion-plates.svg');
+  --bastion-fastener: radial-gradient(circle, #17130e 0 0.5px, #89775b 1px 1.5px, #100d0a 2px, transparent 2.5px);
+  --console-frame-gap: 0px;
+  --console-frame-top-weight: 4px;
+  --console-frame-left-weight: 4px;
+  --console-frame-right-weight: 4px;
+  --console-frame-bottom-weight: 4px;
+  --console-corner-cut: 0px;
+  --console-frame-layer: 0px;
+  --console-corner-layer: 0px;
+  --console-title-rail: 0px;
+  --console-window-pin-width: 0px;
+  --console-border-subtle: color-mix(in srgb, var(--console-border-control) 68%, var(--console-surface-base));
+  --console-heading-case: none;
+  --console-heading-tracking: 0.025em;
   --console-selected-rail: 5px;
   --console-loader-ticks: 4;
   --console-loader-tick-step: 90deg;
@@ -359,7 +366,7 @@
     0 82%,
     0 18%
   );
-  --console-control-depth: inset 0 3px 0 var(--console-surface-recessed);
+  --console-control-depth: inset 0 1px 0 rgb(240 231 206 / 8%), inset 0 -1px 0 var(--console-surface-recessed);
 }
 
 // The Meridian website's field-instrument palette and restrained calibration marks.

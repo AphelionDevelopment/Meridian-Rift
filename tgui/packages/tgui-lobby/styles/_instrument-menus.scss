@@ -169,22 +169,45 @@
 }
 
 .theme-meridian_bastion .lobby {
-  --menu-panel: linear-gradient(180deg, var(--lobby-panel), var(--lobby-recessed)), var(--lobby-panel);
+  --menu-panel: linear-gradient(rgb(0 0 0 / 28%), rgb(0 0 0 / 28%)), var(--bastion-texture) 0 0 / 384px 384px, var(--lobby-panel);
   --menu-frame: color-mix(in srgb, var(--lobby-boundary) 78%, var(--lobby-panel));
   --menu-line: color-mix(in srgb, var(--lobby-boundary) 50%, transparent);
-  --menu-border-top: 5px;
-  --menu-border-right: 2px;
-  --menu-border-bottom: 3px;
-  --menu-border-left: 5px;
-  --menu-radius: 2px;
-  --menu-shadow: inset 0 0 0 3px var(--lobby-recessed), 0 0 0 3px var(--lobby-canvas), 0 0 0 4px color-mix(in srgb, var(--lobby-boundary) 24%, transparent);
-  --menu-rule: linear-gradient(90deg, var(--lobby-accent) 0 80%, var(--lobby-boundary) 80% 86%, transparent 86% 91%, var(--lobby-accent) 91%);
-  --menu-rule-height: 3px;
-  --menu-rule-width: 144px;
+  --menu-border-top: 4px;
+  --menu-border-right: 4px;
+  --menu-border-bottom: 4px;
+  --menu-border-left: 4px;
+  --menu-radius: 0;
+  --menu-shadow: inset 0 0 0 1px var(--lobby-recessed);
+  --menu-rule: none;
   --menu-heading-font: Bahnschrift, 'Segoe UI', Arial, sans-serif;
-  --menu-heading-tracking: 0.18em;
+  --menu-heading-tracking: 0.04em;
   --menu-body-font: 'Segoe UI', Arial, sans-serif;
-  --menu-body-tracking: 0.05em;
+  --menu-body-tracking: 0.025em;
   --menu-hover-face: color-mix(in srgb, var(--lobby-accent) 8%, var(--lobby-panel));
   --menu-control-rail: 4px;
+
+  .lobby-terminal-heading {
+    background-image: var(--bastion-plates);
+    background-size: 100% 100%;
+  }
+
+  .menu_button,
+  .trait_list,
+  .trait_feedback {
+    background-color: var(--lobby-panel);
+  }
+}
+
+@media (forced-colors: active) {
+  .theme-meridian_bastion .lobby {
+    .lobby-terminal-heading {
+      background-image: none;
+    }
+
+    .menu_button,
+    .trait_list,
+    .trait_feedback {
+      background-color: Canvas;
+    }
+  }
 }

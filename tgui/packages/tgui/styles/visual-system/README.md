@@ -23,6 +23,8 @@ hackerman, retro-95, or other specialty themes.
    behavior, and forced-colors fallback.
 9. `_aphelion-fonts.scss` shares the website fonts and grain with both bundles;
    `_aphelion.scss` adds the scoped Aphelion window and control treatment.
+10. `_bastion.scss` applies Bastion's rust material and casing geometry while
+    preserving opaque reading surfaces and caller-owned section colors.
 
 `Layout` resolves the window-local development override first, then an authored
 specialty theme, the saved player base theme, an ordinary requested/device
@@ -56,7 +58,8 @@ Alongside Standard, the other twelve palette-bearing MeridianOS skins are:
   Augments workstation.
 - Afterlight — retrofit/noir bezel slabs and substantial keycaps.
 - Relay — manufactured-spacecraft equipment bays, labels, and lamp blocks.
-- Bastion — monumental slab rails, portal corners, and large negative fields.
+- Bastion — rusted olive casing, patched plates, recessed fasteners, and flush
+  perimeter rails surrounding quiet cream-on-dark reading surfaces.
 - Aphelion — warm brown instrument housings, cream labels, cyan controls, and
   restrained spectrum calibration rules drawn from the Meridian website.
 
@@ -93,6 +96,12 @@ are documented in [the asset ledger](../assets/aphelion/README.md). Rspack
 inlines these assets into both bundles so the theme requires no additional
 font or texture requests from the BYOND browser.
 
+Bastion follows the approved second, textured salvage-metal mockup: dark olive
+steel, rusty patches, recessed fasteners, cream labels, and muted green selected
+controls. The material tile and plate overlay are original assets; their origin
+and packaging are recorded in [the Bastion asset notes](../assets/bastion.md).
+Both TGUI bundles inline them, including the lobby's matching menu casing.
+
 Wastelander draws on Bethesda's [vintage CRT reference](https://fallout.bethesda.net/en-US/news/fallout-pip-boy-3000-replica)
 and [weathered casing and monochrome screen reference](https://gear.bethesda.net/products/fallout-series-pip-boy-die-cast-replica).
 Its muted olive palette is an interpretation, not an official Fallout palette.
@@ -113,8 +122,8 @@ franchise layouts or third-party paths:
   Augmentation. Body copy and forms retain the system sans stack.
 - [Blade Runner production commentary](https://www.wired.com/2007/09/ff-bladerunner-full/) informs visible retrofit layers and
   service seams; [Star Wars “used future” production principles](https://www.starwars.com/news/blind-ltd-solo) inform plainly
-  manufactured Relay controls; [Dune production-design commentary](https://www.pushing-pixels.org/2024/04/10/production-design-of-dune-interview-with-patrice-vermette.html) informs
-  Bastion's restrained, monumental negative space. No franchise marks,
+  manufactured Relay controls. The supplied Minmatar and Jawa Sandcrawler
+  references inform Bastion's repaired, weathered metalwork. No franchise marks,
   alphabets, layouts, or type are copied.
 - The [W3C Design Tokens Community Group](https://www.w3.org/community/reports/design-tokens/CG-FINAL-format-20251028/), [Fluent 2](https://fluent2.microsoft.design/design-tokens), and [Carbon](https://carbondesignsystem.com/elements/color/overview/) inform the
   primitive-to-semantic-to-component layering.

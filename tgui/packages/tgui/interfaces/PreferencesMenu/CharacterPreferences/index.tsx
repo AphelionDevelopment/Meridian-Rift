@@ -178,7 +178,8 @@ export function CharacterPreferenceWindow(props: {
 
   return (
     <Stack vertical fill>
-      <Stack.Item>
+      {/* APHELION EDIT ADDITION - MERIDIAN_UI casing hook */}
+      <Stack.Item className="PreferencesMenu__profiles">
         <CharacterProfiles
           activeSlot={data.active_slot - 1}
           onClick={(slot) => {
