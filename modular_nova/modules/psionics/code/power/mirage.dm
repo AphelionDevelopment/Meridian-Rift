@@ -22,8 +22,7 @@
 /datum/action/cooldown/psionic/pointed/mirage
 	name = "Mirage"
 	desc = "Left-click to create or replace your double. Right-click the world to cycle Stationary, Flee, and Distract for both the current double and future casts. Shift-click a visible destination to send the current double there. Alt-click to dismiss it. The button toggles targeting."
-	button_icon = 'icons/mob/actions/actions_minor_antag.dmi'
-	button_icon_state = "chrono_phase"
+	button_icon_state = "psi_mirage" // NOVA EDIT CHANGE - ORIGINAL: button_icon_state = "chrono_phase"
 	point_cost = 2
 	school = PSIONIC_SCHOOL_HALLUCINATION
 	psionic_flags = PSIONIC_SENSORY

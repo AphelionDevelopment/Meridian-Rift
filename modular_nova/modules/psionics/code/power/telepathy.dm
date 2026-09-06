@@ -14,10 +14,10 @@
 /datum/action/cooldown/psionic/pointed/telepathy
 	name = "Telepathic Whisper"
 	desc = "Send a private thought to a nearby living target. Right-click repeats your last target."
-	button_icon_state = "psi_whisper"
+	button_icon_state = "psi_whisper_red" // NOVA EDIT CHANGE - ORIGINAL: button_icon_state = "psi_whisper"
 	point_cost = 1
 	psionic_flags = PSIONIC_INTRUSIVE
-	school = PSIONIC_SCHOOL_BIOSCRAMBLER
+	school = PSIONIC_SCHOOL_HALLUCINATION // NOVA EDIT CHANGE - ORIGINAL: school = PSIONIC_SCHOOL_BIOSCRAMBLER
 	rank_variant_types = list(
 		/datum/psionic_rank_variant/telepathy,
 	)

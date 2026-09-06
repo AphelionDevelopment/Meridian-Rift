@@ -29,7 +29,7 @@
 
 /datum/psionic_school/bioscrambler
 	name = "Biomancy"
-	desc = "Body, mind, and living patterns."
+	desc = "Bodies, vitality, and living patterns." // NOVA EDIT CHANGE - ORIGINAL: desc = "Body, mind, and living patterns."
 	anomaly_path = /obj/effect/anomaly/bioscrambler
 	anomaly_core_path = /obj/item/assembly/signaler/anomaly/bioscrambler
 	ui_key = "bioscrambler"
@@ -69,7 +69,7 @@
 /** Illusions and altered perception, resonating with hallucination anomalies. */
 /datum/psionic_school/hallucination
 	name = "Illusionism"
-	desc = "False images, hallucinations, and deceptive perception."
+	desc = "Telepathy, mental impressions, and illusions." // NOVA EDIT CHANGE - ORIGINAL: desc = "False images, hallucinations, and deceptive perception."
 	anomaly_path = /obj/effect/anomaly/hallucination
 	anomaly_core_path = /obj/item/assembly/signaler/anomaly/hallucination
 	ui_key = "hallucination"

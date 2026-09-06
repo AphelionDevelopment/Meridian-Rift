@@ -15,10 +15,10 @@
 /datum/action/cooldown/psionic/pointed/living_target/empathic_read
 	name = "Empathic Read"
 	desc = "Brush against a nearby mind and read its emotional state."
-	button_icon_state = "psi_empathic_read"
+	button_icon_state = "psi_empathic_read_red" // NOVA EDIT CHANGE - ORIGINAL: button_icon_state = "psi_empathic_read"
 	point_cost = 0
 	psionic_flags = PSIONIC_SENSORY
-	school = PSIONIC_SCHOOL_BIOSCRAMBLER
+	school = PSIONIC_SCHOOL_HALLUCINATION // NOVA EDIT CHANGE - ORIGINAL: school = PSIONIC_SCHOOL_BIOSCRAMBLER
 	no_living_target_alert = "no mind there!"
 	rank_variant_types = list(/datum/psionic_rank_variant/empathic_read)
 

@@ -16,11 +16,11 @@
 /datum/action/cooldown/psionic/pointed/living_target/sultry_suggestion
 	name = "Sultry Suggestion"
 	desc = "Plant a sensual, hypnotic urge in a nearby mind. The suggestion compels nothing; how the target answers it is theirs to decide."
-	button_icon_state = "psi_mind_read"
+	button_icon_state = "psi_mind_read_red" // NOVA EDIT CHANGE - ORIGINAL: button_icon_state = "psi_mind_read"
 	point_cost = 2
 	lewd = TRUE
 	psionic_flags = PSIONIC_INTRUSIVE
-	school = PSIONIC_SCHOOL_BIOSCRAMBLER
+	school = PSIONIC_SCHOOL_HALLUCINATION // NOVA EDIT CHANGE - ORIGINAL: school = PSIONIC_SCHOOL_BIOSCRAMBLER
 	rank_variant_types = list(
 		/datum/psionic_rank_variant/sultry_suggestion,
 	)

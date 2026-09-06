@@ -31,7 +31,7 @@
 
 /datum/action/cooldown/psionic/resonance
 	psionic_flags = PSIONIC_SENSORY
-	school = PSIONIC_SCHOOL_BIOSCRAMBLER
+	school = PSIONIC_SCHOOL_HALLUCINATION // NOVA EDIT CHANGE - ORIGINAL: school = PSIONIC_SCHOOL_BIOSCRAMBLER
 
 /datum/action/cooldown/psionic/resonance/proc/show_resonance_arrow(mob/living/seeker, mob/living/resonance_target)
 	var/turf/target_turf = get_turf(resonance_target)
@@ -49,7 +49,7 @@
 /datum/action/cooldown/psionic/resonance/sense
 	name = "Resonance Sense"
 	desc = "Pulse your senses for nearby active psionic signatures."
-	button_icon_state = "psi_resonance_sense"
+	button_icon_state = "psi_resonance_sense_red" // NOVA EDIT CHANGE - ORIGINAL: button_icon_state = "psi_resonance_sense"
 	point_cost = 0
 	variant_type = /datum/psionic_rank_variant/resonance_sense
 	rank_variant_types = list(

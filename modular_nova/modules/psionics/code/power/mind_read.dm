@@ -15,10 +15,10 @@
 /datum/action/cooldown/psionic/pointed/mind_read
 	name = "Mind Read"
 	desc = "Touch a living target and read surface thoughts, recent speech, and identity impressions."
-	button_icon_state = "psi_mind_read"
+	button_icon_state = "psi_mind_read_red" // NOVA EDIT CHANGE - ORIGINAL: button_icon_state = "psi_mind_read"
 	point_cost = 2
 	psionic_flags = PSIONIC_INTRUSIVE|PSIONIC_SENSORY
-	school = PSIONIC_SCHOOL_BIOSCRAMBLER
+	school = PSIONIC_SCHOOL_HALLUCINATION // NOVA EDIT CHANGE - ORIGINAL: school = PSIONIC_SCHOOL_BIOSCRAMBLER
 	rank_variant_types = list(/datum/psionic_rank_variant/mind_read)
 	active_msg = "You press your thoughts toward a nearby mind..."
 	deactive_msg = "You withdraw your intrusive focus."
