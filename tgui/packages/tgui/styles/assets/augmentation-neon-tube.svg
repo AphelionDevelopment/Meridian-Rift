@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="48" viewBox="0 0 640 48" fill="none">
+  <defs>
+    <linearGradient id="pink-glass" x1="0" y1="16" x2="0" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a2f7f3" stop-opacity=".4"/>
+      <stop offset=".12" stop-color="#6aede6" stop-opacity=".7"/>
+      <stop offset=".29" stop-color="#247e7a" stop-opacity=".65"/>
+      <stop offset=".45" stop-color="#81ede8" stop-opacity=".84"/>
+      <stop offset=".56" stop-color="#aefffb" stop-opacity=".91"/>
+      <stop offset=".73" stop-color="#34a19c" stop-opacity=".8"/>
+      <stop offset=".9" stop-color="#59ede6" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#49bdb7" stop-opacity=".28"/>
+    </linearGradient>
+    <linearGradient id="red-glass" x1="0" y1="16" x2="0" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa3ac" stop-opacity=".4"/>
+      <stop offset=".12" stop-color="#fa5a6a" stop-opacity=".72"/>
+      <stop offset=".29" stop-color="#821c26" stop-opacity=".72"/>
+      <stop offset=".45" stop-color="#ff5e6e" stop-opacity=".87"/>
+      <stop offset=".56" stop-color="#ff8793" stop-opacity=".95"/>
+      <stop offset=".73" stop-color="#bb2635" stop-opacity=".85"/>
+      <stop offset=".9" stop-color="#fc3549" stop-opacity=".48"/>
+      <stop offset="1" stop-color="#ce3847" stop-opacity=".27"/>
+    </linearGradient>
+    <linearGradient id="pink-core" x1="32" y1="24" x2="391" y2="24" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#c4fffc" stop-opacity=".3"/>
+      <stop offset=".035" stop-color="#dbfffd"/>
+      <stop offset=".28" stop-color="#f1fffe"/>
+      <stop offset=".47" stop-color="#d7fffd"/>
+      <stop offset=".71" stop-color="#f6ffff"/>
+      <stop offset=".96" stop-color="#dffffd"/>
+      <stop offset="1" stop-color="#b4fffb" stop-opacity=".3"/>
+    </linearGradient>
+    <linearGradient id="red-core" x1="404" y1="24" x2="608" y2="24" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff5e6e" stop-opacity=".4"/>
+      <stop offset=".045" stop-color="#ffbac1"/>
+      <stop offset=".28" stop-color="#ffd7db"/>
+      <stop offset=".56" stop-color="#ffabb3"/>
+      <stop offset=".81" stop-color="#ffd5d9"/>
+      <stop offset=".96" stop-color="#ffaeb6"/>
+      <stop offset="1" stop-color="#ff5566" stop-opacity=".4"/>
+    </linearGradient>
+    <linearGradient id="sleeve" x1="0" y1="14" x2="0" y2="34" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#112726"/>
+      <stop offset=".16" stop-color="#345856"/>
+      <stop offset=".35" stop-color="#102120"/>
+      <stop offset=".7" stop-color="#0c1515"/>
+      <stop offset="1" stop-color="#16302f"/>
+    </linearGradient>
+    <filter id="halo" x="-10%" y="-250%" width="120%" height="600%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="7.5"/>
+    </filter>
+    <filter id="bloom" x="-10%" y="-180%" width="120%" height="460%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2.8"/>
+    </filter>
+    <filter id="glass-variation" x="-1%" y="-25%" width="102%" height="150%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=".038 .65" numOctaves="2" seed="73" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale=".8" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="glass-grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=".48 .95" numOctaves="2" seed="13"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope=".13"/>
+      </feComponentTransfer>
+      <feComposite in2="SourceGraphic" operator="in"/>
+    </filter>
+    <clipPath id="tube-clip">
+      <rect x="31" y="16" width="361" height="16" rx="8"/>
+      <rect x="402" y="16" width="207" height="16" rx="8"/>
+    </clipPath>
+  </defs>
+
+  <!-- augments: original tube material, palette-specific glass. -->
+  <!-- Light spilling off the tube stays separate from the glass envelope. -->
+  <g filter="url(#halo)" stroke-linecap="round">
+    <path d="M35 24H388" stroke="#35fff5" stroke-opacity=".74" stroke-width="10"/>
+    <path d="M406 24H605" stroke="#ff2339" stroke-opacity=".94" stroke-width="12"/>
+  </g>
+  <g filter="url(#bloom)" stroke-linecap="round">
+    <path d="M35 24H388" stroke="#64fff7" stroke-opacity=".82" stroke-width="7"/>
+    <path d="M406 24H605" stroke="#ff3d50" stroke-opacity=".97" stroke-width="8"/>
+  </g>
+
+  <!-- Dim, curved colored glass encloses a much hotter, imperfect filament. -->
+  <rect x="31" y="16" width="361" height="16" rx="8" fill="url(#pink-glass)" stroke="#9efbf6" stroke-opacity=".29" stroke-width=".65"/>
+  <rect x="402" y="16" width="207" height="16" rx="8" fill="url(#red-glass)" stroke="#ff8793" stroke-opacity=".34" stroke-width=".65"/>
+  <g stroke-linecap="round" filter="url(#glass-variation)">
+    <path d="M36 24.3C89 24 145 24.45 196 24.15S327 24.4 387 24.15" stroke="#88fff9" stroke-width="6" stroke-opacity=".82"/>
+    <path d="M407 24.3C456 24.45 507 24 551 24.25S587 24.3 604 24.15" stroke="#ff5c6c" stroke-width="6" stroke-opacity=".94"/>
+    <path d="M36 24.1C100 23.85 147 24.4 211 24.1S331 24.25 387 24" stroke="url(#pink-core)" stroke-width="2.3"/>
+    <path d="M407 24.1C457 24.3 507 23.85 551 24.1S587 24.15 604 24" stroke="url(#red-core)" stroke-width="2.4"/>
+  </g>
+
+  <!-- Broken highlights and hairline abrasion describe the glass surface. -->
+  <g clip-path="url(#tube-clip)">
+    <rect x="31" y="16" width="578" height="16" fill="#fff" filter="url(#glass-grain)"/>
+    <g stroke="#e9fffe" stroke-linecap="round">
+      <path d="M39 18.3H119M124 18.35H157M174 18.3H277M292 18.5H362M369 18.6H382" stroke-opacity=".61" stroke-width=".8"/>
+      <path d="M45 29.8H89M109 29.8H215M227 29.7H284M331 29.8H381" stroke-opacity=".21" stroke-width=".6"/>
+      <path d="M107 18.5l1.4 2.1m95-2.4 1 1.6m75.4-1.7 1.8 2m69-1.8.7 1.4" stroke-opacity=".37" stroke-width=".55"/>
+    </g>
+    <g stroke="#ffcdd2" stroke-linecap="round">
+      <path d="M412 18.3H447M453 18.35H533M539 18.5H591M595 18.7H601" stroke-opacity=".71" stroke-width=".8"/>
+      <path d="M417 29.8H461M472 29.7H520M554 29.8H599" stroke-opacity=".24" stroke-width=".6"/>
+      <path d="M458 18.6l.9 2m79.4-2.2 1.4 1.8m35.6-1.5.7 1.2" stroke-opacity=".4" stroke-width=".55"/>
+    </g>
+  </g>
+
+  <!-- Small electrode collars ground the light as an installed object. -->
+  <g fill="url(#sleeve)" stroke="#33726f" stroke-opacity=".6" stroke-width=".6">
+    <rect x="25" y="15" width="9" height="18" rx="3"/>
+    <rect x="390" y="14.5" width="14" height="19" rx="3"/>
+    <rect x="606" y="15" width="9" height="18" rx="3"/>
+  </g>
+  <g stroke-width=".75">
+    <path d="M33 18V30M391 18V30" stroke="#a1f4f0" stroke-opacity=".74"/>
+    <path d="M403 18V30M607 18V30" stroke="#ff7381" stroke-opacity=".85"/>
+    <path d="M28 18V30M394 17.5V30.5M400 17.5V30.5M612 18V30" stroke="#4ea7a3" stroke-opacity=".27"/>
+  </g>
+</svg>

@@ -1,0 +1,30 @@
+// THIS IS AN APHELION UI FILE
+@use './neon-glass' as glass;
+
+@media (forced-colors: none) {
+  .theme-meridian_augmentation {
+    // Red needs its full midtone luminance behind the dark selected label.
+    @include glass.finish('tgui/styles/assets/augmentation-neon-tube.svg', #00e5d4, $selection-mid: 100%);
+    --glass-cyan-cage: conic-gradient(from -90deg,
+      transparent 0deg 240deg, #00e5d4 240deg 338deg, transparent 338deg);
+    --console-loader-cage-pattern: conic-gradient(from -90deg,
+      #c0152a 0deg, #ed6477 30deg, #c0152a 68deg 98deg, transparent 98deg 120deg,
+      #c0152a 120deg, #f78996 150deg, #c0152a 188deg 218deg, transparent 218deg 240deg,
+      #00e5d4 240deg, #c9fff9 273deg, #00e5d4 304deg 338deg, transparent 338deg);
+
+    // Uniform red nodes avoid small white streaks where they overlap the fans.
+    // Keep the original node mask, angles and red fan geometry.
+    .DiagnosticLoader__nodes {
+      background: repeating-conic-gradient(
+        from var(--console-loader-node-start, -90deg),
+        var(--console-interaction-selected) 0deg var(--console-loader-node-width),
+        transparent var(--console-loader-node-width) var(--console-loader-node-step)
+      );
+    }
+
+    // Cyan follows the original left inner mark, cage segment, hexagonal core
+    // and progress ring. The red fans and nodes receive no cyan halo.
+    .DiagnosticLoader__light .DiagnosticLoader__innerMarks { border-left-color: #00e5d4; }
+    .DiagnosticLoader__light .DiagnosticLoader__nodes { display: none; }
+  }
+}

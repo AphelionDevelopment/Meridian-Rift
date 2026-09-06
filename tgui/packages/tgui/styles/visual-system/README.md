@@ -60,8 +60,8 @@ Alongside Standard, the other thirteen palette-bearing MeridianOS skins are:
   trim, and red loader accents.
 - Cyberpunk — red broken rails, black glass, reflective cyan controls, and
   illuminated cyan registration marks, progress ring and diamond core.
-- Augmentation — ordered clinical trapezoids and module sockets matching the
-  Augments workstation.
+- Augmentation — machined black glass, reflective red controls, cyan
+  instrumentation, and clean red fan segments matching the Augments workstation.
 - Afterlight — retrofit/noir bezel slabs and substantial keycaps.
 - Relay — manufactured-spacecraft equipment bays, labels, and lamp blocks.
 - Bastion — rusted olive casing, patched plates, recessed fasteners, and flush

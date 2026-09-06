@@ -57,3 +57,6 @@ for Synapse, retaining the seeded grain, light cores and electrode collars.
 
 `styles/assets/cyberpunk-neon-tube.svg` is the original scarlet/cyan glass variant
 for Cyberpunk, retaining the same procedural material and self-contained resources.
+
+`styles/assets/augmentation-neon-tube.svg` is the original cyan/scarlet glass variant
+for Augmentation, retaining the same procedural material and self-contained resources.
