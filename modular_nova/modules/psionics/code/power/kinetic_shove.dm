@@ -1,16 +1,18 @@
 /datum/psionic_rank_variant/kinetic_shove
 	rank = PSIONIC_RANK_GAMMA
 	variant_name = "shove"
-	description = "A focused shove that throws one target several tiles."
+	description = "A forceful shove that hurls one target back, knocking them down and hurting them if they crash into a wall or another person."
 	strain_gain = 16
 	cooldown_time = 12 SECONDS
 	cast_range = 5
 	/// Distance this form throws affected atoms.
-	var/throw_distance = 3
+	var/throw_distance = 4
+	/// Whether thrown targets are harmless on impact.
+	var/gentle_throw = FALSE
 	/// Stamina damage dealt to living targets.
-	var/stamina_damage = 20
+	var/stamina_damage = 30
 	/// Knockdown applied to living targets.
-	var/knockdown_time = 1 SECONDS
+	var/knockdown_time = 1.5 SECONDS
 	/// If TRUE, this form erupts from the caster instead of requiring a target.
 	var/radial_shove = FALSE
 	/// Radius affected by radial forms.
@@ -37,6 +39,7 @@
 	strain_gain = 8
 	cooldown_time = 8 SECONDS
 	throw_distance = 2
+	gentle_throw = TRUE
 	stamina_damage = 8
 	knockdown_time = 0
 
@@ -47,6 +50,7 @@
 	strain_gain = 30
 	cooldown_time = 25 SECONDS
 	throw_distance = 4
+	gentle_throw = FALSE
 	stamina_damage = 24
 	knockdown_time = 1.5 SECONDS
 	radial_shove = TRUE
@@ -169,7 +173,7 @@
 		if(form.knockdown_time > 0)
 			living_target.Knockdown(form.knockdown_time)
 
-	movable_target.safe_throw_at(throw_target, range = form.throw_distance, speed = 1, thrower = owner, gentle = TRUE)
+	movable_target.safe_throw_at(throw_target, range = form.throw_distance, speed = 1, thrower = owner, gentle = form.gentle_throw)
 	return TRUE
 
 /** Launches a wave from a fixed turf, sharing hit and blocked-lane tracking between its delayed steps. */
