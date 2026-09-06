@@ -10,7 +10,7 @@ import { useBackend } from '../backend';
 import { tgui16 } from '../constants/theme';
 import { Pane, Window } from '../layouts';
 // APHELION EDIT ADDITION START - MERIDIAN_UI
-import { DiagnosticLoaderComparison } from './DiagnosticLoaderComparison';
+import { DiagnosticLoaderPreview } from './DiagnosticLoaderPreview';
 import {
   MeridianComponentsPage,
   MeridianShowcase,
@@ -29,7 +29,7 @@ enum Tab {
   Shared = 'shared',
   Chunks = 'outgoingPayloadQueues',
   Components = 'components',
-  LoaderStudy = 'loader-study', // APHELION EDIT ADDITION - MERIDIAN_UI
+  LoaderPreview = 'loader-preview', // APHELION EDIT ADDITION - MERIDIAN_UI
 }
 
 const tabs = [
@@ -76,10 +76,10 @@ export function KitchenSink(props: Props) {
                 </Tabs.Tab>
                 {/* APHELION EDIT ADDITION START - MERIDIAN_UI */}
                 <Tabs.Tab
-                  selected={activeTab === Tab.LoaderStudy}
-                  onClick={() => setActiveTab(Tab.LoaderStudy)}
+                  selected={activeTab === Tab.LoaderPreview}
+                  onClick={() => setActiveTab(Tab.LoaderPreview)}
                 >
-                  Loader study
+                  Loader
                 </Tabs.Tab>
                 {/* APHELION EDIT ADDITION END */}
               </Tabs>
@@ -90,8 +90,8 @@ export function KitchenSink(props: Props) {
                 <MeridianComponentsPage
                   onShowModal={() => setShowModal(true)}
                 />
-              ) : activeTab === Tab.LoaderStudy ? (
-                <DiagnosticLoaderComparison />
+              ) : activeTab === Tab.LoaderPreview ? (
+                <DiagnosticLoaderPreview />
                 // APHELION EDIT CHANGE END
               ) : (
                 <TreePage tab={activeTab} />

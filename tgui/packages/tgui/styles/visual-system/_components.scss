@@ -633,7 +633,7 @@
   }
 }
 
-.MeridianLoaderStudy {
+.MeridianLoaderPreview {
   &__controls {
     display: flex;
     align-items: center;
@@ -642,21 +642,15 @@
     margin-bottom: var(--console-space-3);
   }
 
-  &__matrix {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(260px, 1fr));
-    gap: var(--console-space-2);
-  }
-
   &__samples {
     display: grid;
-    grid-template-columns: minmax(224px, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(224px, 1fr));
     gap: var(--console-space-2);
   }
 
   &__sample {
-    --loader-study-size: 80px;
-    --loader-study-scale: 1;
+    --loader-preview-size: 80px;
+    --loader-preview-scale: 1;
     display: grid;
     place-items: center;
     min-height: 260px;
@@ -671,25 +665,15 @@
   }
 
   &__sample .DiagnosticLoader__instrument {
-    width: var(--loader-study-size);
-    height: var(--loader-study-size);
-    transform: scale(var(--loader-study-scale));
+    width: var(--loader-preview-size);
+    height: var(--loader-preview-size);
+    transform: scale(var(--loader-preview-scale));
   }
 
   &__sampleLabel {
     align-self: end;
     color: var(--console-text-secondary);
     font: 11px var(--font-family-mono);
-  }
-
-  &__sourceGate {
-    display: grid;
-    place-items: center;
-    min-height: 128px;
-    padding: var(--console-space-3);
-    color: var(--console-status-warning);
-    border: 1px dashed var(--console-status-warning);
-    text-align: center;
   }
 }
 
@@ -710,8 +694,7 @@
     }
   }
 
-  .MeridianLoaderStudy {
-    &__matrix,
+  .MeridianLoaderPreview {
     &__samples {
       grid-template-columns: minmax(0, 1fr);
     }
