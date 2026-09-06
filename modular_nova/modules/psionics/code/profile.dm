@@ -163,10 +163,9 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 			SIGNAL_ADDTRAIT(TRAIT_PSIONIC_DAMPENER),
 			SIGNAL_REMOVETRAIT(TRAIT_PSIONIC_DAMPENER),
 		))
-		// A discarded duplicate must not strip the live profile's HUD and traits.
+		// A discarded duplicate must not strip the live profile's HUD.
 		if(psion.get_psionic_profile() == src)
 			remove_strain_hud()
-			psion.remove_traits(list(TRAIT_NOGUNS, TRAIT_TOSS_GUN_HARD), PSIONIC_TRAIT_SOURCE)
 	for(var/action_type in granted_actions)
 		var/datum/action/action = granted_actions[action_type]
 		qdel(action)
@@ -181,7 +180,6 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 	return ..()
 
 /datum/component/psionic_profile/proc/awaken()
-	update_rank_traits()
 	grant_action(/datum/action/cooldown/psionic/open_menu)
 	reconcile_baseline_powers()
 	install_strain_hud()
@@ -374,7 +372,6 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 		strain = min(strain, max_strain)
 	if(!isnull(new_strain_decay))
 		strain_decay = new_strain_decay
-	update_rank_traits()
 	reconcile_baseline_powers()
 	update_strain_hud()
 	update_psionic_action_buttons(UPDATE_BUTTON_NAME|UPDATE_BUTTON_STATUS)
@@ -391,15 +388,6 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 		new_max_strain = GLOB.psionic_rank_max_strain[rank],
 		new_strain_decay = GLOB.psionic_rank_strain_decay[rank],
 	)
-
-/datum/component/psionic_profile/proc/update_rank_traits()
-	if(!psion)
-		return
-
-	if(is_psionic_rank_above(psionic_rank, PSIONIC_RANK_GAMMA))
-		psion.add_traits(list(TRAIT_NOGUNS, TRAIT_TOSS_GUN_HARD), PSIONIC_TRAIT_SOURCE)
-	else
-		psion.remove_traits(list(TRAIT_NOGUNS, TRAIT_TOSS_GUN_HARD), PSIONIC_TRAIT_SOURCE)
 
 /datum/component/psionic_profile/proc/get_rank_text()
 	if(rank_limited && potential_rank != psionic_rank)

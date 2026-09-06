@@ -1,6 +1,6 @@
 /datum/quirk/psionic_gift
 	name = "Psionic Gift"
-	desc = "Your mind resonates with anomalous psionic potential. You awaken with imprint points to spend on psionic disciplines. Ranks above Gamma are unsafe around guns and sensitive technology."
+	desc = "Your mind resonates with anomalous psionic potential. You awaken with imprint points to spend on psionic disciplines."
 	icon = FA_ICON_ATOM
 	value = 4
 	gain_text = span_purple("Your psionic potential stirs.")

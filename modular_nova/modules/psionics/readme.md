@@ -13,7 +13,7 @@ Psionics are not spells. They do not use spell actions or antimagic checks; bloc
 - `Psionic Gift` quirk, with rank and manifestation color preferences.
 - `Psionic Resonance` mutation, which awakens a rolled psionic rank.
 - Psionic imprinting TGUI and strain HUD.
-- Rank ladder from Lambda to Alpha. Delta and above start capped to Gamma by a psionic limiter implant when gained from the roundstart quirk; ranks above Gamma also get gun restriction traits.
+- Rank ladder from Lambda to Alpha. Delta and above start capped to Gamma by a psionic limiter implant when gained from the roundstart quirk.
 - Individual power cooldowns, profile strain, burnout, and rank-specific power forms where needed.
 - Strain decay pauses while a maintained power is active, so upkeep costs are never free.
 - Heavy casting has visible tells (stutter and jitter near the strain ceiling); burnout carries a mood penalty, and repeated burnouts inflict mild brain traumas on top of the brain damage.
