@@ -65,13 +65,14 @@
     --button-color: var(--console-text-on-accent);
     color: var(--button-color);
     background-color: #f15bc6;
-    background-image: linear-gradient(106deg, #fff7ff00 5%, #fff7ff18 17%, #fff7ff04 32%, #fff7ff00 45%, #fff7ff12 65%, #fff7ff00 82%),
-      repeating-linear-gradient(0deg, #fff4fa06 0 1px, #fff4fa00 1px 3px),
-      linear-gradient(180deg, #e44bbb, #ff67d3 18%, #ff8ddd 36%, #e94eba 62%, #ff68d1 82%, #df48b4);
+    background-image: linear-gradient(106deg, #fff7ff00 5%, #fff7ff38 17%, #fff7ff09 32%, #fff7ff00 45%, #fff7ff2b 65%, #fff7ff00 82%),
+      repeating-linear-gradient(0deg, #fff4fa0a 0 1px, #fff4fa00 1px 3px),
+      linear-gradient(180deg, #e44bbb, #ff67d3 15%, #fface8 32%, #ff79d8 44%, #e94eba 66%, #ff68d1 84%, #df48b4);
     background-clip: border-box;
     border-color: transparent;
     text-shadow: none;
-    box-shadow: inset 0 0 4px #ff57d54d, 0 0 3px #ff5cce75, 0 0 9px #ff42c12e;
+    box-shadow: inset 0 0 7px #ff57d58c, 0 0 3px #ff5ccebf,
+      0 0 10px #ff42c166, 0 0 22px #ff42c129;
   }
 
   .theme-meridian_synapse_xxxo .lobby {
@@ -125,7 +126,7 @@
     background: linear-gradient(180deg, #652243, #271027 80%);
     border-color: #ff5b88;
     color: #ffe8f4;
-    box-shadow: inset 0 -1px 0 #ff5b88, 0 2px 4px #ff3e6540;
+    box-shadow: inset 0 -1px 0 #ff5b88, 0 0 6px #ff3e6559, 0 2px 14px #ff3e6529;
   }
 
   .theme-meridian_synapse_xxxo .DiagnosticLoader__instrument {
