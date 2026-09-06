@@ -622,7 +622,7 @@
 		return FALSE
 	if(!start_concentration(living_owner, profile, TRUE))
 		return FALSE
-	var/activation_strain_gain = get_variant_value(profile, "strain_gain")
+	var/activation_strain_gain = get_activation_strain(target, profile)
 	if(activation_strain_gain && !profile.try_gain_strain(activation_strain_gain, src))
 		stop_concentration(living_owner)
 		return FALSE
@@ -646,6 +646,10 @@
 		stop_concentration(living_owner)
 	StartCooldown(get_variant_value(profile, "cooldown_time"))
 	return TRUE
+
+/** Returns the cast's strain before discounts, including any target-dependent load. */
+/datum/action/cooldown/psionic/proc/get_activation_strain(atom/target, datum/component/psionic_profile/profile)
+	return get_variant_value(profile, "strain_gain")
 
 /// Checks whether [target] blocks this ability and emits standard caster feedback if it does.
 /// Returns TRUE if blocked. Called automatically by Activate() when the block charge cost is positive.

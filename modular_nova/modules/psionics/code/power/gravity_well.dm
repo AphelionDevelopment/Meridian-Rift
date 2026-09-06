@@ -2,8 +2,8 @@
 #define PSIONIC_GRAVITY_WELL_PULL_INTERVAL (1 SECONDS)
 
 /datum/psionic_power/gravity_well
-	required_powers = list(/datum/action/cooldown/psionic/pointed/kinetic_shove)
-	required_school_points = 3
+	required_powers = list(/datum/action/cooldown/psionic/pointed/telekinetic_hold)
+	required_school_points = 1 // NOVA EDIT CHANGE - ORIGINAL: required_school_points = 3
 	action_type = /datum/action/cooldown/psionic/pointed/gravity_well
 
 /datum/psionic_rank_variant/gravity_well

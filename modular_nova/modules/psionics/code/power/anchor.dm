@@ -1,7 +1,7 @@
 #define PSIONIC_ANCHOR_TRAIT_SOURCE "psionic_anchor"
 
 /datum/psionic_power/anchor
-	required_powers = list(/datum/action/cooldown/psionic/pointed/kinetic_shove)
+	required_powers = list(/datum/action/cooldown/psionic/pointed/telekinetic_hold)
 	action_type = /datum/action/cooldown/psionic/anchor
 
 /datum/psionic_rank_variant/anchor

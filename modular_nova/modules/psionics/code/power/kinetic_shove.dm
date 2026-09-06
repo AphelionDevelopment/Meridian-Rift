@@ -1,9 +1,3 @@
-/datum/psionic_power/kinetic_shove
-	action_type = /datum/action/cooldown/psionic/pointed/kinetic_shove
-
-/datum/psionic_power/kinetic_pull
-	action_type = /datum/action/cooldown/psionic/pointed/kinetic_pull
-
 /datum/psionic_rank_variant/kinetic_shove
 	rank = PSIONIC_RANK_GAMMA
 	variant_name = "shove"
@@ -78,30 +72,6 @@
 	active_msg = "Space buckles around your hand. Pick a direction."
 	deactive_msg = "The pressure in your hand collapses."
 
-/datum/psionic_rank_variant/kinetic_pull
-	rank = PSIONIC_RANK_EPSILON
-	variant_name = "pull"
-	description = "A light kinetic tug that pulls one loose item into your hand."
-	strain_gain = 8
-	cooldown_time = 8 SECONDS
-	cast_range = 5
-	/// Speed used when pulling the item toward the psion.
-	var/pull_speed = 2
-	/// If TRUE, this form hauls a living target instead of an item.
-	var/pulls_mobs = FALSE
-
-/datum/psionic_rank_variant/kinetic_pull/delta
-	rank = PSIONIC_RANK_DELTA
-	variant_name = "haul"
-	description = "A heavy tug that drags a living target off balance and to your feet."
-	strain_gain = 18
-	cooldown_time = 16 SECONDS
-	cast_range = 6
-	block_charge_cost = 1
-	block_message = "grip slips!"
-	pull_speed = 3
-	pulls_mobs = TRUE
-
 /datum/action/cooldown/psionic/pointed/kinetic_shove
 	name = "Kinetic Shove"
 	desc = "Throw a nearby target away with focused psionic force."
@@ -115,20 +85,6 @@
 		/datum/psionic_rank_variant/kinetic_shove,
 		/datum/psionic_rank_variant/kinetic_shove/beta,
 		/datum/psionic_rank_variant/kinetic_shove/alpha,
-	)
-
-/datum/action/cooldown/psionic/pointed/kinetic_pull
-	name = "Kinetic Pull"
-	desc = "Pull a loose item into your hand with focused psionic force."
-	button_icon_state = "psi_kinetic_pull"
-	point_cost = 1
-	psionic_flags = PSIONIC_KINETIC
-	school = PSIONIC_SCHOOL_GRAVITY
-	needs_hands = TRUE
-	variant_type = /datum/psionic_rank_variant/kinetic_pull
-	rank_variant_types = list(
-		/datum/psionic_rank_variant/kinetic_pull,
-		/datum/psionic_rank_variant/kinetic_pull/delta,
 	)
 
 /datum/action/cooldown/psionic/pointed/kinetic_shove/is_self_cast_form()
@@ -154,60 +110,6 @@
 
 	return TRUE
 
-/datum/action/cooldown/psionic/pointed/kinetic_pull/is_valid_target(atom/target)
-	. = ..()
-	if(!.)
-		return FALSE
-
-	var/mob/living/living_owner = owner
-	if(!istype(living_owner))
-		return FALSE
-
-	var/datum/psionic_rank_variant/kinetic_pull/form = get_form()
-	if(!form)
-		return FALSE
-	if(form.pulls_mobs)
-		return is_valid_haul_target(living_owner, target)
-
-	return is_valid_item_target(living_owner, target)
-
-/datum/action/cooldown/psionic/pointed/kinetic_pull/proc/is_valid_haul_target(mob/living/living_owner, atom/target)
-	var/mob/living/living_target = target
-	if(!istype(living_target))
-		living_owner.balloon_alert(living_owner, "nothing to haul!")
-		return FALSE
-	if(!isturf(living_target.loc))
-		living_owner.balloon_alert(living_owner, "not loose!")
-		return FALSE
-	if(living_target.buckled)
-		living_owner.balloon_alert(living_owner, "buckled down!")
-		return FALSE
-	if(living_target.anchored || living_target.move_resist >= MOVE_FORCE_STRONG)
-		living_owner.balloon_alert(living_owner, "too heavy!")
-		return FALSE
-
-	return TRUE
-
-/datum/action/cooldown/psionic/pointed/kinetic_pull/proc/is_valid_item_target(mob/living/living_owner, atom/target)
-	var/obj/item/item_target = target
-	if(!istype(item_target))
-		living_owner.balloon_alert(living_owner, "not an item!")
-		return FALSE
-	if(!isturf(item_target.loc))
-		living_owner.balloon_alert(living_owner, "not loose!")
-		return FALSE
-	if(item_target.anchored || item_target.move_resist >= MOVE_FORCE_STRONG)
-		living_owner.balloon_alert(living_owner, "too heavy!")
-		return FALSE
-	if(HAS_TRAIT(item_target, TRAIT_UNCATCHABLE) || !living_owner.can_hold_items(item_target))
-		living_owner.balloon_alert(living_owner, "can't catch it!")
-		return FALSE
-	if(!length(living_owner.get_empty_held_indexes()))
-		living_owner.balloon_alert(living_owner, "free a hand!")
-		return FALSE
-
-	return TRUE
-
 /datum/action/cooldown/psionic/pointed/kinetic_shove/psionic_activate(atom/target)
 	var/mob/living/living_owner = owner
 	if(!istype(living_owner))
@@ -226,103 +128,6 @@
 		return TRUE
 	return shove_target(target, form)
 
-/datum/action/cooldown/psionic/pointed/kinetic_pull/psionic_activate(atom/target)
-	var/mob/living/living_owner = owner
-	if(!istype(living_owner))
-		return FALSE
-
-	var/datum/psionic_rank_variant/kinetic_pull/form = get_form()
-	if(!form)
-		return FALSE
-	if(form.pulls_mobs)
-		return haul_target(living_owner, target, form)
-
-	return pull_item(living_owner, target, form)
-
-/datum/action/cooldown/psionic/pointed/kinetic_pull/proc/haul_target(mob/living/living_owner, atom/target, datum/psionic_rank_variant/kinetic_pull/form)
-	var/mob/living/hauled_target = target
-	var/turf/owner_turf = get_turf(living_owner)
-	if(!istype(hauled_target) || !owner_turf)
-		return FALSE
-
-	hauled_target.pulledby?.stop_pulling()
-	if(!hauled_target.safe_throw_at(
-		owner_turf,
-		max(get_dist(hauled_target, living_owner), 1),
-		form.pull_speed,
-		living_owner,
-		spin = FALSE,
-		gentle = TRUE,
-	))
-		living_owner.balloon_alert(living_owner, "too heavy!")
-		return FALSE
-
-	living_owner.visible_message(
-		span_warning("[hauled_target] is dragged toward [living_owner] by invisible force."),
-		span_purple("You haul [hauled_target] toward you."),
-		ignored_mobs = hauled_target,
-	)
-	to_chat(hauled_target, span_userdanger("Invisible force hooks into you and drags you forward!"))
-	playsound(get_turf(hauled_target), 'sound/effects/gravhit.ogg', 50, TRUE)
-	return TRUE
-
-/datum/action/cooldown/psionic/pointed/kinetic_pull/proc/pull_item(mob/living/living_owner, atom/target, datum/psionic_rank_variant/kinetic_pull/form)
-	var/obj/item/pulled_item = target
-	if(!istype(pulled_item))
-		return FALSE
-
-	if(get_turf(pulled_item) == get_turf(living_owner))
-		if(!living_owner.put_in_hands(pulled_item, ignore_animation = FALSE))
-			return FALSE
-		living_owner.visible_message(
-			span_notice("[pulled_item] rises into [living_owner]'s hand under invisible force."),
-			span_notice("You pull [pulled_item] into your hand."),
-			ignored_mobs = pulled_item,
-		)
-		playsound(get_turf(living_owner), 'sound/effects/gravhit.ogg', 35, TRUE)
-		return TRUE
-
-	RegisterSignal(pulled_item, COMSIG_MOVABLE_PRE_IMPACT, PROC_REF(catch_pulled_item))
-	var/datum/callback/throw_callback = CALLBACK(src, PROC_REF(clear_pull_signal), pulled_item)
-	var/throw_range = max(get_dist(pulled_item, living_owner), 1)
-	if(!pulled_item.safe_throw_at(
-		living_owner,
-		throw_range,
-		form.pull_speed,
-		living_owner,
-		spin = FALSE,
-		callback = throw_callback,
-		gentle = TRUE,
-	))
-		clear_pull_signal(pulled_item)
-		return FALSE
-
-	living_owner.visible_message(
-		span_notice("[pulled_item] snaps toward [living_owner] under invisible force."),
-		span_notice("You pull [pulled_item] toward your hand."),
-		ignored_mobs = pulled_item,
-	)
-	playsound(get_turf(pulled_item), 'sound/effects/gravhit.ogg', 45, TRUE)
-	return TRUE
-
-/datum/action/cooldown/psionic/pointed/kinetic_pull/proc/catch_pulled_item(obj/item/pulled_item, atom/hit_atom, datum/thrownthing/throwingdatum)
-	SIGNAL_HANDLER
-
-	var/mob/living/living_owner = throwingdatum?.initial_target?.resolve()
-	if(!istype(living_owner))
-		living_owner = owner
-	if(!istype(living_owner) || hit_atom != living_owner)
-		return NONE
-	if(!living_owner.try_catch_item(pulled_item, skip_throw_mode_check = TRUE, try_offhand = TRUE))
-		return NONE
-
-	return COMPONENT_MOVABLE_IMPACT_NEVERMIND
-
-/datum/action/cooldown/psionic/pointed/kinetic_pull/proc/clear_pull_signal(obj/item/pulled_item)
-	if(!QDELETED(pulled_item))
-		UnregisterSignal(pulled_item, COMSIG_MOVABLE_PRE_IMPACT)
-
-/// Checks whether [target] blocks this kinetic form, emitting standard feedback if it does.
 /datum/action/cooldown/psionic/pointed/kinetic_shove/proc/check_shove_block(atom/target, datum/psionic_rank_variant/kinetic_shove/form, announce = TRUE)
 	var/mob/living/living_target = target
 	if(!istype(living_target))

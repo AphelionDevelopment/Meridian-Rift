@@ -26,6 +26,27 @@ Psionics are not spells. They do not use spell actions or antimagic checks; bloc
 
 ### TG Proc/File Changes:
 
+- `code/_onclick/telekinesis.dm`
+  - Mutation telekinesis rejects targets controlled by another source of `TRAIT_TELEKINESIS_CONTROLLED`.
+- `code/modules/mod/modules/module_kinesis.dm`
+  - MOD kinesis rejects already controlled targets and adds/removes its own control trait when grabbing/releasing them.
+  - Together with Telekinetic Hold, these checks prevent competing telekinetic systems from taking the same object.
+- `code/modules/mob/mob.dm`
+  - `can_interact_with()` accepts psionic reach only for Manipulate's exact connected target while the connection remains valid.
+- `code/modules/mob/living/living.dm`
+  - `can_perform_action()` accepts that scoped reach for adjacency checks. `FORBID_TELEKINESIS` and other action requirements still apply.
+- `code/game/objects/items.dm`
+  - `use_tool()` adds connection checks for Manipulate's current remote tool and target, preserving the caller's existing checks.
+  - Timed tool work stops if the connection or tool placement becomes invalid.
+- `code/modules/tgui/states.dm`
+  - Living and human `shared_living_ui_distance()` checks allow remote UI interaction with Manipulate's exact connected target.
+  - An invalid link returns `UI_CLOSE`, including for humans with the telekinesis mutation. `allow_tk = FALSE` retains its opt-out.
+  - These hooks change distance eligibility only; normal machine locks, access checks, and power requirements still apply.
+- `code/modules/tgui/tgui.dm`
+  - `on_act_message()` refreshes UI status immediately before dispatching an action and requires `UI_INTERACTIVE`.
+  - This recheck applies to all TGUI actions, preventing queued input from executing after interaction becomes unavailable.
+- `tgstation.dme`
+  - Includes the Telekinetic Hold and Manipulate power files.
 - `modular_nova/master_files/code/datums/mind/_mind.dm`
   - Stores the mutation-sourced psionic rank on each mind.
 - `modular_nova/master_files/code/game/turfs/closed/walls.dm`
