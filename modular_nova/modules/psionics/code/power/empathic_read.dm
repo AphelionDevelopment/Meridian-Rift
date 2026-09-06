@@ -1,5 +1,6 @@
 /datum/psionic_power/empathic_read
 	action_type = /datum/action/cooldown/psionic/pointed/living_target/empathic_read
+	baseline = TRUE
 
 /datum/psionic_rank_variant/empathic_read
 	rank = PSIONIC_RANK_LAMBDA

@@ -2,6 +2,7 @@
 	action_type = /datum/action/cooldown/psionic/levitate
 
 /datum/psionic_rank_variant/levitate
+	maintained = TRUE
 	rank = PSIONIC_RANK_EPSILON
 	variant_name = "levitation"
 	description = "A maintained lift that lets you float above the floor."

@@ -3,6 +3,7 @@
 	action_type = /datum/action/cooldown/psionic/pointed/living_target/biomend
 
 /datum/psionic_rank_variant/biomend
+	maintained = TRUE
 	rank = PSIONIC_RANK_EPSILON
 	variant_name = "mend"
 	description = "A maintained restorative pattern for organic wounds."

@@ -30,6 +30,7 @@ type PsionicPowerCatalogEntry = {
   name: string;
   desc: string;
   cost: number;
+  baseline: BooleanLike;
   required_school_points: number;
   required_powers: string[];
   required_power_names: string[];
@@ -45,6 +46,8 @@ type PsionicPowerState = {
   learned: BooleanLike;
   can_buy: BooleanLike;
   lock_reason?: string;
+  minimum_route_cost: number;
+  selected_rank?: string;
 };
 
 type PsionicSchoolCatalogEntry = {
@@ -88,7 +91,11 @@ const EMPTY_SCHOOL_STATE: PsionicSchoolState = {
   strain_discount: 0,
 };
 
-const EMPTY_POWER_STATE: PsionicPowerState = { learned: 0, can_buy: 0 };
+const EMPTY_POWER_STATE: PsionicPowerState = {
+  learned: 0,
+  can_buy: 0,
+  minimum_route_cost: 0,
+};
 
 const mergeSchools = (
   schools: PsionicSchoolCatalogEntry[],
@@ -138,13 +145,22 @@ const getPowerNodeHeight = (power: PsionicPower) => {
     : '';
   const descLines = getEstimatedLineCount(power.desc || '');
   const prereqLines = prereqText ? getEstimatedLineCount(prereqText) : 0;
+  const schoolLines = power.required_school_points ? 1 : 0;
+  const routeLines = power.learned ? 0 : 2;
   const variantLines = (power.variants || []).reduce(
     (lines, variant) =>
-      lines + getEstimatedLineCount(`${variant.rank}: ${variant.description}`),
+      lines +
+      getEstimatedLineCount(
+        `${variant.rank} (selected): ${variant.description}`,
+      ),
     0,
   );
   const textHeight =
-    17 + descLines * 15 + 16 + prereqLines * 16 + variantLines * 15;
+    17 +
+    descLines * 15 +
+    16 +
+    (prereqLines + schoolLines + routeLines) * 16 +
+    variantLines * 15;
 
   return Math.max(POWER_NODE_MIN_HEIGHT, textHeight + 26);
 };
@@ -363,6 +379,7 @@ const SchoolBranch = (props: { school: PsionicSchool }) => {
         <Box color="label">
           Points imprinted in branch: {school.spent_points}
         </Box>
+        <Box color="label">Form costs are shown before strain discounts.</Box>
         {!!school.strain_discount && (
           <Box color="good">
             Strain discount: {school.strain_discount}%
@@ -396,19 +413,14 @@ const SchoolBranch = (props: { school: PsionicSchool }) => {
   );
 };
 
-const PowerNode = (props: {
-  power: PsionicPower;
-  school: PsionicSchool;
-}) => {
-  const { act } = useBackend<PsionicImprintingData>();
+const PowerNode = (props: { power: PsionicPower; school: PsionicSchool }) => {
+  const { act, data } = useBackend<PsionicImprintingData>();
   const { power, school } = props;
   const learned = !!power.learned;
   const canBuy = !!power.can_buy;
   const disabled = learned || !canBuy;
   const requiredPowerNames = power.required_power_names || [];
-  const hasPowerPrereqs = !!(
-    power.required_powers?.length || requiredPowerNames.length
-  );
+  const routeOverBudget = power.minimum_route_cost > data.available_points;
   const nodeColor = power.lewd ? LEWD_NODE_COLOR : school.color;
 
   return (
@@ -452,9 +464,9 @@ const PowerNode = (props: {
           <Box color="label" className="PsionicImprinting__nodeDesc">
             {power.desc}
           </Box>
-          {!hasPowerPrereqs && !!power.required_school_points && (
+          {!!power.required_school_points && (
             <Box color="label" className="PsionicImprinting__nodeMeta">
-              Branch {power.required_school_points}
+              Spend {power.required_school_points} school points first
             </Box>
           )}
           {!!requiredPowerNames.length && (
@@ -462,20 +474,35 @@ const PowerNode = (props: {
               Prereq: {requiredPowerNames.join(', ')}
             </Box>
           )}
+          {!learned && (
+            <Box
+              color={routeOverBudget ? 'bad' : 'label'}
+              className="PsionicImprinting__nodeMeta"
+            >
+              Minimum route: {power.minimum_route_cost} more points
+              {routeOverBudget && ' (over budget)'}
+              <br />
+              Includes prerequisites and school spending.
+            </Box>
+          )}
           {(power.variants || []).map((variant) => (
             <Box
               key={variant.rank}
-              color="label"
+              color={variant.rank === power.selected_rank ? 'good' : 'label'}
               className="PsionicImprinting__nodeMeta"
             >
-              {variant.rank}: {variant.description}
+              {variant.rank}
+              {variant.rank === power.selected_rank && ' (selected)'}:{' '}
+              {variant.description}
             </Box>
           ))}
         </Stack.Item>
         <Stack.Item width="74px" textAlign="right">
           <Box className="PsionicImprinting__nodeCost">
             {learned
-              ? 'Imprinted'
+              ? power.baseline
+                ? 'Baseline'
+                : 'Imprinted'
               : power.cost
                 ? `${power.cost} point${power.cost === 1 ? '' : 's'}`
                 : 'Free'}

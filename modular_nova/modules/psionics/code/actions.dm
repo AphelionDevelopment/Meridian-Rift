@@ -9,6 +9,10 @@
 	var/strain_gain
 	/// Strain gained each second while this form is maintained. If unset, the action's normal active strain is used.
 	var/active_strain_gain_per_second
+	/// Whether maintenance blocks passive recovery. If unset, use the action's policy.
+	var/blocks_strain_recovery
+	/// Whether this form sustains an effect after casting, for upkeep descriptions.
+	var/maintained = FALSE
 	/// Cooldown applied when this form is used. If unset, the action's normal cooldown is used.
 	var/cooldown_time
 	/// Range used by pointed actions. If unset, the action's normal range is used.
@@ -37,8 +41,9 @@
 	var/form_description = description || get_name(action)
 	var/strain_description = "[get_value(action, "strain_gain")] strain"
 	var/active_strain_gain = get_value(action, "active_strain_gain_per_second")
-	if(active_strain_gain > 0)
+	if(maintained)
 		strain_description += ", [active_strain_gain] strain/s"
+		strain_description += get_value(action, "blocks_strain_recovery") ? ", pauses recovery while maintained" : ", allows recovery while maintained"
 	return "[form_description] ([strain_description], [get_value(action, "cooldown_time") / 10]s cooldown)"
 
 /datum/action/cooldown/psionic
@@ -58,6 +63,8 @@
 	var/strain_gain = 0
 	/// Strain gained each second while this ability is maintained.
 	var/active_strain_gain_per_second = 0
+	/// Whether maintaining this action prevents passive strain recovery. Forms may override this.
+	var/blocks_strain_recovery = TRUE
 	/// Psionic category flags used by counters.
 	var/psionic_flags = PSIONIC_INTRUSIVE
 	/// If TRUE, this is an ERP power: hidden from imprinting and uncastable without the ERP preference on both parties.
@@ -472,6 +479,7 @@
 	if(maintaining || !istype(living_owner))
 		return FALSE
 
+	living_owner.get_psionic_profile()?.decay_strain()
 	maintaining = TRUE
 	RegisterSignal(living_owner, COMSIG_LIVING_LIFE, PROC_REF(on_maintain_life), override = TRUE)
 	RegisterSignal(living_owner, COMSIG_LIVING_DEATH, PROC_REF(on_maintain_death))
@@ -483,9 +491,10 @@
 	if(!maintaining)
 		return FALSE
 
-	maintaining = FALSE
 	if(!istype(living_owner))
 		living_owner = owner
+	living_owner?.get_psionic_profile()?.decay_strain()
+	maintaining = FALSE
 	if(istype(living_owner))
 		UnregisterSignal(living_owner, list(COMSIG_LIVING_LIFE, COMSIG_LIVING_DEATH))
 	remove_hand_manifestation(living_owner)

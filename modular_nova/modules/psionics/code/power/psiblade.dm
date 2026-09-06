@@ -2,6 +2,7 @@
 	action_type = /datum/action/cooldown/psionic/psiblade
 
 /datum/psionic_rank_variant/psiblade
+	maintained = TRUE
 	rank = PSIONIC_RANK_GAMMA
 	variant_name = "machete"
 	strain_gain = 10

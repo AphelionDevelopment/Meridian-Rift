@@ -17,6 +17,7 @@
 	return SOUTH
 
 /datum/psionic_rank_variant/psionic_barrier
+	maintained = TRUE
 	rank = PSIONIC_RANK_GAMMA
 	variant_name = "thin barrier"
 	description = "A translucent directional barrier."
@@ -31,8 +32,7 @@
 	var/barrier_alpha = 115
 
 /datum/psionic_rank_variant/psionic_barrier/get_description(datum/action/cooldown/psionic/action)
-	var/form_description = description || get_name(action)
-	return "[form_description] ([get_value(action, "active_strain_gain_per_second")] strain/s, [block_strain_gain] minimum strain, [round(block_strain_multiplier * 100)]% impact strain per block)"
+	return "[..()] ([block_strain_gain] minimum strain, [round(block_strain_multiplier * 100)]% impact strain per block)"
 
 /datum/psionic_rank_variant/psionic_barrier/beta
 	rank = PSIONIC_RANK_BETA

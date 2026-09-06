@@ -132,6 +132,8 @@
 	return variants
 
 /datum/psionic_power
+	/// Automatically grant this free discipline when its minimum rank is reached.
+	var/baseline = FALSE
 	/// Points that must already be spent in this power's school before it can be imprinted.
 	var/required_school_points = 0
 	/// Action type paths that must already be known before this power can be imprinted.
@@ -230,6 +232,8 @@
 		return "has no valid psionic action_type"
 	if(initial(action_type.point_cost) < 0)
 		return "has a negative action point_cost"
+	if(baseline && (get_cost() || required_school_points || length(required_powers)))
+		return "is a baseline power with an imprint cost or prerequisites"
 	if(!get_school_type())
 		return "has no action school"
 	if(!get_school())

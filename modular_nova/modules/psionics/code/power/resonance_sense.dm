@@ -5,6 +5,7 @@
 
 /datum/psionic_power/resonance_sense
 	action_type = /datum/action/cooldown/psionic/resonance/sense
+	baseline = TRUE
 
 /datum/psionic_rank_variant/resonance_sense
 	rank = PSIONIC_RANK_LAMBDA

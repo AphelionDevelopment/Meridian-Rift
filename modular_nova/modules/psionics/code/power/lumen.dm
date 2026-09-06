@@ -1,19 +1,22 @@
 /datum/psionic_power/lumen
 	action_type = /datum/action/cooldown/psionic/lumen
+	baseline = TRUE
 
 /datum/psionic_rank_variant/lumen
+	maintained = TRUE
 	rank = PSIONIC_RANK_EPSILON
 	variant_name = "lumen"
 	description = "A small psionic light that orbits you."
 	strain_gain = 2
-	cooldown_time = 0
+	cooldown_time = 1 SECONDS // NOVA EDIT CHANGE - ORIGINAL: cooldown_time = 0
 	block_charge_cost = 0
 
 /datum/action/cooldown/psionic/lumen
 	name = "Lumen"
 	desc = "Toggle a small psionic light that follows beside you."
 	button_icon_state = "psi_lumen"
-	point_cost = 1
+	point_cost = 0 // NOVA EDIT CHANGE - ORIGINAL: point_cost = 1
+	blocks_strain_recovery = FALSE
 	psionic_flags = PSIONIC_SENSORY
 	school = PSIONIC_SCHOOL_FLUX
 	maintain_end_message = "Your psionic light fades."

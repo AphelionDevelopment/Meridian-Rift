@@ -5,6 +5,7 @@
 	action_type = /datum/action/cooldown/psionic/anchor
 
 /datum/psionic_rank_variant/anchor
+	maintained = TRUE
 	rank = PSIONIC_RANK_GAMMA
 	variant_name = "anchor"
 	description = "A maintained hold that roots you against outside force."

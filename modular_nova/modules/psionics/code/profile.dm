@@ -110,6 +110,8 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 	var/burnout_until = 0
 	/// Learned action type paths.
 	var/list/known_powers = list()
+	/// Powers added automatically, so rank reconciliation never removes explicit grants.
+	var/list/baseline_powers = list()
 	/// Granted actions keyed by action type path.
 	var/list/granted_actions = list()
 	/// Selected lower-rank variants keyed by psionic action type.
@@ -170,6 +172,7 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 		qdel(action)
 	granted_actions.Cut()
 	known_powers.Cut()
+	baseline_powers.Cut()
 	selected_power_rank_variants.Cut()
 	spent_points_by_school.Cut()
 	attuned_schools.Cut()
@@ -180,6 +183,7 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 /datum/component/psionic_profile/proc/awaken()
 	update_rank_traits()
 	grant_action(/datum/action/cooldown/psionic/open_menu)
+	reconcile_baseline_powers()
 	install_strain_hud()
 	to_chat(psion, span_purple("Your psionic potential awakens."))
 
@@ -275,6 +279,7 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 		to_chat(psion, span_notice("Your psionic potential recedes. You have [available_points] unspent imprint point[available_points == 1 ? "" : "s"]."))
 	return TRUE
 
+/** Resets purchased disciplines and restores the current rank's free baseline powers. */
 /datum/component/psionic_profile/proc/reset_imprints(points = 0, silent = FALSE)
 	points = max(points, 0)
 	for(var/action_type in known_powers.Copy())
@@ -284,10 +289,12 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 		granted_actions -= action_type
 
 	known_powers.Cut()
+	baseline_powers.Cut()
 	selected_power_rank_variants.Cut()
 	spent_points_by_school.Cut()
 	spent_points = 0
 	available_points = points
+	reconcile_baseline_powers()
 	if(!silent)
 		to_chat(psion, span_notice("Your imprinted disciplines fold away. You have [available_points] imprint point[available_points == 1 ? "" : "s"] to spend."))
 
@@ -305,10 +312,12 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 
 		profile_sources[source] = points
 		add_points(points - current_points, silent)
+		reconcile_baseline_powers()
 		return TRUE
 
 	profile_sources[source] = points
 	add_points(points, silent)
+	reconcile_baseline_powers()
 	return TRUE
 
 /datum/component/psionic_profile/proc/set_source_points(source, points = 0, silent = FALSE)
@@ -329,6 +338,7 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 		add_points(points - current_points, silent)
 	else
 		remove_points(current_points - points, silent)
+	reconcile_baseline_powers()
 	return TRUE
 
 /datum/component/psionic_profile/proc/has_source(source)
@@ -351,6 +361,7 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 		return
 
 	remove_points(source_points, TRUE)
+	reconcile_baseline_powers()
 
 /datum/component/psionic_profile/proc/set_rank(rank = PSIONIC_DEFAULT_RANK, latent_rank = null, limited = FALSE, new_max_strain = null, new_strain_decay = null)
 	if(rank)
@@ -364,6 +375,7 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 	if(!isnull(new_strain_decay))
 		strain_decay = new_strain_decay
 	update_rank_traits()
+	reconcile_baseline_powers()
 	update_strain_hud()
 	update_psionic_action_buttons(UPDATE_BUTTON_NAME|UPDATE_BUTTON_STATUS)
 
@@ -443,6 +455,31 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 
 	for(var/action_type in starting_powers)
 		learn_power(action_type, 0, TRUE)
+
+/** Grants eligible baseline forms once, and revokes only automatic grants that the rank no longer supports. */
+/datum/component/psionic_profile/proc/reconcile_baseline_powers()
+	for(var/datum/psionic_power/power as anything in get_psionic_power_catalog())
+		if(!power.baseline)
+			continue
+		var/action_type = power.action_type
+		var/eligible = get_psionic_rank_level(psionic_rank) >= get_psionic_rank_level(power.get_minimum_rank())
+		if(power.is_lewd() && !allows_lewd_powers())
+			eligible = FALSE
+		if(eligible)
+			if(action_type in known_powers)
+				continue
+			set_power_rank_variant(action_type, power.get_minimum_rank())
+			if(learn_power(action_type, cost = 0, silent = TRUE))
+				baseline_powers += action_type
+			continue
+		if(!(action_type in baseline_powers))
+			continue
+
+		qdel(granted_actions[action_type])
+		granted_actions -= action_type
+		known_powers -= action_type
+		baseline_powers -= action_type
+		selected_power_rank_variants -= action_type
 
 /datum/component/psionic_profile/proc/learn_power(action_type, cost = null, silent = FALSE)
 	if(!ispath(action_type, /datum/action/cooldown/psionic))
@@ -531,6 +568,34 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 
 	return null
 
+/**
+ * Minimum additional points for a discipline, including unlearned prerequisites and school spending.
+ * School deficits are a lower bound: the player must still choose eligible filler disciplines.
+ * Arguments:
+ * * power - The discipline being priced.
+ * * planned_powers - Already known or priced prerequisites; copied on the first call.
+ * * planned_school_points - Existing and planned school spending; copied on the first call.
+ */
+/datum/component/psionic_profile/proc/get_power_route_cost(datum/psionic_power/power, list/planned_powers, list/planned_school_points)
+	if(!planned_powers)
+		planned_powers = known_powers.Copy()
+		planned_school_points = spent_points_by_school.Copy()
+	if(power.action_type in planned_powers)
+		return 0
+
+	planned_powers += power.action_type
+	var/route_cost = 0
+	for(var/required_power_type in power.required_powers)
+		var/datum/psionic_power/required_power = get_psionic_power_for_action(required_power_type)
+		if(required_power)
+			route_cost += get_power_route_cost(required_power, planned_powers, planned_school_points)
+	var/school_type = power.get_school_type()
+	var/school_points = planned_school_points[school_type] || 0
+	var/missing_school_points = max(power.required_school_points - school_points, 0)
+	var/power_cost = power.get_cost()
+	planned_school_points[school_type] = school_points + missing_school_points + power_cost
+	return route_cost + missing_school_points + power_cost
+
 /datum/component/psionic_profile/ui_state(mob/user)
 	return GLOB.always_state
 
@@ -598,6 +663,7 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 				"name" = power.get_name(),
 				"desc" = power.get_desc(),
 				"cost" = power.get_cost(),
+				"baseline" = power.baseline,
 				"required_school_points" = power.required_school_points,
 				"required_powers" = required_power_paths,
 				"required_power_names" = required_power_names,
@@ -651,10 +717,14 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 			if(power.is_lewd() && !allows_lewd_powers())
 				continue
 			var/lock_reason = get_power_lock_reason(power)
+			var/datum/action/cooldown/psionic/granted_action = granted_actions[power.action_type]
+			var/datum/psionic_rank_variant/selected_variant = granted_action?.get_selected_rank_variant(src)
 			data["power_state"]["[power.action_type]"] = list(
 				"learned" = (power.action_type in known_powers),
 				"can_buy" = isnull(lock_reason),
 				"lock_reason" = lock_reason,
+				"minimum_route_cost" = get_power_route_cost(power),
+				"selected_rank" = selected_variant?.rank,
 			)
 
 	return data
@@ -675,11 +745,11 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 
 			return learn_power(action_type)
 
-/// Whether any granted psionic action is actively maintaining its effect.
-/datum/component/psionic_profile/proc/is_maintaining_any_power()
+/** Whether an active maintained form prevents passive strain recovery. */
+/datum/component/psionic_profile/proc/is_strain_recovery_blocked()
 	for(var/action_type in granted_actions)
 		var/datum/action/cooldown/psionic/action = granted_actions[action_type]
-		if(action?.is_maintaining())
+		if(action?.is_maintaining() && action.get_variant_value(src, "blocks_strain_recovery"))
 			return TRUE
 	return FALSE
 
@@ -692,8 +762,7 @@ GLOBAL_LIST_INIT(psionic_rank_descriptions, list(
 		last_strain_decay = world.time
 		return
 
-	// Maintaining an effect holds strain in place: upkeep costs are real, not offset by decay.
-	if(is_maintaining_any_power())
+	if(is_strain_recovery_blocked())
 		last_strain_decay = world.time
 		return
 
