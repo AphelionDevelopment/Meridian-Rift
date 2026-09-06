@@ -47,6 +47,7 @@ The account preference is stored as the top-level `meridian_theme` key in `data/
 | Diagnostic   | `meridian_diagnostic`   |
 | Highline     | `meridian_highline`     |
 | Synapse      | `meridian_synapse`      |
+| Synapse XXXO | `meridian_synapse_xxxo` |
 | Cyberpunk    | `meridian_cyberpunk`    |
 | Augmentation | `meridian_augmentation` |
 | Afterlight   | `meridian_afterlight`   |

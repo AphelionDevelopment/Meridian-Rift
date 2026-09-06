@@ -15,3 +15,4 @@
 @include meta.load-css('./themed-menus.scss');
 @include meta.load-css('./instrument-menus.scss');
 @include meta.load-css('./signal-menus.scss');
+@include meta.load-css('~tgui/styles/visual-system/synapse-xxxo.scss');

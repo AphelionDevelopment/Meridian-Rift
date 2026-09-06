@@ -83,7 +83,9 @@ describe('MeridianThemePicker', () => {
     fireEvent.keyDown(menu, { key: 'c' });
     expect(document.activeElement).toBe(options[1]);
     fireEvent.keyDown(menu, { key: 'y' });
-    expect(document.activeElement).toBe(options[8]);
+    expect(document.activeElement).toBe(
+      screen.getByRole('menuitemradio', { name: /Cyberpunk/ }),
+    );
 
     fireEvent.keyDown(menu, { key: 'Escape' });
     await Promise.resolve();

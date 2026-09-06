@@ -1,16 +1,16 @@
 # Lobby menu styles
 
 [_menu-common.scss](_menu-common.scss) supplies geometry and behavior for all
-fourteen HTML menus: placement, size limits, scrolling, text wrapping, heading
+fifteen HTML menus: placement, size limits, scrolling, text wrapping, heading
 alignment, stable pointer/focus markers, and nonanimated poll indicators. These
 39 declarations previously appeared in each of the four layout stylesheets.
 The common selectors are deliberately less specific than the theme profiles.
 
 [_themed-menus.scss](_themed-menus.scss) supplies the default instrument layout,
-native-control states, and keyboard focus treatment for eleven menus.
+native-control states, and keyboard focus treatment for twelve menus.
 [_instrument-menus.scss](_instrument-menus.scss) supplies eight instrument
 profiles; [_signal-menus.scss](_signal-menus.scss) supplies Cyberpunk,
-Augmentation, and Synapse. Profiles set `--menu-*` colors, typography, frame
+Augmentation, Synapse, and Synapse XXXO. Profiles set `--menu-*` colors, typography, frame
 weights, edge rules, and hover surfaces. Keep compound backgrounds opaque and
 decoration at the casing edges, clear of text and hit boxes.
 
@@ -47,6 +47,7 @@ overlay gates.
 | Cyberpunk | Dark red housing, broken red rails, cyan state accents. |
 | Augmentation | Cyan module frame, balanced segments, central red registration mark. |
 | Synapse | Violet sign rule, teal offset edge, sparse contrasting accents. |
+| Synapse XXXO | Dark plum housing, reflective pink controls, textured neon glass, and red accents. |
 
 All new menu decoration is original CSS. Existing theme palette IDs and shared
 colors remain unchanged; menu-only shades soften surfaces where needed. No

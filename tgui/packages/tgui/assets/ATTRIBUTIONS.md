@@ -45,3 +45,9 @@ Before incorporating a currently research-only resource, obtain written rights
 covering public source redistribution and downstream modification, then record
 the archive checksum, delivered license, required credit, derived filename, and
 modifications in the first table. Never derive “exact” paths from a web preview.
+
+## Synapse XXXO neon glass
+
+`styles/assets/synapse-xxxo-neon-tube.svg` is an original Meridian-authored SVG
+with seeded glass grain, tinted light cores and electrode collars. It contains
+no external image or font resources.

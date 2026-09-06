@@ -4,8 +4,8 @@ import {
   DEFAULT_MERIDIAN_BASE_THEME,
   MERIDIAN_BASE_THEME_IDS,
   MERIDIAN_BASE_THEME_OPTIONS,
-  MERIDIAN_THEMES,
   MERIDIAN_THEME_IDS,
+  MERIDIAN_THEMES,
   normalizeMeridianBaseTheme,
   normalizeMeridianTheme,
   resolveMeridianTheme,
@@ -35,9 +35,9 @@ function contrast(first: string, second: string): number {
 }
 
 describe('MeridianOS theme catalog', () => {
-  it('contains thirteen palette skins and fourteen ordered player themes', () => {
-    expect(new Set(MERIDIAN_THEME_IDS).size).toBe(13);
-    expect(new Set(MERIDIAN_BASE_THEME_IDS).size).toBe(14);
+  it('contains fourteen palette skins and fifteen ordered player themes', () => {
+    expect(new Set(MERIDIAN_THEME_IDS).size).toBe(14);
+    expect(new Set(MERIDIAN_BASE_THEME_IDS).size).toBe(15);
     expect(DEFAULT_MERIDIAN_BASE_THEME).toBe('meridian');
     expect(MERIDIAN_THEME_IDS).toEqual([
       'meridian',
@@ -47,6 +47,7 @@ describe('MeridianOS theme catalog', () => {
       'meridian_diagnostic',
       'meridian_highline',
       'meridian_synapse',
+      'meridian_synapse_xxxo',
       'meridian_cyberpunk',
       'meridian_augmentation',
       'meridian_afterlight',
@@ -63,6 +64,7 @@ describe('MeridianOS theme catalog', () => {
       'meridian_diagnostic',
       'meridian_highline',
       'meridian_synapse',
+      'meridian_synapse_xxxo',
       'meridian_cyberpunk',
       'meridian_augmentation',
       'meridian_afterlight',
@@ -76,6 +78,11 @@ describe('MeridianOS theme catalog', () => {
       expect.objectContaining({ id: 'meridian_pipboy', name: 'Wastelander' }),
     ]);
     expect(MERIDIAN_THEMES.every(({ production }) => production)).toBe(true);
+    expect(
+      MERIDIAN_BASE_THEME_OPTIONS.find(
+        ({ id }) => id === 'meridian_synapse_xxxo',
+      ),
+    ).toMatchObject({ name: 'Synapse XXXO', production: true });
   });
 
   it('meets text, status-boundary, selection, and focus contrast contracts', () => {
@@ -155,6 +162,26 @@ describe('MeridianOS theme resolution', () => {
       expect(resolveMeridianTheme(options)).toEqual({
         base: 'meridian_aphelion',
         classes: ['theme-meridian_aphelion', 'theme-console'],
+        isConsole: true,
+      });
+    }
+  });
+
+  it('retains Synapse XXXO as a requested, saved, or debug console theme', () => {
+    expect(normalizeMeridianBaseTheme('meridian_synapse_xxxo')).toBe(
+      'meridian_synapse_xxxo',
+    );
+    expect(normalizeMeridianTheme('meridian_synapse_xxxo')).toBe(
+      'meridian_synapse_xxxo',
+    );
+    for (const options of [
+      { requested: 'meridian_synapse_xxxo' },
+      { requested: 'meridian', preferred: 'meridian_synapse_xxxo' as const },
+      { requested: 'paper', debugOverride: 'meridian_synapse_xxxo' as const },
+    ]) {
+      expect(resolveMeridianTheme(options)).toEqual({
+        base: 'meridian_synapse_xxxo',
+        classes: ['theme-meridian_synapse_xxxo', 'theme-console'],
         isConsole: true,
       });
     }

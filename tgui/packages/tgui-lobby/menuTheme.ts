@@ -10,6 +10,7 @@ const HEADINGS: Record<MeridianBaseThemeId, string> = {
   meridian_diagnostic: 'SYSTEM DIAGNOSTICS',
   meridian_highline: 'CREW OPERATIONS',
   meridian_synapse: 'SIGNAL CONNECTION',
+  meridian_synapse_xxxo: 'SIGNAL CONNECTION',
   meridian_cyberpunk: 'NETWORK ACCESS',
   meridian_augmentation: 'AUGMENT INTERFACE',
   meridian_afterlight: 'FIELD TERMINAL',

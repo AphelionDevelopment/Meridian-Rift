@@ -80,7 +80,8 @@
 // https://hotlinemiami.com/
 // https://store.steampowered.com/app/219150/Hotline_Miami/
 // Synapse confines that contrast to a short sign rule and a quiet offset edge.
-.theme-meridian_synapse .lobby {
+.theme-meridian_synapse .lobby,
+.theme-meridian_synapse_xxxo .lobby {
   --menu-panel: var(--lobby-panel);
   --menu-raised: var(--console-surface-raised);
   --menu-frame: var(--lobby-boundary);

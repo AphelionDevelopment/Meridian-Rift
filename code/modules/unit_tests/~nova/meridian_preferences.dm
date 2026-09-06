@@ -47,6 +47,7 @@
 		"meridian_diagnostic",
 		"meridian_highline",
 		"meridian_synapse",
+		"meridian_synapse_xxxo",
 		"meridian_cyberpunk",
 		"meridian_augmentation",
 		"meridian_afterlight",
@@ -118,6 +119,15 @@
 	TEST_ASSERT_EQUAL(second_ui.config_update_count, 2, "The second open TGUI did not receive the Aphelion update.")
 	TEST_ASSERT_EQUAL(test_lobby.update_count, 2, "The open lobby did not receive the Aphelion update.")
 	TEST_ASSERT_EQUAL(test_lobby.captured_theme, "meridian_aphelion", "The lobby received the wrong Aphelion preference ID.")
+
+	TEST_ASSERT(test_client.set_meridian_theme("meridian_synapse_xxxo"), "The Synapse XXXO theme selection was rejected.")
+	TEST_ASSERT_EQUAL(test_preferences.read_preference(preference.type), "meridian_synapse_xxxo", "The Synapse XXXO selection was not applied.")
+	TEST_ASSERT_EQUAL(preference.deserialize(preference.serialize("meridian_synapse_xxxo"), null), "meridian_synapse_xxxo", "The saved Synapse XXXO selection did not round-trip.")
+	TEST_ASSERT_EQUAL(test_preferences.save_call_count, 3, "The Synapse XXXO selection was not persisted exactly once.")
+	TEST_ASSERT_EQUAL(first_ui.config_update_count, 3, "The first open TGUI did not receive the Synapse XXXO update.")
+	TEST_ASSERT_EQUAL(second_ui.config_update_count, 3, "The second open TGUI did not receive the Synapse XXXO update.")
+	TEST_ASSERT_EQUAL(test_lobby.update_count, 3, "The open lobby did not receive the Synapse XXXO update.")
+	TEST_ASSERT_EQUAL(test_lobby.captured_theme, "meridian_synapse_xxxo", "The lobby received the wrong Synapse XXXO preference ID.")
 
 	TEST_ASSERT_EQUAL(other_preferences.read_preference(preference.type), "meridian", "One client's selection mutated another preference owner.")
 	TEST_ASSERT_EQUAL(other_preferences.save_call_count, 0, "One client's selection persisted another preference owner.")

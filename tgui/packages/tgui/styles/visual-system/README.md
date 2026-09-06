@@ -11,7 +11,7 @@ hackerman, retro-95, or other specialty themes.
 3. `_tokens.scss` defines runtime semantic variables and maps them to the
    public tgui-core component variables.
 4. `_themes.scss` supplies palette and construction profiles for Standard and
-   twelve additional MeridianOS skins.
+   thirteen additional MeridianOS skins.
 5. `_components.scss` applies shared component states using semantic variables
    only.
 6. `_loader.scss` provides the fixed diagnostic-instrument layer set shared by
@@ -37,13 +37,14 @@ request `meridian`.
 
 The title-bar gear exposes one account-wide base-theme preference in this
 order: **Standard**, **Classic NT**, **Wastelander**, Vector, Foundry, Diagnostic,
-Highline, Synapse, Cyberpunk, Augmentation, Afterlight, Relay, Bastion, and Aphelion.
+Highline, Synapse, Synapse XXXO, Cyberpunk, Augmentation, Afterlight, Relay,
+Bastion, and Aphelion.
 Standard is the default. Classic selects the original `theme-nanotrasen`
 component styling without the MeridianOS console layer. Authored specialty
 interfaces remain specialized while their gear still updates the saved base
 theme used elsewhere.
 
-Alongside Standard, the other twelve palette-bearing MeridianOS skins are:
+Alongside Standard, the other thirteen palette-bearing MeridianOS skins are:
 
 - Wastelander — muted phosphor, weathered olive casing, inset label plates,
   and CRT calibration rails. The stored `meridian_pipboy` ID is retained so
@@ -53,6 +54,8 @@ Alongside Standard, the other twelve palette-bearing MeridianOS skins are:
 - Diagnostic — square brackets, alignment ticks, and acquisition nodes.
 - Highline — accessibility-first square boundaries and inverse selection.
 - Synapse — aubergine surfaces, asymmetric cuts, and teal status pins.
+- Synapse XXXO — dark plum surfaces, reflective pink controls, neon glass
+  trim, and red loader accents.
 - Cyberpunk — hot-red broken rails and cyan inner registration marks.
 - Augmentation — ordered clinical trapezoids and module sockets matching the
   Augments workstation.

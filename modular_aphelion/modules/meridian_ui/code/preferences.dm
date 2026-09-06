@@ -25,6 +25,7 @@
 		"meridian_diagnostic",
 		"meridian_highline",
 		"meridian_synapse",
+		"meridian_synapse_xxxo",
 		"meridian_cyberpunk",
 		"meridian_augmentation",
 		"meridian_afterlight",

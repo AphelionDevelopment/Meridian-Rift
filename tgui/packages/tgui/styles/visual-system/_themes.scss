@@ -15,6 +15,7 @@
 @include theme(meridian_diagnostic);
 @include theme(meridian_highline);
 @include theme(meridian_synapse);
+@include theme(meridian_synapse_xxxo);
 @include theme(meridian_cyberpunk);
 @include theme(meridian_augmentation);
 @include theme(meridian_afterlight);
@@ -64,6 +65,7 @@
 .theme-meridian_foundry,
 .theme-meridian_highline,
 .theme-meridian_synapse,
+.theme-meridian_synapse_xxxo,
 .theme-meridian_cyberpunk,
 .theme-meridian_augmentation {
   // Clear the diamond outline without changing the spoke angles.
@@ -201,7 +203,8 @@
   }
 }
 
-.theme-meridian_synapse {
+.theme-meridian_synapse,
+.theme-meridian_synapse_xxxo {
   --console-corner-cut: 7px;
   --console-corner-layer: 16px;
   --console-title-rail: 84px;
