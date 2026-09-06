@@ -58,7 +58,8 @@ Alongside Standard, the other thirteen palette-bearing MeridianOS skins are:
   cyan light confined to its original inset loader accents.
 - Synapse XXXO — dark plum surfaces, reflective pink controls, neon glass
   trim, and red loader accents.
-- Cyberpunk — hot-red broken rails and cyan inner registration marks.
+- Cyberpunk — red broken rails, black glass, reflective cyan controls, and
+  illuminated cyan registration marks, progress ring and diamond core.
 - Augmentation — ordered clinical trapezoids and module sockets matching the
   Augments workstation.
 - Afterlight — retrofit/noir bezel slabs and substantial keycaps.

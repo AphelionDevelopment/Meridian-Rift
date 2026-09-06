@@ -104,6 +104,8 @@ export function DiagnosticLoader(props: DiagnosticLoaderProps) {
           <span className="DiagnosticLoader__outerCage" />
           <span className="DiagnosticLoader__innerMarks" />
           <span className="DiagnosticLoader__nodes" />
+          <span className="DiagnosticLoader__core" />
+          <span className="DiagnosticLoader__progressFill" />
         </span>
         <span aria-hidden className="DiagnosticLoader__tickCrown" />
         <span aria-hidden className="DiagnosticLoader__outerCage" />

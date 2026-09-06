@@ -12,5 +12,8 @@
 
     // Cyan stays on the original inset accents. The crown and core stay violet.
     .DiagnosticLoader__light .DiagnosticLoader__innerMarks { border-right-color: #38d6cf; }
+    .DiagnosticLoader__light :is(.DiagnosticLoader__core, .DiagnosticLoader__progressFill) {
+      display: none;
+    }
   }
 }
