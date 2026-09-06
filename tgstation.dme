@@ -9731,6 +9731,7 @@
 #include "modular_nova\modules\psionics\code\power\psionic_barrier.dm"
 #include "modular_nova\modules\psionics\code\power\psionic_bubble.dm"
 #include "modular_nova\modules\psionics\code\power\psychic_guard.dm"
+#include "modular_nova\modules\psionics\code\power\psychic_hands.dm"
 #include "modular_nova\modules\psionics\code\power\pyro_bolt.dm"
 #include "modular_nova\modules\psionics\code\power\rejuvenate.dm"
 #include "modular_nova\modules\psionics\code\power\resonance_sense.dm"
