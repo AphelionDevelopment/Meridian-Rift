@@ -172,6 +172,7 @@
 	movable_target.safe_throw_at(throw_target, range = form.throw_distance, speed = 1, thrower = owner, gentle = TRUE)
 	return TRUE
 
+/** Launches a wave from a fixed turf, sharing hit and blocked-lane tracking between its delayed steps. */
 /datum/action/cooldown/psionic/pointed/kinetic_shove/proc/start_kinetic_wave(mob/living/living_owner, atom/target, datum/psionic_rank_variant/kinetic_shove/form)
 	var/turf/source_turf = get_turf(living_owner)
 	var/turf/target_turf = get_turf(target)
@@ -193,6 +194,7 @@
 
 	var/manifestation_color = get_manifestation_color()
 	var/list/hit_atoms = list()
+	var/list/blocked_lanes = list()
 	var/datum/weakref/owner_ref = WEAKREF(living_owner)
 	for(var/step_number in 1 to form.wave_range)
 		var/datum/callback/wave_step = new /datum/callback(
@@ -204,37 +206,46 @@
 			form,
 			manifestation_color,
 			hit_atoms,
+			source_turf,
+			blocked_lanes,
 		)
 		addtimer(wave_step, (step_number - 1) * form.wave_step_delay, TIMER_DELETE_ME)
 
 	return TRUE
 
-/datum/action/cooldown/psionic/pointed/kinetic_shove/proc/resolve_kinetic_wave_step(datum/weakref/owner_ref, wave_direction, step_number, datum/psionic_rank_variant/kinetic_shove/form, manifestation_color, list/hit_atoms)
+/** Resolves one wave row, stopping each lane at obstacles that survive its structural damage. */
+/datum/action/cooldown/psionic/pointed/kinetic_shove/proc/resolve_kinetic_wave_step(datum/weakref/owner_ref, wave_direction, step_number, datum/psionic_rank_variant/kinetic_shove/form, manifestation_color, list/hit_atoms, turf/source_turf, list/blocked_lanes)
 	var/mob/living/living_owner = owner_ref?.resolve()
 	if(!istype(living_owner))
 		return
 
-	var/list/wave_turfs = get_kinetic_wave_turfs(living_owner, wave_direction, step_number, form)
-	if(!length(wave_turfs))
-		return
+	var/list/wave_turfs = get_kinetic_wave_turfs(source_turf, wave_direction, step_number, form)
+	for(var/turf/wave_turf as anything in wave_turfs.Copy())
+		var/lane_key = num2text((wave_direction & (NORTH|SOUTH)) ? wave_turf.x : wave_turf.y)
+		if(blocked_lanes[lane_key])
+			wave_turfs -= wave_turf
+			continue
 
-	show_kinetic_wave_effects(wave_turfs, wave_direction, manifestation_color)
-	playsound(wave_turfs[1], 'sound/effects/gravhit.ogg', 45, TRUE)
+		damage_kinetic_wave_structures(wave_turf, living_owner, form, wave_direction)
+		if(wave_turf.is_blocked_turf(exclude_mobs = TRUE))
+			blocked_lanes[lane_key] = TRUE
+			continue
 
-	for(var/turf/wave_turf as anything in wave_turfs)
 		for(var/mob/living/living_target in wave_turf)
-			if(living_target == living_owner)
-				continue
-			if(hit_atoms[living_target])
+			if(living_target == living_owner || hit_atoms[living_target])
 				continue
 
 			hit_atoms[living_target] = TRUE
 			hit_kinetic_wave_target(living_target, living_owner, wave_direction, form)
-		damage_kinetic_wave_structures(wave_turf, living_owner, form)
 
-/datum/action/cooldown/psionic/pointed/kinetic_shove/proc/get_kinetic_wave_turfs(mob/living/living_owner, wave_direction, step_number, datum/psionic_rank_variant/kinetic_shove/form)
-	var/turf/center_turf = get_ranged_target_turf(living_owner, wave_direction, step_number)
-	if(!center_turf)
+	if(length(wave_turfs))
+		show_kinetic_wave_effects(wave_turfs, wave_direction, manifestation_color)
+		playsound(wave_turfs[1], 'sound/effects/gravhit.ogg', 45, TRUE)
+
+/** Returns a wave row relative to its launch turf, stopping at the map boundary. */
+/datum/action/cooldown/psionic/pointed/kinetic_shove/proc/get_kinetic_wave_turfs(turf/source_turf, wave_direction, step_number, datum/psionic_rank_variant/kinetic_shove/form)
+	var/turf/center_turf = get_ranged_target_turf(source_turf, wave_direction, step_number)
+	if(!center_turf || get_dist(source_turf, center_turf) != step_number)
 		return list()
 
 	var/list/wave_turfs = list(center_turf)
@@ -242,17 +253,13 @@
 	if(side_reach <= 0)
 		return wave_turfs
 
-	var/left_direction = turn(wave_direction, 90)
-	var/right_direction = turn(wave_direction, -90)
-	var/turf/left_turf = center_turf
-	var/turf/right_turf = center_turf
-	for(var/offset in 1 to side_reach)
-		left_turf = get_step(left_turf, left_direction)
-		right_turf = get_step(right_turf, right_direction)
-		if(left_turf)
-			wave_turfs |= left_turf
-		if(right_turf)
-			wave_turfs |= right_turf
+	for(var/side_direction in list(turn(wave_direction, 90), turn(wave_direction, -90)))
+		var/turf/side_turf = center_turf
+		for(var/offset in 1 to side_reach)
+			side_turf = get_step(side_turf, side_direction)
+			if(!side_turf)
+				break
+			wave_turfs += side_turf
 
 	return wave_turfs
 
@@ -262,13 +269,14 @@
 		new /obj/effect/temp_visual/dir_setting/psionic/kinetic_distortion(wave_turf, wave_direction, manifestation_color)
 		wave_turf.Shake(pixelshiftx = 1, pixelshifty = 1, duration = 0.4 SECONDS)
 
-/datum/action/cooldown/psionic/pointed/kinetic_shove/proc/damage_kinetic_wave_structures(turf/wave_turf, mob/living/living_owner, datum/psionic_rank_variant/kinetic_shove/form)
+/** Damages structures from the wave's direction and attempts to break mineral turfs. */
+/datum/action/cooldown/psionic/pointed/kinetic_shove/proc/damage_kinetic_wave_structures(turf/wave_turf, mob/living/living_owner, datum/psionic_rank_variant/kinetic_shove/form, wave_direction)
 	for(var/obj/structure/window/window in wave_turf)
 		window.take_damage(
 			damage_amount = form.structure_damage,
 			damage_type = BRUTE,
 			damage_flag = MELEE,
-			attack_dir = get_dir(living_owner, window),
+			attack_dir = wave_direction,
 			armour_penetration = 30,
 		)
 	for(var/obj/structure/grille/grille in wave_turf)
@@ -276,7 +284,7 @@
 			damage_amount = form.structure_damage,
 			damage_type = BRUTE,
 			damage_flag = MELEE,
-			attack_dir = get_dir(living_owner, grille),
+			attack_dir = wave_direction,
 		)
 
 	if(isindestructiblewall(wave_turf))
