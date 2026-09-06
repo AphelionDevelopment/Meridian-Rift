@@ -25,6 +25,9 @@
 	SSair.stop_processing_machine(src)
 	if(!isnull(target))
 		UnregisterSignal(target, COMSIG_QDELETING)
+		// NOVA EDIT ADDITION START - DOGMOS
+		target.dogmos_pipeline_meters -= src
+		// NOVA EDIT ADDITION END
 		target = null
 	return ..()
 
@@ -50,6 +53,9 @@
 			candidate = pipe
 	if(candidate)
 		target = candidate
+		// NOVA EDIT ADDITION START - DOGMOS
+		target.dogmos_pipeline_meters |= src
+		// NOVA EDIT ADDITION END
 		RegisterSignal(target, COMSIG_QDELETING, PROC_REF(drop_meter))
 		setAttachLayer(candidate.piping_layer)
 
@@ -93,7 +99,7 @@
 	else
 		icon_state = "meter4"
 
-	var/env_temperature = pipe_air.temperature
+	var/env_temperature = pipe_air.return_temperature()
 
 	var/new_greyscale = greyscale_colors
 
@@ -119,12 +125,15 @@
 	if(new_greyscale != greyscale_colors)//dont update if nothing has changed since last update
 		greyscale_colors = new_greyscale
 		set_greyscale(greyscale_colors)
+	// NOVA EDIT ADDITION START - DOGMOS
+	return PROCESS_KILL
+	// NOVA EDIT ADDITION END
 
 /obj/machinery/meter/proc/status()
 	if (target)
 		var/datum/gas_mixture/pipe_air = target.return_air()
 		if(pipe_air)
-			. = "The pressure gauge reads [round(pipe_air.return_pressure(), 0.01)] kPa; [round(pipe_air.temperature,0.01)] K ([round(pipe_air.temperature-T0C,0.01)]&deg;C)."
+			. = "The pressure gauge reads [round(pipe_air.return_pressure(), 0.01)] kPa; [round(pipe_air.return_temperature(),0.01)] K ([round(pipe_air.return_temperature()-T0C,0.01)]&deg;C)."
 		else
 			. = "The sensor error light is blinking."
 	else
@@ -196,7 +205,7 @@
 		return
 	var/datum/gas_mixture/environment = connected_meter.target.return_air()
 	pressure.set_output(environment.return_pressure())
-	temperature.set_output(environment.temperature)
+	temperature.set_output(environment.return_temperature())
 
 // TURF METER - REPORTS A TILE'S AIR CONTENTS
 // why are you yelling?

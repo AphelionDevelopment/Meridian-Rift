@@ -196,7 +196,7 @@
 		return FALSE
 
 	// Aim for goldilocks temperatures and pressure
-	if((floor_gas_mixture.temperature <= BODYTEMP_COLD_DAMAGE_LIMIT) || (floor_gas_mixture.temperature >= BODYTEMP_HEAT_DAMAGE_LIMIT))
+	if((floor_gas_mixture.return_temperature() <= BODYTEMP_COLD_DAMAGE_LIMIT) || (floor_gas_mixture.return_temperature() >= BODYTEMP_HEAT_DAMAGE_LIMIT))
 		return
 	var/pressure = floor_gas_mixture.return_pressure()
 	if((pressure <= HAZARD_LOW_PRESSURE) || (pressure >= HAZARD_HIGH_PRESSURE))
