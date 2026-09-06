@@ -56,14 +56,18 @@
     --button-color: var(--console-text-on-accent);
     color: var(--button-color);
     background-color: var(--glass-secondary);
+    // Let the luminous face reach the edge without a separate pale bevel.
+    // Keep the border's dimensions so selected controls never shift the layout.
     background-image:
-      linear-gradient(106deg, #ffffff00 5%, #ffffff50 13%, #ffffff08 24%, #ffffff00 45%, #ffffff34 64%, #ffffff00 77%),
-      repeating-linear-gradient(0deg, #ffffff10 0 1px, #ffffff00 1px 3px),
-      linear-gradient(180deg, var(--glass-selected-hot) 0%, color-mix(in srgb, var(--glass-secondary) 65%, white) 9%, var(--glass-secondary) 27%, color-mix(in srgb, var(--glass-secondary) #{$selection-mid}, black) 48%, var(--glass-secondary) 56%, color-mix(in srgb, var(--glass-secondary) 67%, white) 93%, color-mix(in srgb, var(--glass-secondary) 66%, black) 100%);
-    border-color: var(--glass-selected-hot);
-    text-shadow: 0 1px 0 #ffffff30;
-    box-shadow: inset 0 1px 0 #f4fffd, inset 0 -2px 0 #0004, inset 1px 0 3px #ffffff88,
-      0 0 3px color-mix(in srgb, var(--glass-secondary) 50%, transparent), 0 0 12px color-mix(in srgb, var(--glass-secondary) 17%, transparent);
+      linear-gradient(106deg, #ffffff00 5%, #ffffff18 17%, #ffffff04 32%, #ffffff00 45%, #ffffff12 65%, #ffffff00 82%),
+      repeating-linear-gradient(0deg, #ffffff06 0 1px, #ffffff00 1px 3px),
+      linear-gradient(180deg, color-mix(in srgb, var(--glass-secondary) 88%, black), var(--glass-secondary) 18%, color-mix(in srgb, var(--glass-secondary) 86%, white) 36%, color-mix(in srgb, var(--glass-secondary) #{$selection-mid}, black) 62%, var(--glass-secondary) 82%, color-mix(in srgb, var(--glass-secondary) 86%, black));
+    background-clip: border-box;
+    border-color: transparent;
+    text-shadow: none;
+    box-shadow: inset 0 0 4px color-mix(in srgb, var(--glass-secondary) 30%, transparent),
+      0 0 3px color-mix(in srgb, var(--glass-secondary) 46%, transparent),
+      0 0 9px color-mix(in srgb, var(--glass-secondary) 18%, transparent);
   }
 
   .Button--color--default:not(.Button--selected):not([aria-pressed='true']):not([aria-checked='true']):not(.Button--disabled):not([aria-disabled='true']):not(:disabled) {
@@ -73,9 +77,9 @@
 
   :is(.Tab--selected, .Tab[aria-selected='true']) {
     background: linear-gradient(180deg, color-mix(in srgb, var(--glass-secondary) 24%, var(--console-surface-base)), var(--console-surface-base) 85%);
-    border-color: color-mix(in srgb, var(--glass-secondary) 70%, white);
+    border-color: var(--glass-secondary);
     color: var(--console-text-primary);
-    box-shadow: inset 0 -2px 0 var(--glass-selected-hot), 0 2px 4px color-mix(in srgb, var(--glass-secondary) 22%, transparent);
+    box-shadow: inset 0 -1px 0 var(--glass-secondary), 0 2px 4px color-mix(in srgb, var(--glass-secondary) 22%, transparent);
   }
 
   .DiagnosticLoader__instrument {   contain: layout style; overflow: visible;
